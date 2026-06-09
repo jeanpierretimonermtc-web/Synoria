@@ -252,6 +252,13 @@ export function registerAllHandlers(): void {
       initDatabase()
       return { ok: true }
     } catch (e: any) {
+      // Rollback : supprimer auth.json si la config a échoué après sa création
+      // pour que l'utilisateur puisse recommencer depuis l'écran de setup
+      try {
+        const { existsSync, unlinkSync } = require('fs')
+        if (existsSync(auth.authFilePath())) unlinkSync(auth.authFilePath())
+      } catch {}
+      auth.clearKey()
       return { ok: false, error: e?.message || String(e) }
     }
   })
