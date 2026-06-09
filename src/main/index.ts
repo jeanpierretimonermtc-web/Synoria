@@ -28,7 +28,9 @@ if (portableDir) {
 const gotTheLock = app.requestSingleInstanceLock()
 if (!gotTheLock) app.quit()
 
-const iconPath = join(__dirname, '../../build/icons/icon.ico')
+const iconPath = process.platform === 'darwin'
+  ? join(__dirname, '../../build/icons/icon.png')
+  : join(__dirname, '../../build/icons/icon.ico')
 let win: BrowserWindow | null = null
 
 // ── Sauvegarde automatique ─────────────────────────────────────────
@@ -84,6 +86,14 @@ function createWindow() {
 
   win.once('ready-to-show', () => win?.show())
 
+  // Fallback Mac : si ready-to-show ne se déclenche pas (erreur chargement)
+  setTimeout(() => { if (win && !win.isVisible()) win.show() }, 3000)
+
+  win.webContents.on('did-fail-load', (_e, code, desc) => {
+    console.error('[Window] Échec chargement:', code, desc)
+    if (win && !win.isVisible()) win.show()
+  })
+
   app.on('second-instance', () => {
     if (win) {
       if (win.isMinimized()) win.restore()
@@ -106,14 +116,20 @@ function createWindow() {
 
 // ── Cycle de vie Electron ──────────────────────────────────────────
 app.whenReady().then(async () => {
-  // Si aucun mot de passe configuré : ouvrir la DB directement
-  // (l'app affichera l'écran de configuration du mot de passe)
-  if (!auth.hasPassword()) {
-    initDatabase()
+  try {
+    if (!auth.hasPassword()) {
+      initDatabase()
+    }
+  } catch (e) {
+    console.error('[Startup] Erreur initDatabase:', e)
   }
-  // Sinon : la DB est ouverte après authentification (IPC auth:login)
 
-  registerAllHandlers()
+  try {
+    registerAllHandlers()
+  } catch (e) {
+    console.error('[Startup] Erreur registerAllHandlers:', e)
+  }
+
   createWindow()
   startDailyBackupScheduler()
   startAutoSaveEncrypted()
