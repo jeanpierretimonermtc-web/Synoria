@@ -14,9 +14,7 @@ on:
 
 jobs:
   build-mac:
-    # macos-13 = runner Intel x64 : peut cross-compiler arm64 via Xcode
-    # macos-latest = Apple Silicon : NE PEUT PAS cross-compiler x64 (better-sqlite3 cassé)
-    runs-on: macos-13
+    runs-on: macos-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -33,11 +31,31 @@ jobs:
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
-      - name: Build with Vite
+      # Compiler better-sqlite3 pour x64 (cross-compile depuis arm64 via clang -arch x86_64)
+      - name: Rebuild better-sqlite3 pour x64
+        run: |
+          npx @electron/rebuild -f -w better-sqlite3 --arch x64
+          cp node_modules/better-sqlite3/build/Release/better_sqlite3.node /tmp/bs3_x64.node
+
+      # Compiler better-sqlite3 pour arm64 (natif)
+      - name: Rebuild better-sqlite3 pour arm64
+        run: |
+          npx @electron/rebuild -f -w better-sqlite3 --arch arm64
+          cp node_modules/better-sqlite3/build/Release/better_sqlite3.node /tmp/bs3_arm64.node
+
+      # Fusionner les deux binaires en un seul "fat binary" universel
+      - name: Créer le binaire universel (lipo)
+        run: |
+          lipo -create /tmp/bs3_x64.node /tmp/bs3_arm64.node \
+            -output node_modules/better-sqlite3/build/Release/better_sqlite3.node
+          lipo -info node_modules/better-sqlite3/build/Release/better_sqlite3.node
+
+      - name: Build avec Vite
         run: npx vite build
 
-      - name: Build Electron app universel (Intel + Apple Silicon)
-        run: npx electron-builder --mac --universal
+      # npmRebuild=false : electron-builder n'écrase pas le fat binary qu'on vient de créer
+      - name: Build Electron universel (Intel + Apple Silicon)
+        run: npx electron-builder --mac --universal --config.npmRebuild=false
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
