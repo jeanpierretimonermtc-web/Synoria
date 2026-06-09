@@ -22,6 +22,8 @@ jobs:
       # ── 1. Récupération du code ──────────────────────────────────
       - name: Checkout code
         uses: actions/checkout@v4
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
       # ── 2. Node.js 18 (même version que Windows) ────────────────
       - name: Setup Node.js 18
@@ -29,6 +31,8 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
       # ── 3. Installation des dépendances ─────────────────────────
       # --ignore-scripts : désactive electron-rebuild (electron-builder
@@ -52,6 +56,8 @@ jobs:
       # ── 6. Upload des artefacts ──────────────────────────────────
       - name: Upload macOS DMG files
         uses: actions/upload-artifact@v4
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         with:
           name: Synoria-macOS-${{ github.event.inputs.version || '1.3.1' }}
           path: |
