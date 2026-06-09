@@ -14,7 +14,9 @@ on:
 
 jobs:
   build-mac:
-    runs-on: macos-latest
+    # macos-13 = runner Intel x64 : peut cross-compiler arm64 via Xcode
+    # macos-latest = Apple Silicon : NE PEUT PAS cross-compiler x64 (better-sqlite3 cassé)
+    runs-on: macos-13
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -34,8 +36,8 @@ jobs:
       - name: Build with Vite
         run: npx vite build
 
-      - name: Build Electron app for macOS (universel Intel + Apple Silicon)
-        run: npx electron-builder --mac
+      - name: Build Electron app universel (Intel + Apple Silicon)
+        run: npx electron-builder --mac --universal
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
