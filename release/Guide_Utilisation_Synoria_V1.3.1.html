@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guide d'utilisation — Synoria v1.3.1</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 14px; color: #2C2C2C; background: #F9F8F6; line-height: 1.7; }
+
+  .cover {
+    background: linear-gradient(135deg, #4A6741 0%, #2A7A6A 100%);
+    color: white; text-align: center; padding: 80px 40px 60px;
+    page-break-after: always;
+  }
+  .cover h1 { font-size: 48px; font-weight: 300; letter-spacing: 4px; margin-bottom: 8px; }
+  .cover .version { font-size: 18px; opacity: .8; margin-bottom: 40px; }
+  .cover .subtitle { font-size: 16px; opacity: .75; max-width: 500px; margin: 0 auto; line-height: 1.8; }
+  .cover .date { margin-top: 60px; font-size: 13px; opacity: .6; }
+  .cover .lock { font-size: 64px; margin-bottom: 24px; }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 40px 40px 80px; }
+
+  h2 {
+    font-size: 22px; font-weight: 700; color: #4A6741;
+    border-bottom: 3px solid #4A6741; padding-bottom: 8px;
+    margin: 48px 0 20px;
+  }
+  h3 { font-size: 16px; font-weight: 700; color: #2A7A6A; margin: 28px 0 10px; }
+  h4 { font-size: 14px; font-weight: 700; color: #4A6741; margin: 16px 0 6px; }
+
+  p { margin-bottom: 10px; }
+  ul, ol { padding-left: 22px; margin-bottom: 12px; }
+  li { margin-bottom: 5px; }
+
+  .toc { background: white; border: 1px solid #E0DDD8; border-radius: 12px; padding: 28px 36px; margin: 32px 0 48px; }
+  .toc h2 { margin-top: 0; border: none; padding: 0; font-size: 18px; margin-bottom: 16px; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin-bottom: 6px; }
+  .toc a { color: #4A6741; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  .info { background: #EDF4EC; border-left: 4px solid #4A6741; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 16px 0; }
+  .warn { background: #FEF7E8; border-left: 4px solid #C17B2A; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 16px 0; }
+  .danger { background: #FEF0F0; border-left: 4px solid #A83232; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 16px 0; }
+  .tip { background: #E8F4F8; border-left: 4px solid #2A5A8A; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 16px 0; }
+
+  .card { background: white; border: 1px solid #E0DDD8; border-radius: 12px; padding: 20px 24px; margin: 16px 0; }
+  .card h4 { margin-top: 0; }
+
+  .badge { display: inline-block; background: #4A6741; color: white; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 12px; margin-right: 4px; vertical-align: middle; }
+  .badge-blue { background: #2A5A8A; }
+  .badge-teal { background: #2A7A6A; }
+  .badge-amber { background: #C17B2A; }
+  .badge-new { background: #7A4A9A; }
+
+  .screen { background: #2C2C2C; color: #A8D08A; font-family: Consolas, monospace; font-size: 12px; border-radius: 8px; padding: 14px 18px; margin: 12px 0; white-space: pre-wrap; }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+  th { background: #4A6741; color: white; text-align: left; padding: 10px 14px; font-weight: 600; }
+  td { padding: 9px 14px; border-bottom: 1px solid #E8E5E0; }
+  tr:nth-child(even) td { background: #F5F3F0; }
+
+  .step { display: flex; gap: 14px; margin: 12px 0; align-items: flex-start; }
+  .step-num { background: #4A6741; color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; margin-top: 2px; }
+
+  .nav-item { display: inline-flex; align-items: center; gap: 6px; background: white; border: 1px solid #C8C4BE; border-radius: 6px; padding: 3px 10px; font-size: 13px; margin: 2px; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+
+  .nouveautes { background: linear-gradient(135deg, #4A6741, #2A7A6A); color: white; border-radius: 12px; padding: 24px 28px; margin: 16px 0; }
+  .nouveautes h3 { color: white; margin-top: 0; }
+  .nouveautes li { margin-bottom: 8px; opacity: .95; }
+
+  footer { text-align: center; margin-top: 60px; padding: 30px; background: white; border-top: 1px solid #E0DDD8; font-size: 12px; color: #888; }
+
+  @media print {
+    body { background: white; }
+    .container { padding: 20px; }
+    h2 { page-break-before: auto; }
+    .cover { page-break-after: always; }
+  }
+</style>
+</head>
+<body>
+
+<!-- COUVERTURE -->
+<div class="cover">
+  <div class="lock">🌿</div>
+  <h1>SYNORIA</h1>
+  <div class="version">Guide d'utilisation — Version 1.3.1</div>
+  <div class="subtitle">
+    Logiciel de gestion de dossiers patients<br>
+    pour praticiens de santé
+  </div>
+  <div class="date">Juin 2026 · Jean-Pierre Timoner · jeanpierre.timoner.mtc@gmail.com</div>
+</div>
+
+<div class="container">
+
+<!-- TABLE DES MATIÈRES -->
+<div class="toc">
+  <h2>📋 Table des matières</h2>
+  <ol>
+    <li><a href="#installation">Installation & premiers pas</a></li>
+    <li><a href="#securite">Sécurité & mot de passe</a></li>
+    <li><a href="#navigation">Navigation dans l'application</a></li>
+    <li><a href="#patients">Gestion des patients</a></li>
+    <li><a href="#seances">Créer et gérer une séance</a></li>
+    <li><a href="#calendrier">Calendrier & rendez-vous</a></li>
+    <li><a href="#comptabilite">Comptabilité & dépenses</a></li>
+    <li><a href="#factures">Factures</a></li>
+    <li><a href="#sauvegardes">Sauvegardes & restauration</a></li>
+    <li><a href="#rgpd">RGPD & conformité</a></li>
+    <li><a href="#google-calendar">Synchronisation Google Calendar</a></li>
+    <li><a href="#plugins">Plugins de spécialité</a></li>
+    <li><a href="#parametres">Paramètres avancés</a></li>
+    <li><a href="#cle-usb">Version clé USB</a></li>
+    <li><a href="#nouveautes">Nouveautés v1.3.1</a></li>
+    <li><a href="#faq">Questions fréquentes</a></li>
+  </ol>
+</div>
+
+<!-- 1. INSTALLATION -->
+<h2 id="installation">1. Installation &amp; premiers pas</h2>
+
+<h3>Installation standard (PC fixe ou portable)</h3>
+<div class="step"><div class="step-num">1</div><div>Double-cliquez sur <strong>Synoria Setup 1.3.1.exe</strong></div></div>
+<div class="step"><div class="step-num">2</div><div>Si Windows affiche "Application inconnue", cliquez <strong>"Informations complémentaires" → "Exécuter quand même"</strong> (comportement normal pour logiciel non signé)</div></div>
+<div class="step"><div class="step-num">3</div><div>Suivez l'assistant d'installation — l'application s'installe dans <code>C:\Program Files\Synoria\</code></div></div>
+<div class="step"><div class="step-num">4</div><div>Un raccourci est créé sur le bureau. Double-cliquez dessus pour lancer Synoria.</div></div>
+
+<div class="warn">
+  <strong>⚠️ Antivirus :</strong> certains antivirus peuvent signaler le fichier comme "suspect". C'est un faux positif courant pour les logiciels indépendants non signés numériquement. Ajoutez une exception dans votre antivirus si nécessaire.
+</div>
+
+<h3>Version clé USB (sans installation)</h3>
+<p>Voir la <a href="#cle-usb">section 14 — Version clé USB</a>.</p>
+
+<h3>Configuration minimale requise</h3>
+<table>
+  <tr><th>Composant</th><th>Minimum</th></tr>
+  <tr><td>Système d'exploitation</td><td>Windows 10 ou 11 (64 bits)</td></tr>
+  <tr><td>Processeur</td><td>Intel/AMD 64 bits, 2 GHz</td></tr>
+  <tr><td>Mémoire RAM</td><td>4 Go</td></tr>
+  <tr><td>Espace disque</td><td>200 Mo (+ données patients)</td></tr>
+  <tr><td>Résolution écran</td><td>1024 × 768 minimum (recommandé : 1440 × 900)</td></tr>
+</table>
+
+<!-- 2. SÉCURITÉ -->
+<h2 id="securite">2. Sécurité &amp; mot de passe</h2>
+
+<h3>Premier démarrage — Création du mot de passe</h3>
+<p>Au premier lancement, Synoria vous demande de créer un mot de passe. Ce mot de passe chiffre l'intégralité de votre base de données en <strong>AES-256-GCM</strong>.</p>
+
+<div class="danger">
+  <strong>🔴 IMPORTANT :</strong> Sans ce mot de passe, vos données sont <strong>totalement irrécupérables</strong>. Notez-le dans un endroit sûr (coffre-fort numérique, carnet sécurisé…).
+</div>
+
+<table>
+  <tr><th>Aspect</th><th>Détail</th></tr>
+  <tr><td>Algorithme</td><td>AES-256-GCM (standard bancaire)</td></tr>
+  <tr><td>Dérivation de clé</td><td>PBKDF2 — 600 000 itérations, SHA-256</td></tr>
+  <tr><td>Longueur minimale</td><td>6 caractères</td></tr>
+  <tr><td>Verrouillage auto</td><td>20 minutes d'inactivité</td></tr>
+  <tr><td>Sauvegarde automatique chiffrée</td><td>Toutes les 3 minutes pendant la session</td></tr>
+</table>
+
+<h3>Changer le mot de passe</h3>
+<p>Allez dans <span class="nav-item">⚙️ Paramètres</span> → onglet <span class="nav-item">🔐 Sécurité</span> → section "Changer le mot de passe".</p>
+
+<!-- 3. NAVIGATION -->
+<h2 id="navigation">3. Navigation dans l'application</h2>
+
+<table>
+  <tr><th>Onglet</th><th>Description</th></tr>
+  <tr><td>🏠 <strong>Tableau de bord</strong></td><td>Vue d'ensemble : statistiques, prochains RDV, dernières séances</td></tr>
+  <tr><td>👤 <strong>Patients</strong></td><td>Liste, création, modification et archivage des dossiers patients</td></tr>
+  <tr><td>➕ <strong>Nouvelle séance</strong></td><td>Formulaire complet pour enregistrer une consultation</td></tr>
+  <tr><td>📋 <strong>Séances</strong></td><td>Historique de toutes les séances avec filtres et résumés</td></tr>
+  <tr><td>📅 <strong>Calendrier</strong></td><td>Agenda mensuel + planning horaire des rendez-vous</td></tr>
+  <tr><td>📊 <strong>Comptabilité</strong></td><td>Tableau de recettes mensuel, URSAF, export Excel</td></tr>
+  <tr><td>📉 <strong>Dépenses</strong></td><td>Charges fixes et types de consultation</td></tr>
+  <tr><td>🧾 <strong>Factures</strong></td><td>Génération et journal des factures PDF</td></tr>
+  <tr><td>🔒 <strong>RGPD</strong></td><td>Consentements, journal d'accès, alertes conservation, registre Art.30</td></tr>
+  <tr><td>⚙️ <strong>Paramètres</strong></td><td>Sauvegardes, facturation, RGPD, sécurité, plugin, Google Calendar</td></tr>
+</table>
+
+<div class="tip">
+  <strong>💡 Mise en forme du texte :</strong> La barre de mise en forme (Gras, Italique, Souligné, couleurs) s'active automatiquement lorsque vous cliquez dans une zone de notes. Elle reste inactive pour les autres champs.
+</div>
+
+<!-- 4. PATIENTS -->
+<h2 id="patients">4. Gestion des patients</h2>
+
+<h3>Créer un nouveau patient</h3>
+<div class="step"><div class="step-num">1</div><div>Cliquez sur <span class="nav-item">👤 Patients</span></div></div>
+<div class="step"><div class="step-num">2</div><div>Cliquez sur le bouton <strong>"+ Nouveau patient"</strong></div></div>
+<div class="step"><div class="step-num">3</div><div>Renseignez au minimum le nom et le prénom</div></div>
+<div class="step"><div class="step-num">4</div><div>Cliquez <strong>"Enregistrer"</strong></div></div>
+
+<h3>Informations disponibles sur la fiche patient</h3>
+<ul>
+  <li>Identité : nom, prénom, date de naissance, profession</li>
+  <li>Contact : téléphone, email, adresse</li>
+  <li>Médical : médecin traitant, médicaments, antécédents</li>
+  <li>Notes générales & alertes importantes</li>
+  <li>Consentement RGPD (date et statut)</li>
+</ul>
+
+<h3>Archiver un patient</h3>
+<p>Ouvrez la fiche patient → bouton <strong>"Archiver"</strong>. Le patient disparaît de la liste principale mais ses données sont conservées. Cochez "Afficher les archivés" pour les retrouver.</p>
+
+<!-- 5. SÉANCES -->
+<h2 id="seances">5. Créer et gérer une séance</h2>
+
+<h3>Créer une nouvelle séance</h3>
+<div class="step"><div class="step-num">1</div><div>Cliquez sur <span class="nav-item">➕ Nouvelle séance</span></div></div>
+<div class="step"><div class="step-num">2</div><div>Sélectionnez le <strong>patient</strong> dans la liste déroulante</div></div>
+<div class="step"><div class="step-num">3</div><div>Vérifiez la <strong>date</strong> (pré-remplie avec aujourd'hui)</div></div>
+<div class="step"><div class="step-num">4</div><div>Remplissez les sections pertinentes (motif, évolution, traitement…)</div></div>
+<div class="step"><div class="step-num">5</div><div>Cliquez <strong>"💾 Enregistrer la séance"</strong></div></div>
+
+<h3>Sections du formulaire selon le mode</h3>
+<div class="card">
+  <h4>Mode Simple (sans plugin)</h4>
+  <p>Motif · Évolution · Anamnèse · Traitement · Réactions · Plan de suivi</p>
+</div>
+<div class="card">
+  <h4>Mode MTC intégré (plugin MTC JP)</h4>
+  <p>Motif · Évolution · Interrogatoire · Questionnaire systèmes · Observation MTC · Tests énergétiques · Analyse clinique · Traitement · Barrage homéopathique · Plan de suivi</p>
+</div>
+<div class="card">
+  <h4>Mode Plugin tiers (Kinésiologie, etc.)</h4>
+  <p>Les sections sont définies par le fichier plugin JSON chargé dans Paramètres.</p>
+</div>
+
+<h3>Brouillon automatique</h3>
+<p>Le formulaire sauvegarde automatiquement un brouillon toutes les 60 secondes. Si vous fermez l'application sans enregistrer, le brouillon sera proposé au prochain démarrage.</p>
+
+<h3>Prochain rendez-vous</h3>
+<p>En bas du formulaire, la section <strong>"Plan de suivi"</strong> permet de planifier le prochain RDV. Il sera automatiquement créé dans le <strong>Calendrier</strong>.</p>
+
+<!-- 6. CALENDRIER -->
+<h2 id="calendrier">6. Calendrier &amp; rendez-vous</h2>
+
+<p>Le calendrier offre deux vues :</p>
+<ul>
+  <li><strong>Vue mensuelle</strong> (gauche) : aperçu du mois</li>
+  <li><strong>Planning horaire</strong> (droite) : créneaux de 08h00 à 19h30 par pas de 30 min</li>
+</ul>
+
+<h3>Créer un rendez-vous</h3>
+<p>Cliquez sur un créneau dans le planning ou sur le bouton <strong>"+ RDV"</strong>. Vous pouvez associer un patient existant ou renseigner les coordonnées d'un invité (nom, prénom, téléphone).</p>
+
+<h3>Couleurs des rendez-vous</h3>
+<table>
+  <tr><th>Couleur</th><th>Signification</th></tr>
+  <tr><td>🔵 Bleu</td><td>RDV planifié</td></tr>
+  <tr><td>🟢 Vert</td><td>Séance réalisée</td></tr>
+  <tr><td>🟠 Orange</td><td>En attente / non confirmé</td></tr>
+</table>
+
+<h3>Depuis un RDV → créer la séance</h3>
+<p>Cliquez sur un RDV → bouton <strong>"Créer la séance"</strong>. Vous êtes redirigé vers le formulaire Nouvelle séance avec le patient et la date pré-remplis.</p>
+
+<!-- 7. COMPTABILITÉ -->
+<h2 id="comptabilite">7. Comptabilité &amp; dépenses</h2>
+
+<h3>Tableau de recettes</h3>
+<p>La page <span class="nav-item">📊 Comptabilité</span> affiche un tableau mensuel avec :</p>
+<ul>
+  <li>Nombre de séances par type de consultation</li>
+  <li>Chiffre d'affaires mensuel calculé automatiquement</li>
+  <li>Taux URSAF paramétrable par mois</li>
+  <li>Cotisations URSAF estimées</li>
+  <li>Dépenses variables (publicité, logiciel, DASRI…)</li>
+  <li>Total annuel et export Excel</li>
+</ul>
+
+<h3>Configurer les types de consultation et tarifs</h3>
+<p>Allez dans <span class="nav-item">📉 Dépenses</span> → section <strong>"Types de consultation & tarifs"</strong>.</p>
+
+<h3>Charges fixes</h3>
+<p>Section <strong>"Charges fixes mensuelles"</strong> dans <span class="nav-item">📉 Dépenses</span> :</p>
+<ul>
+  <li>Ajoutez loyer, assurance, abonnements, etc.</li>
+  <li>Partage des frais jusqu'à <strong>5 personnes</strong> (montant divisé automatiquement)</li>
+  <li>Mois actifs configurables (charge saisonnière)</li>
+</ul>
+
+<!-- 8. FACTURES -->
+<h2 id="factures">8. Factures</h2>
+
+<h3>Générer une facture</h3>
+<div class="step"><div class="step-num">1</div><div>Ouvrez le résumé d'une séance dans <span class="nav-item">📋 Séances</span></div></div>
+<div class="step"><div class="step-num">2</div><div>Cliquez sur <strong>"🧾 Générer la facture"</strong></div></div>
+<div class="step"><div class="step-num">3</div><div>Vérifiez les informations et confirmez</div></div>
+<div class="step"><div class="step-num">4</div><div>Le PDF est généré et enregistré dans votre dossier de factures</div></div>
+
+<h3>Paramétrer la facturation</h3>
+<p>Dans <span class="nav-item">⚙️ Paramètres</span> → onglet <span class="nav-item">🧾 Facturation</span> :</p>
+<ul>
+  <li>Chemin du dossier de sauvegarde des factures</li>
+  <li>Taux de TVA (0% par défaut pour les soins)</li>
+  <li>Numérotation (année + numéro séquentiel)</li>
+  <li>Informations du praticien (nom, adresse, SIRET…)</li>
+</ul>
+
+<!-- 9. SAUVEGARDES -->
+<h2 id="sauvegardes">9. Sauvegardes &amp; restauration</h2>
+
+<h3>Sauvegarde manuelle</h3>
+<p>Cliquez sur le bouton <strong>"💾 Sauvegarder"</strong> en haut à droite. La sauvegarde chiffrée (format .enc) est copiée dans deux dossiers configurables.</p>
+
+<h3>Sauvegarde automatique</h3>
+<p>Dans <span class="nav-item">⚙️ Paramètres</span> → <span class="nav-item">💾 Sauvegardes</span> :</p>
+<ul>
+  <li><strong>À la fermeture</strong> : sauvegarde automatique quand vous quittez l'application</li>
+  <li><strong>Quotidienne</strong> : une sauvegarde par jour au premier démarrage</li>
+  <li><strong>Rétention</strong> : nombre de jours de conservation des sauvegardes anciennes</li>
+</ul>
+
+<h3>Restaurer une sauvegarde</h3>
+<div class="step"><div class="step-num">1</div><div>Cliquez sur <strong>"📂 Importer"</strong> en haut à droite</div></div>
+<div class="step"><div class="step-num">2</div><div>Sélectionnez votre fichier de sauvegarde (.enc ou .json)</div></div>
+<div class="step"><div class="step-num">3</div><div>L'application fusionne les données (aucun doublon créé)</div></div>
+
+<div class="danger">
+  <strong>⚠️ Les sauvegardes utilisent une clé distincte du mot de passe.</strong> En cas de réinstallation sur un nouveau PC, copiez aussi le fichier <code>encryption.key</code> depuis l'ancien dossier de données.
+</div>
+
+<!-- 10. RGPD -->
+<h2 id="rgpd">10. RGPD &amp; conformité</h2>
+
+<p>Synoria intègre les outils nécessaires à la conformité RGPD pour les praticiens de santé (Art. 9(2)(h)).</p>
+
+<h3>Consentements patients</h3>
+<p>Sur chaque fiche patient, cochez la case <strong>"Consentement donné"</strong> et enregistrez la date. Suivez le taux de consentement dans <span class="nav-item">🔒 RGPD</span> → onglet "Consentements".</p>
+
+<h3>Journal d'accès</h3>
+<p>Chaque consultation de dossier est automatiquement journalisée (date, heure, action). Consultez-le dans <span class="nav-item">🔒 RGPD</span> → onglet "Journal".</p>
+
+<h3>Alertes de conservation</h3>
+<p>L'application vous alerte quand des dossiers approchent ou dépassent la durée de conservation configurée (défaut : 10 ans). Paramétrez dans <span class="nav-item">⚙️ Paramètres</span> → <span class="nav-item">🔒 RGPD</span>.</p>
+
+<h3>Registre Art. 30</h3>
+<p>Générez le registre de traitement (obligatoire) depuis <span class="nav-item">🔒 RGPD</span> → bouton <strong>"Exporter le registre"</strong>. Le fichier HTML est enregistré dans votre dossier d'exports.</p>
+
+<!-- 11. GOOGLE CALENDAR -->
+<h2 id="google-calendar">11. Synchronisation Google Calendar</h2>
+
+<p>Synoria peut synchroniser vos rendez-vous avec Google Calendar (visible sur votre téléphone Android ou iPhone).</p>
+
+<div class="info">
+  <strong>🔒 Confidentialité :</strong> Seul le titre <strong>"Consultation"</strong> et l'horaire sont envoyés à Google. Aucun nom de patient ou donnée médicale ne quitte l'application.
+</div>
+
+<h3>Configuration (une seule fois)</h3>
+<div class="step"><div class="step-num">1</div><div>Créez un projet sur <strong>console.cloud.google.com</strong></div></div>
+<div class="step"><div class="step-num">2</div><div>Activez l'API <strong>Google Calendar API</strong></div></div>
+<div class="step"><div class="step-num">3</div><div>Créez des identifiants OAuth 2.0 → "Application de bureau"</div></div>
+<div class="step"><div class="step-num">4</div><div>Ajoutez l'URI de redirection : <code>http://127.0.0.1:42813/oauth2callback</code></div></div>
+<div class="step"><div class="step-num">5</div><div>Dans Synoria : <span class="nav-item">⚙️ Paramètres</span> → <span class="nav-item">📅 Google Cal.</span> → entrez Client ID et Client Secret → <strong>"Connecter"</strong></div></div>
+
+<h3>Fonctionnement</h3>
+<ul>
+  <li>Création d'un RDV dans Synoria → événement créé automatiquement dans Google Calendar</li>
+  <li>Modification d'un RDV → événement mis à jour</li>
+  <li>Suppression d'un RDV → événement supprimé</li>
+  <li>Fonctionnement offline : si pas de connexion, l'erreur est silencieuse et le RDV local reste intact</li>
+</ul>
+
+<div class="tip">
+  <strong>💡 Gratuit :</strong> L'API Google Calendar est dans le niveau gratuit permanent (1 million de requêtes/jour). Aucun frais même avec un usage intensif.
+</div>
+
+<!-- 12. PLUGINS -->
+<h2 id="plugins">12. Plugins de spécialité</h2>
+
+<p>Les plugins permettent d'adapter le formulaire de séance à votre spécialité.</p>
+
+<h3>Plugins disponibles</h3>
+<table>
+  <tr><th>Plugin</th><th>Description</th></tr>
+  <tr><td>MTC JP</td><td>Formulaire MTC intégré complet (barrage, systèmes, tests énergétiques)</td></tr>
+  <tr><td>Kinésiologie</td><td>Formulaire kinésiologie Charlotte Decaens</td></tr>
+  <tr><td>Personnalisé</td><td>Importez votre propre fichier .plugin.json</td></tr>
+</table>
+
+<h3>Activer un plugin</h3>
+<p>Allez dans <span class="nav-item">⚙️ Paramètres</span> → onglet <span class="nav-item">🔌 Plugin</span> → sélectionnez ou importez votre plugin.</p>
+
+<h3>Créer un plugin personnalisé</h3>
+<p>Les plugins sont des fichiers JSON décrivant les sections et champs du formulaire. Types de champs supportés :</p>
+<p><code>text</code> · <code>textarea</code> · <code>richtext</code> · <code>number</code> · <code>date</code> · <code>select</code> · <code>radio</code> · <code>checkbox</code> · <code>checkboxgroup</code> · <code>tags</code> · <code>rating</code></p>
+
+<!-- 13. PARAMÈTRES -->
+<h2 id="parametres">13. Paramètres avancés</h2>
+
+<div class="grid2">
+  <div class="card">
+    <h4>💾 Sauvegardes</h4>
+    <ul>
+      <li>Dossier sauvegarde générale</li>
+      <li>Dossier sauvegarde patient</li>
+      <li>Sauvegarde auto à la fermeture</li>
+      <li>Sauvegarde quotidienne</li>
+      <li>Rétention (jours)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>🧾 Facturation</h4>
+    <ul>
+      <li>Dossier de sauvegarde des factures</li>
+      <li>Taux de TVA</li>
+      <li>Numéro de facture suivant</li>
+      <li>Logo du praticien</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>🔒 RGPD</h4>
+    <ul>
+      <li>Nom et email du responsable</li>
+      <li>Texte de la notice (Art. 13)</li>
+      <li>Durée de conservation (années)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>🔐 Sécurité</h4>
+    <ul>
+      <li>Changement de mot de passe</li>
+      <li>Installation de mise à jour</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>🔌 Plugin</h4>
+    <ul>
+      <li>Sélection du plugin actif</li>
+      <li>Import fichier .plugin.json</li>
+      <li>Suppression du plugin</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>📅 Google Calendar</h4>
+    <ul>
+      <li>Connexion compte Google</li>
+      <li>Sélection du calendrier</li>
+      <li>Déconnexion</li>
+    </ul>
+  </div>
+</div>
+
+<!-- 14. CLÉ USB -->
+<h2 id="cle-usb">14. Version clé USB</h2>
+
+<p>La version portable fonctionne sans installation sur n'importe quel PC Windows.</p>
+
+<h3>Contenu du dossier clé USB</h3>
+<div class="screen">📄 Synoria.exe         → L'application (lancer directement)
+📁 data\               → Vos données (NE PAS SUPPRIMER)
+📄 LIRE_MOI.txt        → Instructions rapides
+📄 Guide_Utilisation…  → Ce guide complet</div>
+
+<h3>Utilisation</h3>
+<div class="step"><div class="step-num">1</div><div>Branchez la clé USB sur n'importe quel PC Windows 10/11</div></div>
+<div class="step"><div class="step-num">2</div><div>Ouvrez le dossier de la clé USB</div></div>
+<div class="step"><div class="step-num">3</div><div>Double-cliquez sur <strong>Synoria.exe</strong></div></div>
+
+<div class="info">
+  ✅ Aucune installation requise &nbsp;·&nbsp; ✅ Données sur la clé USB &nbsp;·&nbsp; ✅ Fonctionne sur plusieurs PC
+</div>
+
+<div class="danger">
+  <strong>⚠️ Ne jamais supprimer le dossier <code>data\</code></strong> — il contient votre base de données chiffrée.
+</div>
+
+<h3>Mise à jour de la version clé USB</h3>
+<ol>
+  <li>Téléchargez le nouveau <strong>Synoria.exe</strong></li>
+  <li>Copiez-le sur la clé USB en remplacement de l'ancien</li>
+  <li>Le dossier <code>data\</code> est conservé intact</li>
+</ol>
+
+<!-- 15. NOUVEAUTÉS -->
+<h2 id="nouveautes">15. Nouveautés v1.3.1</h2>
+
+<div class="nouveautes">
+  <h3>✨ Nouveautés de cette version</h3>
+  <ul>
+    <li>🌿 <strong>Nouveau nom et nouvelle identité visuelle</strong> — L'application s'appelle désormais <strong>Synoria</strong> avec un nouveau logo et une charte graphique modernisée</li>
+    <li>📅 <strong>Synchronisation Google Calendar</strong> — Vos RDV apparaissent automatiquement sur votre téléphone (Android & iPhone)</li>
+    <li>📉 <strong>Partage de charges jusqu'à 5 personnes</strong> — Partagez loyer, assurance et autres charges avec 2 à 5 collègues</li>
+    <li>🖊️ <strong>Saisie des montants améliorée</strong> — Les champs numériques (tarifs, montants) sont maintenant entièrement librement éditables</li>
+    <li>📋 <strong>Page séances unifiée</strong> — Historique et résumé de séance fusionnés dans une interface à deux panneaux</li>
+    <li>🔒 <strong>Migration automatique des données</strong> — Les données de l'ancienne version sont automatiquement déplacées vers le nouveau dossier Synoria</li>
+  </ul>
+</div>
+
+<!-- 16. FAQ -->
+<h2 id="faq">16. Questions fréquentes</h2>
+
+<h3>J'ai oublié mon mot de passe, que faire ?</h3>
+<div class="danger">
+  Sans mot de passe, les données chiffrées sont <strong>irrécupérables</strong>. Si vous avez une sauvegarde créée avant l'oubli, vous pouvez la réimporter après avoir réinstallé l'application et créé un nouveau mot de passe. Contactez le support pour toute question : <strong>jeanpierre.timoner.mtc@gmail.com</strong>
+</div>
+
+<h3>L'application ne démarre pas / écran blanc</h3>
+<ul>
+  <li>Fermez complètement et relancez</li>
+  <li>Essayez "Exécuter en tant qu'administrateur" (clic droit sur l'icône)</li>
+  <li>Vérifiez que Windows est à jour</li>
+  <li>Désactivez temporairement l'antivirus pour tester</li>
+</ul>
+
+<h3>Comment transférer mes données d'un PC à un autre ?</h3>
+<ol>
+  <li>Sur l'ancien PC : cliquez <strong>"💾 Sauvegarder"</strong> → notez le dossier de destination</li>
+  <li>Copiez le fichier <code>.enc</code> (et le fichier <code>encryption.key</code> du dossier userData) sur une clé USB</li>
+  <li>Sur le nouveau PC : installez Synoria, créez un mot de passe, puis importez la sauvegarde via <strong>"📂 Importer"</strong></li>
+</ol>
+
+<h3>Où sont stockées mes données ?</h3>
+<p>Par défaut : <code>C:\Users\[votre nom]\AppData\Roaming\Synoria\</code></p>
+<p>Version clé USB : dossier <code>data\</code> à côté de l'exécutable</p>
+
+<h3>L'antivirus signale le fichier</h3>
+<p>C'est un faux positif courant pour les logiciels indépendants non signés numériquement. Ajoutez une exception dans votre antivirus. Le logiciel est développé localement et ne contient aucun code malveillant.</p>
+
+<h3>Peut-on utiliser Synoria sur Mac ?</h3>
+<p>Le code source est compatible Mac, mais aucune version Mac n'est compilée à ce jour. Contactez le support si vous en avez besoin.</p>
+
+<h3>Les données sont-elles envoyées sur Internet ?</h3>
+<p>Non, sauf si vous activez la synchronisation Google Calendar. Dans ce cas, uniquement le titre "Consultation" et l'horaire du RDV sont envoyés — aucun nom de patient ni donnée médicale.</p>
+
+<footer>
+  <p><strong>Synoria v1.3.1</strong> — Logiciel de gestion de dossiers patients</p>
+  <p>Développé par Jean-Pierre Timoner · jeanpierre.timoner.mtc@gmail.com</p>
+  <p style="margin-top:8px; font-size:11px;">© 2026 — Tous droits réservés · Données 100% locales · Chiffrement AES-256</p>
+</footer>
+
+</div>
+</body>
+</html>

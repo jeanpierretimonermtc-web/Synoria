@@ -1,0 +1,296 @@
+{
+  "id": "mtc_jp",
+  "name": "MTC — Jean-Pierre Timoner",
+  "specialty": "Médecine Traditionnelle Chinoise",
+  "version": "1.0.0",
+  "author": "Jean-Pierre Timoner",
+  "description": "Anamnèse complète MTC : interrogatoire, observation, diagnostic, traitement, barrage homéopathique.",
+  "icon": "🌿",
+  "accentColor": "#4A6741",
+
+  "sections": [
+
+    {
+      "id": "interrogatoire",
+      "title": "1. Interrogatoire & Anamnèse",
+      "icon": "📝",
+      "accentColor": "#C17B2A",
+      "fields": [
+        {
+          "id": "anamnese",
+          "type": "richtext",
+          "label": "Anamnèse",
+          "placeholder": "Histoire de la maladie, antécédents, contexte de vie…",
+          "width": "full",
+          "minHeight": 120
+        },
+        {
+          "id": "problematiques",
+          "type": "tags",
+          "label": "Problématiques identifiées",
+          "placeholder": "Ex : lombalgie, insomnie, stress… (Entrée pour ajouter)",
+          "width": "full"
+        }
+      ]
+    },
+
+    {
+      "id": "observation",
+      "title": "2. Observation MTC",
+      "icon": "👀",
+      "accentColor": "#2A5A8A",
+      "fields": [
+        {
+          "id": "langue_enduit",
+          "type": "select",
+          "label": "Enduit lingual",
+          "options": ["Blanc", "Jaune", "Gris", "Noir", "Épais", "Mince", "Gras", "Sec", "Sans enduit"],
+          "width": "third"
+        },
+        {
+          "id": "langue_corps",
+          "type": "select",
+          "label": "Corps de la langue",
+          "options": ["Pâle", "Rose", "Rouge", "Violacée", "Gonflée", "Fine", "Fissurée", "Normale"],
+          "width": "third"
+        },
+        {
+          "id": "langue_humidite",
+          "type": "radio",
+          "label": "Humidité",
+          "options": ["Sèche", "Normale", "Humide"],
+          "width": "third"
+        },
+        {
+          "id": "langue_note",
+          "type": "textarea",
+          "label": "Notes sur la langue",
+          "placeholder": "Observations complémentaires…",
+          "width": "full",
+          "minHeight": 55
+        },
+        { "id": "sep1", "type": "separator", "label": "" },
+        {
+          "id": "pouls_qualites",
+          "type": "checkboxgroup",
+          "label": "Qualités du pouls",
+          "options": [
+            "Superficiel", "Profond", "Lent", "Rapide", "Vide", "Plein",
+            "Tendu", "Glissant", "Rugueux", "Fort", "Faible", "Filiforme",
+            "Interrompu", "Bondissant"
+          ],
+          "width": "full"
+        },
+        {
+          "id": "pouls_positions",
+          "type": "textarea",
+          "label": "Pouls par positions (Cun / Guan / Chi G & D)",
+          "placeholder": "G : Cœur, Foie, Reins\nD : Poumons, Rate, Ming Men…",
+          "width": "full",
+          "minHeight": 70
+        },
+        {
+          "id": "pouls_note",
+          "type": "text",
+          "label": "Note globale sur le pouls",
+          "placeholder": "Résumé de l'impression pulpaire…",
+          "width": "full"
+        },
+        { "id": "sep2", "type": "separator", "label": "" },
+        {
+          "id": "constitution",
+          "type": "select",
+          "label": "Constitution",
+          "options": [
+            "Bois", "Feu", "Terre", "Métal", "Eau",
+            "Bois-Feu", "Feu-Terre", "Terre-Métal", "Métal-Eau", "Eau-Bois"
+          ],
+          "width": "third"
+        },
+        {
+          "id": "type_corps",
+          "type": "text",
+          "label": "Type de corps",
+          "placeholder": "Ex : longiligne, bréviligne, normoligne…",
+          "width": "third"
+        },
+        {
+          "id": "teint",
+          "type": "text",
+          "label": "Teint / Couleur",
+          "placeholder": "Ex : pâle, jaunâtre, rougeaud, grisâtre…",
+          "width": "third"
+        },
+        {
+          "id": "observation_generale",
+          "type": "richtext",
+          "label": "Observations générales",
+          "placeholder": "Posture, comportement, regard, voix, odeur…",
+          "width": "full",
+          "minHeight": 80
+        }
+      ]
+    },
+
+    {
+      "id": "diagnostic",
+      "title": "3. Analyse & Diagnostic MTC",
+      "icon": "🔬",
+      "accentColor": "#5A3E8A",
+      "fields": [
+        {
+          "id": "diagnostic_mtc",
+          "type": "richtext",
+          "label": "Diagnostic MTC",
+          "placeholder": "Syndrome principal, étiologie, pathogénie…",
+          "width": "full",
+          "minHeight": 90
+        },
+        {
+          "id": "cinq_elements",
+          "type": "text",
+          "label": "5 Éléments impliqués",
+          "placeholder": "Ex : Bois-Feu, Eau-Métal…",
+          "width": "third"
+        },
+        {
+          "id": "causes",
+          "type": "text",
+          "label": "Causes identifiées",
+          "placeholder": "Ex : émotionnel, alimentaire, climatique…",
+          "width": "third"
+        },
+        {
+          "id": "profondeur",
+          "type": "select",
+          "label": "Profondeur atteinte",
+          "options": ["Wei (défensive)", "Qi", "Ying (nutritive)", "Xue (sang)", "Yuan (source)", "Zang Fu"],
+          "width": "third"
+        },
+        {
+          "id": "mecanisme",
+          "type": "textarea",
+          "label": "Mécanisme / Terrain",
+          "placeholder": "Mécanisme physiopathologique MTC, terrain du patient…",
+          "width": "half",
+          "minHeight": 80
+        },
+        {
+          "id": "principes",
+          "type": "textarea",
+          "label": "Principes de traitement",
+          "placeholder": "Tonifier, disperser, harmoniser, réchauffer, refroidir…",
+          "width": "half",
+          "minHeight": 80
+        }
+      ]
+    },
+
+    {
+      "id": "traitement",
+      "title": "4. Traitement du jour",
+      "icon": "🌿",
+      "accentColor": "#4A6741",
+      "fields": [
+        {
+          "id": "points",
+          "type": "richtext",
+          "label": "Points d'acupuncture",
+          "placeholder": "Ex : VB34, F3, E36, VC6, GI4 — bilatéral sauf mention contraire…",
+          "width": "full",
+          "minHeight": 100
+        },
+        {
+          "id": "pts_oreille",
+          "type": "textarea",
+          "label": "Points d'oreille (auriculothérapie)",
+          "placeholder": "Ex : Shen Men, Foie, Rate, Point zéro…",
+          "width": "half",
+          "minHeight": 70
+        },
+        {
+          "id": "techniques",
+          "type": "tags",
+          "label": "Techniques utilisées",
+          "placeholder": "Ex : moxibustion, ventouses, tuina, gua sha… (Entrée)",
+          "width": "half"
+        },
+        {
+          "id": "plantes",
+          "type": "textarea",
+          "label": "Pharmacopée / Plantes",
+          "placeholder": "Formules prescrites, dosages, durée…",
+          "width": "full",
+          "minHeight": 70
+        },
+        {
+          "id": "traitement_notes",
+          "type": "richtext",
+          "label": "Notes de traitement",
+          "placeholder": "Déroulement, sensations ressenties par le patient, adaptations…",
+          "width": "full",
+          "minHeight": 80
+        }
+      ]
+    },
+
+    {
+      "id": "reactions",
+      "title": "5. Réactions & Ressenti",
+      "icon": "💬",
+      "accentColor": "#7A4A2A",
+      "fields": [
+        {
+          "id": "reactions",
+          "type": "richtext",
+          "label": "Réactions pendant la séance",
+          "placeholder": "Sensations du patient, points sensibles, réactions émotionnelles…",
+          "width": "full",
+          "minHeight": 90
+        }
+      ]
+    },
+
+    {
+      "id": "barrage",
+      "title": "6. Barrage homéopathique",
+      "icon": "💊",
+      "accentColor": "#C17B2A",
+      "fields": [
+        {
+          "id": "barrage_niv1",
+          "type": "textarea",
+          "label": "Niveau 1 — Organes / Fonctions",
+          "placeholder": "Remèdes homéopathiques niveau 1…",
+          "width": "half",
+          "minHeight": 80
+        },
+        {
+          "id": "barrage_niv2",
+          "type": "textarea",
+          "label": "Niveau 2 — Terrain",
+          "placeholder": "Remèdes homéopathiques niveau 2…",
+          "width": "half",
+          "minHeight": 80
+        },
+        {
+          "id": "barrage_niv3",
+          "type": "textarea",
+          "label": "Niveau 3 — Toxines / Perturbations",
+          "placeholder": "Remèdes homéopathiques niveau 3…",
+          "width": "half",
+          "minHeight": 80
+        },
+        {
+          "id": "barrage_niv4",
+          "type": "textarea",
+          "label": "Niveau 4 — Profond / Constitutionnel",
+          "placeholder": "Remèdes homéopathiques niveau 4…",
+          "width": "half",
+          "minHeight": 80
+        }
+      ]
+    }
+
+  ]
+}

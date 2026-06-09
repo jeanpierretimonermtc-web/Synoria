@@ -1,0 +1,32 @@
+# Dépendances
+node_modules/
+
+# Build output
+dist/
+dist-electron/
+
+# Electron-builder output (exécutables + données)
+release/win-unpacked/
+release/builder-debug.yml
+release/**/*.blockmap
+release/**/*.exe
+release/**/*.dmg
+release/**/*.AppImage
+release/data/
+release/CleUSB_DossierPatientMTC/data/
+
+# Données & sauvegardes (ne pas versionner)
+backup*/
+*.sqlite
+*.sqlite.enc
+*.enc
+*.key
+
+# Env & config personnelle
+.env
+.env.*
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db

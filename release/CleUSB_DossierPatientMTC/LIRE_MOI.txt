@@ -1,0 +1,67 @@
+================================================================
+   SYNORIA — Version Clé USB  v1.3.1
+   Logiciel de gestion de dossiers patients
+================================================================
+
+CONTENU DE CE DOSSIER
+─────────────────────
+  📄 Synoria.exe                        → L'application (double-cliquer pour lancer)
+  📁 data\                              → Vos données patients (NE PAS SUPPRIMER)
+  📄 LIRE_MOI.txt                       → Ce fichier
+  📄 Guide_Utilisation_Synoria_V1.3.1   → Guide complet (ouvrir dans un navigateur)
+
+COMMENT UTILISER
+─────────────────
+  1. Branchez la clé USB sur n'importe quel ordinateur Windows 10/11
+  2. Ouvrez le dossier sur la clé USB
+  3. Double-cliquez sur "Synoria.exe"
+  4. L'application se lance — vos données sont chargées automatiquement
+
+  ✅ Aucun logiciel à installer sur le PC hôte
+  ✅ Aucun compte ou connexion internet requis
+  ✅ Toutes vos données restent sur la clé USB
+
+MISE À JOUR DE L'APPLICATION
+──────────────────────────────
+  1. Copiez le nouveau "Synoria.exe" sur la clé USB en remplacement de l'ancien
+  2. Le dossier "data\" est conservé intact — vos données ne bougent pas
+  3. Relancez l'application
+
+  ⚠️ Ne supprimez jamais le dossier data\ lors d'une mise à jour
+
+SAUVEGARDE DES DONNÉES
+───────────────────────
+  Vos données sont dans le dossier  data\  sur cette clé USB.
+
+  Utilisez le bouton "💾 Sauvegarder" dans l'application pour créer
+  une copie chiffrée supplémentaire (recommandé régulièrement).
+
+  En cas de perte de clé : importez la sauvegarde via "📂 Importer"
+  sur n'importe quel ordinateur avec Synoria installé.
+
+PROBLÈMES COURANTS
+───────────────────
+  • L'application ne démarre pas :
+      → Windows Defender peut bloquer : clic droit > "Exécuter quand même"
+      → Ou : "Informations complémentaires" → "Exécuter quand même"
+
+  • L'antivirus bloque le fichier :
+      → Faux positif courant pour logiciels non signés
+      → Ajoutez une exception dans votre antivirus
+
+NOUVEAUTÉS v1.3.1
+──────────────────
+  ✦ Nouveau nom : SYNORIA + nouveau logo et identité visuelle
+  ✦ Synchronisation Google Calendar (RDV visibles sur téléphone)
+  ✦ Partage de charges jusqu'à 5 personnes
+  ✦ Saisie des montants améliorée
+  ✦ Migration automatique des données depuis l'ancienne version
+
+GUIDE COMPLET
+─────────────
+  Ouvrez le fichier "Guide_Utilisation_Synoria_V1.3.1.html"
+  dans votre navigateur web (Chrome, Edge, Firefox).
+
+================================================================
+  Support : jeanpierre.timoner.mtc@gmail.com
+================================================================

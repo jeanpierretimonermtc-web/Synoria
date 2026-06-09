@@ -1,0 +1,60 @@
+name: Build macOS (Synoria)
+
+on:
+  # Déclenchement manuel depuis l'interface GitHub
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version à builder (ex: 1.3.1)'
+        required: false
+        default: '1.3.1'
+
+  # Déclenchement automatique sur un tag vX.X.X
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+
+    steps:
+      # ── 1. Récupération du code ──────────────────────────────────
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── 2. Node.js 18 (même version que Windows) ────────────────
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      # ── 3. Installation des dépendances ─────────────────────────
+      # --ignore-scripts : désactive electron-rebuild (electron-builder
+      # gère lui-même la recompilation des modules natifs sur macOS)
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      # ── 4. Build Vite (renderer + main process) ─────────────────
+      - name: Build with Vite
+        run: npx vite build
+
+      # ── 5. Package Electron pour macOS ──────────────────────────
+      # Produit :
+      #   Synoria-x.x.x-x64.dmg    → Mac Intel (x86_64)
+      #   Synoria-x.x.x-arm64.dmg  → Mac Apple Silicon (M1/M2/M3)
+      - name: Build Electron app for macOS
+        run: npx electron-builder --mac
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── 6. Upload des artefacts ──────────────────────────────────
+      - name: Upload macOS DMG files
+        uses: actions/upload-artifact@v4
+        with:
+          name: Synoria-macOS-${{ github.event.inputs.version || '1.3.1' }}
+          path: |
+            release/*.dmg
+          retention-days: 90
+          if-no-files-found: error

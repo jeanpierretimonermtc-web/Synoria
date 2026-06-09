@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dossier Patient MTC — Plan de conduite du projet</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 11pt;
+    color: #2C2C2C;
+    background: white;
+    line-height: 1.6;
+  }
+
+  /* ── COUVERTURE ── */
+  .cover {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg, #3B6B3A 0%, #5A8C58 60%, #7AAD78 100%);
+    color: white;
+    text-align: center;
+    page-break-after: always;
+    padding: 60px;
+  }
+  .cover-logo { font-size: 72pt; margin-bottom: 24px; }
+  .cover-title { font-size: 28pt; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+  .cover-subtitle { font-size: 16pt; font-weight: 300; opacity: 0.9; margin-bottom: 48px; }
+  .cover-badges { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 60px; }
+  .badge {
+    background: rgba(255,255,255,0.2);
+    border: 1.5px solid rgba(255,255,255,0.5);
+    border-radius: 20px;
+    padding: 6px 18px;
+    font-size: 10pt;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .cover-meta { font-size: 10pt; opacity: 0.75; line-height: 2; }
+  .cover-line { width: 80px; height: 3px; background: rgba(255,255,255,0.5); margin: 32px auto; border-radius: 2px; }
+
+  /* ── MISE EN PAGE GÉNÉRALE ── */
+  .page { padding: 40px 56px; max-width: 900px; margin: 0 auto; }
+  .page-break { page-break-before: always; }
+
+  /* ── TITRES DE SECTION ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+    padding-bottom: 14px;
+    border-bottom: 3px solid #4A6741;
+  }
+  .section-icon {
+    width: 44px; height: 44px;
+    background: #4A6741;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .section-title { font-size: 18pt; font-weight: 700; color: #3B6B3A; }
+  .section-num { font-size: 11pt; color: #888; font-weight: 400; }
+
+  h2 { font-size: 13pt; color: #3B6B3A; font-weight: 700; margin: 24px 0 10px; }
+  h3 { font-size: 11pt; color: #5A3E2B; font-weight: 700; margin: 16px 0 8px; }
+
+  p { margin-bottom: 10px; }
+
+  /* ── TABLEAUX ── */
+  table { width: 100%; border-collapse: collapse; margin: 14px 0 20px; font-size: 10pt; }
+  th {
+    background: #4A6741;
+    color: white;
+    padding: 9px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 9.5pt;
+    letter-spacing: 0.2px;
+  }
+  td { padding: 8px 12px; border-bottom: 1px solid #E8E4DC; vertical-align: top; }
+  tr:nth-child(even) td { background: #F8F6F2; }
+  tr:last-child td { border-bottom: none; }
+  .ok { color: #3B6B3A; font-weight: 700; }
+  .no { color: #999; }
+  .warn { color: #C17B2A; font-weight: 600; }
+  td.center { text-align: center; }
+
+  /* ── ARBRE DE FICHIERS ── */
+  .tree {
+    background: #F4F2EE;
+    border: 1px solid #D8D4CC;
+    border-radius: 8px;
+    padding: 18px 22px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 9.5pt;
+    line-height: 1.8;
+    margin: 14px 0 20px;
+  }
+  .tree-folder { color: #3B6B3A; font-weight: 700; }
+  .tree-file   { color: #444; }
+  .tree-comment{ color: #888; font-style: italic; }
+  .tree-indent { padding-left: 20px; }
+  .tree-indent2{ padding-left: 40px; }
+  .tree-indent3{ padding-left: 60px; }
+
+  /* ── BLOC INFO ── */
+  .info-box {
+    background: #EDF4EC;
+    border-left: 4px solid #4A6741;
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 10pt;
+  }
+  .warn-box {
+    background: #FEF8EE;
+    border-left: 4px solid #C17B2A;
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 10pt;
+  }
+  .new-box {
+    background: #E8F0F8;
+    border-left: 4px solid #2A5A8A;
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin: 14px 0;
+    font-size: 10pt;
+  }
+
+  /* ── BADGES ── */
+  .tag {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 10px;
+    font-size: 8.5pt;
+    font-weight: 700;
+    margin: 1px 2px;
+  }
+  .tag-green  { background: #D8EDD6; color: #2F5D34; }
+  .tag-blue   { background: #D6E5F5; color: #1A3A6B; }
+  .tag-amber  { background: #FDECD0; color: #7A4A10; }
+  .tag-red    { background: #FDE8E8; color: #7A2020; }
+  .tag-purple { background: #EDE0F5; color: #4A2A7A; }
+
+  /* ── TIMELINE / ROADMAP ── */
+  .roadmap-item {
+    display: flex;
+    gap: 18px;
+    margin-bottom: 20px;
+    align-items: flex-start;
+  }
+  .roadmap-num {
+    width: 36px; height: 36px;
+    background: #4A6741;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-weight: 700; font-size: 13pt;
+    flex-shrink: 0;
+  }
+  .roadmap-content { flex: 1; }
+  .roadmap-title { font-weight: 700; font-size: 11.5pt; color: #3B6B3A; margin-bottom: 4px; }
+  .roadmap-duration { font-size: 9pt; color: #888; font-weight: 600; letter-spacing: 0.3px; }
+  .roadmap-desc { font-size: 10pt; color: #555; margin-top: 4px; }
+
+  /* ── VERSION DIFF ── */
+  .version-card {
+    border: 2px solid #4A6741;
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 14px 0;
+  }
+  .version-header {
+    background: #4A6741;
+    color: white;
+    padding: 10px 18px;
+    font-weight: 700;
+    font-size: 12pt;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .version-body { padding: 14px 18px; }
+  .feature-list { list-style: none; padding: 0; }
+  .feature-list li {
+    padding: 5px 0;
+    border-bottom: 1px solid #F0EDE8;
+    font-size: 10pt;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .feature-list li:last-child { border-bottom: none; }
+  .feat-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+
+  /* ── FOOTER ── */
+  .footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid #E0DDD8;
+    font-size: 9pt;
+    color: #999;
+    text-align: center;
+  }
+
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cover { height: 100vh; }
+    .page-break { page-break-before: always; }
+    table { page-break-inside: avoid; }
+    .roadmap-item { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- COUVERTURE -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-logo">🌿</div>
+  <div class="cover-title">Dossier Patient MTC</div>
+  <div class="cover-subtitle">Plan de conduite du projet &amp; Documentation technique</div>
+  <div class="cover-line"></div>
+  <div class="cover-badges">
+    <div class="badge">Version actuelle : v1.1.0</div>
+    <div class="badge">Electron + React + SQLite</div>
+    <div class="badge">Windows 10/11</div>
+    <div class="badge">Juin 2026</div>
+  </div>
+  <div class="cover-meta">
+    Jean-Pierre Timoner · jeanpierre.timoner.mtc@gmail.com<br>
+    Médecine Traditionnelle Chinoise<br>
+    Document confidentiel — Usage interne
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- SECTION 1 — ARCHITECTURE TECHNIQUE -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="page page-break">
+  <div class="section-header">
+    <div class="section-icon">🏗️</div>
+    <div>
+      <div class="section-num">Section 1</div>
+      <div class="section-title">Architecture technique du projet</div>
+    </div>
+  </div>
+
+  <h2>Technologies utilisées</h2>
+  <table>
+    <tr><th>Composant</th><th>Technologie</th><th>Rôle</th></tr>
+    <tr><td><strong>Application desktop</strong></td><td>Electron v28</td><td>Fenêtre native Windows / Mac / Linux</td></tr>
+    <tr><td><strong>Interface utilisateur</strong></td><td>React 18 + TypeScript</td><td>Toutes les pages et composants visuels</td></tr>
+    <tr><td><strong>Base de données</strong></td><td>SQLite via better-sqlite3</td><td>Stockage local des patients, séances, RDV</td></tr>
+    <tr><td><strong>Chiffrement</strong></td><td>AES-256-GCM (Node.js crypto)</td><td>BDD au repos + sauvegardes</td></tr>
+    <tr><td><strong>Construction</strong></td><td>Vite + electron-builder</td><td>Compilation et packaging installateurs</td></tr>
+    <tr><td><strong>Styles</strong></td><td>CSS vanilla (global.css)</td><td>Design de l'interface</td></tr>
+  </table>
+
+  <div class="info-box">
+    💡 <strong>Architecture 2 processus Electron :</strong> Le <em>Main Process</em> (Node.js) gère la base de données, les fichiers, le chiffrement et les IPC. Le <em>Renderer Process</em> (React) gère l'interface. Ils communiquent via des canaux IPC sécurisés exposés par le preload.
+  </div>
+
+  <h2>Structure complète des dossiers</h2>
+
+  <div class="tree">
+    <span class="tree-folder">dossier-patient-mtc/</span><br>
+    <span class="tree-indent tree-folder">├── src/</span>
+    <span class="tree-comment">                    ← Code source complet</span><br>
+    <span class="tree-indent2 tree-folder">├── main/</span>
+    <span class="tree-comment">               ← Process principal Electron (Node.js)</span><br>
+    <span class="tree-indent3 tree-file">│   ├── index.ts</span>
+    <span class="tree-comment">           ← Démarrage app, cycle de vie, chiffrement fermeture</span><br>
+    <span class="tree-indent3 tree-file">│   ├── preload.ts</span>
+    <span class="tree-comment">         ← Pont sécurisé main ↔ renderer (API window.mtcApi)</span><br>
+    <span class="tree-indent3 tree-folder">│   ├── database/</span>
+    <span class="tree-comment">          ← Gestion SQLite</span><br>
+    <span class="tree-indent3 tree-file">│   │   ├── connection.ts</span>
+    <span class="tree-comment">      ← Ouverture / fermeture base de données</span><br>
+    <span class="tree-indent3 tree-file">│   │   ├── migrations.ts</span>
+    <span class="tree-comment">      ← Mises à jour du schéma BDD (v1 → v6)</span><br>
+    <span class="tree-indent3 tree-folder">│   │   └── repositories/</span>
+    <span class="tree-comment">    ← Accès aux données (une table = un fichier)</span><br>
+    <span class="tree-indent3 tree-file">│   │       ├── patientRepository.ts</span><br>
+    <span class="tree-indent3 tree-file">│   │       ├── sessionRepository.ts</span><br>
+    <span class="tree-indent3 tree-file">│   │       ├── appointmentRepository.ts</span><br>
+    <span class="tree-indent3 tree-file">│   │       └── comptaRepository.ts</span><br>
+    <span class="tree-indent3 tree-folder">│   ├── ipc/</span>
+    <span class="tree-comment">               ← Gestionnaires des appels renderer → main</span><br>
+    <span class="tree-indent3 tree-file">│   │   └── handlers.ts</span>
+    <span class="tree-comment">        ← Tous les canaux IPC (patients, sessions, auth…)</span><br>
+    <span class="tree-indent3 tree-folder">│   └── services/</span>
+    <span class="tree-comment">          ← Logique métier</span><br>
+    <span class="tree-indent3 tree-file">│       ├── authService.ts</span>
+    <span class="tree-comment">      ← Mot de passe + chiffrement BDD (PBKDF2 + AES-256)</span><br>
+    <span class="tree-indent3 tree-file">│       ├── encryptionService.ts</span>
+    <span class="tree-comment">   ← Chiffrement sauvegardes (clé fichier)</span><br>
+    <span class="tree-indent3 tree-file">│       ├── backupService.ts</span>
+    <span class="tree-comment">       ← Export / Import sauvegardes chiffrées</span><br>
+    <span class="tree-indent3 tree-file">│       ├── exportService.ts</span>
+    <span class="tree-comment">       ← Export Excel des séances</span><br>
+    <span class="tree-indent3 tree-file">│       ├── invoiceService.ts</span>
+    <span class="tree-comment">      ← Génération factures PDF</span><br>
+    <span class="tree-indent3 tree-file">│       ├── comptaExportService.ts</span>
+    <span class="tree-comment">  ← Export comptabilité Excel</span><br>
+    <span class="tree-indent3 tree-file">│       └── settingsService.ts</span>
+    <span class="tree-comment">     ← Lecture / écriture paramètres (JSON)</span><br>
+    <br>
+    <span class="tree-indent2 tree-folder">└── renderer/</span>
+    <span class="tree-comment">              ← Interface React (ce que voit l'utilisateur)</span><br>
+    <span class="tree-indent3 tree-file">    ├── App.tsx</span>
+    <span class="tree-comment">           ← Racine app, routage, flux d'authentification</span><br>
+    <span class="tree-indent3 tree-file">    ├── index.tsx</span>
+    <span class="tree-comment">          ← Point d'entrée React</span><br>
+    <span class="tree-indent3 tree-folder">    ├── pages/</span>
+    <span class="tree-comment">             ← Une page = une route de l'application</span><br>
+    <span class="tree-indent3 tree-file">    │   ├── LockScreen.tsx</span>
+    <span class="tree-comment">     ← Écran de connexion par mot de passe</span><br>
+    <span class="tree-indent3 tree-file">    │   ├── DashboardPage.tsx</span>
+    <span class="tree-comment">   ← Tableau de bord (stats, prochains RDV)</span><br>
+    <span class="tree-indent3 tree-file">    │   ├── PatientsPage.tsx</span>
+    <span class="tree-comment">    ← Liste et fiches patients</span><br>
+    <span class="tree-indent3 tree-file">    │   ├── NewSessionPage.tsx</span>
+    <span class="tree-comment">  ← Formulaire nouvelle séance (très complet)</span><br>
+    <span class="tree-indent3 tree-file">    │   ├── HistoryPage.tsx</span>
+    <span class="tree-comment">     ← Historique de toutes les séances</span><br>
+    <span class="tree-indent3 tree-file">    │   ├── SummaryPage.tsx</span>
+    <span class="tree-comment">     ← Résumé détaillé d'une séance + export</span><br>
+    <span class="tree-indent3 tree-file">    │   ├── CalendarPage.tsx</span>
+    <span class="tree-comment">    ← Calendrier RDV + vue planning horaire</span><br>
+    <span class="tree-indent3 tree-file">    │   ├── ComptaPage.tsx</span>
+    <span class="tree-comment">      ← Comptabilité mensuelle + URSAF</span><br>
+    <span class="tree-indent3 tree-file">    │   ├── DepensesPage.tsx</span>
+    <span class="tree-comment">    ← Gestion des dépenses</span><br>
+    <span class="tree-indent3 tree-file">    │   ├── FacturesListPage.tsx</span>
+    <span class="tree-comment"> ← Journal des factures générées</span><br>
+    <span class="tree-indent3 tree-file">    │   └── SettingsPage.tsx</span>
+    <span class="tree-comment">    ← Paramètres (sauvegarde, mot de passe, MAJ)</span><br>
+    <span class="tree-indent3 tree-folder">    ├── components/</span>
+    <span class="tree-comment">        ← Composants réutilisables</span><br>
+    <span class="tree-indent3 tree-file">    │   ├── common/RichTextArea.tsx</span>
+    <span class="tree-comment">← Zone de texte avec mise en forme</span><br>
+    <span class="tree-indent3 tree-file">    │   ├── common/SplashScreen.tsx</span>
+    <span class="tree-comment"> ← Écran de démarrage animé</span><br>
+    <span class="tree-indent3 tree-file">    │   ├── common/Toast.tsx</span>
+    <span class="tree-comment">       ← Notifications temporaires</span><br>
+    <span class="tree-indent3 tree-file">    │   └── forms/SystemesForm.tsx</span>
+    <span class="tree-comment">  ← Formulaire systèmes énergétiques</span><br>
+    <span class="tree-indent3 tree-folder">    ├── hooks/</span>
+    <span class="tree-comment">             ← Logique React réutilisable</span><br>
+    <span class="tree-indent3 tree-file">    │   ├── useInactivityLock.ts</span>
+    <span class="tree-comment"> ← Verrou automatique 20 min inactivité</span><br>
+    <span class="tree-indent3 tree-file">    │   └── useToast.ts</span>
+    <span class="tree-comment">         ← Gestion notifications</span><br>
+    <span class="tree-indent3 tree-file">    ├── styles/global.css</span>
+    <span class="tree-comment">       ← Design complet de l'application</span><br>
+    <span class="tree-indent3 tree-file">    └── utils/</span>
+    <span class="tree-comment">              ← Fonctions utilitaires (formatage dates, initiales…)</span><br>
+    <br>
+    <span class="tree-indent tree-folder">├── shared/</span><br>
+    <span class="tree-indent2 tree-file">└── types.ts</span>
+    <span class="tree-comment">            ← Types TypeScript partagés main ↔ renderer</span><br>
+    <br>
+    <span class="tree-indent tree-folder">├── build/</span>
+    <span class="tree-comment">                     ← Icônes de l'application (.ico, .png)</span><br>
+    <span class="tree-indent tree-folder">├── release/</span>
+    <span class="tree-comment">                   ← Installateurs générés (ne pas modifier)</span><br>
+    <span class="tree-indent2 tree-file">├── Dossier Patient MTC Setup 1.1.0.exe</span>
+    <span class="tree-comment">← Installateur Windows</span><br>
+    <span class="tree-indent2 tree-file">├── Dossier Patient MTC 1.1.0.exe</span>
+    <span class="tree-comment">     ← Version portable (clé USB)</span><br>
+    <span class="tree-indent2 tree-folder">└── CleUSB_DossierPatientMTC/</span>
+    <span class="tree-comment">    ← Dossier prêt à copier sur clé USB</span><br>
+    <br>
+    <span class="tree-indent tree-file">├── package.json</span>
+    <span class="tree-comment">               ← Dépendances et scripts de build</span><br>
+    <span class="tree-indent tree-file">├── vite.config.ts</span>
+    <span class="tree-comment">             ← Configuration du bundler</span><br>
+    <span class="tree-indent tree-file">└── tsconfig.json</span>
+    <span class="tree-comment">              ← Configuration TypeScript</span><br>
+  </div>
+
+  <h2>Base de données — Tables SQLite</h2>
+  <table>
+    <tr><th>Table</th><th>Contenu</th><th>Créée en version</th></tr>
+    <tr><td><strong>patients</strong></td><td>Fiche patient (nom, prénom, naissance, téléphone, email, adresse, médecin, traitements, antécédents, profession, alertes)</td><td>v1 (migration 1)</td></tr>
+    <tr><td><strong>sessions</strong></td><td>Séances (patient, date, praticien, diagnostic, points, techniques, suivi…) + <code>full_data_json</code> pour les données complètes</td><td>v1</td></tr>
+    <tr><td><strong>appointments</strong></td><td>Rendez-vous calendrier (patient ou invité, date, heure, motif, réalisé/planifié)</td><td>v5</td></tr>
+    <tr><td><strong>consultation_types</strong></td><td>Types de consultation et tarifs configurables</td><td>v4</td></tr>
+    <tr><td><strong>monthly_revenue</strong></td><td>Nombre de séances par type et par mois</td><td>v4</td></tr>
+    <tr><td><strong>invoices_log</strong></td><td>Journal des factures générées</td><td>v4</td></tr>
+    <tr><td><strong>expense_config</strong></td><td>Charges fixes (loyer, assurance…)</td><td>v4</td></tr>
+    <tr><td><strong>monthly_var_expenses</strong></td><td>Dépenses variables mensuelles</td><td>v4</td></tr>
+    <tr><td><strong>schema_version</strong></td><td>Version de migration courante (actuellement 6)</td><td>v1</td></tr>
+  </table>
+
+  <div class="footer">Dossier Patient MTC — Documentation interne · Juin 2026 · Page 1</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- SECTION 2 — NOUVEAUTÉS V1.1.0 vs V1.0.0 -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="page page-break">
+  <div class="section-header">
+    <div class="section-icon">🆕</div>
+    <div>
+      <div class="section-num">Section 2</div>
+      <div class="section-title">Nouveautés v1.1.0 par rapport à v1.0.0</div>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:20px; margin-bottom:28px;">
+    <div style="flex:1; background:#F0EDE8; border-radius:10px; padding:14px 18px; text-align:center;">
+      <div style="font-size:22pt; font-weight:700; color:#888;">v1.0.0</div>
+      <div style="font-size:9.5pt; color:#888; margin-top:4px;">Version initiale</div>
+    </div>
+    <div style="flex:0; font-size:28pt; color:#4A6741; display:flex; align-items:center;">→</div>
+    <div style="flex:1; background:#EDF4EC; border-radius:10px; padding:14px 18px; text-align:center; border:2px solid #4A6741;">
+      <div style="font-size:22pt; font-weight:700; color:#3B6B3A;">v1.1.0</div>
+      <div style="font-size:9.5pt; color:#3B6B3A; font-weight:600; margin-top:4px;">Version actuelle</div>
+    </div>
+  </div>
+
+  <h2>🔐 Sécurité &amp; Protection des données</h2>
+  <div class="version-card">
+    <div class="version-header">🔒 Mot de passe + Chiffrement AES-256-GCM de la base de données</div>
+    <div class="version-body">
+      <ul class="feature-list">
+        <li><span class="feat-icon">🔑</span><span>Écran de connexion par mot de passe au démarrage — aucun accès aux données sans le mot de passe</span></li>
+        <li><span class="feat-icon">🔐</span><span>Base de données SQLite chiffrée en <strong>AES-256-GCM</strong> avec clé dérivée via <strong>PBKDF2 (600 000 itérations)</strong> — le fichier <code>mtc.sqlite</code> est illisible sans mot de passe</span></li>
+        <li><span class="feat-icon">⏱️</span><span>Verrou automatique après <strong>20 minutes d'inactivité</strong> — l'écran de connexion réapparaît</span></li>
+        <li><span class="feat-icon">💾</span><span>Re-chiffrement automatique toutes les 3 minutes pendant la session (auto-save sécurisé)</span></li>
+        <li><span class="feat-icon">🚪</span><span>À la fermeture : la base est chiffrée, le fichier de travail déchiffré est supprimé</span></li>
+        <li><span class="feat-icon">🔄</span><span>Changement de mot de passe depuis Paramètres → re-chiffrement immédiat avec le nouveau mot de passe</span></li>
+        <li><span class="feat-icon">🛡️</span><span>Badge <em>🔒 chiffré</em> visible dans le header en permanence</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>📅 Calendrier &amp; Rendez-vous</h2>
+  <div class="version-card">
+    <div class="version-header">📅 Calendrier complet avec synchronisation bidirectionnelle</div>
+    <div class="version-body">
+      <ul class="feature-list">
+        <li><span class="feat-icon">🗓️</span><span>Calendrier mensuel avec vue planning horaire par jour (créneaux de 30 min, de 08h00 à 19h30)</span></li>
+        <li><span class="feat-icon">⏰</span><span>Sélection de l'heure au créneau de <strong>5 minutes</strong> dans les sélecteurs (de 07h00 à 20h00)</span></li>
+        <li><span class="feat-icon">🎨</span><span>Code couleur des RDV : bleu = planifié, vert = réalisé, orange = en attente</span></li>
+        <li><span class="feat-icon">👤</span><span>Prise de RDV pour <strong>nouveau patient sans fiche</strong> : saisie nom, prénom, téléphone, motif de venue directement dans le calendrier</span></li>
+        <li><span class="feat-icon">👥</span><span>Bouton <em>Créer la fiche patient</em> depuis un RDV invité : crée automatiquement la fiche et lie le RDV</span></li>
+        <li><span class="feat-icon">🔁</span><span><strong>Synchronisation bidirectionnelle</strong> : le prochain RDV saisi dans Nouvelle séance crée/met à jour un RDV dans le calendrier, et inversement</span></li>
+        <li><span class="feat-icon">📋</span><span>Heure début + heure fin + motif + note dans le formulaire de RDV</span></li>
+        <li><span class="feat-icon">📋</span><span>Bouton <em>Créer la séance</em> depuis un RDV : ouvre Nouvelle séance avec le motif et la date pré-remplis</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>✍️ Mise en forme des notes</h2>
+  <div class="version-card">
+    <div class="version-header">✍️ Barre de mise en forme globale</div>
+    <div class="version-body">
+      <ul class="feature-list">
+        <li><span class="feat-icon">📌</span><span>Barre de formatage unique, placée en haut de l'application (sous la navigation), visible sur toutes les pages</span></li>
+        <li><span class="feat-icon">G</span><span><strong>Gras</strong>, <em>Italique</em>, <u>Souligné</u> sur tout texte sélectionné dans une zone de notes</span></li>
+        <li><span class="feat-icon">🎨</span><span>5 couleurs de texte : rouge, bleu, vert, orange, violet</span></li>
+        <li><span class="feat-icon">✕</span><span>Bouton de suppression de mise en forme</span></li>
+        <li><span class="feat-icon">💡</span><span>La barre est grisée et inactive quand aucune zone de texte n'est active — s'active automatiquement au clic dans une note</span></li>
+        <li><span class="feat-icon">⌨️</span><span>Raccourcis clavier natifs maintenus : Ctrl+B, Ctrl+I, Ctrl+U</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>👤 Fiche Patient &amp; Séance</h2>
+  <div class="version-card">
+    <div class="version-header">👤 Améliorations fiches et séances</div>
+    <div class="version-body">
+      <ul class="feature-list">
+        <li><span class="feat-icon">💼</span><span>Champ <strong>Profession</strong> ajouté à la fiche patient et visible dans le formulaire de séance</span></li>
+        <li><span class="feat-icon">📅</span><span>Section <em>Prochain RDV</em> enrichie dans Nouvelle séance : heure début, heure fin, note/motif, lien avec le calendrier</span></li>
+        <li><span class="feat-icon">🔗</span><span>Affichage des RDV calendrier existants du patient dans la section suivi — cliquer sur un RDV le lie à la séance</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>🔄 Mise à jour du logiciel</h2>
+  <div class="version-card">
+    <div class="version-header">🔄 Bouton de mise à jour intégré</div>
+    <div class="version-body">
+      <ul class="feature-list">
+        <li><span class="feat-icon">📦</span><span>Section <em>Mise à jour</em> dans Paramètres : affiche la version installée actuelle</span></li>
+        <li><span class="feat-icon">📥</span><span>Bouton <em>Sélectionner le fichier de mise à jour (.exe)</em> : ouvre un sélecteur de fichier pour choisir le nouvel installateur (depuis clé USB ou dossier téléchargements)</span></li>
+        <li><span class="feat-icon">🚀</span><span>Bouton <em>Installer la mise à jour</em> : lance l'installateur et ferme l'application automatiquement</span></li>
+        <li><span class="feat-icon">🛡️</span><span>Les données ne sont pas supprimées lors d'une mise à jour</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Résumé comparatif v1.0.0 → v1.1.0</h2>
+  <table>
+    <tr><th>Fonctionnalité</th><th class="center">v1.0.0</th><th class="center">v1.1.0</th></tr>
+    <tr><td>Gestion patients &amp; séances</td><td class="center ok">✅</td><td class="center ok">✅</td></tr>
+    <tr><td>Export Excel &amp; PDF</td><td class="center ok">✅</td><td class="center ok">✅</td></tr>
+    <tr><td>Sauvegardes chiffrées (backups)</td><td class="center ok">✅</td><td class="center ok">✅</td></tr>
+    <tr><td>Comptabilité &amp; Facturation</td><td class="center ok">✅</td><td class="center ok">✅</td></tr>
+    <tr><td>Version clé USB portable</td><td class="center ok">✅</td><td class="center ok">✅</td></tr>
+    <tr><td>Mot de passe + BDD chiffrée</td><td class="center no">❌</td><td class="center ok">✅ Nouveau</td></tr>
+    <tr><td>Verrou inactivité automatique</td><td class="center no">❌</td><td class="center ok">✅ Nouveau</td></tr>
+    <tr><td>Calendrier de rendez-vous</td><td class="center no">❌</td><td class="center ok">✅ Nouveau</td></tr>
+    <tr><td>RDV pour patients non fichés</td><td class="center no">❌</td><td class="center ok">✅ Nouveau</td></tr>
+    <tr><td>Synchronisation RDV ↔ Séance</td><td class="center no">❌</td><td class="center ok">✅ Nouveau</td></tr>
+    <tr><td>Barre de mise en forme globale</td><td class="center no">❌</td><td class="center ok">✅ Nouveau</td></tr>
+    <tr><td>Créneaux horaires à 5 minutes</td><td class="center no">❌</td><td class="center ok">✅ Nouveau</td></tr>
+    <tr><td>Profession du patient</td><td class="center no">❌</td><td class="center ok">✅ Nouveau</td></tr>
+    <tr><td>Bouton mise à jour intégré</td><td class="center no">❌</td><td class="center ok">✅ Nouveau</td></tr>
+  </table>
+
+  <div class="footer">Dossier Patient MTC — Documentation interne · Juin 2026 · Page 2</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- SECTION 3 — FEUILLE DE ROUTE -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="page page-break">
+  <div class="section-header">
+    <div class="section-icon">🗺️</div>
+    <div>
+      <div class="section-num">Section 3</div>
+      <div class="section-title">Feuille de route — Évolution du projet</div>
+    </div>
+  </div>
+
+  <p style="color:#666; margin-bottom:24px;">
+    Projet d'évolution vers un logiciel multi-thérapeutes, modulaire et commercialisable par spécialité.
+  </p>
+
+  <!-- ROADMAP ITEMS -->
+  <div class="roadmap-item">
+    <div class="roadmap-num">1</div>
+    <div class="roadmap-content">
+      <div class="roadmap-title">Système de plugins par spécialité</div>
+      <div class="roadmap-duration">⏱️ Estimation : 5 à 7 semaines · Priorité : HAUTE</div>
+      <div class="roadmap-desc">
+        Architecture modulaire où l'anamnèse est définie dans un fichier <code>.plugin</code> (JSON) séparé du logiciel core.
+        Chaque spécialité (MTC, Kinésiologie, Ostéopathie, Naturopathie) a son propre fichier plugin.
+        Le moteur de formulaire dynamique dans le core lit le plugin et génère le formulaire automatiquement.
+        <br><br>
+        <strong>Ce que ça permet :</strong> vendre le logiciel par spécialité — un installateur MTC, un installateur Kinésiologie, etc.
+        Mettre à jour une anamnèse sans livrer une nouvelle version du logiciel core.
+      </div>
+    </div>
+  </div>
+
+  <div class="roadmap-item">
+    <div class="roadmap-num">2</div>
+    <div class="roadmap-content">
+      <div class="roadmap-title">Plugin Kinésiologie — Anamnèse personnalisée</div>
+      <div class="roadmap-duration">⏱️ Estimation : 3 à 5 jours · Priorité : HAUTE</div>
+      <div class="roadmap-desc">
+        Création du fichier <code>kinesio.plugin</code> à partir de l'anamnèse fournie par la kinésiologiste.
+        Premier plugin non-MTC de l'application. Valide le moteur de formulaire dynamique en conditions réelles.
+        <br><br>
+        <strong>Prérequis :</strong> recevoir l'anamnèse kinesio complète (format papier, Word ou PDF).
+      </div>
+    </div>
+  </div>
+
+  <div class="roadmap-item">
+    <div class="roadmap-num">3</div>
+    <div class="roadmap-content">
+      <div class="roadmap-title">Packaging multi-spécialités</div>
+      <div class="roadmap-duration">⏱️ Estimation : 2 à 3 jours · Priorité : HAUTE</div>
+      <div class="roadmap-desc">
+        Script de build qui génère automatiquement un installateur dédié par spécialité :
+        <em>Setup-MTC-v1.1.0.exe</em>, <em>Setup-Kinesio-v1.1.0.exe</em>, etc.
+        Chaque installateur contient le core + le plugin de la spécialité, et rien d'autre.
+        Le thérapeute installe un seul exe et voit directement son formulaire.
+      </div>
+    </div>
+  </div>
+
+  <div class="roadmap-item">
+    <div class="roadmap-num">4</div>
+    <div class="roadmap-content">
+      <div class="roadmap-title">Améliorations RGPD</div>
+      <div class="roadmap-duration">⏱️ Estimation : 1 à 2 semaines · Priorité : MOYENNE</div>
+      <div class="roadmap-desc">
+        Compléter la conformité RGPD pour les données de santé :<br>
+        • Case à cocher consentement patient + date sur chaque fiche<br>
+        • Notice d'information patient (texte configurable, impression possible)<br>
+        • Journal d'accès minimal (date/heure d'ouverture des fiches)<br>
+        • Durée de conservation configurable avec alertes<br>
+        • Registre des traitements exportable (Art. 30 RGPD)
+      </div>
+    </div>
+  </div>
+
+  <div class="roadmap-item">
+    <div class="roadmap-num">5</div>
+    <div class="roadmap-content">
+      <div class="roadmap-title">Multi-utilisateurs (cabinet partagé)</div>
+      <div class="roadmap-duration">⏱️ Estimation : 4 à 6 semaines · Priorité : SELON BESOIN</div>
+      <div class="roadmap-desc">
+        Permettre à plusieurs thérapeutes d'un même cabinet d'accéder à une base partagée sur réseau local.
+        Nécessite de remplacer SQLite par PostgreSQL sur un PC serveur du cabinet, d'ajouter la gestion de comptes
+        utilisateurs avec rôles (praticien / secrétaire) et de gérer les accès simultanés.
+        <br><br>
+        <strong>Note :</strong> si chaque thérapeute travaille de façon indépendante (cabinet personnel), cette
+        fonctionnalité n'est pas nécessaire — chacun installe sa propre version.
+      </div>
+    </div>
+  </div>
+
+  <div class="roadmap-item">
+    <div class="roadmap-num">6</div>
+    <div class="roadmap-content">
+      <div class="roadmap-title">Version tablette / mobile (Capacitor)</div>
+      <div class="roadmap-duration">⏱️ Estimation : 4 à 6 semaines · Priorité : SELON BESOIN</div>
+      <div class="roadmap-desc">
+        Portage vers une application iOS / Android avec Capacitor (qui réutilise le code React existant à ~80%
+        plutôt qu'une réécriture complète en React Native). Permet d'utiliser l'application sur tablette en
+        salle de consultation, avec distribution sur App Store et Google Play.
+      </div>
+    </div>
+  </div>
+
+  <div class="roadmap-item">
+    <div class="roadmap-num">7</div>
+    <div class="roadmap-content">
+      <div class="roadmap-title">Interface multilingue</div>
+      <div class="roadmap-duration">⏱️ Estimation : 3 à 4 semaines · Priorité : BASSE</div>
+      <div class="roadmap-desc">
+        Traduction de l'interface via la bibliothèque react-i18next (français → anglais dans un premier temps,
+        puis d'autres langues selon la demande). Représente un chantier de fond car tous les textes sont
+        actuellement écrits en dur dans le code.
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box" style="margin-top:28px;">
+    📌 <strong>Prochaine action concrète recommandée :</strong> fournir l'anamnèse kinésiologique complète
+    pour démarrer le plugin Kinésiologie et valider l'architecture de plugins avant de la généraliser à d'autres spécialités.
+  </div>
+
+  <h2>Résumé des priorités</h2>
+  <table>
+    <tr><th>#</th><th>Fonctionnalité</th><th>Durée</th><th>Priorité</th><th>Prérequis</th></tr>
+    <tr><td>1</td><td>Moteur de plugins spécialités</td><td>5–7 sem.</td><td><span class="tag tag-red">Haute</span></td><td>—</td></tr>
+    <tr><td>2</td><td>Plugin Kinésiologie</td><td>3–5 j.</td><td><span class="tag tag-red">Haute</span></td><td>Anamnèse kinesio à fournir</td></tr>
+    <tr><td>3</td><td>Packaging multi-spécialités</td><td>2–3 j.</td><td><span class="tag tag-red">Haute</span></td><td>Étape 1 terminée</td></tr>
+    <tr><td>4</td><td>Améliorations RGPD</td><td>1–2 sem.</td><td><span class="tag tag-amber">Moyenne</span></td><td>—</td></tr>
+    <tr><td>5</td><td>Multi-utilisateurs réseau</td><td>4–6 sem.</td><td><span class="tag tag-blue">Si besoin</span></td><td>Définir le besoin réel</td></tr>
+    <tr><td>6</td><td>Version tablette (Capacitor)</td><td>4–6 sem.</td><td><span class="tag tag-blue">Si besoin</span></td><td>—</td></tr>
+    <tr><td>7</td><td>Interface multilingue</td><td>3–4 sem.</td><td><span class="tag tag-purple">Basse</span></td><td>—</td></tr>
+  </table>
+
+  <div class="footer">Dossier Patient MTC — Documentation interne · Juin 2026 · Page 3</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- SECTION 4 — MODÈLE COMMERCIAL PLUGINS -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="page page-break">
+  <div class="section-header">
+    <div class="section-icon">💼</div>
+    <div>
+      <div class="section-num">Section 4</div>
+      <div class="section-title">Architecture commerciale — Système de plugins</div>
+    </div>
+  </div>
+
+  <h2>Concept : Core + Plugin</h2>
+  <p>
+    Le logiciel est divisé en deux parties distinctes : le <strong>Core</strong> (socle commun, identique pour toutes les spécialités)
+    et le <strong>Plugin</strong> (anamnèse propre à chaque spécialité, vendu séparément ou bundlé dans l'installateur).
+  </p>
+
+  <table>
+    <tr><th>Composant</th><th>Contenu</th><th>Modèle</th></tr>
+    <tr>
+      <td><strong>Core (socle commun)</strong></td>
+      <td>Gestion patients · Calendrier RDV · Comptabilité · Facturation · Exports Excel/PDF · Sauvegardes chiffrées · Sécurité AES-256 · Mise à jour</td>
+      <td><span class="tag tag-green">Inclus dans tous les packs</span></td>
+    </tr>
+    <tr>
+      <td><strong>Plugin MTC</strong></td>
+      <td>Anamnèse MTC complète : pouls, langue, barrage, 5 éléments, points acupuncture, techniques, plantes, énergie…</td>
+      <td><span class="tag tag-blue">Pack MTC</span></td>
+    </tr>
+    <tr>
+      <td><strong>Plugin Kinésiologie</strong></td>
+      <td>Anamnèse kinésiologique personnalisée (à définir)</td>
+      <td><span class="tag tag-blue">Pack Kinésiologie</span></td>
+    </tr>
+    <tr>
+      <td><strong>Plugin Ostéopathie</strong></td>
+      <td>Anamnèse ostéopathique (à définir)</td>
+      <td><span class="tag tag-purple">Pack Ostéo</span></td>
+    </tr>
+    <tr>
+      <td><strong>Plugin Naturopathie</strong></td>
+      <td>Anamnèse naturopathique, bilan nutritionnel (à définir)</td>
+      <td><span class="tag tag-purple">Pack Naturo</span></td>
+    </tr>
+  </table>
+
+  <h2>Mise à jour d'un plugin</h2>
+  <p>
+    Lorsqu'une anamnèse évolue (nouvelles questions, nouveau protocole), il suffit de distribuer le nouveau fichier plugin
+    (<code>.plugin</code>) sans relivrer une nouvelle version du logiciel core. Le thérapeute l'importe depuis
+    <em>Paramètres → Mettre à jour mon formulaire</em>.
+  </p>
+  <div class="new-box">
+    🔵 <strong>Avantage clé :</strong> Le développement du core est fait une seule fois. Chaque nouvelle spécialité
+    représente 3 à 5 jours de travail supplémentaire (création du plugin JSON) et non plusieurs semaines.
+  </div>
+
+  <h2>Ce que voit chaque thérapeute</h2>
+  <table>
+    <tr><th>Page</th><th>Thérapeute MTC</th><th>Kinésiologiste</th></tr>
+    <tr><td>Tableau de bord</td><td class="center ok">✅ Identique</td><td class="center ok">✅ Identique</td></tr>
+    <tr><td>Patients / Fiches</td><td class="center ok">✅ Identique</td><td class="center ok">✅ Identique</td></tr>
+    <tr><td>Calendrier RDV</td><td class="center ok">✅ Identique</td><td class="center ok">✅ Identique</td></tr>
+    <tr><td>Nouvelle séance — Partie commune</td><td class="center ok">✅ Identique</td><td class="center ok">✅ Identique</td></tr>
+    <tr><td>Nouvelle séance — Anamnèse</td><td class="center ok">✅ Formulaire MTC</td><td class="center ok">✅ Formulaire Kinesio</td></tr>
+    <tr><td>Comptabilité &amp; Facturation</td><td class="center ok">✅ Identique</td><td class="center ok">✅ Identique</td></tr>
+    <tr><td>Paramètres &amp; Sauvegardes</td><td class="center ok">✅ Identique</td><td class="center ok">✅ Identique</td></tr>
+  </table>
+
+  <h2>Sécurité &amp; RGPD — État actuel</h2>
+  <table>
+    <tr><th>Mesure</th><th class="center">État</th><th>Détail</th></tr>
+    <tr><td>Données 100% locales (pas de cloud)</td><td class="center ok">✅</td><td>SQLite stocké sur PC ou clé USB uniquement</td></tr>
+    <tr><td>Chiffrement base de données (AES-256-GCM)</td><td class="center ok">✅ v1.1.0</td><td>Clé dérivée du mot de passe (PBKDF2-600K)</td></tr>
+    <tr><td>Sauvegardes chiffrées</td><td class="center ok">✅</td><td>AES-256-GCM, format .json.enc</td></tr>
+    <tr><td>Mot de passe au démarrage</td><td class="center ok">✅ v1.1.0</td><td>Verrou automatique 20 min inactivité</td></tr>
+    <tr><td>Exportabilité données (portabilité RGPD)</td><td class="center ok">✅</td><td>Export JSON + Excel</td></tr>
+    <tr><td>Suppression patient possible</td><td class="center ok">✅</td><td>Suppression logique et physique</td></tr>
+    <tr><td>Consentement patient tracé</td><td class="center warn">⚠️ À faire</td><td>Prévu en roadmap étape 4</td></tr>
+    <tr><td>Journal d'accès (audit trail)</td><td class="center warn">⚠️ À faire</td><td>Prévu en roadmap étape 4</td></tr>
+    <tr><td>Registre des traitements (Art. 30)</td><td class="center warn">⚠️ À faire</td><td>Prévu en roadmap étape 4</td></tr>
+  </table>
+
+  <div class="warn-box">
+    ⚠️ <strong>Important :</strong> En France, le traitement de données de santé nécessite une déclaration auprès de la <strong>CNIL</strong>
+    et la remise d'une notice d'information RGPD à chaque patient. Ces obligations sont indépendantes du logiciel.
+  </div>
+
+  <div class="footer">Dossier Patient MTC — Documentation interne · Juin 2026 · Page 4</div>
+</div>
+
+</body>
+</html>
