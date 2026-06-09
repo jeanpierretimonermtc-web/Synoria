@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synoria v1.3.1 — Guide d'installation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #2C2C2C; background: white; line-height: 1.7; }
+
+  /* ══ COUVERTURE ═══════════════════════════════════════════════ */
+  .cover {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: linear-gradient(145deg, #3A5F34 0%, #4A7A42 40%, #2A7A6A 100%);
+    color: white; text-align: center; padding: 60px 40px;
+    page-break-after: always;
+    position: relative; overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute; top: -150px; right: -150px;
+    width: 500px; height: 500px; border-radius: 50%;
+    background: rgba(255,255,255,.05);
+  }
+  .cover::after {
+    content: '';
+    position: absolute; bottom: -100px; left: -100px;
+    width: 350px; height: 350px; border-radius: 50%;
+    background: rgba(255,255,255,.04);
+  }
+  .cover-logo { font-size: 72px; margin-bottom: 18px; position: relative; z-index: 1; }
+  .cover-name { font-size: 52px; font-weight: 800; letter-spacing: 6px; margin-bottom: 4px; position: relative; z-index: 1; }
+  .cover-version { font-size: 18px; font-weight: 300; opacity: .8; margin-bottom: 10px; position: relative; z-index: 1; letter-spacing: 2px; }
+  .cover-sep { width: 60px; height: 3px; background: rgba(255,255,255,.5); border-radius: 2px; margin: 20px auto; }
+  .cover-title { font-size: 24px; font-weight: 700; margin-bottom: 8px; position: relative; z-index: 1; }
+  .cover-subtitle { font-size: 15px; opacity: .8; max-width: 480px; line-height: 1.8; position: relative; z-index: 1; }
+  .cover-badges { margin-top: 40px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
+  .cover-badge { background: rgba(255,255,255,.15); border: 1.5px solid rgba(255,255,255,.4); border-radius: 20px; padding: 7px 18px; font-size: 13px; font-weight: 600; }
+  .cover-meta { margin-top: 60px; font-size: 12px; opacity: .6; line-height: 2; position: relative; z-index: 1; }
+
+  /* ══ LAYOUT ═══════════════════════════════════════════════════ */
+  .container { max-width: 860px; margin: 0 auto; padding: 50px 50px 80px; }
+  .page-break { page-break-before: always; padding-top: 50px; }
+
+  /* ══ TITRES ═══════════════════════════════════════════════════ */
+  .section-header {
+    display: flex; align-items: center; gap: 14px;
+    margin: 52px 0 24px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #4A6741;
+  }
+  .section-number {
+    background: linear-gradient(135deg, #4A6741, #2A7A6A);
+    color: white; border-radius: 50%;
+    width: 36px; height: 36px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 15px;
+  }
+  .section-title { font-size: 22px; font-weight: 700; color: #3A5F34; }
+  h3 { font-size: 16px; font-weight: 700; color: #2A7A6A; margin: 28px 0 10px; }
+  h4 { font-size: 14px; font-weight: 700; color: #4A6741; margin: 18px 0 8px; }
+
+  /* ══ BLOCS ════════════════════════════════════════════════════ */
+  .card {
+    background: #FAFAF8; border: 1px solid #DDD9D3;
+    border-radius: 12px; padding: 22px 26px; margin: 16px 0;
+  }
+  .card-green { background: #EDF5EC; border-color: rgba(74,103,65,.25); }
+  .card-blue  { background: #E8F2F8; border-color: rgba(42,90,138,.2); }
+  .card-amber { background: #FEF7E8; border-color: rgba(193,123,42,.25); }
+  .card-red   { background: #FEF0F0; border-color: rgba(168,50,50,.25); }
+
+  .info  { border-left: 4px solid #4A6741; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 14px 0; background: #EDF5EC; }
+  .warn  { border-left: 4px solid #C17B2A; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 14px 0; background: #FEF7E8; }
+  .stop  { border-left: 4px solid #A83232; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 14px 0; background: #FEF0F0; }
+  .tip   { border-left: 4px solid #2A5A8A; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 14px 0; background: #E8F2F8; }
+
+  /* ══ ÉTAPES ═══════════════════════════════════════════════════ */
+  .steps { margin: 16px 0; }
+  .step  { display: flex; gap: 16px; margin-bottom: 14px; align-items: flex-start; }
+  .step-num {
+    background: linear-gradient(135deg, #4A6741, #2A7A6A);
+    color: white; border-radius: 50%;
+    width: 32px; height: 32px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 14px; margin-top: 1px;
+  }
+  .step-content { flex: 1; padding-top: 5px; }
+  .step-content strong { font-size: 14px; }
+
+  /* ══ SCREENSHOT MOCKUP ════════════════════════════════════════ */
+  .mockup {
+    background: #2C2C2C; border-radius: 10px; padding: 18px 22px;
+    margin: 14px 0; font-family: 'Consolas', monospace; font-size: 12px;
+    color: #A8D08A; line-height: 1.8;
+  }
+  .mockup .prompt { color: #6E9FCA; }
+  .mockup .ok     { color: #5EA85E; }
+  .mockup .warn-c { color: #E0A840; }
+  .mockup .cmd    { color: white; }
+
+  /* ══ TABLE ════════════════════════════════════════════════════ */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+  th { background: linear-gradient(135deg, #4A6741, #2A7A6A); color: white; padding: 11px 16px; text-align: left; font-weight: 600; }
+  th:first-child { border-radius: 8px 0 0 0; }
+  th:last-child  { border-radius: 0 8px 0 0; }
+  td { padding: 10px 16px; border-bottom: 1px solid #E8E5E0; }
+  tr:nth-child(even) td { background: #F7F5F2; }
+
+  /* ══ BADGES ═══════════════════════════════════════════════════ */
+  .badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 6px; padding: 3px 10px; font-size: 12px; font-weight: 700; margin: 2px; }
+  .badge-green  { background: #EDF5EC; color: #3A6535; border: 1px solid rgba(74,103,65,.3); }
+  .badge-blue   { background: #E8F2F8; color: #2A5070; border: 1px solid rgba(42,90,138,.25); }
+  .badge-amber  { background: #FEF7E8; color: #8A5010; border: 1px solid rgba(193,123,42,.3); }
+  .badge-red    { background: #FEF0F0; color: #802020; border: 1px solid rgba(168,50,50,.25); }
+  .badge-purple { background: #F0EAF8; color: #5A3080; border: 1px solid rgba(120,80,180,.25); }
+
+  /* ══ GRILLE ═══════════════════════════════════════════════════ */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin: 16px 0; }
+
+  /* ══ NOUVEAUTÉS ═══════════════════════════════════════════════ */
+  .new-badge { display: inline-block; background: #7A3A9A; color: white; font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 10px; margin-left: 6px; vertical-align: middle; }
+
+  /* ══ CHECKLIST ════════════════════════════════════════════════ */
+  .checklist { list-style: none; padding: 0; margin: 12px 0; }
+  .checklist li { padding: 6px 0 6px 28px; position: relative; border-bottom: 1px solid #EEE; }
+  .checklist li:last-child { border: none; }
+  .checklist li::before { content: '✓'; position: absolute; left: 4px; color: #4A6741; font-weight: 700; }
+
+  /* ══ FOOTER ═══════════════════════════════════════════════════ */
+  footer { text-align: center; margin-top: 60px; padding: 30px 20px; border-top: 1px solid #E0DDD8; font-size: 12px; color: #888; line-height: 2; }
+
+  p { margin-bottom: 10px; }
+  ul, ol { padding-left: 22px; margin-bottom: 12px; }
+  li { margin-bottom: 5px; }
+  strong { color: #2C2C2C; }
+  code { background: #F0EDE8; padding: 2px 6px; border-radius: 4px; font-family: Consolas, monospace; font-size: 12px; color: #5A3A1A; }
+
+  @media print {
+    .cover { min-height: 100vh; page-break-after: always; }
+    .section-header { margin-top: 30px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ COUVERTURE ══════════════════ -->
+<div class="cover">
+  <div class="cover-logo">🌿</div>
+  <div class="cover-name">SYNORIA</div>
+  <div class="cover-version">VERSION 1.3.1 — JUIN 2026</div>
+  <div class="cover-sep"></div>
+  <div class="cover-title">Guide d'installation</div>
+  <div class="cover-subtitle">
+    Instructions complètes pour installer et configurer<br>
+    Synoria sur votre ordinateur Windows ou Mac
+  </div>
+  <div class="cover-badges">
+    <div class="cover-badge">🖥️ Windows 10 / 11</div>
+    <div class="cover-badge">🍎 macOS (Intel + Apple Silicon)</div>
+    <div class="cover-badge">🔑 Version clé USB</div>
+  </div>
+  <div class="cover-meta">
+    Développé par Jean-Pierre Timoner<br>
+    jeanpierre.timoner.mtc@gmail.com
+  </div>
+</div>
+
+<!-- ══════════════════ CONTENU ══════════════════ -->
+<div class="container">
+
+<!-- ── TABLE DES MATIÈRES ─────────────────────────────────────── -->
+<div class="card" style="margin-top: 0;">
+  <h3 style="margin-top: 0; color: #3A5F34; font-size: 18px;">📋 Sommaire</h3>
+  <div class="grid2">
+    <ol style="padding-left: 20px; line-height: 2.2;">
+      <li><a href="#prerequis" style="color:#4A6741; text-decoration:none;">Prérequis système</a></li>
+      <li><a href="#windows" style="color:#4A6741; text-decoration:none;">Installation Windows</a></li>
+      <li><a href="#cle-usb" style="color:#4A6741; text-decoration:none;">Version clé USB</a></li>
+      <li><a href="#mac" style="color:#4A6741; text-decoration:none;">Installation macOS</a></li>
+    </ol>
+    <ol start="5" style="padding-left: 20px; line-height: 2.2;">
+      <li><a href="#premier-lancement" style="color:#4A6741; text-decoration:none;">Premier lancement</a></li>
+      <li><a href="#migration" style="color:#4A6741; text-decoration:none;">Migration depuis v1.x</a></li>
+      <li><a href="#desinstall" style="color:#4A6741; text-decoration:none;">Désinstallation</a></li>
+      <li><a href="#problemes" style="color:#4A6741; text-decoration:none;">Problèmes fréquents</a></li>
+    </ol>
+  </div>
+</div>
+
+<!-- ══ 1. PRÉREQUIS ══════════════════════════════════════════════ -->
+<div class="section-header" id="prerequis">
+  <div class="section-number">1</div>
+  <div class="section-title">Prérequis système</div>
+</div>
+
+<div class="grid2">
+  <div class="card card-green">
+    <h4 style="margin-top:0; color:#3A6535;">🖥️ Windows</h4>
+    <table style="margin:0; font-size:12px;">
+      <tr><td style="padding:5px 8px; font-weight:600;">OS</td><td style="padding:5px 8px;">Windows 10 ou 11 (64 bits)</td></tr>
+      <tr><td style="padding:5px 8px; font-weight:600;">RAM</td><td style="padding:5px 8px;">4 Go minimum</td></tr>
+      <tr><td style="padding:5px 8px; font-weight:600;">Disque</td><td style="padding:5px 8px;">300 Mo libres</td></tr>
+      <tr><td style="padding:5px 8px; font-weight:600;">Écran</td><td style="padding:5px 8px;">1024 × 768 minimum</td></tr>
+    </table>
+  </div>
+  <div class="card card-blue">
+    <h4 style="margin-top:0; color:#2A5070;">🍎 macOS</h4>
+    <table style="margin:0; font-size:12px;">
+      <tr><td style="padding:5px 8px; font-weight:600;">OS</td><td style="padding:5px 8px;">macOS 12 Monterey ou supérieur</td></tr>
+      <tr><td style="padding:5px 8px; font-weight:600;">Processeur</td><td style="padding:5px 8px;">Intel x64 ou Apple Silicon (M1/M2/M3)</td></tr>
+      <tr><td style="padding:5px 8px; font-weight:600;">RAM</td><td style="padding:5px 8px;">4 Go minimum</td></tr>
+      <tr><td style="padding:5px 8px; font-weight:600;">Disque</td><td style="padding:5px 8px;">300 Mo libres</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="info">
+  <strong>💡 Recommandé :</strong> Résolution 1440 × 900 ou supérieure pour un confort optimal. L'application s'adapte aux écrans plus petits mais certaines sections peuvent nécessiter un défilement.
+</div>
+
+<!-- ══ 2. INSTALLATION WINDOWS ═══════════════════════════════════ -->
+<div class="section-header" id="windows">
+  <div class="section-number">2</div>
+  <div class="section-title">Installation Windows</div>
+</div>
+
+<h3>Fichier à utiliser</h3>
+<div class="card">
+  <div style="display:flex; align-items:center; gap:16px;">
+    <div style="font-size:36px;">📦</div>
+    <div>
+      <div style="font-weight:700; font-size:16px; color:#3A5F34;">Synoria Setup 1.3.1.exe</div>
+      <div style="font-size:12px; color:#777; margin-top:2px;">Taille : environ 83 Mo · Installateur NSIS</div>
+      <div style="font-size:12px; color:#777;">Installe Synoria dans <code>C:\Program Files\Synoria\</code> et crée un raccourci sur le bureau</div>
+    </div>
+  </div>
+</div>
+
+<h3>Procédure d'installation</h3>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <strong>Double-cliquez sur <code>Synoria Setup 1.3.1.exe</code></strong><br>
+      <span style="color:#555; font-size:12px;">Si le fichier est dans Téléchargements, ouvrez l'Explorateur → Téléchargements → double-cliquez</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <strong>Windows affiche une alerte de sécurité — c'est normal</strong><br>
+      <div style="margin-top:8px; font-size:12px;">
+        Vous verrez probablement l'un de ces écrans :
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;">
+          <div class="card card-amber" style="padding:12px;">
+            <div style="font-weight:700; font-size:12px; margin-bottom:6px;">⚠️ SmartScreen Windows</div>
+            <div style="font-size:11px; line-height:1.6;">Cliquez <strong>"Informations complémentaires"</strong><br>puis <strong>"Exécuter quand même"</strong></div>
+          </div>
+          <div class="card card-amber" style="padding:12px;">
+            <div style="font-weight:700; font-size:12px; margin-bottom:6px;">⚠️ Contrôle de compte</div>
+            <div style="font-size:11px; line-height:1.6;">Cliquez <strong>"Oui"</strong> pour autoriser l'installation</div>
+          </div>
+        </div>
+        <div class="info" style="margin-top:8px; font-size:11px; padding:10px 14px;">
+          Ces alertes sont normales pour tout logiciel indépendant non signé numériquement. Synoria ne contient aucun code malveillant.
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <strong>L'installation se lance automatiquement</strong><br>
+      <span style="color:#555; font-size:12px;">Une barre de progression s'affiche. Durée : 30 à 60 secondes selon votre PC.</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <strong>Installation terminée</strong><br>
+      <span style="color:#555; font-size:12px;">Un raccourci <strong>Synoria</strong> apparaît sur le bureau. L'application peut se lancer automatiquement.</span>
+    </div>
+  </div>
+</div>
+
+<h3>Ce qui est installé</h3>
+<table>
+  <tr><th>Élément</th><th>Emplacement</th></tr>
+  <tr><td>Application</td><td><code>C:\Program Files\Synoria\</code></td></tr>
+  <tr><td>Raccourci bureau</td><td><code>Bureau\Synoria.lnk</code></td></tr>
+  <tr><td>Raccourci menu démarrer</td><td><code>Menu Démarrer\Synoria\</code></td></tr>
+  <tr><td>Données patients (chiffrées)</td><td><code>%APPDATA%\Synoria\</code></td></tr>
+  <tr><td>Désinstallateur</td><td><code>C:\Program Files\Synoria\Uninstall Synoria.exe</code></td></tr>
+</table>
+
+<div class="warn">
+  <strong>⚠️ Important :</strong> L'application s'installe dans <code>Program Files</code> mais vos <strong>données patients</strong> sont stockées séparément dans <code>%APPDATA%\Synoria\</code>. La désinstallation de l'application <strong>ne supprime pas</strong> vos données.
+</div>
+
+<!-- ══ 3. VERSION CLÉ USB ══════════════════════════════════════════ -->
+<div class="section-header page-break" id="cle-usb">
+  <div class="section-number">3</div>
+  <div class="section-title">Version clé USB (sans installation)</div>
+</div>
+
+<div class="info">
+  <strong>✅ Avantage clé USB :</strong> Aucune installation requise. Branchez la clé sur n'importe quel PC Windows et lancez directement. Vos données voyagent avec vous.
+</div>
+
+<h3>Fichier à utiliser</h3>
+<div class="card">
+  <div style="display:flex; align-items:center; gap:16px;">
+    <div style="font-size:36px;">📄</div>
+    <div>
+      <div style="font-weight:700; font-size:16px; color:#3A5F34;">Synoria 1.3.1.exe</div>
+      <div style="font-size:12px; color:#777; margin-top:2px;">Taille : environ 83 Mo · Exécutable portable (pas d'installation)</div>
+    </div>
+  </div>
+</div>
+
+<h3>Préparer la clé USB</h3>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <strong>Créez un dossier sur la clé USB</strong><br>
+      <span style="color:#555; font-size:12px;">Exemple : <code>Synoria\</code> à la racine de la clé USB</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <strong>Copiez les fichiers dans ce dossier</strong>
+      <div class="mockup" style="margin-top:8px;">
+<span class="ok">Synoria\</span>
+├── <span class="cmd">Synoria 1.3.1.exe</span>       ← l'application
+├── <span class="cmd">LIRE_MOI.txt</span>             ← instructions rapides
+└── <span class="cmd">Guide_Installation_…html</span> ← ce guide
+      </div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <strong>Premier lancement</strong><br>
+      <span style="color:#555; font-size:12px;">Double-cliquez sur <code>Synoria 1.3.1.exe</code>. Un dossier <code>data\</code> est automatiquement créé à côté de l'exe pour stocker vos données.</span>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <h4 style="margin-top:0;">Structure finale sur la clé USB</h4>
+  <div class="mockup">
+<span class="ok">Synoria\</span>
+├── <span class="cmd">Synoria 1.3.1.exe</span>         ← application portable
+├── <span class="cmd">data\</span>                     ← créé automatiquement au 1er lancement
+│   ├── <span class="warn-c">database\mtc.sqlite.enc</span>  ← votre base chiffrée
+│   ├── <span class="warn-c">auth.json</span>              ← vérificateur mot de passe
+│   ├── <span class="warn-c">encryption.key</span>         ← clé sauvegardes
+│   └── <span class="warn-c">settings.json</span>          ← vos paramètres
+├── <span class="cmd">LIRE_MOI.txt</span>
+└── <span class="cmd">Guide_Installation_….html</span>
+  </div>
+</div>
+
+<div class="stop">
+  <strong>🔴 Ne jamais supprimer le dossier <code>data\</code></strong> — il contient votre base de données chiffrée. Sans lui, toutes vos données seront perdues.
+</div>
+
+<h3>Utilisation sur un autre PC</h3>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content"><strong>Branchez la clé USB</strong> sur le PC</div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content"><strong>Ouvrez l'explorateur</strong> → votre clé USB → dossier Synoria</div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content"><strong>Double-cliquez sur <code>Synoria 1.3.1.exe</code></strong> → vos données se chargent automatiquement</div>
+  </div>
+</div>
+
+<!-- ══ 4. INSTALLATION macOS ══════════════════════════════════════ -->
+<div class="section-header page-break" id="mac">
+  <div class="section-number">4</div>
+  <div class="section-title">Installation macOS</div>
+</div>
+
+<h3>Choisir la bonne version</h3>
+<div class="grid2">
+  <div class="card card-blue">
+    <h4 style="margin-top:0;">💻 Mac Intel</h4>
+    <p style="font-size:12px;">Fichier : <code>Synoria-1.3.1-x64.dmg</code></p>
+    <p style="font-size:12px; color:#555;">Pour les Mac fabriqués <strong>avant fin 2020</strong> (processeur Intel Core i5/i7/i9)</p>
+    <p style="font-size:12px;"><strong>Comment vérifier :</strong> Menu Pomme → À propos de ce Mac → si "Intel Core" apparaît</p>
+  </div>
+  <div class="card card-green">
+    <h4 style="margin-top:0;">⚡ Mac Apple Silicon</h4>
+    <p style="font-size:12px;">Fichier : <code>Synoria-1.3.1-arm64.dmg</code></p>
+    <p style="font-size:12px; color:#555;">Pour les Mac <strong>M1, M2, M3</strong> (depuis fin 2020)</p>
+    <p style="font-size:12px;"><strong>Comment vérifier :</strong> Menu Pomme → À propos de ce Mac → si "Apple M1/M2/M3" apparaît</p>
+  </div>
+</div>
+
+<h3>Procédure d'installation</h3>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <strong>Double-cliquez sur le fichier <code>.dmg</code></strong><br>
+      <span style="color:#555; font-size:12px;">Une fenêtre s'ouvre avec l'icône Synoria et le dossier Applications</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <strong>Glissez l'icône Synoria vers le dossier Applications</strong><br>
+      <div class="mockup" style="margin-top:8px; font-size:13px; text-align:center; padding:14px;">
+        🌿 Synoria.app &nbsp;&nbsp; →→→ &nbsp;&nbsp; 📁 Applications
+      </div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <strong>Éjectez le DMG</strong> (clic droit → Éjecter)
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <strong>Ouvrez Synoria depuis Applications ou Launchpad</strong>
+    </div>
+  </div>
+</div>
+
+<h3>⚠️ Alerte Gatekeeper (première ouverture)</h3>
+<p>macOS peut bloquer l'application car elle n'est pas signée par un certificat Apple Developer payant :</p>
+
+<div class="card card-amber" style="margin:12px 0;">
+  <div style="font-size:13px; font-weight:700; margin-bottom:10px;">macOS affiche : "Synoria ne peut pas être ouvert car son développeur ne peut pas être vérifié"</div>
+  <div class="steps" style="margin:0;">
+    <div class="step" style="margin-bottom:8px;">
+      <div class="step-num" style="width:24px; height:24px; font-size:11px;">1</div>
+      <div class="step-content" style="font-size:12px; padding-top:3px;"><strong>Fermez</strong> cette alerte</div>
+    </div>
+    <div class="step" style="margin-bottom:8px;">
+      <div class="step-num" style="width:24px; height:24px; font-size:11px;">2</div>
+      <div class="step-content" style="font-size:12px; padding-top:3px;"><strong>Clic droit</strong> sur l'icône Synoria → <strong>"Ouvrir"</strong></div>
+    </div>
+    <div class="step">
+      <div class="step-num" style="width:24px; height:24px; font-size:11px;">3</div>
+      <div class="step-content" style="font-size:12px; padding-top:3px;">Une nouvelle alerte apparaît avec le bouton <strong>"Ouvrir"</strong> → cliquez-le<br><span style="color:#777;">Cette étape n'est nécessaire qu'une seule fois.</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="tip">
+  <strong>Alternative (macOS 13+) :</strong> Préférences Système → Confidentialité et sécurité → section "Sécurité" → cliquez <strong>"Ouvrir quand même"</strong> à côté de Synoria.
+</div>
+
+<!-- ══ 5. PREMIER LANCEMENT ════════════════════════════════════════ -->
+<div class="section-header page-break" id="premier-lancement">
+  <div class="section-number">5</div>
+  <div class="section-title">Premier lancement</div>
+</div>
+
+<h3>Écran de création du mot de passe</h3>
+<p>Au tout premier démarrage, Synoria affiche l'écran de configuration du mot de passe :</p>
+
+<div class="card" style="border: 2px solid #4A6741; padding: 28px; text-align:center; max-width:480px; margin: 20px auto;">
+  <div style="font-size:22px; margin-bottom:12px;">🌿 <strong style="font-size:20px; color:#3A5F34;">SYNORIA</strong></div>
+  <div style="font-size:16px; font-weight:700; margin-bottom:8px; color:#2C2C2C;">Créer un mot de passe</div>
+  <div style="font-size:12px; color:#777; margin-bottom:20px;">Choisissez un mot de passe fort pour chiffrer vos données patients</div>
+  <div style="background:#EDF5EC; border-radius:8px; padding:10px; margin-bottom:16px; font-size:11px; color:#3A6535; text-align:left;">
+    🔒 Ce mot de passe chiffre votre base en <strong>AES-256</strong>.<br>
+    Sans lui, vos données seront illisibles. <strong>Notez-le en lieu sûr.</strong>
+  </div>
+  <div style="background:#F0EDE8; border-radius:6px; height:38px; margin-bottom:8px; display:flex; align-items:center; padding:0 12px; font-size:13px; color:#999;">Nouveau mot de passe</div>
+  <div style="background:#F0EDE8; border-radius:6px; height:38px; margin-bottom:16px; display:flex; align-items:center; padding:0 12px; font-size:13px; color:#999;">Confirmer le mot de passe</div>
+  <div style="background:linear-gradient(135deg,#4A6741,#2A7A6A); color:white; border-radius:8px; padding:12px; font-weight:600; font-size:14px;">🔐 Créer le mot de passe</div>
+</div>
+
+<div class="steps" style="margin-top:20px;">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <strong>Choisissez un mot de passe</strong> — minimum 6 caractères<br>
+      <span style="color:#555; font-size:12px;">Recommandé : au moins 10 caractères, avec chiffres et caractères spéciaux</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <strong>Confirmez le mot de passe</strong> en le saisissant une deuxième fois
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <strong>Cliquez "🔐 Créer le mot de passe"</strong><br>
+      <span style="color:#555; font-size:12px;">La base de données est chiffrée. L'application s'ouvre automatiquement.</span>
+    </div>
+  </div>
+</div>
+
+<div class="stop">
+  <strong>🔴 CRITIQUE — Notez votre mot de passe dès maintenant</strong><br>
+  Ce mot de passe est le seul moyen de déchiffrer vos données. Si vous l'oubliez, les données sont <strong>définitivement irrécupérables</strong>. Notez-le dans un gestionnaire de mots de passe (Bitwarden, 1Password) ou un endroit physiquement sécurisé.
+</div>
+
+<h3>Démarrage normal (connexions suivantes)</h3>
+<p>À chaque démarrage, Synoria affiche l'écran de connexion. Saisissez votre mot de passe et cliquez <strong>"🔓 Déverrouiller"</strong>.</p>
+
+<div class="info">
+  <strong>⏱️ Verrouillage automatique :</strong> Après 20 minutes d'inactivité, Synoria se verrouille automatiquement. Votre mot de passe est demandé pour reprendre.
+</div>
+
+<!-- ══ 6. MIGRATION DEPUIS V1.X ════════════════════════════════════ -->
+<div class="section-header" id="migration">
+  <div class="section-number">6</div>
+  <div class="section-title">Migration depuis une version précédente</div>
+</div>
+
+<h3>Migration automatique (Windows)</h3>
+<p>Si vous avez déjà installé une version précédente ("Dossier Patient MTC"), Synoria v1.3.1 détecte et déplace automatiquement vos données au premier démarrage :</p>
+
+<div class="mockup">
+<span class="prompt">Avant :</span>  <span class="warn-c">%APPDATA%\Dossier Patient MTC\</span>  ← ancien dossier
+<span class="prompt">Après  :</span>  <span class="ok">%APPDATA%\Synoria\</span>              ← nouveau dossier
+                                  (déplacé automatiquement)
+</div>
+
+<div class="info">
+  <strong>✅ Aucune action requise.</strong> Mot de passe, patients, séances, paramètres — tout est conservé. La migration se fait en une fraction de seconde au démarrage.
+</div>
+
+<h3>Migration manuelle (si la migration automatique n'a pas fonctionné)</h3>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <strong>Ouvrez l'Explorateur Windows</strong> → barre d'adresse → tapez <code>%APPDATA%</code> → Entrée
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <strong>Vous devez voir un dossier <code>Dossier Patient MTC</code></strong><br>
+      <span style="color:#555; font-size:12px;">Si le dossier <code>Synoria</code> n'existe pas encore, renommez-le en <code>Synoria</code></span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <strong>Relancez Synoria</strong> — vos données sont chargées automatiquement
+    </div>
+  </div>
+</div>
+
+<h3>Migration via sauvegarde (recommandé pour changer de PC)</h3>
+<div class="steps">
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content"><strong>Sur l'ancien PC/ancienne version :</strong> cliquez <strong>"💾 Sauvegarder"</strong> (bouton en haut à droite)</div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content"><strong>Copiez</strong> le fichier <code>.enc</code> généré sur une clé USB ou dans le cloud</div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content"><strong>Sur le nouveau PC :</strong> installez Synoria v1.3.1, créez un mot de passe</div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content"><strong>Cliquez "📂 Importer"</strong> → sélectionnez votre fichier <code>.enc</code> → toutes vos données sont restaurées</div>
+  </div>
+</div>
+
+<div class="warn">
+  <strong>⚠️ Note :</strong> La sauvegarde utilise une clé de chiffrement distincte du mot de passe (fichier <code>encryption.key</code> dans <code>%APPDATA%\Synoria\</code>). Pour une migration complète d'un PC à l'autre, copiez aussi ce fichier si vous souhaitez réutiliser les anciennes sauvegardes.
+</div>
+
+<!-- ══ 7. DÉSINSTALLATION ══════════════════════════════════════════ -->
+<div class="section-header" id="desinstall">
+  <div class="section-number">7</div>
+  <div class="section-title">Désinstallation</div>
+</div>
+
+<div class="grid2">
+  <div>
+    <h3>Windows</h3>
+    <p><strong>Méthode 1 — Via Windows :</strong></p>
+    <ol>
+      <li>Paramètres Windows → Applications → "Synoria"</li>
+      <li>Cliquez "Désinstaller"</li>
+    </ol>
+    <p style="margin-top:10px;"><strong>Méthode 2 — Direct :</strong></p>
+    <ol>
+      <li>Ouvrez <code>C:\Program Files\Synoria\</code></li>
+      <li>Double-cliquez <code>Uninstall Synoria.exe</code></li>
+    </ol>
+    <div class="info" style="margin-top:10px;">
+      <strong>Vos données ne sont pas supprimées.</strong> Elles restent dans <code>%APPDATA%\Synoria\</code>. Supprimez ce dossier manuellement si souhaité.
+    </div>
+  </div>
+  <div>
+    <h3>macOS</h3>
+    <ol>
+      <li>Ouvrez le dossier <strong>Applications</strong></li>
+      <li>Faites glisser <strong>Synoria.app</strong> vers la Corbeille</li>
+      <li>Videz la Corbeille</li>
+    </ol>
+    <div class="info" style="margin-top:10px;">
+      <strong>Données Mac :</strong> stockées dans <code>~/Library/Application Support/Synoria/</code>. Supprimez ce dossier si vous souhaitez effacer toutes les données.
+    </div>
+  </div>
+</div>
+
+<!-- ══ 8. PROBLÈMES FRÉQUENTS ══════════════════════════════════════ -->
+<div class="section-header page-break" id="problemes">
+  <div class="section-number">8</div>
+  <div class="section-title">Problèmes fréquents &amp; solutions</div>
+</div>
+
+<h3>🖥️ Windows</h3>
+
+<div class="card" style="margin-bottom:12px;">
+  <h4 style="margin-top:0; color:#802020;">❌ "Windows a protégé votre PC" / SmartScreen bloque l'installation</h4>
+  <p style="font-size:13px;"><strong>Cause :</strong> Windows SmartScreen bloque les exécutables sans signature numérique EV (coût : 300-500€/an).</p>
+  <p style="font-size:13px;"><strong>Solution :</strong> Cliquez <strong>"Informations complémentaires"</strong> → <strong>"Exécuter quand même"</strong>. Cette alerte n'est affichée qu'à la première exécution.</p>
+</div>
+
+<div class="card" style="margin-bottom:12px;">
+  <h4 style="margin-top:0; color:#802020;">❌ L'antivirus supprime ou bloque le fichier</h4>
+  <p style="font-size:13px;"><strong>Cause :</strong> Certains antivirus signalent les exécutables portables non signés comme suspects (faux positif).</p>
+  <p style="font-size:13px;"><strong>Solution :</strong> Ajoutez le fichier ou le dossier en exception dans votre antivirus :<br>
+  Windows Defender : Sécurité Windows → Protection contre les virus → Exclusions → Ajouter une exclusion → Fichier → sélectionnez <code>Synoria Setup 1.3.1.exe</code></p>
+</div>
+
+<div class="card" style="margin-bottom:12px;">
+  <h4 style="margin-top:0; color:#802020;">❌ Écran blanc ou l'application ne démarre pas</h4>
+  <p style="font-size:13px;"><strong>Solution 1 :</strong> Fermez complètement et relancez (parfois au premier démarrage)</p>
+  <p style="font-size:13px;"><strong>Solution 2 :</strong> Clic droit sur le raccourci → <strong>"Exécuter en tant qu'administrateur"</strong></p>
+  <p style="font-size:13px;"><strong>Solution 3 :</strong> Vérifiez que Windows est à jour (Windows Update)</p>
+</div>
+
+<div class="card" style="margin-bottom:12px;">
+  <h4 style="margin-top:0; color:#802020;">❌ Mot de passe refusé après migration</h4>
+  <p style="font-size:13px;"><strong>Cause :</strong> Le dossier de données n'a pas été migré correctement.</p>
+  <p style="font-size:13px;"><strong>Solution :</strong> Vérifiez que <code>%APPDATA%\Synoria\</code> contient bien les fichiers <code>auth.json</code> et <code>database\mtc.sqlite.enc</code>. Si le dossier est vide, copiez manuellement le contenu de <code>%APPDATA%\Dossier Patient MTC\</code>.</p>
+</div>
+
+<h3>🍎 macOS</h3>
+
+<div class="card" style="margin-bottom:12px;">
+  <h4 style="margin-top:0; color:#802020;">❌ "Synoria ne peut pas être ouvert" (Gatekeeper)</h4>
+  <p style="font-size:13px;"><strong>Solution :</strong> <strong>Clic droit</strong> sur Synoria.app → <strong>"Ouvrir"</strong> → dans la nouvelle boîte de dialogue → <strong>"Ouvrir"</strong>. Cette étape n'est nécessaire qu'une seule fois.</p>
+</div>
+
+<div class="card" style="margin-bottom:12px;">
+  <h4 style="margin-top:0; color:#802020;">❌ "L'application est endommagée" (macOS Ventura +)</h4>
+  <p style="font-size:13px;"><strong>Solution :</strong> Ouvrez Terminal et tapez :</p>
+  <div class="mockup" style="margin-top:6px;">
+<span class="prompt">$</span> <span class="cmd">xattr -cr /Applications/Synoria.app</span>
+  </div>
+  <p style="font-size:12px; margin-top:6px;">Puis relancez l'application normalement.</p>
+</div>
+
+<div class="card" style="margin-bottom:12px;">
+  <h4 style="margin-top:0; color:#802020;">❌ Mauvaise version DMG (Intel vs Apple Silicon)</h4>
+  <p style="font-size:13px;"><strong>Vérification :</strong> Menu Pomme → À propos de ce Mac → regardez le champ "Processeur"</p>
+  <ul style="font-size:13px; margin-top:4px;">
+    <li>Affiche "Intel Core …" → utilisez <code>Synoria-1.3.1-x64.dmg</code></li>
+    <li>Affiche "Apple M1/M2/M3" → utilisez <code>Synoria-1.3.1-arm64.dmg</code></li>
+  </ul>
+</div>
+
+<h3>📞 Support</h3>
+<div class="card card-green">
+  <p style="margin:0; font-size:14px;">Pour tout problème non résolu par ce guide, contactez :</p>
+  <p style="margin:8px 0 0; font-size:15px; font-weight:700; color:#3A5F34;">✉️ jeanpierre.timoner.mtc@gmail.com</p>
+  <p style="margin:6px 0 0; font-size:12px; color:#555;">Précisez : version de l'OS, message d'erreur exact (capture d'écran si possible), et comment reproduire le problème.</p>
+</div>
+
+<footer>
+  <strong>Synoria v1.3.1</strong> — Guide d'installation<br>
+  Jean-Pierre Timoner · jeanpierre.timoner.mtc@gmail.com<br>
+  <span style="font-size:11px; opacity:.7;">© Juin 2026 · Données 100% locales · Chiffrement AES-256-GCM</span>
+</footer>
+
+</div>
+</body>
+</html>
