@@ -1,18 +1,17 @@
-import { app, BrowserWindow, shell } from 'electron'
-import { join }                        from 'path'
-import { existsSync, renameSync }      from 'fs'
+import { app, BrowserWindow, shell, Menu } from 'electron'
+import { join }                             from 'path'
+import { existsSync, renameSync }           from 'fs'
 import { initDatabase, closeDatabase, getDb } from './database/connection'
-import { registerAllHandlers }         from './ipc/handlers'
-import { getSettings }                 from './services/settingsService'
-import { exportBackupEncrypted }       from './services/backupService'
-import * as auth                       from './services/authService'
+import { registerAllHandlers }              from './ipc/handlers'
+import { getSettings }                      from './services/settingsService'
+import { exportBackupEncrypted }            from './services/backupService'
+import * as auth                            from './services/authService'
 
 // ── Mode portable / clé USB ────────────────────────────────────────
 const portableDir = process.env.PORTABLE_EXECUTABLE_DIR
 if (portableDir) {
   app.setPath('userData', join(portableDir, 'data'))
 } else if (!app.isPackaged) {
-  // Dev : définit le chemin manuellement + migration depuis l'ancien nom
   const appData    = process.env.APPDATA || ''
   const newPath    = join(appData, 'Synoria')
   const legacyPath = join(appData, 'Dossier Patient MTC')
@@ -21,8 +20,6 @@ if (portableDir) {
   }
   if (appData) app.setPath('userData', newPath)
 }
-// En production (isPackaged=true) : Electron utilise productName="Synoria"
-// comme chemin userData par défaut → pas besoin de setPath
 
 // ── Instance unique ────────────────────────────────────────────────
 const gotTheLock = app.requestSingleInstanceLock()
@@ -32,6 +29,51 @@ const iconPath = process.platform === 'darwin'
   ? join(__dirname, '../../build/icons/icon.png')
   : join(__dirname, '../../build/icons/icon.ico')
 let win: BrowserWindow | null = null
+
+// ── Menu macOS (obligatoire pour activer la saisie clavier) ───────
+function buildMacMenu(): void {
+  if (process.platform !== 'darwin') return
+  const template: Electron.MenuItemConstructorOptions[] = [
+    {
+      label: app.getName(),
+      submenu: [
+        { role: 'about', label: `À propos de ${app.getName()}` },
+        { type: 'separator' },
+        { role: 'services', label: 'Services' },
+        { type: 'separator' },
+        { role: 'hide', label: `Masquer ${app.getName()}` },
+        { role: 'hideOthers', label: 'Masquer les autres' },
+        { role: 'unhide', label: 'Tout afficher' },
+        { type: 'separator' },
+        { role: 'quit', label: `Quitter ${app.getName()}` },
+      ],
+    },
+    {
+      label: 'Édition',
+      submenu: [
+        { role: 'undo',              label: 'Annuler' },
+        { role: 'redo',              label: 'Rétablir' },
+        { type: 'separator' },
+        { role: 'cut',               label: 'Couper' },
+        { role: 'copy',              label: 'Copier' },
+        { role: 'paste',             label: 'Coller' },
+        { role: 'pasteAndMatchStyle',label: 'Coller sans formatage' },
+        { role: 'delete',            label: 'Supprimer' },
+        { role: 'selectAll',         label: 'Tout sélectionner' },
+      ],
+    },
+    {
+      label: 'Fenêtre',
+      submenu: [
+        { role: 'minimize', label: 'Réduire' },
+        { role: 'zoom',     label: 'Agrandir' },
+        { type: 'separator' },
+        { role: 'front',    label: 'Tout ramener au premier plan' },
+      ],
+    },
+  ]
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+}
 
 // ── Sauvegarde automatique ─────────────────────────────────────────
 function runAutoBackup(force = false): void {
@@ -58,7 +100,6 @@ function startAutoSaveEncrypted(): void {
   setInterval(() => {
     if (!auth.hasPassword() || !auth.isKeyLoaded()) return
     try {
-      // Checkpoint WAL avant de lire le fichier
       try { getDb().pragma('wal_checkpoint(TRUNCATE)') } catch {}
       auth.encryptDb()
     } catch { /* DB peut ne pas être prête */ }
@@ -80,18 +121,31 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: false,
+      spellcheck: false,
     },
     show: false,
   })
 
-  win.once('ready-to-show', () => win?.show())
+  // Sur Mac, focus() est indispensable après show() pour activer la saisie clavier
+  win.once('ready-to-show', () => {
+    win?.show()
+    win?.focus()
+  })
 
-  // Fallback Mac : si ready-to-show ne se déclenche pas (erreur chargement)
-  setTimeout(() => { if (win && !win.isVisible()) win.show() }, 3000)
+  // Fallback : affiche la fenêtre si ready-to-show ne se déclenche pas
+  setTimeout(() => {
+    if (win && !win.isVisible()) {
+      win.show()
+      win.focus()
+    }
+  }, 3000)
 
   win.webContents.on('did-fail-load', (_e, code, desc) => {
     console.error('[Window] Échec chargement:', code, desc)
-    if (win && !win.isVisible()) win.show()
+    if (win && !win.isVisible()) {
+      win.show()
+      win.focus()
+    }
   })
 
   app.on('second-instance', () => {
@@ -116,6 +170,8 @@ function createWindow() {
 
 // ── Cycle de vie Electron ──────────────────────────────────────────
 app.whenReady().then(async () => {
+  buildMacMenu()
+
   try {
     if (!auth.hasPassword()) {
       initDatabase()
@@ -134,13 +190,18 @@ app.whenReady().then(async () => {
   startDailyBackupScheduler()
   startAutoSaveEncrypted()
 
+  // Mac : clic sur l'icône Dock — affiche la fenêtre si elle est cachée
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow()
+    } else if (win) {
+      if (!win.isVisible()) win.show()
+      win.focus()
+    }
   })
 })
 
 app.on('window-all-closed', () => {
-  // 1. Sauvegarde automatique des données
   try {
     const settings = getSettings()
     if (settings.autoBackupOnClose) {
@@ -151,12 +212,11 @@ app.on('window-all-closed', () => {
     console.error('[AutoBackup] Erreur fermeture:', e)
   }
 
-  // 2. Chiffrement de la base SQLite avant de quitter
   if (auth.hasPassword() && auth.isKeyLoaded()) {
     try {
-      closeDatabase()      // checkpoint WAL + fermeture
-      auth.encryptDb()     // chiffrer mtc.sqlite → mtc.sqlite.enc
-      auth.deleteWorkingDb() // supprimer le fichier de travail déchiffré
+      closeDatabase()
+      auth.encryptDb()
+      auth.deleteWorkingDb()
       console.log('[Auth] Base de données chiffrée ✓')
     } catch (e) {
       console.error('[Auth] Erreur chiffrement fermeture:', e)
