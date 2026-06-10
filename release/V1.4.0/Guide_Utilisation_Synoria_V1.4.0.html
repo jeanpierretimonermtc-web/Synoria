@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synoria v1.4.0 — Guide d'utilisation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #2C2C2C; background: white; line-height: 1.7; }
+
+  .cover { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(145deg, #3A5F34 0%, #4A7A42 40%, #2A7A6A 100%); color: white; text-align: center; padding: 60px 40px; page-break-after: always; position: relative; overflow: hidden; }
+  .cover::before { content: ''; position: absolute; top: -150px; right: -150px; width: 500px; height: 500px; border-radius: 50%; background: rgba(255,255,255,.05); }
+  .cover::after  { content: ''; position: absolute; bottom: -100px; left: -100px; width: 350px; height: 350px; border-radius: 50%; background: rgba(255,255,255,.04); }
+  .cover-logo { font-size: 72px; margin-bottom: 18px; position: relative; z-index: 1; }
+  .cover-name { font-size: 52px; font-weight: 800; letter-spacing: 6px; margin-bottom: 4px; position: relative; z-index: 1; }
+  .cover-version { font-size: 18px; font-weight: 300; opacity: .8; margin-bottom: 10px; position: relative; z-index: 1; letter-spacing: 2px; }
+  .cover-sep { width: 60px; height: 3px; background: rgba(255,255,255,.5); border-radius: 2px; margin: 20px auto; }
+  .cover-title { font-size: 24px; font-weight: 700; margin-bottom: 8px; position: relative; z-index: 1; }
+  .cover-subtitle { font-size: 15px; opacity: .8; max-width: 520px; line-height: 1.8; position: relative; z-index: 1; }
+  .cover-badges { margin-top: 40px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
+  .cover-badge { background: rgba(255,255,255,.15); border: 1.5px solid rgba(255,255,255,.4); border-radius: 20px; padding: 7px 18px; font-size: 13px; font-weight: 600; }
+  .cover-meta { margin-top: 60px; font-size: 12px; opacity: .6; line-height: 2; position: relative; z-index: 1; }
+
+  .toc { background: #F9FAF8; border-radius: 16px; padding: 30px 34px; margin: 40px 0; }
+  .toc-title { font-size: 16px; font-weight: 700; color: #2C3E24; margin-bottom: 18px; }
+  .toc-list { list-style: none; }
+  .toc-list li { padding: 5px 0; border-bottom: 1px dashed #DDD8D0; }
+  .toc-list li:last-child { border-bottom: none; }
+  .toc-list a { text-decoration: none; color: #4A6741; font-weight: 600; font-size: 13px; }
+  .toc-list .toc-num { display: inline-block; width: 24px; color: #9A9088; font-size: 12px; }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 50px 50px 80px; }
+
+  .section-header { display: flex; align-items: center; gap: 14px; margin: 52px 0 24px; padding-bottom: 12px; border-bottom: 2px solid #4A6741; }
+  .section-number { background: linear-gradient(135deg, #4A6741, #2A7A6A); color: white; border-radius: 50%; width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; }
+  .section-title { font-size: 20px; font-weight: 700; color: #2C3E24; }
+
+  .sub-section { margin: 28px 0 12px; }
+  .sub-section h3 { font-size: 15px; font-weight: 700; color: #2C3E24; border-left: 4px solid #4A6741; padding-left: 12px; margin-bottom: 10px; }
+
+  .step-block { display: flex; gap: 20px; margin-bottom: 14px; background: #F9FAF8; border-radius: 12px; padding: 18px 22px; }
+  .step-num { width: 28px; height: 28px; background: #4A6741; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; margin-top: 2px; }
+  .step-content h4 { font-size: 13px; font-weight: 700; color: #2C3E24; margin-bottom: 5px; }
+  .step-content p  { font-size: 13px; color: #444; margin-bottom: 6px; }
+  .step-content ul { padding-left: 18px; }
+  .step-content ul li { margin-bottom: 3px; color: #444; }
+
+  .info-box { background: #EAF0E8; border-left: 4px solid #4A6741; border-radius: 0 12px 12px 0; padding: 14px 18px; margin: 16px 0; }
+  .info-box.warn { background: #FDF3E3; border-left-color: #C17B2A; }
+  .info-box.blue { background: #E8F0F8; border-left-color: #2A5A8A; }
+  .info-box-title { font-weight: 700; font-size: 12px; color: #2C3E24; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .04em; }
+  .info-box.warn .info-box-title { color: #9A5B12; }
+  .info-box.blue .info-box-title { color: #2A5A8A; }
+
+  .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 18px 0; }
+  .feature-card { background: #F5F2ED; border-radius: 12px; padding: 16px 18px; }
+  .feature-icon { font-size: 24px; margin-bottom: 8px; }
+  .feature-name { font-weight: 700; font-size: 13px; color: #2C3E24; margin-bottom: 4px; }
+  .feature-desc { font-size: 12px; color: #7A7468; line-height: 1.6; }
+
+  .nav-item { display: flex; gap: 14px; align-items: flex-start; padding: 12px 16px; background: #F9FAF8; border-radius: 10px; margin-bottom: 8px; }
+  .nav-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; margin-top: 3px; }
+  .nav-name { font-weight: 700; font-size: 13px; color: #2C3E24; }
+  .nav-desc { font-size: 12px; color: #7A7468; }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 12px; }
+  th { background: #4A6741; color: white; text-align: left; padding: 10px 14px; font-weight: 600; }
+  td { padding: 9px 14px; border-bottom: 1px solid #E8E4DE; }
+  tr:nth-child(even) td { background: #F9FAF8; }
+
+  code { background: #F0EBE4; padding: 2px 7px; border-radius: 5px; font-family: 'Consolas', monospace; font-size: 11px; color: #4A3A2A; }
+
+  .kbd { display: inline-block; background: #2C2C2C; color: white; border-radius: 5px; padding: 2px 8px; font-size: 11px; font-family: 'Consolas', monospace; box-shadow: 0 2px 0 #111; }
+
+  .footer { text-align: center; margin-top: 60px; padding-top: 24px; border-top: 1px solid #E8E4DE; font-size: 11px; color: #B0A99E; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="cover-logo">🌿</div>
+  <div class="cover-name">SYNORIA</div>
+  <div class="cover-version">VERSION 1.4.0</div>
+  <div class="cover-sep"></div>
+  <div class="cover-title">Guide d'utilisation</div>
+  <div class="cover-subtitle">Guide complet pour les praticiens de santé<br>MTC · Kinésiologie · Ostéopathie · Naturopathie</div>
+  <div class="cover-badges">
+    <span class="cover-badge">🔒 Données 100% locales</span>
+    <span class="cover-badge">🛡 Conforme RGPD</span>
+    <span class="cover-badge">🌿 Tous plugin</span>
+  </div>
+  <div class="cover-meta">Synoria — Logiciel de gestion de dossiers patients<br>Juin 2026</div>
+</div>
+
+<div class="container">
+
+  <div class="toc">
+    <div class="toc-title">Table des matières</div>
+    <ol class="toc-list">
+      <li><a href="#s1">Vue d'ensemble</a></li>
+      <li><a href="#s2">Navigation — La sidebar</a></li>
+      <li><a href="#s3">Tableau de bord</a></li>
+      <li><a href="#s4">Gestion des patients</a></li>
+      <li><a href="#s5">Créer et rédiger une séance</a></li>
+      <li><a href="#s6">Historique des séances</a></li>
+      <li><a href="#s7">Calendrier et rendez-vous</a></li>
+      <li><a href="#s8">Comptabilité</a></li>
+      <li><a href="#s9">Sauvegardes</a></li>
+      <li><a href="#s10">RGPD et conformité</a></li>
+      <li><a href="#s11">Plugins (formulaires spécialisés)</a></li>
+      <li><a href="#s12">Paramètres</a></li>
+      <li><a href="#s13">Sécurité et mot de passe</a></li>
+    </ol>
+  </div>
+
+  <!-- SECTION 1 -->
+  <div class="section-header" id="s1">
+    <div class="section-number">1</div>
+    <div class="section-title">Vue d'ensemble</div>
+  </div>
+
+  <p style="color: #555; font-size: 14px; line-height: 1.9; margin-bottom: 20px;">
+    Synoria est un logiciel de bureau pour la gestion de dossiers patients de praticiens de santé.
+    Toutes les données sont <strong>stockées localement</strong> sur votre ordinateur, chiffrées avec l'algorithme
+    AES-256-GCM, et ne quittent jamais votre machine. Il n'y a pas de connexion internet, pas de cloud, pas d'abonnement.
+  </p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📋</div>
+      <div class="feature-name">Dossiers patients</div>
+      <div class="feature-desc">Informations complètes, alertes, médicaments, antécédents, consentement RGPD</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📝</div>
+      <div class="feature-name">Séances détaillées</div>
+      <div class="feature-desc">Formulaire adapté à votre spécialité via le système de plugins</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📅</div>
+      <div class="feature-name">Calendrier</div>
+      <div class="feature-desc">Vues Mois / Semaine / Jour, rendez-vous patients et invités</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💶</div>
+      <div class="feature-name">Comptabilité</div>
+      <div class="feature-desc">Recettes mensuelles, cotisations URSSAF, dépenses, factures PDF</div>
+    </div>
+  </div>
+
+  <!-- SECTION 2 -->
+  <div class="section-header" id="s2">
+    <div class="section-number">2</div>
+    <div class="section-title">Navigation — La sidebar</div>
+  </div>
+
+  <p style="color: #555; margin-bottom: 14px;">La sidebar gauche est votre point d'entrée pour toutes les sections du logiciel. Chaque entrée est identifiée par une icône colorée iOS-style.</p>
+
+  <div class="nav-item"><div class="nav-dot" style="background:#5B8CF7"></div><div><div class="nav-name">Tableau de bord</div><div class="nav-desc">Vue d'ensemble : stats, activité 6 mois, prochains RDV, dernières séances</div></div></div>
+  <div class="nav-item"><div class="nav-dot" style="background:#30D158"></div><div><div class="nav-name">Patients</div><div class="nav-desc">Création, modification et consultation des fiches patients</div></div></div>
+  <div class="nav-item"><div class="nav-dot" style="background:#4A6741"></div><div><div class="nav-name">Nouvelle séance</div><div class="nav-desc">Saisie d'une nouvelle séance pour un patient</div></div></div>
+  <div class="nav-item"><div class="nav-dot" style="background:#BF5AF2"></div><div><div class="nav-name">Séances</div><div class="nav-desc">Historique et consultation de toutes les séances enregistrées</div></div></div>
+  <div class="nav-item"><div class="nav-dot" style="background:#FF453A"></div><div><div class="nav-name">Calendrier</div><div class="nav-desc">Gestion des rendez-vous (vues Mois, Semaine, Jour)</div></div></div>
+  <div class="nav-item"><div class="nav-dot" style="background:#32ADE6"></div><div><div class="nav-name">Comptabilité</div><div class="nav-desc">Revenus mensuels, URSSAF, export Excel</div></div></div>
+  <div class="nav-item"><div class="nav-dot" style="background:#FF9F0A"></div><div><div class="nav-name">Dépenses</div><div class="nav-desc">Dépenses variables et configurations</div></div></div>
+  <div class="nav-item"><div class="nav-dot" style="background:#0A84FF"></div><div><div class="nav-name">Factures</div><div class="nav-desc">Journal et génération de factures PDF</div></div></div>
+  <div class="nav-item"><div class="nav-dot" style="background:#6E6CD8"></div><div><div class="nav-name">RGPD</div><div class="nav-desc">Consentements, journal d'accès, alertes de conservation</div></div></div>
+  <div class="nav-item"><div class="nav-dot" style="background:#8E8E93"></div><div><div class="nav-name">Paramètres</div><div class="nav-desc">Configuration générale, sauvegardes, plugins, mot de passe</div></div></div>
+
+  <!-- SECTION 3 -->
+  <div class="section-header" id="s3">
+    <div class="section-number">3</div>
+    <div class="section-title">Tableau de bord</div>
+  </div>
+
+  <p style="color: #555; margin-bottom: 14px;">Le tableau de bord présente une synthèse de votre activité dès l'ouverture du logiciel.</p>
+
+  <table>
+    <tr><th>Élément</th><th>Description</th></tr>
+    <tr><td><strong>Patients actifs</strong></td><td>Total des patients non archivés + barre de progression "patients suivis"</td></tr>
+    <tr><td><strong>Séances ce mois</strong></td><td>Nombre de séances du mois en cours + barre vs mois le plus chargé</td></tr>
+    <tr><td><strong>Prochain RDV</strong></td><td>Date et patient du prochain rendez-vous du calendrier</td></tr>
+    <tr><td><strong>Séances cette semaine</strong></td><td>Compteur des séances de la semaine en cours</td></tr>
+    <tr><td><strong>Graphe 6 mois</strong></td><td>Barres SVG des 6 derniers mois — mois courant en vert, historique en gris graduel</td></tr>
+    <tr><td><strong>Dernières séances</strong></td><td>Liste des 5 séances les plus récentes avec accès direct</td></tr>
+  </table>
+
+  <!-- SECTION 4 -->
+  <div class="section-header" id="s4">
+    <div class="section-number">4</div>
+    <div class="section-title">Gestion des patients</div>
+  </div>
+
+  <div class="sub-section">
+    <h3>Créer un patient</h3>
+  </div>
+
+  <div class="step-block">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h4>Ouvrir le formulaire</h4>
+      <p>Cliquez sur <strong>+ Nouveau patient</strong> en haut à droite de la page Patients.</p>
+    </div>
+  </div>
+
+  <div class="step-block">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h4>Renseigner les informations</h4>
+      <ul>
+        <li><strong>Obligatoires :</strong> Nom, Prénom</li>
+        <li><strong>Recommandés :</strong> Date de naissance, Téléphone</li>
+        <li><strong>Optionnels :</strong> Email, Adresse, Profession, Médecin traitant, Médicaments, Antécédents, Alertes, Notes générales</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="step-block">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h4>Consentement RGPD</h4>
+      <p>Cochez la case <strong>Consentement donné</strong> si le patient a signé votre formulaire de consentement. La date est enregistrée automatiquement.</p>
+    </div>
+  </div>
+
+  <div class="sub-section">
+    <h3>Actions sur une fiche patient</h3>
+  </div>
+
+  <table>
+    <tr><th>Action</th><th>Description</th></tr>
+    <tr><td>+ Séance</td><td>Ouvre le formulaire Nouvelle séance pré-rempli avec ce patient</td></tr>
+    <tr><td>📋 Séances</td><td>Filtre l'historique des séances sur ce patient uniquement</td></tr>
+    <tr><td>🧾 Facture</td><td>Génère une facture PDF pour ce patient</td></tr>
+    <tr><td>✏️ Modifier</td><td>Édite les informations du patient (sur survol)</td></tr>
+    <tr><td>💾 Backup</td><td>Exporte une sauvegarde de ce seul patient (sur survol)</td></tr>
+    <tr><td>📦 Archiver</td><td>Masque le patient de la liste active (sur survol)</td></tr>
+    <tr><td>🗑 Supprimer</td><td>Suppression définitive avec confirmation (sur survol)</td></tr>
+  </table>
+
+  <div class="info-box warn">
+    <div class="info-box-title">⚠️ Archiver vs Supprimer</div>
+    <p>Privilégiez l'<strong>archivage</strong> à la suppression pour les patients inactifs. Un patient archivé conserve tout son historique et peut être réactivé à tout moment. La suppression est irréversible.</p>
+  </div>
+
+  <!-- SECTION 5 -->
+  <div class="section-header" id="s5">
+    <div class="section-number">5</div>
+    <div class="section-title">Créer et rédiger une séance</div>
+  </div>
+
+  <div class="step-block">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h4>Sélectionner le patient</h4>
+      <p>Cliquez sur <strong>Nouvelle séance</strong> dans la sidebar. Sélectionnez le patient dans la liste déroulante ou via "+ Séance" directement depuis sa fiche.</p>
+    </div>
+  </div>
+
+  <div class="step-block">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h4>Remplir les sections</h4>
+      <p>Les sections disponibles dépendent du plugin actif :</p>
+      <ul>
+        <li><strong>Sans plugin :</strong> Motif · Évolution · Anamnèse · Traitement · Réactions</li>
+        <li><strong>Plugin MTC :</strong> Prise de notes · Questionnaire systèmes · Observation · Tests énergétiques · Analyse · Traitement · Barrage</li>
+        <li><strong>Autre plugin :</strong> Les sections définies dans le fichier .json du plugin</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="step-block">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h4>Barre de formatage</h4>
+      <p>Dans les zones de texte enrichi (fond légèrement coloré), utilisez la <strong>barre de formatage</strong> en haut de l'application :</p>
+      <ul>
+        <li><span class="kbd">G</span> Gras · <span class="kbd">I</span> Italique · <span class="kbd">S</span> Souligné</li>
+        <li>Listes à puces · listes numérotées</li>
+        <li>La barre s'active automatiquement quand le curseur est dans une zone de texte enrichi</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="step-block">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <h4>Planifier la prochaine séance</h4>
+      <p>Dans la section <strong>Plan de suivi</strong> (tout en bas), saisissez la date du prochain rendez-vous. Un rendez-vous est automatiquement créé dans le calendrier, ou mis à jour s'il existe déjà.</p>
+    </div>
+  </div>
+
+  <div class="step-block">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <h4>Enregistrer</h4>
+      <p>Cliquez sur <strong>Enregistrer la séance</strong>. Vous êtes redirigé vers le résumé de la séance depuis lequel vous pouvez exporter en Excel, JSON ou imprimer.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 6 -->
+  <div class="section-header" id="s6">
+    <div class="section-number">6</div>
+    <div class="section-title">Historique des séances</div>
+  </div>
+
+  <p style="color: #555; margin-bottom: 14px;">La page Séances affiche toutes les séances enregistrées, groupées par mois.</p>
+
+  <table>
+    <tr><th>Fonctionnalité</th><th>Description</th></tr>
+    <tr><td>Filtre par patient</td><td>Tapez un nom dans le champ de recherche pour ne voir que ses séances</td></tr>
+    <tr><td>Groupement par mois</td><td>En-têtes "JUIN 2026" séparant les séances par période</td></tr>
+    <tr><td>Sélection</td><td>Cliquez sur une séance pour voir son résumé complet dans le panneau droit</td></tr>
+    <tr><td>Export Excel</td><td>Depuis le résumé : exporte les données de la séance au format .xlsx</td></tr>
+    <tr><td>Export JSON</td><td>Depuis le résumé : exporte les données brutes de la séance</td></tr>
+    <tr><td>Imprimer</td><td>Depuis le résumé : ouvre la boîte de dialogue d'impression</td></tr>
+    <tr><td>Modifier</td><td>Retourne vers le formulaire de saisie pour modifier la séance</td></tr>
+    <tr><td>Dupliquer</td><td>Crée une nouvelle séance pré-remplie avec les données de la séance sélectionnée</td></tr>
+    <tr><td>Supprimer</td><td>Suppression définitive avec confirmation</td></tr>
+  </table>
+
+  <!-- SECTION 7 -->
+  <div class="section-header" id="s7">
+    <div class="section-number">7</div>
+    <div class="section-title">Calendrier et rendez-vous</div>
+  </div>
+
+  <div class="sub-section"><h3>Les trois vues</h3></div>
+
+  <table>
+    <tr><th>Vue</th><th>Utilisation</th></tr>
+    <tr><td><strong>Mois</strong></td><td>Vue globale du mois, aperçu des RDV par jour. Double-clic sur un jour → vue Jour</td></tr>
+    <tr><td><strong>Semaine</strong></td><td>Colonne par jour de la semaine, créneaux de 30 min, indicateur heure courante</td></tr>
+    <tr><td><strong>Jour</strong></td><td>Focus sur une journée, détail de tous les RDV du jour</td></tr>
+  </table>
+
+  <div class="sub-section"><h3>Créer un rendez-vous</h3></div>
+
+  <div class="step-block">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h4>Clic sur "+ RDV" ou sur un créneau libre</h4>
+      <p>Dans les vues Semaine ou Jour, cliquez sur un créneau horaire vide pour pré-remplir la date et l'heure. Une modal s'ouvre.</p>
+    </div>
+  </div>
+
+  <div class="step-block">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h4>Renseigner le rendez-vous</h4>
+      <ul>
+        <li><strong>Patient existant :</strong> sélectionnez-le dans la liste — le RDV sera lié à sa fiche</li>
+        <li><strong>Invité :</strong> saisissez Nom, Prénom, Téléphone (sans créer de fiche patient)</li>
+        <li>Heure de début / fin · Note libre</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="step-block">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h4>Créer la séance depuis un RDV</h4>
+      <p>Sur un RDV patient, le bouton <strong>"Créer la séance"</strong> navigue directement vers le formulaire Nouvelle séance avec le patient et la date pré-remplis.</p>
+    </div>
+  </div>
+
+  <div class="info-box blue">
+    <div class="info-box-title">ℹ️ Synchronisation automatique</div>
+    <p>Quand vous renseignez une prochaine séance dans le formulaire de saisie, un rendez-vous est <strong>automatiquement créé ou mis à jour</strong> dans le calendrier. Pas besoin de créer le RDV manuellement.</p>
+  </div>
+
+  <!-- SECTION 8 -->
+  <div class="section-header" id="s8">
+    <div class="section-number">8</div>
+    <div class="section-title">Comptabilité</div>
+  </div>
+
+  <table>
+    <tr><th>Fonctionnalité</th><th>Description</th></tr>
+    <tr><td>Types de consultation</td><td>Paramétrez vos tarifs (libellé + prix) dans Paramètres → Comptabilité</td></tr>
+    <tr><td>Saisie mensuelle</td><td>Pour chaque mois, saisissez le nombre de consultations par type — le total est calculé automatiquement</td></tr>
+    <tr><td>Taux URSSAF</td><td>Saisissez le taux de l'année pour le calcul des cotisations estimées</td></tr>
+    <tr><td>Dépenses variables</td><td>Page Dépenses : dépenses ponctuelles par catégorie</td></tr>
+    <tr><td>Export Excel</td><td>Génère un tableau annuel complet (recettes, URSSAF, dépenses) au format .xlsx</td></tr>
+    <tr><td>Factures</td><td>Génération PDF depuis la fiche patient ou la page Factures. Numérotation automatique.</td></tr>
+  </table>
+
+  <!-- SECTION 9 -->
+  <div class="section-header" id="s9">
+    <div class="section-number">9</div>
+    <div class="section-title">Sauvegardes</div>
+  </div>
+
+  <div class="sub-section"><h3>Sauvegarde manuelle</h3></div>
+
+  <p style="color: #555; margin-bottom: 12px;">Cliquez sur le bouton <strong>Sauvegarder</strong> (vert, en-tête) à tout moment. Un fichier <code>.json.enc</code> chiffré est créé dans le dossier de sauvegarde configuré.</p>
+
+  <div class="sub-section"><h3>Sauvegarde automatique</h3></div>
+
+  <p style="color: #555; margin-bottom: 12px;">Activez la sauvegarde automatique dans <strong>Paramètres → Sauvegardes</strong> :</p>
+  <ul style="padding-left: 20px; color: #444; margin-bottom: 14px;">
+    <li><strong>À la fermeture :</strong> sauvegarde à chaque fermeture du logiciel</li>
+    <li><strong>Quotidienne :</strong> sauvegarde automatique une fois par jour</li>
+    <li><strong>Rétention :</strong> nombre de jours à conserver (les plus anciennes sont supprimées)</li>
+  </ul>
+
+  <div class="sub-section"><h3>Restaurer une sauvegarde</h3></div>
+
+  <div class="step-block">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h4>Cliquer sur Importer</h4>
+      <p>Bouton amber <strong>Importer</strong> en haut à droite. Sélectionnez le fichier <code>.json.enc</code>.</p>
+    </div>
+  </div>
+
+  <div class="step-block">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h4>Confirmer la restauration</h4>
+      <p>⚠️ La restauration <strong>remplace toutes vos données actuelles</strong> par celles de la sauvegarde. Un avertissement vous demande de confirmer avant de procéder.</p>
+    </div>
+  </div>
+
+  <div class="info-box warn">
+    <div class="info-box-title">⚠️ Format propriétaire</div>
+    <p>Les fichiers <code>.json.enc</code> sont chiffrés avec la clé de votre installation. Une sauvegarde créée sur l'installation A peut uniquement être restaurée sur <strong>la même installation</strong> (même fichier <code>encryption.key</code>).</p>
+  </div>
+
+  <!-- SECTION 10 -->
+  <div class="section-header" id="s10">
+    <div class="section-number">10</div>
+    <div class="section-title">RGPD et conformité</div>
+  </div>
+
+  <table>
+    <tr><th>Fonctionnalité</th><th>Emplacement</th></tr>
+    <tr><td>Consentements patients</td><td>Fiche patient (case à cocher) · Page RGPD → onglet Consentements</td></tr>
+    <tr><td>Journal d'accès</td><td>Enregistré automatiquement : ouverture fiche, consultation séance</td></tr>
+    <tr><td>Alertes conservation</td><td>Page RGPD → onglet Alertes — patients sans séance depuis N ans</td></tr>
+    <tr><td>Durée de conservation</td><td>Paramètres → RGPD (défaut : 10 ans)</td></tr>
+    <tr><td>Notice Art. 13</td><td>Paramètres → RGPD → Notice — texte personnalisable</td></tr>
+    <tr><td>Registre Art. 30</td><td>Page RGPD → bouton "Exporter le registre" → fichier HTML</td></tr>
+  </table>
+
+  <!-- SECTION 11 -->
+  <div class="section-header" id="s11">
+    <div class="section-number">11</div>
+    <div class="section-title">Plugins (formulaires spécialisés)</div>
+  </div>
+
+  <p style="color: #555; margin-bottom: 14px;">Les plugins permettent d'adapter le formulaire de séance à votre spécialité. Deux plugins neutres sont fournis avec cette version.</p>
+
+  <table>
+    <tr><th>Plugin</th><th>Spécialité</th><th>Formulaire</th></tr>
+    <tr><td><code>mtc.plugin.json</code></td><td>Médecine Traditionnelle Chinoise</td><td>Formulaire MTC intégré complet (langue, pouls, 5 éléments…)</td></tr>
+    <tr><td><code>kinesio.plugin.json</code></td><td>Kinésiologie</td><td>Contexte RDV, signes psycho/physiques, motivation, objectifs</td></tr>
+  </table>
+
+  <div class="sub-section"><h3>Installer un plugin</h3></div>
+
+  <div class="step-block">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h4>Paramètres → Plugin</h4>
+      <p>Cliquez sur <strong>Importer un plugin</strong>, sélectionnez le fichier <code>.json</code> du plugin souhaité dans le dossier <em>Plugins/</em>.</p>
+    </div>
+  </div>
+
+  <div class="step-block">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h4>Activer le plugin</h4>
+      <p>Le plugin importé est immédiatement actif. Le formulaire de la page Nouvelle Séance bascule automatiquement vers le formulaire du plugin.</p>
+    </div>
+  </div>
+
+  <div class="info-box blue">
+    <div class="info-box-title">ℹ️ Données historiques préservées</div>
+    <p>Chaque séance enregistrée conserve une copie du schéma du plugin au moment de la saisie. Changer de plugin ne modifie pas les séances déjà enregistrées.</p>
+  </div>
+
+  <!-- SECTION 12 -->
+  <div class="section-header" id="s12">
+    <div class="section-number">12</div>
+    <div class="section-title">Paramètres</div>
+  </div>
+
+  <table>
+    <tr><th>Section</th><th>Contenu</th></tr>
+    <tr><td>Sauvegardes</td><td>Dossiers de destination, fréquence auto, rétention</td></tr>
+    <tr><td>Factures</td><td>Dossier de sortie, taux TVA, numérotation</td></tr>
+    <tr><td>Comptabilité</td><td>Types de consultations, catégories de dépenses</td></tr>
+    <tr><td>RGPD</td><td>Nom/email praticien, durée conservation, notice Art. 13</td></tr>
+    <tr><td>Plugin</td><td>Import, affichage, suppression du plugin actif</td></tr>
+    <tr><td>Mises à jour</td><td>Vérification manuelle d'une mise à jour disponible</td></tr>
+    <tr><td>Mot de passe</td><td>Changer le mot de passe (ancien requis)</td></tr>
+  </table>
+
+  <!-- SECTION 13 -->
+  <div class="section-header" id="s13">
+    <div class="section-number">13</div>
+    <div class="section-title">Sécurité et mot de passe</div>
+  </div>
+
+  <div class="info-box">
+    <div class="info-box-title">✅ Chiffrement de bout en bout</div>
+    <p>La base de données est déchiffrée au login et rechiffrée à la fermeture (AES-256-GCM). Sur le disque, seul le fichier <code>.sqlite.enc</code> chiffré existe — jamais en clair à l'arrêt.</p>
+  </div>
+
+  <table>
+    <tr><th>Fonctionnalité</th><th>Description</th></tr>
+    <tr><td>Verrouillage auto</td><td>Après 20 minutes d'inactivité, l'application se verrouille</td></tr>
+    <tr><td>Verrouillage manuel</td><td>Bouton "Verrouiller" en bas de la sidebar (badge rose)</td></tr>
+    <tr><td>Changer le mot de passe</td><td>Paramètres → Mot de passe (ancien mot de passe requis)</td></tr>
+    <tr><td>Mot de passe oublié</td><td>⚠️ Aucune récupération possible — les données sont irrémédiablement perdues</td></tr>
+  </table>
+
+  <div class="info-box warn">
+    <div class="info-box-title">⚠️ Conservez votre mot de passe</div>
+    <p>En cas d'oubli du mot de passe, il est <strong>impossible de récupérer les données</strong> (c'est le principe même du chiffrement fort). Notez votre mot de passe dans un gestionnaire de mots de passe ou un endroit sécurisé.</p>
+  </div>
+
+  <div class="footer">
+    Synoria v1.4.0 · Guide d'utilisation · Juin 2026<br>
+    Toutes données stockées localement · Chiffrement AES-256-GCM · Conforme RGPD
+  </div>
+
+</div>
+</body>
+</html>

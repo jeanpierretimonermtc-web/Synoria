@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Routes, Route, NavLink, useNavigate } from 'react-router-dom'
+import { SaveIcon, FolderIcon, LockIcon as LockIco, DashboardIcon, UsersIcon, PlusCircle, ClipboardIcon, CalendarIcon, BarChartIcon, TrendDownIcon, FileTextIcon, ShieldIcon, SettingsIcon } from './components/common/Icon'
 import DashboardPage from './pages/DashboardPage'
 import PatientsPage from './pages/PatientsPage'
 import NewSessionPage from './pages/NewSessionPage'
@@ -61,13 +62,19 @@ export default function App() {
     return <LockScreen mode={authState} onUnlock={() => setAuthState('unlocked')} />
   }
 
+  const handleLock = async () => {
+    await window.mtcApi.authLock()
+    setAuthState('locked')
+  }
+
   return (
     <ToastContext.Provider value={showToast}>
       <div className="app-shell">
-        {/* HEADER */}
+
+        {/* ── HEADER compact ── */}
         <header className="app-header">
           <div className="logo">
-            <img src="./Synoria.png" alt="Logo Synoria" className="logo-img" />
+            <img src="./Synoria.png" alt="Logo" className="logo-img" />
             <img src="./Text Synoria fond blanc.png" alt="SYNORIA" className="logo-title-img" />
             <span title="Données chiffrées AES-256" className="logo-secure">🔒 chiffré</span>
           </div>
@@ -76,80 +83,117 @@ export default function App() {
           </div>
         </header>
 
-        {/* NAV */}
-        <nav className="app-nav">
-          <NavLink to="/" end className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
-            <span className="tab-dot" style={{ background: 'var(--accent)' }} />
-            Tableau de bord
-          </NavLink>
-          <NavLink to="/patients" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
-            <span className="tab-dot" style={{ background: 'var(--blue-mid)' }} />
-            Patients
-          </NavLink>
-          <NavLink to="/nouvelle" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
-            <span className="tab-dot" style={{ background: 'var(--purple-mid)' }} />
-            + Nouvelle séance
-          </NavLink>
-          <NavLink to="/seances" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
-            <span className="tab-dot" style={{ background: 'var(--amber)' }} />
-            Séances
-          </NavLink>
-          <NavLink to="/calendrier" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
-            <span className="tab-dot" style={{ background: 'var(--rose-mid)' }} />
-            Calendrier
-          </NavLink>
-          <NavLink to="/comptabilite" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
-            <span className="tab-dot" style={{ background: 'var(--blue-mid)' }} />
-            📊 Comptabilité
-          </NavLink>
-          <NavLink to="/depenses" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
-            <span className="tab-dot" style={{ background: 'var(--amber)' }} />
-            📉 Dépenses
-          </NavLink>
-          <NavLink to="/factures-liste" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
-            <span className="tab-dot" style={{ background: 'var(--teal-mid)' }} />
-            🧾 Factures
-          </NavLink>
-          <NavLink to="/rgpd" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
-            <span className="tab-dot" style={{ background: 'var(--teal)' }} />
-            🔒 RGPD
-          </NavLink>
-          <NavLink to="/parametres" className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}>
-            <span className="tab-dot" style={{ background: 'var(--text-muted)' }} />
-            ⚙️ Paramètres
-          </NavLink>
-        </nav>
+        {/* ── CORPS = sidebar + contenu ── */}
+        <div className="app-body">
 
-        {/* BARRE DE FORMATAGE GLOBALE */}
-        <FormattingToolbar />
+          {/* ── SIDEBAR ── */}
+          <aside className="app-sidebar">
+            <nav className="sidebar-nav">
 
-        {/* MAIN */}
-        <main className="app-main">
-          <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/patients" element={<PatientsPage />} />
-            <Route path="/nouvelle" element={<NewSessionPage />} />
-            <Route path="/nouvelle/:patientId" element={<NewSessionPage />} />
-            <Route path="/modifier/:sessionId" element={<NewSessionPage />} />
-            {/* Nouvelle page unifiée */}
-            <Route path="/seances"            element={<SeancesPage />} />
-            <Route path="/seances/:sessionId" element={<SeancesPage />} />
-            {/* Redirects rétro-compatibles */}
-            <Route path="/historique"          element={<SeancesPage />} />
-            <Route path="/resume"              element={<SeancesPage />} />
-            <Route path="/resume/:sessionId"   element={<SeancesPage />} />
-            <Route path="/calendrier" element={<CalendarPage />} />
-            <Route path="/comptabilite"  element={<ComptaPage />} />
-            <Route path="/depenses"      element={<DepensesPage />} />
-            <Route path="/factures-liste" element={<FacturesListPage />} />
-            <Route path="/parametres"    element={<SettingsPage />} />
-            <Route path="/rgpd"          element={<RgpdPage />} />
-          </Routes>
-        </main>
+              {/* Groupe principal */}
+              <NavLink to="/" end className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
+                <span className="sidebar-icon" style={{ background: '#5B8CF7' }}><DashboardIcon size={14} /></span>
+                Tableau de bord
+              </NavLink>
+              <NavLink to="/patients" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
+                <span className="sidebar-icon" style={{ background: '#30D158' }}><UsersIcon size={14} /></span>
+                Patients
+              </NavLink>
+              <NavLink to="/nouvelle" className={({ isActive }) => `sidebar-item new-session${isActive ? ' active' : ''}`}>
+                <span className="sidebar-icon" style={{ background: '#4A6741' }}><PlusCircle size={14} /></span>
+                Nouvelle séance
+              </NavLink>
+
+              {/* Planning */}
+              <div className="sidebar-section-label">Planning</div>
+              <NavLink to="/seances" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
+                <span className="sidebar-icon" style={{ background: '#BF5AF2' }}><ClipboardIcon size={14} /></span>
+                Séances
+              </NavLink>
+              <NavLink to="/calendrier" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
+                <span className="sidebar-icon" style={{ background: '#FF453A' }}><CalendarIcon size={14} /></span>
+                Calendrier
+              </NavLink>
+
+              {/* Finances */}
+              <div className="sidebar-section-label">Finances</div>
+              <NavLink to="/comptabilite" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
+                <span className="sidebar-icon" style={{ background: '#32ADE6' }}><BarChartIcon size={14} /></span>
+                Comptabilité
+              </NavLink>
+              <NavLink to="/depenses" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
+                <span className="sidebar-icon" style={{ background: '#FF9F0A' }}><TrendDownIcon size={14} /></span>
+                Dépenses
+              </NavLink>
+              <NavLink to="/factures-liste" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
+                <span className="sidebar-icon" style={{ background: '#0A84FF' }}><FileTextIcon size={14} /></span>
+                Factures
+              </NavLink>
+
+              {/* Administration */}
+              <div className="sidebar-section-label">Administration</div>
+              <NavLink to="/rgpd" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
+                <span className="sidebar-icon" style={{ background: '#6E6CD8' }}><ShieldIcon size={14} /></span>
+                RGPD
+              </NavLink>
+              <NavLink to="/parametres" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
+                <span className="sidebar-icon" style={{ background: '#8E8E93' }}><SettingsIcon size={14} /></span>
+                Paramètres
+              </NavLink>
+
+            </nav>
+
+            {/* Bouton verrouiller en bas */}
+            <div className="sidebar-bottom">
+              <button className="sidebar-lock-btn" onClick={handleLock}>
+                <span className="sidebar-icon" style={{ background: '#8A2A4A' }}>
+                  <LockIco size={14} />
+                </span>
+                Verrouiller
+              </button>
+            </div>
+          </aside>
+
+          {/* ── CONTENU ── */}
+          <div className="app-content">
+            <FormattingToolbar />
+            <main className="app-main">
+              <Routes>
+                <Route path="/" element={<DashboardPage />} />
+                <Route path="/patients" element={<PatientsPage />} />
+                <Route path="/nouvelle" element={<NewSessionPage />} />
+                <Route path="/nouvelle/:patientId" element={<NewSessionPage />} />
+                <Route path="/modifier/:sessionId" element={<NewSessionPage />} />
+                <Route path="/seances"             element={<SeancesPage />} />
+                <Route path="/seances/:sessionId"  element={<SeancesPage />} />
+                <Route path="/historique"          element={<SeancesPage />} />
+                <Route path="/resume"              element={<SeancesPage />} />
+                <Route path="/resume/:sessionId"   element={<SeancesPage />} />
+                <Route path="/calendrier"          element={<CalendarPage />} />
+                <Route path="/comptabilite"        element={<ComptaPage />} />
+                <Route path="/depenses"            element={<DepensesPage />} />
+                <Route path="/factures-liste"      element={<FacturesListPage />} />
+                <Route path="/parametres"          element={<SettingsPage />} />
+                <Route path="/rgpd"                element={<RgpdPage />} />
+              </Routes>
+            </main>
+          </div>
+
+        </div>{/* fin app-body */}
 
         {toast && <Toast message={toast.message} type={toast.type} />}
       </div>
     </ToastContext.Provider>
+  )
+}
+
+/* SvgIcon inline conservé pour les cas ponctuels dans ce fichier */
+function SvgIcon({ children }: { children: React.ReactNode }) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      {children}
+    </svg>
   )
 }
 
@@ -243,18 +287,19 @@ function FormattingToolbar() {
   )
 }
 
+
 function BackupButton({ showToast }: { showToast: (msg: string, type?: 'success' | 'error') => void }) {
   const handleBackup = async () => {
     try {
       await window.mtcApi.exportBackupJson()
-      showToast('Sauvegarde créée dans les 2 dossiers ✓', 'success')
+      showToast('Sauvegarde créée ✓', 'success')
     } catch (e: any) {
       showToast(`Erreur sauvegarde : ${e?.message || e}`, 'error')
     }
   }
   const handleImport = async () => {
     const path = await window.mtcApi.showOpenDialog({
-      filters: [{ name: 'Sauvegarde MTC', extensions: ['enc', 'json'] }],
+      filters: [{ name: 'Sauvegarde Synoria', extensions: ['enc', 'json'] }],
     })
     if (!path) return
     try {
@@ -267,9 +312,19 @@ function BackupButton({ showToast }: { showToast: (msg: string, type?: 'success'
     }
   }
   return (
-    <div style={{ display: 'flex', gap: 8 }}>
-      <button className="btn btn-secondary btn-sm" onClick={handleBackup}>💾 Sauvegarder</button>
-      <button className="btn btn-secondary btn-sm" onClick={handleImport}>📂 Importer</button>
+    <div style={{ display: 'flex', gap: 6 }}>
+      <button className="btn-header-save" onClick={handleBackup}>
+        <span className="btn-header-icon" style={{ background: '#4A6741' }}>
+          <SaveIcon size={12} />
+        </span>
+        Sauvegarder
+      </button>
+      <button className="btn-header-import" onClick={handleImport}>
+        <span className="btn-header-icon" style={{ background: '#C17B2A' }}>
+          <FolderIcon size={12} />
+        </span>
+        Importer
+      </button>
     </div>
   )
 }

@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import type { Patient } from '../../shared/types'
 import { ToastContext } from '../App'
 import { fmtDate, getInitials, calcAge } from '../utils/format'
+import PageHeader from '../components/common/PageHeader'
+import EmptyState from '../components/common/EmptyState'
+import { UsersIcon, SearchIcon } from '../components/common/Icon'
 
 /* ─── Modal de facturation ─────────────────────────────────────── */
 function InvoiceModal({ patient, onClose, showToast }: {
@@ -229,15 +232,21 @@ export default function PatientsPage() {
 
   return (
     <div>
-      {/* Barre de recherche + actions */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', gap: 12 }}>
-        <div className="search-wrap" style={{ flex: 1 }}>
+      <PageHeader
+        title="Patients"
+        count={counts.active}
+        subtitle={counts.active === 0 ? 'Aucun patient actif' : `${counts.active} patient${counts.active > 1 ? 's' : ''} actif${counts.active > 1 ? 's' : ''}`}
+        action={<button className="btn btn-primary" onClick={openCreate}>+ Nouveau patient</button>}
+      />
+
+      {/* Barre de recherche */}
+      <div style={{ marginBottom: '1rem' }}>
+        <div className="search-wrap">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
           </svg>
           <input type="text" placeholder="Rechercher un patient…" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <button className="btn btn-primary" onClick={openCreate}>+ Nouveau patient</button>
       </div>
 
       {/* Index alphabétique */}
@@ -272,13 +281,29 @@ export default function PatientsPage() {
 
       {/* Liste */}
       {filtered.length === 0 ? (
-        <div className="empty" style={{ padding: '2rem 0' }}>
-          {filter === 'archived'
-            ? 'Aucun patient archivé.'
-            : alphFilter
-              ? `Aucun patient dont le nom commence par "${alphFilter}".`
-              : `Aucun patient${search ? ' trouvé' : ''}.`}
-        </div>
+        patients.length === 0 ? (
+          <EmptyState
+            icon={<UsersIcon size={30} />}
+            title="Aucun patient enregistré"
+            description="Ajoutez votre premier patient pour commencer à gérer vos dossiers."
+            action={<button className="btn btn-primary" onClick={openCreate}>+ Nouveau patient</button>}
+          />
+        ) : (
+          <EmptyState
+            icon={<SearchIcon size={28} />}
+            title={
+              filter === 'archived' ? 'Aucun patient archivé'
+              : alphFilter ? `Aucun patient en "${alphFilter}"`
+              : 'Aucun résultat'
+            }
+            description={
+              search
+                ? `Aucun patient ne correspond à "${search}".`
+                : filter === 'archived' ? 'Vous n\'avez pas encore archivé de patients.'
+                : undefined
+            }
+          />
+        )
       ) : filtered
         .sort((a, b) => a.last_name.localeCompare(b.last_name) || a.first_name.localeCompare(b.first_name))
         .map(p => (
@@ -390,54 +415,83 @@ function PatientCard({ patient, onEdit, onDelete, onNewSession, onViewSessions, 
 
   return (
     <div className={`patient-card ${isArchived ? 'patient-card-archived' : ''}`}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div className="initials" style={{ opacity: isArchived ? 0.5 : 1 }}>
-          {getInitials(patient.first_name, patient.last_name)}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+
+        {/* Avatar + status dot */}
+        <div className="patient-avatar-wrap">
+          <div className="initials" style={{ opacity: isArchived ? 0.55 : 1 }}>
+            {getInitials(patient.first_name, patient.last_name)}
+          </div>
+          <span className={`patient-status-dot ${isArchived ? 'archived' : 'active'}`} />
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
-            {patient.first_name} {patient.last_name}
-            {isArchived && <span className="badge badge-muted">Archivé</span>}
+
+        {/* Infos */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 700, fontSize: 15, letterSpacing: '-.01em' }}>
+              {patient.last_name.toUpperCase()}
+            </span>
+            <span style={{ fontWeight: 400, fontSize: 15, color: 'var(--text-muted)' }}>
+              {patient.first_name}
+            </span>
             {patient.birth_date && (
-              <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-muted)' }}>
-                · {calcAge(patient.birth_date)}
+              <span style={{ fontSize: 12, color: 'var(--text-hint)', background: 'var(--bg)', padding: '1px 7px', borderRadius: 10 }}>
+                {calcAge(patient.birth_date)}
+              </span>
+            )}
+            {isArchived && <span className="badge badge-muted">Archivé</span>}
+            {patient.alerts && (
+              <span className="badge badge-red" style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                ⚠️ {patient.alerts}
               </span>
             )}
           </div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            {[patient.profession, patient.phone, patient.email].filter(Boolean).join(' · ')}
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>
+            {[patient.profession, patient.phone, patient.email].filter(Boolean).map((v, i, arr) => (
+              <React.Fragment key={i}>
+                {v}{i < arr.length - 1 && <span style={{ margin: '0 5px', opacity: .35 }}>·</span>}
+              </React.Fragment>
+            ))}
           </div>
           {patient.regular_doctor && (
-            <div style={{ fontSize: 11, color: 'var(--text-hint)' }}>Dr : {patient.regular_doctor}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-hint)', marginTop: 1 }}>
+              Dr {patient.regular_doctor}
+            </div>
           )}
         </div>
-        {patient.alerts && (
-          <span className="badge badge-red" style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            ⚠️ {patient.alerts}
-          </span>
-        )}
-        <div className="row-btns" style={{ flexShrink: 0 }}>
-          {!isArchived && (
-            <button className="btn btn-primary btn-sm" onClick={() => onNewSession(patient.id)}>+ Séance</button>
-          )}
-          <button className="btn btn-secondary btn-sm" onClick={() => onViewSessions(patient.id)}>📋 Séances</button>
-          <button className="btn btn-secondary btn-sm" onClick={() => onBackup(patient.id)} title="Sauvegarder toutes les séances du patient">💾 Backup</button>
-          <button className="btn btn-amber btn-sm" onClick={() => onInvoice(patient)} title="Générer une facture PDF">🧾 Facture</button>
-          <button className="btn btn-secondary btn-sm" onClick={() => onEdit(patient)}>Modifier</button>
-          <button
-            className={`btn btn-sm ${isArchived ? 'btn-primary' : 'btn-secondary'}`}
-            title={isArchived ? 'Réactiver le patient' : 'Archiver le patient'}
-            onClick={() => onToggleActive(patient)}
-          >
-            {isArchived ? '🔄 Réactiver' : '📁 Archiver'}
-          </button>
-          <button className="btn btn-danger btn-sm" onClick={() => onDelete(patient)}>Suppr.</button>
+
+        {/* Actions groupées */}
+        <div className="patient-card-actions">
+          {/* Primaires — toujours visibles */}
+          <div className="patient-card-actions-primary">
+            {!isArchived && (
+              <button className="btn btn-primary btn-sm" onClick={() => onNewSession(patient.id)}>+ Séance</button>
+            )}
+            <button className="btn btn-secondary btn-sm" onClick={() => onViewSessions(patient.id)}>📋 Séances</button>
+            <button className="btn btn-amber btn-sm" onClick={() => onInvoice(patient)} title="Générer une facture PDF">🧾 Facture</button>
+          </div>
+          {/* Secondaires — apparaissent au survol */}
+          <div className="patient-card-actions-secondary">
+            <button className="btn btn-secondary btn-sm" onClick={() => onEdit(patient)}>✏️ Modifier</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => onBackup(patient.id)} title="Sauvegarder">💾</button>
+            <button
+              className={`btn btn-sm ${isArchived ? 'btn-primary' : 'btn-secondary'}`}
+              title={isArchived ? 'Réactiver' : 'Archiver'}
+              onClick={() => onToggleActive(patient)}
+            >{isArchived ? '🔄' : '📁'}</button>
+            <button className="btn btn-danger btn-sm" onClick={() => onDelete(patient)} title="Supprimer">🗑️</button>
+          </div>
         </div>
+
       </div>
       {(patient.medications || patient.antecedents) && (
-        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-soft)', fontSize: 12, color: 'var(--text-muted)' }}>
-          {patient.medications && <><strong>Médicaments :</strong> {patient.medications}<br /></>}
-          {patient.antecedents && <><strong>Antécédents :</strong> {patient.antecedents}</>}
+        <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border-soft)', fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 16 }}>
+          {patient.medications && (
+            <div><strong style={{ color: 'var(--text)', fontWeight: 600 }}>Médicaments</strong><br />{patient.medications}</div>
+          )}
+          {patient.antecedents && (
+            <div><strong style={{ color: 'var(--text)', fontWeight: 600 }}>Antécédents</strong><br />{patient.antecedents}</div>
+          )}
         </div>
       )}
     </div>

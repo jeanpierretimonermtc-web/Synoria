@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synoria — Logiciel de gestion de dossiers patients</title>
+<style>
+/* ─── Reset & Base ─────────────────────────────────────────────── */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;font-size:16px}
+body{font-family:'Segoe UI',system-ui,Arial,sans-serif;color:#1A1A1A;background:#fff;line-height:1.6;overflow-x:hidden}
+a{text-decoration:none;color:inherit}
+img{max-width:100%;display:block}
+
+/* ─── Variables ─────────────────────────────────────────────────── */
+:root{
+  --green-dark:#2E4D28;
+  --green:#4A6741;
+  --green-light:#5A7D50;
+  --teal:#2A7A6A;
+  --teal-light:#38968A;
+  --cream:#F5F2ED;
+  --cream-sidebar:#EDE8DF;
+  --cream-dark:#DDD8CF;
+  --surface:#FDFCFA;
+  --text:#1C1A17;
+  --text-muted:#7A7468;
+  --text-light:#B0A99E;
+  --border:#DDD8CF;
+  --white:#FFFFFF;
+  --amber:#C17B2A;
+  --blue:#2A5A8A;
+  --radius:10px;
+  --radius-lg:16px;
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 2px 12px rgba(0,0,0,.06);
+  --shadow-lg:0 4px 16px rgba(0,0,0,.09),0 18px 48px rgba(0,0,0,.13);
+}
+/* police DM Sans comme dans l'app */
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700;800;900&display=swap');
+body{font-family:'DM Sans',system-ui,sans-serif!important}
+
+/* ─── Nav ────────────────────────────────────────────────────────── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 48px;height:64px;
+  background:rgba(255,255,255,.88);
+  backdrop-filter:blur(18px);
+  border-bottom:1px solid rgba(0,0,0,.06);
+}
+.nav-logo{display:flex;align-items:center;gap:10px}
+.nav-logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--green),var(--teal));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 8px rgba(74,103,65,.35)}
+.nav-logo-name{font-size:18px;font-weight:800;letter-spacing:-.3px;color:var(--text)}
+.nav-links{display:flex;align-items:center;gap:32px}
+.nav-links a{font-size:14px;font-weight:500;color:var(--text-muted);transition:color .18s}
+.nav-links a:hover{color:var(--green)}
+.nav-cta{display:flex;align-items:center;gap:12px}
+.btn-nav{padding:9px 22px;border-radius:50px;font-size:14px;font-weight:600;cursor:pointer;transition:all .18s;border:none}
+.btn-nav.outline{background:transparent;border:1.5px solid var(--border);color:var(--text)}
+.btn-nav.outline:hover{border-color:var(--green);color:var(--green)}
+.btn-nav.primary{background:linear-gradient(135deg,var(--green),var(--teal));color:#fff;box-shadow:0 3px 12px rgba(74,103,65,.3)}
+.btn-nav.primary:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(74,103,65,.4)}
+
+/* ─── Hero ────────────────────────────────────────────────────────── */
+.hero{
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:100px 48px 80px;text-align:center;
+  background:radial-gradient(ellipse 90% 60% at 50% 0%, rgba(74,103,65,.08) 0%, transparent 70%),#fff;
+  position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;top:-200px;right:-200px;
+  width:700px;height:700px;border-radius:50%;
+  background:radial-gradient(circle,rgba(42,122,106,.07),transparent 70%);
+  pointer-events:none;
+}
+.hero::after{
+  content:'';position:absolute;bottom:-300px;left:-200px;
+  width:600px;height:600px;border-radius:50%;
+  background:radial-gradient(circle,rgba(74,103,65,.06),transparent 70%);
+  pointer-events:none;
+}
+.hero-brand{
+  display:flex;flex-direction:column;align-items:center;gap:14px;
+  margin-bottom:40px;
+  animation:brand-in .8s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes brand-in{from{opacity:0;transform:translateY(-24px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.hero-brand-icon{
+  width:108px;height:108px;
+  filter:drop-shadow(0 8px 32px rgba(42,122,106,.32)) drop-shadow(0 2px 6px rgba(0,0,0,.1));
+}
+.hero-brand-name{
+  height:clamp(44px,7vw,80px);
+  /* mix-blend-mode:multiply rend le fond blanc transparent sur fond clair */
+  mix-blend-mode:multiply;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.04));
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:7px;
+  background:rgba(74,103,65,.1);color:var(--green-dark);
+  border:1px solid rgba(74,103,65,.2);
+  border-radius:50px;padding:6px 16px;font-size:13px;font-weight:600;
+  margin-bottom:20px;
+}
+.hero-badge-dot{width:7px;height:7px;background:#4A6741;border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.hero h1{
+  font-size:clamp(28px,4vw,52px);font-weight:800;
+  line-height:1.15;letter-spacing:-1.5px;
+  color:var(--text);margin-bottom:22px;max-width:700px;
+}
+.hero h1 .accent{
+  background:linear-gradient(135deg,var(--green),var(--teal));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero-sub{
+  font-size:clamp(17px,2.5vw,21px);color:var(--text-muted);
+  max-width:560px;margin:0 auto 42px;line-height:1.7;font-weight:400;
+}
+.hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
+.btn-hero-primary{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:17px 36px;border-radius:50px;font-size:16px;font-weight:700;
+  background:linear-gradient(135deg,var(--green),var(--teal));color:#fff;
+  box-shadow:0 6px 28px rgba(74,103,65,.38);border:none;cursor:pointer;
+  transition:all .2s;
+}
+.btn-hero-primary:hover{transform:translateY(-2px);box-shadow:0 10px 36px rgba(74,103,65,.48)}
+.btn-hero-secondary{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:17px 32px;border-radius:50px;font-size:16px;font-weight:600;
+  background:#fff;color:var(--text);border:2px solid var(--border);cursor:pointer;
+  transition:all .2s;
+}
+.btn-hero-secondary:hover{border-color:var(--green);color:var(--green);transform:translateY(-1px)}
+.hero-meta{font-size:13px;color:var(--text-light);margin-bottom:72px}
+.hero-meta span{margin:0 10px}
+
+/* ─── App Preview Mockup — thème réel de l'app ─────────────────── */
+.hero-mockup{
+  position:relative;width:100%;max-width:980px;margin:0 auto;
+  filter:drop-shadow(0 24px 60px rgba(0,0,0,.16)) drop-shadow(0 4px 12px rgba(0,0,0,.08));
+}
+.mockup-window{
+  background:#F5F2ED;border-radius:16px;overflow:hidden;
+  border:1px solid #C8C3BA;
+}
+.mockup-titlebar{
+  height:38px;background:#EDE8DF;display:flex;align-items:center;padding:0 16px;gap:7px;
+  border-bottom:1px solid #DDD8CF;
+}
+.mock-dot{width:11px;height:11px;border-radius:50%}
+.mock-dot.r{background:#FF5F57}.mock-dot.y{background:#FEBC2E}.mock-dot.g{background:#28C840}
+/* app-header */
+.mockup-appheader{
+  background:#FDFCFA;border-bottom:1px solid #DDD8CF;
+  height:46px;display:flex;align-items:center;padding:0 16px;gap:10px;
+  box-shadow:0 1px 4px rgba(0,0,0,.04);
+}
+.mock-header-logo{width:28px;height:28px;object-fit:contain}
+.mock-header-logotext{height:17px;object-fit:contain;mix-blend-mode:multiply}
+.mock-header-right{margin-left:auto;display:flex;gap:7px}
+.mock-hbtn{padding:5px 12px;border-radius:50px;font-size:10px;font-weight:600;border:none;cursor:default;display:flex;align-items:center;gap:5px}
+.mock-hbtn.save{background:rgba(74,103,65,.12);color:#4A6741}
+.mock-hbtn.imp{background:rgba(193,123,42,.12);color:#C17B2A}
+.mock-hbtn-icon{width:15px;height:15px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;flex-shrink:0}
+.mockup-body{display:flex;height:440px}
+/* sidebar */
+.mockup-sidebar{
+  width:196px;background:#EDE8DF;border-right:1px solid #DDD8CF;
+  padding:8px 0 8px;flex-shrink:0;display:flex;flex-direction:column;
+}
+.mock-section-label{font-size:9px;font-weight:700;color:#B0A99E;text-transform:uppercase;letter-spacing:.1em;padding:10px 16px 3px}
+.mock-nav-item{
+  display:flex;align-items:center;gap:8px;padding:6px 8px;margin:1px 7px;border-radius:8px;cursor:default;
+}
+.mock-nav-item.active{background:#FDFCFA;box-shadow:0 1px 4px rgba(0,0,0,.09)}
+.mock-nav-icon{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.2);color:#fff}
+.mock-nav-label{font-size:11px;color:#5A5450;font-weight:500}
+.mock-nav-item.active .mock-nav-label{color:#4A6741;font-weight:600}
+.mock-sidebar-bottom{margin-top:auto;padding:7px;border-top:1px solid #DDD8CF}
+.mock-nav-item.lock .mock-nav-label{color:#8A6A70}
+/* content */
+.mockup-content{flex:1;background:#F5F2ED;padding:20px 22px;overflow:hidden}
+.mock-page-header{display:flex;align-items:baseline;gap:10px;margin-bottom:18px}
+.mock-page-title{font-size:18px;font-weight:800;color:#1C1A17}
+.mock-page-badge{background:#EAF0E8;color:#4A6741;border-radius:50px;padding:2px 9px;font-size:10px;font-weight:700}
+.mock-stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:14px}
+.mock-stat{background:#FDFCFA;border-radius:10px;padding:12px 12px 10px;border:1px solid #DDD8CF;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.mock-stat-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;margin-bottom:7px}
+.mock-stat-num{font-size:19px;font-weight:800;color:#1C1A17;line-height:1;margin-bottom:2px}
+.mock-stat-label{font-size:9px;color:#B0A99E;font-weight:500}
+.mock-content-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.mock-card{background:#FDFCFA;border-radius:10px;padding:12px 13px;border:1px solid #DDD8CF;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.mock-card-title{font-size:9px;font-weight:700;color:#B0A99E;text-transform:uppercase;letter-spacing:.06em;margin-bottom:9px}
+.mock-bar-row{display:flex;align-items:flex-end;gap:4px;height:56px}
+.mock-bar{border-radius:3px 3px 0 0;flex:1}
+.mock-list-item{display:flex;align-items:center;gap:7px;margin-bottom:7px}
+.mock-avatar{width:22px;height:22px;border-radius:50%;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
+.mock-patient-name{font-size:10px;color:#1C1A17;font-weight:500}
+.mock-patient-date{font-size:9px;color:#B0A99E;margin-left:auto}
+
+/* ─── Trust badges ─────────────────────────────────────────────── */
+.trust-bar{
+  background:var(--cream);border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  padding:20px 48px;display:flex;align-items:center;justify-content:center;gap:48px;flex-wrap:wrap;
+}
+.trust-item{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--text-muted)}
+.trust-icon{font-size:22px}
+
+/* ─── Sections communes ─────────────────────────────────────────── */
+section{padding:96px 48px}
+.section-tag{display:inline-block;background:rgba(74,103,65,.1);color:var(--green-dark);border-radius:50px;padding:5px 14px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-bottom:16px}
+.section-title{font-size:clamp(28px,4vw,44px);font-weight:800;color:var(--text);letter-spacing:-1px;line-height:1.15;margin-bottom:16px}
+.section-sub{font-size:17px;color:var(--text-muted);max-width:540px;line-height:1.7}
+
+/* ─── Features ─────────────────────────────────────────────────── */
+.features{background:#fff}
+.features-inner{max-width:1120px;margin:0 auto}
+.features-header{text-align:center;margin-bottom:64px}
+.features-header .section-sub{margin:0 auto}
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.feat-card{
+  background:var(--cream);border-radius:var(--radius-lg);padding:32px;
+  border:1px solid var(--border);transition:all .22s;cursor:default;
+}
+.feat-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:rgba(74,103,65,.2)}
+.feat-icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:20px}
+.feat-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:8px}
+.feat-desc{font-size:14px;color:var(--text-muted);line-height:1.7}
+
+/* ─── Plugins / Specialties ──────────────────────────────────────── */
+.plugins{background:var(--cream)}
+.plugins-inner{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+.plugins-visual{display:flex;flex-direction:column;gap:16px}
+.plugin-card{
+  background:#fff;border-radius:var(--radius);padding:22px 24px;
+  border:1.5px solid var(--border);display:flex;align-items:center;gap:18px;
+  transition:all .2s;
+}
+.plugin-card:hover{border-color:var(--green);box-shadow:var(--shadow)}
+.plugin-card-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.plugin-card-name{font-weight:700;font-size:15px;color:var(--text);margin-bottom:3px}
+.plugin-card-desc{font-size:13px;color:var(--text-muted)}
+.plugin-card-badge{margin-left:auto;padding:4px 12px;border-radius:50px;font-size:11px;font-weight:700;background:rgba(74,103,65,.1);color:var(--green-dark);white-space:nowrap;flex-shrink:0}
+.plugins-more{margin-top:8px;padding:18px 24px;border-radius:var(--radius);border:2px dashed var(--cream-dark);text-align:center;font-size:14px;color:var(--text-light)}
+
+/* ─── Security ──────────────────────────────────────────────────── */
+.security{
+  background:linear-gradient(145deg,var(--green-dark) 0%,var(--green) 45%,var(--teal) 100%);
+  color:#fff;
+}
+.security-inner{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
+.security .section-tag{background:rgba(255,255,255,.15);color:#fff}
+.security .section-title{color:#fff}
+.security .section-sub{color:rgba(255,255,255,.75);max-width:none}
+.security-features{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:36px}
+.sec-item{background:rgba(255,255,255,.1);border-radius:12px;padding:18px;border:1px solid rgba(255,255,255,.12)}
+.sec-item-icon{font-size:22px;margin-bottom:8px}
+.sec-item-title{font-size:14px;font-weight:700;color:#fff;margin-bottom:4px}
+.sec-item-desc{font-size:12px;color:rgba(255,255,255,.65);line-height:1.6}
+.security-visual{position:relative}
+.sec-cert-cards{display:flex;flex-direction:column;gap:14px}
+.sec-cert{
+  background:rgba(255,255,255,.12);border-radius:14px;padding:20px 22px;
+  border:1px solid rgba(255,255,255,.15);backdrop-filter:blur(8px);
+  display:flex;align-items:center;gap:14px;
+}
+.sec-cert-icon{font-size:28px;flex-shrink:0}
+.sec-cert-title{font-size:14px;font-weight:700;color:#fff;margin-bottom:2px}
+.sec-cert-desc{font-size:12px;color:rgba(255,255,255,.65)}
+.sec-cert-check{margin-left:auto;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+
+/* ─── Workflow ──────────────────────────────────────────────────── */
+.workflow{background:#fff}
+.workflow-inner{max-width:900px;margin:0 auto;text-align:center}
+.workflow-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:52px;position:relative}
+.workflow-steps::before{
+  content:'';position:absolute;top:28px;left:12.5%;right:12.5%;
+  height:2px;background:linear-gradient(to right,var(--green),var(--teal));
+  z-index:0;
+}
+.workflow-step{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:14px;padding:0 12px}
+.workflow-step-num{
+  width:56px;height:56px;border-radius:50%;
+  background:linear-gradient(135deg,var(--green),var(--teal));
+  color:#fff;font-weight:800;font-size:18px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(74,103,65,.35);
+}
+.workflow-step-title{font-weight:700;font-size:14px;color:var(--text);text-align:center}
+.workflow-step-desc{font-size:13px;color:var(--text-muted);text-align:center;line-height:1.6}
+
+/* ─── Formats Distribution ─────────────────────────────────────── */
+.distribution{background:var(--cream)}
+.distribution-inner{max-width:1120px;margin:0 auto}
+.distrib-header{text-align:center;margin-bottom:52px}
+.distrib-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.distrib-card{
+  background:#fff;border-radius:var(--radius-lg);padding:36px 30px;
+  border:1.5px solid var(--border);text-align:center;transition:all .2s;
+}
+.distrib-card:hover{border-color:var(--green);box-shadow:var(--shadow-lg);transform:translateY(-3px)}
+.distrib-icon{font-size:44px;margin-bottom:18px}
+.distrib-name{font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px}
+.distrib-desc{font-size:14px;color:var(--text-muted);margin-bottom:22px;line-height:1.7}
+.distrib-tags{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.distrib-tag{background:var(--cream);border:1px solid var(--border);border-radius:50px;padding:5px 14px;font-size:12px;font-weight:600;color:var(--text-muted)}
+
+/* ─── Download CTA ──────────────────────────────────────────────── */
+.download-cta{
+  background:#fff;text-align:center;padding:100px 48px;
+  border-top:1px solid var(--border);
+}
+.download-cta h2{font-size:clamp(28px,4vw,48px);font-weight:900;letter-spacing:-1.5px;color:var(--text);margin-bottom:16px}
+.download-cta p{font-size:18px;color:var(--text-muted);max-width:480px;margin:0 auto 44px;line-height:1.7}
+.download-buttons{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.btn-dl{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:16px 30px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;
+  transition:all .2s;border:none;
+}
+.btn-dl.win{background:linear-gradient(135deg,var(--green),var(--teal));color:#fff;box-shadow:0 4px 20px rgba(74,103,65,.32)}
+.btn-dl.win:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(74,103,65,.42)}
+.btn-dl.mac{background:var(--cream);color:var(--text);border:1.5px solid var(--border)}
+.btn-dl.mac:hover{border-color:var(--green);color:var(--green);transform:translateY(-1px)}
+.btn-dl.usb{background:var(--cream);color:var(--text);border:1.5px solid var(--border)}
+.btn-dl.usb:hover{border-color:var(--green);color:var(--green);transform:translateY(-1px)}
+.dl-icon{font-size:22px}
+.dl-text-main{font-weight:700}
+.dl-text-sub{font-size:11px;font-weight:500;opacity:.7}
+.dl-text{display:flex;flex-direction:column;text-align:left}
+.download-note{font-size:12px;color:var(--text-light);margin-top:24px}
+
+/* ─── Footer ───────────────────────────────────────────────────── */
+footer{
+  background:#1A1A1C;color:rgba(255,255,255,.6);
+  padding:48px 48px 32px;
+}
+.footer-inner{max-width:1120px;margin:0 auto}
+.footer-top{display:flex;align-items:flex-start;justify-content:space-between;gap:40px;margin-bottom:40px;flex-wrap:wrap}
+.footer-brand{max-width:280px}
+.footer-logo{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.footer-logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--green),var(--teal));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.footer-logo-name{font-size:18px;font-weight:800;color:#F5F5F5}
+.footer-tagline{font-size:13px;line-height:1.7;color:rgba(255,255,255,.45)}
+.footer-links h4{font-size:13px;font-weight:700;color:#F5F5F5;margin-bottom:14px;text-transform:uppercase;letter-spacing:.05em}
+.footer-links ul{list-style:none;display:flex;flex-direction:column;gap:8px}
+.footer-links ul li a{font-size:13px;color:rgba(255,255,255,.45);transition:color .15s}
+.footer-links ul li a:hover{color:rgba(255,255,255,.8)}
+.footer-bottom{border-top:1px solid rgba(255,255,255,.08);padding-top:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.footer-bottom-text{font-size:12px;color:rgba(255,255,255,.3)}
+
+/* ─── Responsive ─────────────────────────────────────────────────── */
+@media(max-width:900px){
+  nav{padding:0 24px}
+  .nav-links{display:none}
+  section{padding:64px 24px}
+  .features-grid{grid-template-columns:1fr 1fr}
+  .plugins-inner,.security-inner{grid-template-columns:1fr;gap:40px}
+  .security-visual{order:-1}
+  .workflow-steps{grid-template-columns:1fr 1fr;gap:32px}
+  .workflow-steps::before{display:none}
+  .distrib-grid{grid-template-columns:1fr 1fr}
+  .mock-stats-row{grid-template-columns:1fr 1fr}
+  .mockup-sidebar{width:160px}
+  .trust-bar{gap:24px}
+  footer{padding:40px 24px 24px}
+  .footer-top{flex-direction:column}
+}
+@media(max-width:600px){
+  .hero{padding:80px 20px 60px}
+  .hero h1{letter-spacing:-1px}
+  .features-grid{grid-template-columns:1fr}
+  .distrib-grid{grid-template-columns:1fr}
+  .security-features{grid-template-columns:1fr}
+  .workflow-steps{grid-template-columns:1fr}
+  .hero-mockup{display:none}
+  .download-buttons{flex-direction:column;align-items:center}
+  .hero-actions{flex-direction:column;align-items:center}
+}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ──────────────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-logo">
+    <img src="../public/Synoria.png" class="nav-logo-icon" style="width:34px;height:34px;object-fit:contain;background:none;border-radius:0" alt="">
+    <img src="../public/Text Synoria fond blanc.png" style="height:20px;object-fit:contain;mix-blend-mode:multiply" alt="Synoria">
+  </div>
+  <div class="nav-links">
+    <a href="#fonctionnalites">Fonctionnalités</a>
+    <a href="#specialites">Spécialités</a>
+    <a href="#securite">Sécurité</a>
+    <a href="#telechargement">Télécharger</a>
+  </div>
+  <div class="nav-cta">
+    <a href="#telechargement" class="btn-nav primary">Télécharger gratuitement</a>
+  </div>
+</nav>
+
+<!-- ── HERO ─────────────────────────────────────────────────────── -->
+<section class="hero" id="accueil">
+  <div class="hero-brand">
+    <img src="../public/Synoria.png" class="hero-brand-icon" alt="Synoria logo">
+    <img src="../public/Text Synoria fond blanc.png" class="hero-brand-name" alt="Synoria">
+  </div>
+  <div class="hero-badge">
+    <span class="hero-badge-dot"></span>
+    Version 1.4.0 disponible
+  </div>
+  <h1>Le dossier patient<br>conçu pour les <span class="accent">thérapeutes</span></h1>
+  <p class="hero-sub">
+    Gérez vos patients, séances, rendez-vous et comptabilité en toute sérénité.
+    Données chiffrées, 100&nbsp;% locales, conformes RGPD.
+  </p>
+  <div class="hero-actions">
+    <a href="#telechargement" class="btn-hero-primary">
+      ⬇ Télécharger pour Windows
+    </a>
+    <a href="#fonctionnalites" class="btn-hero-secondary">
+      Découvrir les fonctionnalités
+    </a>
+  </div>
+  <div class="hero-meta">
+    <span>🪟 Windows 10/11</span>
+    <span>🍎 macOS Intel &amp; Apple Silicon</span>
+    <span>🆓 Gratuit</span>
+  </div>
+
+  <!-- App Mockup — thème réel -->
+  <div class="hero-mockup">
+    <div class="mockup-window">
+      <!-- barre de titre macOS/Windows -->
+      <div class="mockup-titlebar">
+        <div class="mock-dot r"></div>
+        <div class="mock-dot y"></div>
+        <div class="mock-dot g"></div>
+      </div>
+      <!-- app-header avec vrai logo -->
+      <div class="mockup-appheader">
+        <img src="../public/Synoria.png" class="mock-header-logo" alt="">
+        <img src="../public/Text Synoria fond blanc.png" class="mock-header-logotext" alt="Synoria">
+        <div class="mock-header-right">
+          <div class="mock-hbtn save">
+            <div class="mock-hbtn-icon" style="background:#4A6741">💾</div> Sauvegarder
+          </div>
+          <div class="mock-hbtn imp">
+            <div class="mock-hbtn-icon" style="background:#C17B2A">📂</div> Importer
+          </div>
+        </div>
+      </div>
+      <div class="mockup-body">
+        <!-- Sidebar crème réelle -->
+        <div class="mockup-sidebar">
+          <div class="mock-section-label">Navigation</div>
+          <div class="mock-nav-item active">
+            <div class="mock-nav-icon" style="background:#5B8CF7">▪</div>
+            <span class="mock-nav-label">Tableau de bord</span>
+          </div>
+          <div class="mock-nav-item">
+            <div class="mock-nav-icon" style="background:#30D158">▪</div>
+            <span class="mock-nav-label">Patients</span>
+          </div>
+          <div class="mock-nav-item" style="background:#EAF0E8;margin:1px 7px;border-radius:8px">
+            <div class="mock-nav-icon" style="background:#4A6741">▪</div>
+            <span class="mock-nav-label" style="color:#4A6741;font-weight:600">Nouvelle séance</span>
+          </div>
+          <div class="mock-nav-item">
+            <div class="mock-nav-icon" style="background:#BF5AF2">▪</div>
+            <span class="mock-nav-label">Séances</span>
+          </div>
+          <div class="mock-section-label">Planning</div>
+          <div class="mock-nav-item">
+            <div class="mock-nav-icon" style="background:#FF453A">▪</div>
+            <span class="mock-nav-label">Calendrier</span>
+          </div>
+          <div class="mock-section-label">Finances</div>
+          <div class="mock-nav-item">
+            <div class="mock-nav-icon" style="background:#32ADE6">▪</div>
+            <span class="mock-nav-label">Comptabilité</span>
+          </div>
+          <div class="mock-nav-item">
+            <div class="mock-nav-icon" style="background:#FF9F0A">▪</div>
+            <span class="mock-nav-label">Dépenses</span>
+          </div>
+          <div class="mock-section-label">Admin</div>
+          <div class="mock-nav-item">
+            <div class="mock-nav-icon" style="background:#6E6CD8">▪</div>
+            <span class="mock-nav-label">RGPD</span>
+          </div>
+          <div class="mock-sidebar-bottom">
+            <div class="mock-nav-item lock">
+              <div class="mock-nav-icon" style="background:#8A2A4A">▪</div>
+              <span class="mock-nav-label">Verrouiller</span>
+            </div>
+          </div>
+        </div>
+        <!-- Contenu dashboard — fond crème réel -->
+        <div class="mockup-content">
+          <div class="mock-page-header">
+            <div class="mock-page-title">Tableau de bord</div>
+            <div class="mock-page-badge">Mardi 10 juin 2026</div>
+          </div>
+          <div class="mock-stats-row">
+            <div class="mock-stat">
+              <div class="mock-stat-icon" style="background:#EBF2FF">👥</div>
+              <div class="mock-stat-num" style="color:#2A5A8A">24</div>
+              <div class="mock-stat-label">Patients actifs</div>
+            </div>
+            <div class="mock-stat">
+              <div class="mock-stat-icon" style="background:#F0EAF8">📋</div>
+              <div class="mock-stat-num" style="color:#5A4A7A">8</div>
+              <div class="mock-stat-label">Séances ce mois</div>
+            </div>
+            <div class="mock-stat">
+              <div class="mock-stat-icon" style="background:#FBEAEA">📅</div>
+              <div class="mock-stat-num" style="color:#A83232">3</div>
+              <div class="mock-stat-label">RDV cette semaine</div>
+            </div>
+            <div class="mock-stat">
+              <div class="mock-stat-icon" style="background:#EAF0E8">✅</div>
+              <div class="mock-stat-num" style="color:#4A6741">96%</div>
+              <div class="mock-stat-label">Patients suivis</div>
+            </div>
+          </div>
+          <div class="mock-content-row">
+            <div class="mock-card">
+              <div class="mock-card-title">Activité — 6 mois</div>
+              <div class="mock-bar-row">
+                <div class="mock-bar" style="height:32%;background:rgba(74,103,65,.22)"></div>
+                <div class="mock-bar" style="height:50%;background:rgba(74,103,65,.32)"></div>
+                <div class="mock-bar" style="height:42%;background:rgba(74,103,65,.40)"></div>
+                <div class="mock-bar" style="height:65%;background:rgba(74,103,65,.52)"></div>
+                <div class="mock-bar" style="height:55%;background:rgba(74,103,65,.65)"></div>
+                <div class="mock-bar" style="height:78%;background:#4A6741"></div>
+              </div>
+            </div>
+            <div class="mock-card">
+              <div class="mock-card-title">Dernières séances</div>
+              <div class="mock-list-item">
+                <div class="mock-avatar" style="background:#5B8CF7">MD</div>
+                <span class="mock-patient-name">MARTIN Dubois</span>
+                <span class="mock-patient-date">auj.</span>
+              </div>
+              <div class="mock-list-item">
+                <div class="mock-avatar" style="background:#BF5AF2">SC</div>
+                <span class="mock-patient-name">SIMON Cazaux</span>
+                <span class="mock-patient-date">hier</span>
+              </div>
+              <div class="mock-list-item">
+                <div class="mock-avatar" style="background:#FF9F0A">AL</div>
+                <span class="mock-patient-name">ARNAUD Lefebvre</span>
+                <span class="mock-patient-date">9 juin</span>
+              </div>
+              <div class="mock-list-item">
+                <div class="mock-avatar" style="background:#30D158">CB</div>
+                <span class="mock-patient-name">CLAUDE Bernard</span>
+                <span class="mock-patient-date">8 juin</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TRUST BAR ─────────────────────────────────────────────────── -->
+<div class="trust-bar">
+  <div class="trust-item"><span class="trust-icon">🔐</span> Chiffrement AES-256-GCM</div>
+  <div class="trust-item"><span class="trust-icon">🏠</span> Données 100&nbsp;% locales</div>
+  <div class="trust-item"><span class="trust-icon">🛡</span> Conforme RGPD</div>
+  <div class="trust-item"><span class="trust-icon">🆓</span> Gratuit — sans abonnement</div>
+  <div class="trust-item"><span class="trust-icon">📴</span> Fonctionne sans internet</div>
+</div>
+
+<!-- ── FEATURES ──────────────────────────────────────────────────── -->
+<section class="features" id="fonctionnalites">
+  <div class="features-inner">
+    <div class="features-header">
+      <div class="section-tag">Fonctionnalités</div>
+      <h2 class="section-title">Tout ce dont vous avez besoin,<br>rien de superflu</h2>
+      <p class="section-sub">Conçu avec et pour les praticiens de santé, Synoria couvre chaque aspect de votre activité quotidienne.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feat-card">
+        <div class="feat-icon" style="background:#EBF2FF">📋</div>
+        <div class="feat-title">Dossiers patients complets</div>
+        <div class="feat-desc">Informations médicales, alertes personnalisées, antécédents, médicaments, consentement RGPD. Tout accessible en un clic.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon" style="background:#F0EAF8">📝</div>
+        <div class="feat-title">Séances structurées</div>
+        <div class="feat-desc">Formulaire adapté à votre spécialité. Texte enrichi avec mise en forme, export Excel, impression et archivage automatique.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon" style="background:#FDEAEA">📅</div>
+        <div class="feat-title">Calendrier intégré</div>
+        <div class="feat-desc">Vues Mois, Semaine et Jour. Rendez-vous synchronisés avec les séances. Gestion des invités sans fiche patient.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon" style="background:#E8F5E9">💶</div>
+        <div class="feat-title">Comptabilité simplifiée</div>
+        <div class="feat-desc">Suivi mensuel des recettes, calcul des cotisations URSSAF estimées, dépenses variables, factures PDF numérotées.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon" style="background:#FDF3E3">💾</div>
+        <div class="feat-title">Sauvegardes chiffrées</div>
+        <div class="feat-desc">Export manuel ou automatique en fichier .json.enc chiffré. Restauration complète en un clic. Compatible clé USB.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon" style="background:#EAF0E8">📊</div>
+        <div class="feat-title">Tableau de bord</div>
+        <div class="feat-desc">Vue d'ensemble de votre activité : statistiques clés, graphe d'activité des 6 derniers mois, prochains rendez-vous.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PLUGINS / SPECIALTIES ────────────────────────────────────── -->
+<section class="plugins" id="specialites">
+  <div class="plugins-inner">
+    <div>
+      <div class="section-tag">Spécialités</div>
+      <h2 class="section-title">Adapté à votre pratique</h2>
+      <p class="section-sub" style="margin-bottom:20px">Le système de plugins adapte le formulaire de séance à votre spécialité. Activez le plugin correspondant à votre pratique en un clic.</p>
+      <p style="font-size:14px;color:var(--text-muted);line-height:1.7">Chaque séance conserve une copie du formulaire au moment de la saisie — vos données historiques restent lisibles même si vous changez de plugin.</p>
+    </div>
+    <div class="plugins-visual">
+      <div class="plugin-card">
+        <div class="plugin-card-icon" style="background:#EAF0E8">🌿</div>
+        <div>
+          <div class="plugin-card-name">Médecine Traditionnelle Chinoise</div>
+          <div class="plugin-card-desc">Langue, pouls, 5 éléments, points, systèmes énergétiques, barrage, tests</div>
+        </div>
+        <div class="plugin-card-badge">Intégré</div>
+      </div>
+      <div class="plugin-card">
+        <div class="plugin-card-icon" style="background:#F0EBF8">🔬</div>
+        <div>
+          <div class="plugin-card-name">Kinésiologie</div>
+          <div class="plugin-card-desc">Contexte RDV, signes psycho-physiques, motivation, objectifs, indicateurs</div>
+        </div>
+        <div class="plugin-card-badge">Inclus</div>
+      </div>
+      <div class="plugin-card">
+        <div class="plugin-card-icon" style="background:#E8F3F8">🦴</div>
+        <div>
+          <div class="plugin-card-name">Ostéopathie · Naturopathie · Autres</div>
+          <div class="plugin-card-desc">Créez votre propre plugin avec un fichier JSON personnalisé</div>
+        </div>
+        <div class="plugin-card-badge">Personnalisable</div>
+      </div>
+      <div class="plugins-more">
+        🔧 Créez votre propre formulaire avec un simple fichier JSON
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SECURITY ──────────────────────────────────────────────────── -->
+<section class="security" id="securite">
+  <div class="security-inner">
+    <div>
+      <div class="section-tag">Sécurité &amp; Confidentialité</div>
+      <h2 class="section-title">Vos données restent chez vous. Point.</h2>
+      <p class="section-sub">Synoria ne collecte aucune donnée, ne nécessite aucune connexion internet, et ne connaît pas l'existence de vos patients. Tout reste sur votre disque dur, chiffré.</p>
+      <div class="security-features">
+        <div class="sec-item">
+          <div class="sec-item-icon">🔐</div>
+          <div class="sec-item-title">AES-256-GCM</div>
+          <div class="sec-item-desc">La base de données est chiffrée au repos. Le même algorithme que les banques.</div>
+        </div>
+        <div class="sec-item">
+          <div class="sec-item-icon">🔑</div>
+          <div class="sec-item-title">PBKDF2 600 000 it.</div>
+          <div class="sec-item-desc">Votre mot de passe est dérivé avec 600 000 itérations — résistant aux attaques par force brute.</div>
+        </div>
+        <div class="sec-item">
+          <div class="sec-item-icon">🏠</div>
+          <div class="sec-item-title">100&nbsp;% local</div>
+          <div class="sec-item-desc">Aucun serveur, aucun cloud, aucune télémétrie. Le logiciel fonctionne sans réseau.</div>
+        </div>
+        <div class="sec-item">
+          <div class="sec-item-icon">⏱</div>
+          <div class="sec-item-title">Verrouillage auto</div>
+          <div class="sec-item-desc">L'application se verrouille automatiquement après 20 minutes d'inactivité.</div>
+        </div>
+      </div>
+    </div>
+    <div class="security-visual">
+      <div class="sec-cert-cards">
+        <div class="sec-cert">
+          <div class="sec-cert-icon">🛡</div>
+          <div>
+            <div class="sec-cert-title">Conforme RGPD</div>
+            <div class="sec-cert-desc">Consentements, journal d'accès, alertes de conservation, registre Art. 30 — tout est inclus.</div>
+          </div>
+          <div class="sec-cert-check">✓</div>
+        </div>
+        <div class="sec-cert">
+          <div class="sec-cert-icon">🔒</div>
+          <div>
+            <div class="sec-cert-title">Données chiffrées au repos</div>
+            <div class="sec-cert-desc">La base de données est déchiffrée uniquement pendant votre session de travail. Elle est rechiffrée dès la fermeture.</div>
+          </div>
+          <div class="sec-cert-check">✓</div>
+        </div>
+        <div class="sec-cert">
+          <div class="sec-cert-icon">📴</div>
+          <div>
+            <div class="sec-cert-title">Aucune connexion requise</div>
+            <div class="sec-cert-desc">Synoria fonctionne dans les zones sans réseau, en déplacement, ou si vous souhaitez isoler vos données.</div>
+          </div>
+          <div class="sec-cert-check">✓</div>
+        </div>
+        <div class="sec-cert">
+          <div class="sec-cert-icon">👤</div>
+          <div>
+            <div class="sec-cert-title">Secret médical préservé</div>
+            <div class="sec-cert-desc">Personne d'autre que vous ne peut accéder à vos dossiers patients — techniquement impossible sans votre mot de passe.</div>
+          </div>
+          <div class="sec-cert-check">✓</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── WORKFLOW ──────────────────────────────────────────────────── -->
+<section class="workflow" id="demarrage">
+  <div class="workflow-inner">
+    <div class="section-tag">Démarrage</div>
+    <h2 class="section-title">Opérationnel en 5 minutes</h2>
+    <p class="section-sub" style="margin:0 auto;text-align:center">Aucune configuration serveur, aucun compte en ligne. Installez et commencez immédiatement.</p>
+    <div class="workflow-steps">
+      <div class="workflow-step">
+        <div class="workflow-step-num">1</div>
+        <div class="workflow-step-title">Télécharger</div>
+        <div class="workflow-step-desc">Téléchargez l'installateur pour votre OS</div>
+      </div>
+      <div class="workflow-step">
+        <div class="workflow-step-num">2</div>
+        <div class="workflow-step-title">Installer</div>
+        <div class="workflow-step-desc">Installation en un clic, pas de compte requis</div>
+      </div>
+      <div class="workflow-step">
+        <div class="workflow-step-num">3</div>
+        <div class="workflow-step-title">Mot de passe</div>
+        <div class="workflow-step-desc">Créez votre mot de passe — chiffre votre base</div>
+      </div>
+      <div class="workflow-step">
+        <div class="workflow-step-num">4</div>
+        <div class="workflow-step-title">Premier patient</div>
+        <div class="workflow-step-desc">Ajoutez votre premier patient et commencez</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── DISTRIBUTION ──────────────────────────────────────────────── -->
+<section class="distribution">
+  <div class="distribution-inner">
+    <div class="distrib-header">
+      <div class="section-tag">Disponibilité</div>
+      <h2 class="section-title">Disponible partout où vous travaillez</h2>
+    </div>
+    <div class="distrib-grid">
+      <div class="distrib-card">
+        <div class="distrib-icon">🖥</div>
+        <div class="distrib-name">Windows — Installateur</div>
+        <div class="distrib-desc">Installation classique avec raccourci Bureau et désinstalleur intégré. Mise à jour en réinstallant par-dessus.</div>
+        <div class="distrib-tags">
+          <span class="distrib-tag">Windows 10/11</span>
+          <span class="distrib-tag">64 bits</span>
+          <span class="distrib-tag">NSIS</span>
+        </div>
+      </div>
+      <div class="distrib-card">
+        <div class="distrib-icon">⚡</div>
+        <div class="distrib-name">Windows — Portable</div>
+        <div class="distrib-desc">Aucune installation requise. Lancez directement depuis votre Bureau, un dossier réseau ou une clé USB.</div>
+        <div class="distrib-tags">
+          <span class="distrib-tag">Zéro installation</span>
+          <span class="distrib-tag">Clé USB</span>
+          <span class="distrib-tag">Mobile</span>
+        </div>
+      </div>
+      <div class="distrib-card">
+        <div class="distrib-icon">🍎</div>
+        <div class="distrib-name">macOS Universal</div>
+        <div class="distrib-desc">DMG universel — fonctionne nativement sur Intel et Apple Silicon (M1/M2/M3/M4) sans émulation.</div>
+        <div class="distrib-tags">
+          <span class="distrib-tag">Intel x64</span>
+          <span class="distrib-tag">Apple Silicon</span>
+          <span class="distrib-tag">macOS 10.13+</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── DOWNLOAD CTA ──────────────────────────────────────────────── -->
+<section class="download-cta" id="telechargement">
+  <h2>Prêt à commencer ?</h2>
+  <p>Téléchargez Synoria gratuitement. Vos données vous appartiennent — pour toujours.</p>
+  <div class="download-buttons">
+    <a href="V1.4.0/Windows/Synoria Setup 1.4.0.exe" class="btn-dl win">
+      <span class="dl-icon">🪟</span>
+      <span class="dl-text">
+        <span class="dl-text-main">Télécharger pour Windows</span>
+        <span class="dl-text-sub">Installateur · v1.4.0 · Windows 10/11 64 bits</span>
+      </span>
+    </a>
+    <a href="V1.4.0/Windows/Synoria 1.4.0.exe" class="btn-dl mac">
+      <span class="dl-icon">⚡</span>
+      <span class="dl-text">
+        <span class="dl-text-main">Version Portable</span>
+        <span class="dl-text-sub">Windows · Sans installation</span>
+      </span>
+    </a>
+    <a href="V1.4.0/Mac/" class="btn-dl usb">
+      <span class="dl-icon">🍎</span>
+      <span class="dl-text">
+        <span class="dl-text-main">macOS Universal</span>
+        <span class="dl-text-sub">Intel + Apple Silicon · v1.4.0</span>
+      </span>
+    </a>
+  </div>
+  <div class="download-note">
+    🔒 Aucun compte requis · Aucune connexion internet nécessaire · Données 100&nbsp;% locales
+  </div>
+</section>
+
+<!-- ── FOOTER ────────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="footer-logo">
+          <img src="../public/Synoria.png" style="width:34px;height:34px;object-fit:contain" alt="">
+          <img src="../public/Text Synoria fond blanc.png" style="height:20px;object-fit:contain;filter:brightness(0) invert(1)" alt="Synoria">
+        </div>
+        <p class="footer-tagline">Logiciel de gestion de dossiers patients pour praticiens de santé. Données locales, chiffrées, conformes RGPD.</p>
+      </div>
+      <div class="footer-links">
+        <h4>Logiciel</h4>
+        <ul>
+          <li><a href="#fonctionnalites">Fonctionnalités</a></li>
+          <li><a href="#specialites">Spécialités &amp; Plugins</a></li>
+          <li><a href="#securite">Sécurité</a></li>
+          <li><a href="V1.4.0/Evolution_V1.3.1_vers_V1.4.0.html">Notes de version v1.4.0</a></li>
+        </ul>
+      </div>
+      <div class="footer-links">
+        <h4>Documentation</h4>
+        <ul>
+          <li><a href="V1.4.0/Guide_Installation_Synoria_V1.4.0.html">Guide d'installation</a></li>
+          <li><a href="V1.4.0/Guide_Utilisation_Synoria_V1.4.0.html">Guide d'utilisation</a></li>
+          <li><a href="V1.4.0/Guide_Desinstallation_Synoria_V1.4.0.html">Désinstallation</a></li>
+        </ul>
+      </div>
+      <div class="footer-links">
+        <h4>Téléchargement</h4>
+        <ul>
+          <li><a href="V1.4.0/Windows/Synoria Setup 1.4.0.exe">Windows — Installateur</a></li>
+          <li><a href="V1.4.0/Windows/Synoria 1.4.0.exe">Windows — Portable</a></li>
+          <li><a href="V1.4.0/Mac/">macOS Universal</a></li>
+          <li><a href="V1.4.0/Plugins/">Plugins</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="footer-bottom-text">© 2026 Synoria · Logiciel de gestion de dossiers patients · Version 1.4.0</span>
+      <span class="footer-bottom-text">Données 100% locales · AES-256-GCM · Conforme RGPD</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Smooth active nav highlighting
+const sections = document.querySelectorAll('section[id], div[id]');
+const navLinks = document.querySelectorAll('.nav-links a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(link => {
+        link.style.color = link.getAttribute('href') === '#' + entry.target.id
+          ? 'var(--green)' : '';
+      });
+    }
+  });
+}, { threshold: .4 });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

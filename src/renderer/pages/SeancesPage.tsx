@@ -5,6 +5,8 @@ import type { PluginDefinition } from '../../shared/pluginTypes'
 import { ToastContext } from '../App'
 import { fmtDate, getInitials, getEvolBadgeClass } from '../utils/format'
 import { SummaryContent } from './SummaryPage'
+import EmptyState from '../components/common/EmptyState'
+import { ClipboardIcon, SearchIcon } from '../components/common/Icon'
 
 const MONTH_NAMES = ['Janvier','Février','Mars','Avril','Mai','Juin',
                      'Juillet','Août','Septembre','Octobre','Novembre','Décembre']
@@ -165,59 +167,78 @@ export default function SeancesPage() {
           </div>
         </div>
 
-        {/* Liste */}
+        {/* Liste avec séparateurs de mois */}
         {filtered.length === 0 ? (
-          <div className="empty" style={{ padding: '24px 16px' }}>Aucune séance trouvée.</div>
-        ) : (
-          <div>
-            {filtered.map(s => {
-              const p = getPatient(s.patient_id)
-              const isSelected = s.id === sessionId
-              return (
-                <div
-                  key={s.id}
-                  className={`seance-list-item${isSelected ? ' selected' : ''}`}
-                  onClick={() => handleSelect(s.id)}
-                >
-                  <div className="initials" style={{
-                    width: 30, height: 30, fontSize: 10, flexShrink: 0,
-                    background: isSelected ? 'white' : 'var(--accent)',
-                    color: isSelected ? 'var(--accent)' : 'white',
-                  }}>
-                    {p ? getInitials(p.first_name, p.last_name) : '?'}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: 12.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {p ? `${p.first_name} ${p.last_name}` : '—'}
-                    </div>
-                    <div style={{ fontSize: 11, opacity: .8, marginTop: 1 }}>
-                      {fmtDate(s.date)}
-                    </div>
-                    {s.motif && (
-                      <div style={{ fontSize: 10.5, opacity: .75, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {s.motif.replace(/<[^>]+>/g, '').slice(0, 45)}
-                      </div>
-                    )}
-                    {s.evolution_tags && (
-                      <span className={`badge ${getEvolBadgeClass(s.evolution_tags)}`} style={{ fontSize: 9, marginTop: 3, display: 'inline-block' }}>
-                        {s.evolution_tags}
-                      </span>
-                    )}
-                  </div>
+          <EmptyState
+            icon={<SearchIcon size={24} />}
+            title="Aucune séance"
+            description={search || filterPatient || filterYear ? 'Aucun résultat pour ces filtres.' : 'Aucune séance enregistrée.'}
+          />
+        ) : (() => {
+          const sorted = [...filtered].sort((a, b) => b.date.localeCompare(a.date))
+          const items: React.ReactNode[] = []
+          let lastMonthKey = ''
+          sorted.forEach(s => {
+            const p = getPatient(s.patient_id)
+            const isSelected = s.id === sessionId
+            const monthKey = s.date.slice(0, 7)
+            if (monthKey !== lastMonthKey) {
+              lastMonthKey = monthKey
+              const [y, m] = monthKey.split('-')
+              items.push(
+                <div key={`sep-${monthKey}`} className="seance-month-separator">
+                  {MONTH_NAMES[parseInt(m, 10) - 1]} {y}
                 </div>
               )
-            })}
-          </div>
-        )}
+            }
+            items.push(
+              <div
+                key={s.id}
+                className={`seance-list-item${isSelected ? ' selected' : ''}`}
+                onClick={() => handleSelect(s.id)}
+              >
+                <div className="initials" style={{
+                  width: 30, height: 30, fontSize: 10, flexShrink: 0,
+                  background: isSelected ? 'white' : 'var(--accent)',
+                  color: isSelected ? 'var(--accent)' : 'white',
+                  borderRadius: '50%',
+                }}>
+                  {p ? getInitials(p.first_name, p.last_name) : '?'}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 12.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {p ? `${p.last_name.toUpperCase()} ${p.first_name}` : '—'}
+                  </div>
+                  <div style={{ fontSize: 11, opacity: .75, marginTop: 1 }}>
+                    {fmtDate(s.date)}
+                  </div>
+                  {s.motif && (
+                    <div style={{ fontSize: 10.5, opacity: .7, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {s.motif.replace(/<[^>]+>/g, '').slice(0, 42)}
+                    </div>
+                  )}
+                  {s.evolution_tags && (
+                    <span className={`badge ${getEvolBadgeClass(s.evolution_tags)}`} style={{ fontSize: 9, marginTop: 3, display: 'inline-block' }}>
+                      {s.evolution_tags}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )
+          })
+          return <div>{items}</div>
+        })()}
       </div>
 
       {/* ══════════ PANNEAU DROIT — Détail ══════════ */}
       <div className="seances-right">
         {!selectedSession ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '50vh', gap: 12, color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: 36 }}>📋</div>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>Sélectionnez une séance dans la liste</div>
-            <div style={{ fontSize: 12 }}>{sessions.length} séance{sessions.length > 1 ? 's' : ''} au total</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '50vh' }}>
+            <EmptyState
+              icon={<ClipboardIcon size={28} />}
+              title="Sélectionnez une séance"
+              description={`${sessions.length} séance${sessions.length > 1 ? 's' : ''} au total — cliquez sur une entrée dans la liste à gauche.`}
+            />
           </div>
         ) : (
           <>

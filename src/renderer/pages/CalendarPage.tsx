@@ -1,20 +1,16 @@
-import React, { useEffect, useState, useContext, useCallback } from 'react'
+import React, { useEffect, useState, useContext, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Session, Patient, Appointment } from '../../shared/types'
 import { ToastContext } from '../App'
 import { fmtDate, getInitials } from '../utils/format'
 
+/* ── Constantes ──────────────────────────────────────────────────── */
+
 const MONTH_NAMES = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
-const DAY_NAMES   = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim']
+const DAY_SHORT   = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim']
+const DAY_FULL    = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche']
 
-// Créneaux de 30 min de 08:00 à 19:30 (vue jour)
-const TIME_SLOTS: string[] = []
-for (let h = 8; h < 20; h++) {
-  TIME_SLOTS.push(`${String(h).padStart(2,'0')}:00`)
-  TIME_SLOTS.push(`${String(h).padStart(2,'0')}:30`)
-}
-
-// Créneaux précis toutes les 5 min de 07:00 à 20:00 (sélecteurs de la modal)
+// Créneaux précis toutes les 5 min de 07:00 à 20:00 (sélecteurs modal)
 const FINE_TIMES: string[] = []
 for (let h = 7; h <= 20; h++) {
   for (let m = 0; m < 60; m += 5) {
@@ -23,20 +19,69 @@ for (let h = 7; h <= 20; h++) {
   }
 }
 
+// Grille horaire (vues semaine/jour)
+const GRID_START  = 7   // 07:00
+const GRID_END    = 20  // 20:00
+const HOUR_H      = 64  // px par heure
+const TOTAL_H     = (GRID_END - GRID_START) * HOUR_H
+const GRID_HOURS  = Array.from({ length: GRID_END - GRID_START }, (_, i) => GRID_START + i)
+
+// Vue mois : créneaux 30 min de 08:00 à 19:30
+const TIME_SLOTS: string[] = []
+for (let h = 8; h < 20; h++) {
+  TIME_SLOTS.push(`${String(h).padStart(2,'0')}:00`)
+  TIME_SLOTS.push(`${String(h).padStart(2,'0')}:30`)
+}
+
+type CalView = 'month' | 'week' | 'day'
+
+/* ── Helpers ─────────────────────────────────────────────────────── */
+
 const pad = (n: number) => String(n).padStart(2, '0')
 
 function dateStr(year: number, month: number, day: number) {
   return `${year}-${pad(month + 1)}-${pad(day)}`
 }
-
-// RDV couleur selon statut
+function toDateStr(d: Date): string {
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`
+}
+function timeToMins(t: string): number {
+  const [h, m] = t.split(':').map(Number)
+  return h * 60 + m
+}
+function timeToY(t: string): number {
+  return Math.max(0, timeToMins(t) - GRID_START * 60) * (HOUR_H / 60)
+}
+function durationPx(start: string, end?: string): number {
+  if (!end) return Math.round(45 * HOUR_H / 60)
+  return Math.max(22, (timeToMins(end) - timeToMins(start)) * (HOUR_H / 60))
+}
 function apptColor(appt: Appointment, today: string): { bg: string; border: string; text: string } {
-  if (appt.is_done) return { bg: '#EAF0E8', border: '#4A6741', text: '#2F5D34' }
-  if (appt.date < today) return { bg: '#FDF3E3', border: '#C17B2A', text: '#9A5B12' }
+  if (appt.is_done)       return { bg: '#EAF0E8', border: '#4A6741', text: '#2F5D34' }
+  if (appt.date < today)  return { bg: '#FDF3E3', border: '#C17B2A', text: '#9A5B12' }
   return { bg: '#E8F0F8', border: '#2A5A8A', text: '#1A3A6B' }
 }
+function getWeekStart(d: Date): Date {
+  const r = new Date(d)
+  const dow = r.getDay()
+  r.setDate(r.getDate() - (dow === 0 ? 6 : dow - 1))
+  r.setHours(0, 0, 0, 0)
+  return r
+}
+function getWeekDays(ws: Date): Date[] {
+  return Array.from({ length: 7 }, (_, i) => { const d = new Date(ws); d.setDate(d.getDate() + i); return d })
+}
+function weekRangeLabel(ws: Date): string {
+  const we = new Date(ws); we.setDate(we.getDate() + 6)
+  if (ws.getMonth() === we.getMonth())
+    return `${ws.getDate()} – ${we.getDate()} ${MONTH_NAMES[ws.getMonth()]} ${ws.getFullYear()}`
+  if (ws.getFullYear() === we.getFullYear())
+    return `${ws.getDate()} ${MONTH_NAMES[ws.getMonth()].slice(0,3)} – ${we.getDate()} ${MONTH_NAMES[we.getMonth()].slice(0,3)} ${ws.getFullYear()}`
+  return `${ws.getDate()} ${MONTH_NAMES[ws.getMonth()].slice(0,3)} ${ws.getFullYear()} – ${we.getDate()} ${MONTH_NAMES[we.getMonth()].slice(0,3)} ${we.getFullYear()}`
+}
 
-/* ─── MODAL RDV ────────────────────────────────────────────────────────── */
+/* ── MODAL RDV ───────────────────────────────────────────────────── */
+
 interface ApptModalProps {
   date: string
   slotTime?: string
@@ -49,22 +94,18 @@ interface ApptModalProps {
 }
 
 function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, onClose, onPatientCreated }: ApptModalProps) {
-  // Détermine si le RDV existant était un invité
-  const wasGuest = !!appointment && !appointment.patient_id
-
-  const [localDate,       setLocalDate]       = useState(appointment?.date || date)
-  const [patientId,       setPatientId]       = useState(appointment?.patient_id   || '')
-  const [heureD,          setHeureD]          = useState(appointment?.heure_debut  || slotTime || '09:00')
-  const [heureF,          setHeureF]          = useState(appointment?.heure_fin    || '')
-  const [note,            setNote]            = useState(appointment?.note          || '')
-  const [isDone,          setIsDone]          = useState(appointment?.is_done === 1)
-  const [guestLastName,   setGuestLastName]   = useState(appointment?.guest_last_name  || '')
-  const [guestFirstName,  setGuestFirstName]  = useState(appointment?.guest_first_name || '')
-  const [guestPhone,      setGuestPhone]      = useState(appointment?.guest_phone       || '')
-  const [creating,        setCreating]        = useState(false)
+  const [localDate,      setLocalDate]      = useState(appointment?.date || date)
+  const [patientId,      setPatientId]      = useState(appointment?.patient_id   || '')
+  const [heureD,         setHeureD]         = useState(appointment?.heure_debut  || slotTime || '09:00')
+  const [heureF,         setHeureF]         = useState(appointment?.heure_fin    || '')
+  const [note,           setNote]           = useState(appointment?.note          || '')
+  const [isDone,         setIsDone]         = useState(appointment?.is_done === 1)
+  const [guestLastName,  setGuestLastName]  = useState(appointment?.guest_last_name  || '')
+  const [guestFirstName, setGuestFirstName] = useState(appointment?.guest_first_name || '')
+  const [guestPhone,     setGuestPhone]     = useState(appointment?.guest_phone       || '')
+  const [creating,       setCreating]       = useState(false)
   const navigate = useNavigate()
 
-  // Quand un patient existant est sélectionné, vider les champs invité
   const handlePatientChange = (id: string) => {
     setPatientId(id)
     if (id) { setGuestLastName(''); setGuestFirstName(''); setGuestPhone('') }
@@ -95,7 +136,6 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
     navigate(`/nouvelle/${patientId}?${params.toString()}`)
   }
 
-  // Crée une fiche patient depuis les infos invité et lie le RDV
   const handleCreatePatient = async () => {
     if (!guestLastName && !guestFirstName) return
     if (!confirm(`Créer une fiche patient pour ${guestFirstName} ${guestLastName} ?`)) return
@@ -112,7 +152,6 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
         antecedents: undefined, profession: undefined,
         created_at: now, updated_at: now, is_active: 1,
       } as any)
-      // Met à jour le RDV pour lier le patient et effacer les champs invité
       if (appointment) {
         await window.mtcApi.updateAppointment(appointment.id, {
           patient_id: newPatient.id,
@@ -121,13 +160,10 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
       }
       onPatientCreated?.()
       onClose()
-    } catch (e: any) {
-      alert(`Erreur : ${e?.message || e}`)
-    }
+    } catch (e: any) { alert(`Erreur : ${e?.message || e}`) }
     setCreating(false)
   }
 
-  const timeOptions  = FINE_TIMES
   const hasGuestInfo = !patientId && (guestLastName || guestFirstName)
 
   return (
@@ -138,19 +174,12 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
           <span>{appointment ? 'Modifier le RDV' : 'Nouveau rendez-vous'}</span>
         </h2>
 
-        {/* Date — saisie manuelle possible */}
         <div className="field" style={{ marginBottom: 14 }}>
           <label style={{ fontWeight: 700, color: 'var(--accent)', fontSize: 12 }}>Date du rendez-vous *</label>
-          <input
-            type="date"
-            value={localDate}
-            onChange={e => setLocalDate(e.target.value)}
-            style={{ fontWeight: 600, fontSize: 14, color: 'var(--accent)' }}
-            required
-          />
+          <input type="date" value={localDate} onChange={e => setLocalDate(e.target.value)}
+            style={{ fontWeight: 600, fontSize: 14, color: 'var(--accent)' }} required />
         </div>
 
-        {/* ── Patient existant ── */}
         <div className="field" style={{ marginBottom: 10 }}>
           <label>Patient existant</label>
           <select value={patientId} onChange={e => handlePatientChange(e.target.value)}>
@@ -161,7 +190,6 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
           </select>
         </div>
 
-        {/* ── Champs nouveau patient (si pas de patient sélectionné) ── */}
         {!patientId && (
           <div style={{ background: 'var(--surface-hover)', border: '1px solid var(--border-soft)', borderRadius: 8, padding: '10px 12px', marginBottom: 12 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8 }}>
@@ -170,84 +198,57 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
             <div className="grid2" style={{ marginBottom: 8 }}>
               <div className="field" style={{ margin: 0 }}>
                 <label style={{ fontSize: 12 }}>Nom</label>
-                <input
-                  type="text"
-                  value={guestLastName}
-                  onChange={e => setGuestLastName(e.target.value)}
-                  placeholder="DUPONT"
-                  style={{ textTransform: 'uppercase' }}
-                />
+                <input type="text" value={guestLastName} onChange={e => setGuestLastName(e.target.value)}
+                  placeholder="DUPONT" style={{ textTransform: 'uppercase' }} />
               </div>
               <div className="field" style={{ margin: 0 }}>
                 <label style={{ fontSize: 12 }}>Prénom</label>
-                <input
-                  type="text"
-                  value={guestFirstName}
-                  onChange={e => setGuestFirstName(e.target.value)}
-                  placeholder="Jean"
-                />
+                <input type="text" value={guestFirstName} onChange={e => setGuestFirstName(e.target.value)} placeholder="Jean" />
               </div>
             </div>
-            <div className="grid2" style={{ marginBottom: 0 }}>
+            <div className="grid2">
               <div className="field" style={{ margin: 0 }}>
                 <label style={{ fontSize: 12 }}>Téléphone</label>
-                <input
-                  type="tel"
-                  value={guestPhone}
-                  onChange={e => setGuestPhone(e.target.value)}
-                  placeholder="06 00 00 00 00"
-                />
+                <input type="tel" value={guestPhone} onChange={e => setGuestPhone(e.target.value)} placeholder="06 00 00 00 00" />
               </div>
               <div className="field" style={{ margin: 0 }}>
                 <label style={{ fontSize: 12 }}>Motif de venue</label>
-                <input
-                  type="text"
-                  value={note}
-                  onChange={e => setNote(e.target.value)}
-                  placeholder="Douleurs, bilan, stress…"
-                />
+                <input type="text" value={note} onChange={e => setNote(e.target.value)} placeholder="Douleurs, bilan…" />
               </div>
             </div>
             {hasGuestInfo && (
-              <div style={{ fontSize: 11, color: 'var(--teal)', marginTop: 8 }}>
-                ✓ Le nom et le motif s'afficheront sur le planning
-              </div>
+              <div style={{ fontSize: 11, color: 'var(--teal)', marginTop: 8 }}>✓ Le nom s'affichera sur le planning</div>
             )}
           </div>
         )}
 
-        {/* ── Horaires ── */}
         <div className="grid2" style={{ marginBottom: 12 }}>
           <div className="field">
             <label>Heure début *</label>
             <select value={heureD} onChange={e => setHeureD(e.target.value)}>
-              {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+              {FINE_TIMES.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
           <div className="field">
             <label>Heure fin</label>
             <select value={heureF} onChange={e => setHeureF(e.target.value)}>
               <option value="">—</option>
-              {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+              {FINE_TIMES.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
         </div>
 
-        {/* ── Note / Motif (patients connus uniquement) ── */}
         {patientId && (
           <div className="field" style={{ marginBottom: 12 }}>
             <label>Motif de visite / Note</label>
-            <textarea
-              value={note}
-              onChange={e => setNote(e.target.value)}
-              placeholder="Motif de la consultation, demande du patient…"
-              style={{ minHeight: 60, resize: 'vertical' }}
-            />
+            <textarea value={note} onChange={e => setNote(e.target.value)}
+              placeholder="Motif de la consultation…" style={{ minHeight: 60, resize: 'vertical' }} />
           </div>
         )}
 
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, marginBottom: 16, cursor: 'pointer' }}>
-          <input type="checkbox" checked={isDone} onChange={e => setIsDone(e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--accent)' }} />
+          <input type="checkbox" checked={isDone} onChange={e => setIsDone(e.target.checked)}
+            style={{ width: 16, height: 16, accentColor: 'var(--accent)' }} />
           <span>Marquer comme réalisé</span>
         </label>
 
@@ -256,26 +257,18 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
             {appointment ? '💾 Mettre à jour' : '+ Créer le RDV'}
           </button>
           {patientId && !appointment?.is_done && (
-            <button className="btn btn-secondary" onClick={handleConvert} title="Ouvre le formulaire de séance avec le motif pré-rempli">
+            <button className="btn btn-secondary" onClick={handleConvert} title="Ouvre le formulaire de séance">
               📋 Créer la séance
             </button>
           )}
-          {/* Convertir invité en fiche patient */}
           {hasGuestInfo && appointment && (
-            <button
-              className="btn btn-secondary"
-              style={{ color: 'var(--teal)', borderColor: 'var(--teal)' }}
-              onClick={handleCreatePatient}
-              disabled={creating}
-              title="Crée une fiche patient et lie ce RDV"
-            >
+            <button className="btn btn-secondary" style={{ color: 'var(--teal)', borderColor: 'var(--teal)' }}
+              onClick={handleCreatePatient} disabled={creating} title="Crée une fiche patient">
               {creating ? '⏳…' : '👤 Créer la fiche patient'}
             </button>
           )}
           {appointment && onDelete && (
-            <button className="btn btn-secondary" style={{ color: 'var(--red)' }} onClick={onDelete}>
-              Supprimer
-            </button>
+            <button className="btn btn-secondary" style={{ color: 'var(--red)' }} onClick={onDelete}>Supprimer</button>
           )}
           <button className="btn btn-secondary" onClick={onClose}>Annuler</button>
         </div>
@@ -284,22 +277,213 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
   )
 }
 
-/* ─── PAGE PRINCIPALE ──────────────────────────────────────────────────── */
+/* ── GRILLE HORAIRE — partagée entre vue Semaine et vue Jour ──────── */
+
+interface GridProps {
+  days: Date[]
+  todayStr: string
+  sessionsByDate: Record<string, Session[]>
+  apptByDate: Record<string, Appointment[]>
+  patients: Patient[]
+  onSlotClick: (date: string, time: string) => void
+  onApptClick: (appt: Appointment) => void
+  onSessClick: (sessId: string) => void
+  onDayHeaderClick: (d: Date) => void
+}
+
+function TimeGridView({ days, todayStr, sessionsByDate, apptByDate, patients, onSlotClick, onApptClick, onSessClick, onDayHeaderClick }: GridProps) {
+  const [nowY, setNowY] = useState<number | null>(null)
+  const bodyRef = useRef<HTMLDivElement>(null)
+
+  const getPatient = useCallback((id?: string) => id ? patients.find(p => p.id === id) : undefined, [patients])
+  const getApptLabel = (appt: Appointment): string => {
+    const p = getPatient(appt.patient_id)
+    if (p) return `${p.first_name} ${p.last_name}`
+    return [appt.guest_first_name, appt.guest_last_name].filter(Boolean).join(' ') || '—'
+  }
+
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date()
+      const mins = now.getHours() * 60 + now.getMinutes() - GRID_START * 60
+      const y = mins * (HOUR_H / 60)
+      setNowY(y >= 0 && y <= TOTAL_H ? y : null)
+    }
+    tick()
+    const id = setInterval(tick, 60_000)
+    return () => clearInterval(id)
+  }, [])
+
+  // Scroll initial vers l'heure courante (ou 09:00)
+  useEffect(() => {
+    if (!bodyRef.current) return
+    const target = nowY !== null ? Math.max(0, nowY - 120) : 2 * HOUR_H
+    bodyRef.current.scrollTop = target
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const hasSessions = days.some(d => (sessionsByDate[toDateStr(d)] || []).length > 0)
+  const isMultiDay = days.length > 1
+
+  return (
+    <div className="cal-grid-wrap">
+      {/* ── En-têtes colonnes ── */}
+      <div className="cal-col-header-row">
+        <div className="cal-time-gutter" />
+        {days.map((day, i) => {
+          const ds = toDateStr(day)
+          const isT = ds === todayStr
+          const dow = (day.getDay() + 6) % 7
+          return (
+            <div
+              key={i}
+              className={`cal-col-header${isT ? ' today' : ''}`}
+              onClick={() => isMultiDay && onDayHeaderClick(day)}
+              title={isMultiDay ? 'Cliquer pour voir ce jour' : ''}
+            >
+              <div className="ch-name">{DAY_SHORT[dow]}</div>
+              <div className="ch-num">
+                {isT ? (
+                  <span className="ch-today-circle">{day.getDate()}</span>
+                ) : (
+                  <span>{day.getDate()}</span>
+                )}
+              </div>
+              {isMultiDay && (
+                <div style={{ fontSize: 10, color: 'var(--text-hint)', marginTop: 1, lineHeight: 1.2 }}>
+                  {MONTH_NAMES[day.getMonth()].slice(0, 4)}.
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* ── Bande séances (toute la journée, pas d'horaire fixe) ── */}
+      {hasSessions && (
+        <div className="cal-allday-row">
+          <div className="cal-allday-gutter">Séances</div>
+          {days.map((day, i) => {
+            const sess = sessionsByDate[toDateStr(day)] || []
+            return (
+              <div key={i} className="cal-allday-col">
+                {sess.map(s => {
+                  const p = getPatient(s.patient_id)
+                  return (
+                    <div key={s.id} className="cal-sess-pill" onClick={() => onSessClick(s.id)}>
+                      {p ? `${p.first_name} ${p.last_name.charAt(0)}.` : '—'}
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* ── Corps : grille horaire scrollable ── */}
+      <div className="cal-grid-body" ref={bodyRef}>
+        <div className="cal-grid-inner" style={{ height: TOTAL_H }}>
+
+          {/* Colonne des heures */}
+          <div className="cal-time-col" style={{ height: TOTAL_H }}>
+            {GRID_HOURS.map(h => (
+              <div
+                key={h}
+                className="cal-time-label"
+                style={{ top: (h - GRID_START) * HOUR_H + 3 }}
+              >
+                {pad(h)}:00
+              </div>
+            ))}
+          </div>
+
+          {/* Colonnes jours */}
+          {days.map((day, ci) => {
+            const ds    = toDateStr(day)
+            const appts = (apptByDate[ds] || []).sort((a, b) => a.heure_debut.localeCompare(b.heure_debut))
+            const isT   = ds === todayStr
+
+            return (
+              <div key={ci} className="cal-day-col" style={{ height: TOTAL_H }}>
+
+                {/* Lignes de fond par heure */}
+                {GRID_HOURS.map(h => (
+                  <React.Fragment key={h}>
+                    <div className="cal-hour-line" style={{ top: (h - GRID_START) * HOUR_H }} />
+                    <div className="cal-half-line"  style={{ top: (h - GRID_START) * HOUR_H + HOUR_H / 2 }} />
+                  </React.Fragment>
+                ))}
+
+                {/* Zones cliquables (créneaux 30 min) */}
+                {GRID_HOURS.flatMap(h => [0, 30].map(m => (
+                  <div
+                    key={`${h}:${m}`}
+                    className="cal-slot-click"
+                    style={{
+                      top:    (h - GRID_START) * HOUR_H + m * (HOUR_H / 60),
+                      height: HOUR_H / 2,
+                    }}
+                    onClick={() => onSlotClick(ds, `${pad(h)}:${pad(m)}`)}
+                  />
+                )))}
+
+                {/* Blocs RDV */}
+                {appts.map(appt => {
+                  const y   = timeToY(appt.heure_debut)
+                  const h   = durationPx(appt.heure_debut, appt.heure_fin)
+                  const c   = apptColor(appt, todayStr)
+                  const lbl = getApptLabel(appt)
+                  return (
+                    <div
+                      key={appt.id}
+                      className="cal-appt-block"
+                      style={{ top: y, height: h, background: c.bg, borderColor: c.border, color: c.text, zIndex: 2 }}
+                      onClick={e => { e.stopPropagation(); onApptClick(appt) }}
+                    >
+                      <div className="cal-appt-name">{lbl}</div>
+                      {h >= 32 && (
+                        <div className="cal-appt-time">
+                          {appt.heure_debut}{appt.heure_fin ? ` – ${appt.heure_fin}` : ''}
+                          {appt.note ? ` · ${appt.note}` : ''}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+
+                {/* Indicateur heure courante */}
+                {isT && nowY !== null && (
+                  <div className="cal-now-line" style={{ top: nowY }}>
+                    <div className="cal-now-dot" />
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── PAGE PRINCIPALE ─────────────────────────────────────────────── */
+
 export default function CalendarPage() {
-  const today = new Date()
-  const todayStr = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`
+  const today    = new Date()
+  const todayStr = toDateStr(today)
 
-  const [year,        setYear]        = useState(today.getFullYear())
-  const [month,       setMonth]       = useState(today.getMonth())
-  const [selectedDay, setSelectedDay] = useState<string>(todayStr)
-  const [sessions,    setSessions]    = useState<Session[]>([])
-  const [appointments,setAppointments]= useState<Appointment[]>([])
-  const [patients,    setPatients]    = useState<Patient[]>([])
-
-  // Modal
-  const [modalOpen,   setModalOpen]   = useState(false)
-  const [modalAppt,   setModalAppt]   = useState<Appointment | undefined>()
-  const [modalSlot,   setModalSlot]   = useState<string | undefined>()
+  const [view,         setView]         = useState<CalView>('month')
+  const [year,         setYear]         = useState(today.getFullYear())
+  const [month,        setMonth]        = useState(today.getMonth())
+  const [selectedDay,  setSelectedDay]  = useState<string>(todayStr)
+  const [weekStart,    setWeekStart]    = useState(() => getWeekStart(today))
+  const [sessions,     setSessions]     = useState<Session[]>([])
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [patients,     setPatients]     = useState<Patient[]>([])
+  const [modalOpen,    setModalOpen]    = useState(false)
+  const [modalAppt,    setModalAppt]    = useState<Appointment | undefined>()
+  const [modalDate,    setModalDate]    = useState<string>(todayStr)
+  const [modalSlot,    setModalSlot]    = useState<string | undefined>()
 
   const showToast = useContext(ToastContext)
   const navigate  = useNavigate()
@@ -311,86 +495,79 @@ export default function CalendarPage() {
         window.mtcApi.getPatients(),
         window.mtcApi.getAppointments(),
       ])
-      setSessions(s)
-      setPatients(p)
-      setAppointments(a)
+      setSessions(s); setPatients(p); setAppointments(a)
     } catch { showToast('Erreur chargement', 'error') }
   }, [showToast])
 
   useEffect(() => { load() }, [load])
 
-  /* ── Calendrier mensuel ── */
-  const firstDay  = new Date(year, month, 1)
-  const lastDay   = new Date(year, month + 1, 0)
-  const daysCount = lastDay.getDate()
-  let startOffset = firstDay.getDay() - 1
-  if (startOffset < 0) startOffset = 6
-
-  const cells: (number | null)[] = []
-  for (let i = 0; i < startOffset; i++) cells.push(null)
-  for (let d = 1; d <= daysCount; d++) cells.push(d)
-  while (cells.length % 7 !== 0) cells.push(null)
-
+  /* ── Index par date ── */
   const sessionsByDate: Record<string, Session[]> = {}
-  sessions.forEach(s => {
-    if (!sessionsByDate[s.date]) sessionsByDate[s.date] = []
-    sessionsByDate[s.date].push(s)
-  })
+  sessions.forEach(s => { (sessionsByDate[s.date] ??= []).push(s) })
 
   const apptByDate: Record<string, Appointment[]> = {}
-  appointments.forEach(a => {
-    if (!apptByDate[a.date]) apptByDate[a.date] = []
-    apptByDate[a.date].push(a)
-  })
+  appointments.forEach(a => { (apptByDate[a.date] ??= []).push(a) })
 
-  const prevMonth = () => {
-    if (month === 0) { setMonth(11); setYear(y => y - 1) }
-    else setMonth(m => m - 1)
-  }
-  const nextMonth = () => {
-    if (month === 11) { setMonth(0); setYear(y => y + 1) }
-    else setMonth(m => m + 1)
-  }
-
-  /* ── Données du jour sélectionné ── */
-  const daySessions    = selectedDay ? (sessionsByDate[selectedDay] || []) : []
-  const dayAppointments= selectedDay ? (apptByDate[selectedDay]    || []) : []
-
+  /* ── Helpers patient ── */
   const getPatient = (id?: string) => id ? patients.find(p => p.id === id) : undefined
-
-  // Nom à afficher sur le planning pour un RDV
   const getApptLabel = (appt: Appointment): string => {
-    const pat = getPatient(appt.patient_id)
-    if (pat) return `${pat.first_name} ${pat.last_name}`
-    const gn = [appt.guest_first_name, appt.guest_last_name].filter(Boolean).join(' ')
-    return gn || '— Sans patient'
+    const p = getPatient(appt.patient_id)
+    if (p) return `${p.first_name} ${p.last_name}`
+    return [appt.guest_first_name, appt.guest_last_name].filter(Boolean).join(' ') || '—'
   }
   const getApptInitials = (appt: Appointment): string => {
-    const pat = getPatient(appt.patient_id)
-    if (pat) return getInitials(pat.first_name, pat.last_name)
+    const p = getPatient(appt.patient_id)
+    if (p) return getInitials(p.first_name, p.last_name)
     if (appt.guest_first_name || appt.guest_last_name)
       return getInitials(appt.guest_first_name || '', appt.guest_last_name || '')
     return '?'
   }
 
-  /* ── Stats du mois ── */
+  /* ── Calendrier mensuel ── */
+  const firstDay    = new Date(year, month, 1)
+  const daysCount   = new Date(year, month + 1, 0).getDate()
+  let startOffset   = firstDay.getDay() - 1
+  if (startOffset < 0) startOffset = 6
+  const cells: (number | null)[] = []
+  for (let i = 0; i < startOffset; i++) cells.push(null)
+  for (let d = 1; d <= daysCount; d++) cells.push(d)
+  while (cells.length % 7 !== 0) cells.push(null)
+
   const monthStr  = `${year}-${pad(month + 1)}`
   const monthSess = sessions.filter(s => s.date.startsWith(monthStr))
   const monthAppt = appointments.filter(a => a.date.startsWith(monthStr))
 
-  /* ── Handlers RDV ── */
-  const openNewAppt = (slot?: string) => {
-    setModalAppt(undefined)
-    setModalSlot(slot)
-    // Si aucun jour sélectionné → on passe quand même : la modal utilisera sa propre date state
-    setModalOpen(true)
-  }
-  const openEditAppt = (appt: Appointment) => {
-    setModalAppt(appt)
-    setModalSlot(undefined)
-    setModalOpen(true)
+  /* ── Navigation ── */
+  const goToPrevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y-1) } else setMonth(m => m-1) }
+  const goToNextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y+1) } else setMonth(m => m+1) }
+  const goToPrevWeek  = () => { const d = new Date(weekStart); d.setDate(d.getDate()-7); setWeekStart(d) }
+  const goToNextWeek  = () => { const d = new Date(weekStart); d.setDate(d.getDate()+7); setWeekStart(d) }
+  const goToPrevDay   = () => { const d = new Date(selectedDay); d.setDate(d.getDate()-1); setSelectedDay(toDateStr(d)) }
+  const goToNextDay   = () => { const d = new Date(selectedDay); d.setDate(d.getDate()+1); setSelectedDay(toDateStr(d)) }
+  const goToToday     = () => {
+    setYear(today.getFullYear()); setMonth(today.getMonth())
+    setSelectedDay(todayStr); setWeekStart(getWeekStart(today))
   }
 
+  /* ── Changement de vue ── */
+  const switchView = (v: CalView) => {
+    if (v === 'week') setWeekStart(getWeekStart(new Date(selectedDay)))
+    if (v === 'month') { const sd = new Date(selectedDay); setYear(sd.getFullYear()); setMonth(sd.getMonth()) }
+    setView(v)
+  }
+
+  const handleDayHeaderClick = (d: Date) => {
+    setSelectedDay(toDateStr(d))
+    setView('day')
+  }
+
+  /* ── Modal ── */
+  const openNewAppt = (date: string, slot?: string) => {
+    setModalAppt(undefined); setModalDate(date); setModalSlot(slot); setModalOpen(true)
+  }
+  const openEditAppt = (appt: Appointment) => {
+    setModalAppt(appt); setModalDate(appt.date); setModalSlot(undefined); setModalOpen(true)
+  }
   const handleSaveAppt = async (data: Omit<Appointment, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       if (modalAppt) {
@@ -400,358 +577,400 @@ export default function CalendarPage() {
         await window.mtcApi.createAppointment(data)
         showToast('RDV créé ✓')
       }
-      setModalOpen(false)
-      load()
+      setModalOpen(false); load()
     } catch { showToast('Erreur enregistrement RDV', 'error') }
   }
-
   const handleDeleteAppt = async () => {
-    if (!modalAppt) return
-    if (!confirm('Supprimer ce rendez-vous ?')) return
+    if (!modalAppt || !confirm('Supprimer ce rendez-vous ?')) return
     try {
       await window.mtcApi.deleteAppointment(modalAppt.id)
-      showToast('RDV supprimé')
-      setModalOpen(false)
-      load()
+      showToast('RDV supprimé'); setModalOpen(false); load()
     } catch { showToast('Erreur suppression RDV', 'error') }
   }
 
+  /* ── Libellés navigation ── */
+  const weekDays = getWeekDays(weekStart)
+  let navLabel = ''
+  let onPrev: () => void
+  let onNext: () => void
+  if (view === 'month') {
+    navLabel = `${MONTH_NAMES[month]} ${year}`
+    onPrev = goToPrevMonth; onNext = goToNextMonth
+  } else if (view === 'week') {
+    navLabel = weekRangeLabel(weekStart)
+    onPrev = goToPrevWeek; onNext = goToNextWeek
+  } else {
+    const sd  = new Date(selectedDay)
+    const dow = (sd.getDay() + 6) % 7
+    navLabel  = `${DAY_FULL[dow]} ${sd.getDate()} ${MONTH_NAMES[sd.getMonth()]} ${sd.getFullYear()}`
+    onPrev = goToPrevDay; onNext = goToNextDay
+  }
+
+  /* ── Stats en-tête ── */
+  const currentCount = view === 'week'
+    ? appointments.filter(a => weekDays.some(d => toDateStr(d) === a.date)).length
+    : view === 'day'
+      ? (apptByDate[selectedDay] || []).length
+      : monthAppt.length
+  const currentSess = view === 'week'
+    ? sessions.filter(s => weekDays.some(d => toDateStr(d) === s.date)).length
+    : view === 'day'
+      ? (sessionsByDate[selectedDay] || []).length
+      : monthSess.length
+  const periodLabel = view === 'month' ? MONTH_NAMES[month] : view === 'week' ? 'cette semaine' : 'ce jour'
+
+  /* ── Données vue mois ── */
+  const daySessions     = selectedDay ? (sessionsByDate[selectedDay] || []) : []
+  const dayAppointments = selectedDay ? (apptByDate[selectedDay]     || []) : []
+
   return (
     <div>
-      {/* ── En-tête : navigation mois + bouton nouveau RDV ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-        <button className="btn btn-secondary btn-sm" onClick={prevMonth}>← Préc.</button>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 18, fontWeight: 700, fontFamily: 'var(--font-serif)', color: 'var(--accent)' }}>
-            {MONTH_NAMES[month]} {year}
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-            {monthSess.length} séance{monthSess.length !== 1 ? 's' : ''} · {monthAppt.length} RDV
-          </div>
+      {/* ── Barre de contrôle principale ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+
+        {/* Sélecteur de vue */}
+        <div className="cal-view-switcher">
+          {(['month', 'week', 'day'] as CalView[]).map(v => (
+            <button
+              key={v}
+              className={`cal-view-btn${view === v ? ' active' : ''}`}
+              onClick={() => switchView(v)}
+            >
+              {v === 'month' ? 'Mois' : v === 'week' ? 'Semaine' : 'Jour'}
+            </button>
+          ))}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+
+        {/* Navigation */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button className="btn btn-secondary btn-sm" onClick={onPrev} style={{ minWidth: 32, fontWeight: 700, fontSize: 16 }}>‹</button>
+          <div style={{ textAlign: 'center', minWidth: view === 'week' ? 260 : 200 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-serif)', lineHeight: 1.2 }}>
+              {navLabel}
+            </div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+              {currentSess} séance{currentSess !== 1 ? 's' : ''} · {currentCount} RDV {periodLabel !== MONTH_NAMES[month] ? periodLabel : ''}
+            </div>
+          </div>
+          <button className="btn btn-secondary btn-sm" onClick={onNext} style={{ minWidth: 32, fontWeight: 700, fontSize: 16 }}>›</button>
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button className="btn btn-secondary btn-sm" onClick={goToToday}>Aujourd'hui</button>
           <button
             className="btn btn-primary btn-sm"
-            onClick={() => openNewAppt()}
-            title="Créer un nouveau rendez-vous (date libre)"
+            onClick={() => openNewAppt(
+              view === 'week' ? toDateStr(weekDays[0]) :
+              view === 'day'  ? selectedDay : selectedDay || todayStr
+            )}
           >
             + Nouveau RDV
           </button>
-          <button className="btn btn-secondary btn-sm" onClick={nextMonth}>Suiv. →</button>
         </div>
       </div>
 
-      {/* ── Sélecteurs rapides ── */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: '0.75rem' }}>
-        <select value={year} onChange={e => setYear(+e.target.value)} style={{ width: 90 }}>
-          {Array.from({ length: 10 }, (_, i) => today.getFullYear() - 5 + i).map(y => (
-            <option key={y} value={y}>{y}</option>
-          ))}
-        </select>
-        <select value={month} onChange={e => setMonth(+e.target.value)} style={{ width: 130 }}>
-          {MONTH_NAMES.map((n, i) => <option key={i} value={i}>{n}</option>)}
-        </select>
-        <button className="btn btn-secondary btn-sm"
-          onClick={() => { setYear(today.getFullYear()); setMonth(today.getMonth()); setSelectedDay(todayStr) }}>
-          Aujourd'hui
-        </button>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'start' }}>
-
-        {/* ── CALENDRIER MENSUEL (gauche) ── */}
-        <div className="card" style={{ padding: '10px' }}>
-          {/* Légende */}
-          <div style={{ display: 'flex', gap: 12, fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, flexWrap: 'wrap' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block' }} /> Séance réalisée
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--blue)', display: 'inline-block' }} /> RDV planifié
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--amber)', display: 'inline-block' }} /> RDV en attente
-            </span>
-          </div>
-
-          {/* Jours de la semaine */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 2 }}>
-            {DAY_NAMES.map(d => (
-              <div key={d} style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', padding: '2px 0' }}>{d}</div>
-            ))}
-          </div>
-
-          {/* Cellules */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
-            {cells.map((day, idx) => {
-              if (day === null) return <div key={`e-${idx}`} />
-              const ds    = dateStr(year, month, day)
-              const sess  = sessionsByDate[ds] || []
-              const appts = apptByDate[ds] || []
-              const isToday    = ds === todayStr
-              const isSelected = ds === selectedDay
-              const hasDots    = sess.length > 0 || appts.length > 0
-
-              return (
-                <div
-                  key={ds}
-                  onClick={() => setSelectedDay(isSelected ? '' : ds)}
-                  style={{
-                    borderRadius: 6,
-                    padding: '4px 2px',
-                    minHeight: 44,
-                    cursor: 'pointer',
-                    background: isSelected ? 'var(--accent)' : isToday ? 'var(--accent-light)' : hasDots ? 'var(--surface-hover)' : 'transparent',
-                    border: isToday && !isSelected ? '2px solid var(--accent)' : isSelected ? '2px solid var(--accent)' : '2px solid transparent',
-                    transition: 'all .12s',
-                  }}
-                >
-                  <div style={{
-                    textAlign: 'center',
-                    fontSize: 12,
-                    fontWeight: isToday || isSelected ? 700 : 400,
-                    color: isSelected ? 'white' : isToday ? 'var(--accent)' : 'var(--text)',
-                    marginBottom: 2,
-                  }}>
-                    {day}
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 2 }}>
-                    {sess.slice(0, 2).map((_, i) => (
-                      <div key={`s${i}`} style={{ width: 6, height: 6, borderRadius: '50%', background: isSelected ? 'rgba(255,255,255,0.9)' : 'var(--accent)' }} />
-                    ))}
-                    {appts.filter(a => a.is_done).slice(0, 1).map((_, i) => (
-                      <div key={`ad${i}`} style={{ width: 6, height: 6, borderRadius: '50%', background: isSelected ? 'rgba(255,255,255,0.9)' : 'var(--accent)' }} />
-                    ))}
-                    {appts.filter(a => !a.is_done && a.date >= todayStr).slice(0, 2).map((_, i) => (
-                      <div key={`ap${i}`} style={{ width: 6, height: 6, borderRadius: '50%', background: isSelected ? 'rgba(255,255,255,0.9)' : 'var(--blue)' }} />
-                    ))}
-                    {appts.filter(a => !a.is_done && a.date < todayStr).slice(0, 1).map((_, i) => (
-                      <div key={`am${i}`} style={{ width: 6, height: 6, borderRadius: '50%', background: isSelected ? 'rgba(255,255,255,0.9)' : 'var(--amber)' }} />
-                    ))}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* ── VUE JOUR avec créneaux horaires (droite) ── */}
+      {/* ═══ VUE MOIS ═══════════════════════════════════════════════ */}
+      {view === 'month' && (
         <div>
-          {selectedDay ? (
-            <div>
-              {/* En-tête du jour */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', margin: 0 }}>
-                  {fmtDate(selectedDay)}
-                </h3>
-                <button className="btn btn-primary btn-sm" onClick={() => openNewAppt()}>
-                  + Nouveau RDV
-                </button>
+          {/* Sélecteurs rapides */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 12 }}>
+            <select value={year} onChange={e => setYear(+e.target.value)} style={{ width: 90 }}>
+              {Array.from({ length: 10 }, (_, i) => today.getFullYear() - 5 + i).map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+            <select value={month} onChange={e => setMonth(+e.target.value)} style={{ width: 130 }}>
+              {MONTH_NAMES.map((n, i) => <option key={i} value={i}>{n}</option>)}
+            </select>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'start' }}>
+            {/* Calendrier mensuel */}
+            <div className="card" style={{ padding: '10px' }}>
+              <div style={{ display: 'flex', gap: 12, fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, flexWrap: 'wrap' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block' }} /> Séance
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--blue)', display: 'inline-block' }} /> RDV planifié
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--amber)', display: 'inline-block' }} /> En attente
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 3, marginLeft: 'auto', color: 'var(--accent)', fontWeight: 600, cursor: 'pointer' }}
+                  onClick={() => switchView('week')}>
+                  Vue semaine →
+                </span>
               </div>
 
-              {/* Séances réalisées du jour (sans horaire fixe) */}
-              {daySessions.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>
-                    Séances réalisées
-                  </div>
-                  {daySessions.map(sess => {
-                    const pat = getPatient(sess.patient_id)
-                    return (
-                      <div key={sess.id}
-                        onClick={() => navigate(`/seances/${sess.id}`)}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 10,
-                          padding: '8px 10px', borderRadius: 8, marginBottom: 4,
-                          background: '#EAF0E8', border: '1px solid #4A6741',
-                          cursor: 'pointer', transition: 'opacity .15s',
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.opacity = '.85')}
-                        onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-                      >
-                        <div className="initials" style={{ width: 28, height: 28, fontSize: 10, flexShrink: 0, background: 'var(--accent)', color: 'white' }}>
-                          {pat ? getInitials(pat.first_name, pat.last_name) : '?'}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 600, fontSize: 12, color: '#2F5D34' }}>
-                            {pat ? `${pat.first_name} ${pat.last_name}` : '—'}
-                          </div>
-                          {sess.motif && (
-                            <div style={{ fontSize: 11, color: '#4A7A54', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {sess.motif.replace(/<[^>]+>/g, '')}
-                            </div>
-                          )}
-                        </div>
-                        <span style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 600 }}>Voir →</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-
-              {/* Créneaux horaires */}
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>
-                Planning du jour
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 2 }}>
+                {DAY_SHORT.map(d => (
+                  <div key={d} style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', padding: '2px 0' }}>{d}</div>
+                ))}
               </div>
-              <div className="time-grid">
-                {TIME_SLOTS.map((slot, slotIdx) => {
-                  const nextSlot = TIME_SLOTS[slotIdx + 1] ?? '20:00'
-                  // RDV qui démarre dans ce créneau de 30 min (ex: 09:00-09:29)
-                  const startAppts = dayAppointments.filter(a =>
-                    a.heure_debut >= slot && a.heure_debut < nextSlot
-                  )
-                  // RDV en cours qui enjambe ce créneau
-                  const continuedAppts = dayAppointments.filter(a =>
-                    a.heure_debut < slot && a.heure_fin && a.heure_fin > slot
-                  )
-                  const isEmpty = startAppts.length === 0 && continuedAppts.length === 0
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
+                {cells.map((day, idx) => {
+                  if (day === null) return <div key={`e-${idx}`} />
+                  const ds    = dateStr(year, month, day)
+                  const sess  = sessionsByDate[ds] || []
+                  const appts = apptByDate[ds] || []
+                  const isT   = ds === todayStr
+                  const isSel = ds === selectedDay
+                  const dots  = sess.length > 0 || appts.length > 0
 
                   return (
-                    <div key={slot} className="time-slot">
-                      <div className="time-slot-label">{slot}</div>
-                      <div className="time-slot-content">
-                        {isEmpty && (
-                          <div
-                            className="time-slot-empty"
-                            onClick={() => openNewAppt(slot)}
-                            title="Cliquer pour créer un RDV"
-                          >
-                            <span className="time-slot-plus">+</span>
-                          </div>
-                        )}
-                        {startAppts.map(appt => {
-                          const cols  = apptColor(appt, todayStr)
-                          const label = appt.is_done ? 'Réalisé' : appt.date < todayStr ? 'En attente' : 'Planifié'
-                          const name  = getApptLabel(appt)
-                          const isGuest = !appt.patient_id && (appt.guest_first_name || appt.guest_last_name)
-                          return (
-                            <div
-                              key={appt.id}
-                              className="rdv-block"
-                              style={{ background: cols.bg, border: `1.5px solid ${cols.border}` }}
-                              onClick={() => openEditAppt(appt)}
-                            >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <div className="initials" style={{ width: 22, height: 22, fontSize: 9, flexShrink: 0, background: cols.border, color: 'white' }}>
-                                  {getApptInitials(appt)}
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontWeight: 600, fontSize: 11, color: cols.text }}>
-                                    {name}
-                                    {isGuest && <span style={{ fontSize: 9, marginLeft: 4, opacity: .75 }}>· nouveau</span>}
-                                    {appt.heure_fin && <span style={{ fontWeight: 400, marginLeft: 4 }}>({appt.heure_debut}–{appt.heure_fin})</span>}
-                                  </div>
-                                  {appt.guest_phone && !appt.patient_id && (
-                                    <div style={{ fontSize: 10, color: cols.text, opacity: .75 }}>☎ {appt.guest_phone}</div>
-                                  )}
-                                  {appt.note && (
-                                    <div style={{ fontSize: 10, color: cols.text, opacity: .8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                      {appt.note}
-                                    </div>
-                                  )}
-                                </div>
-                                <span style={{ fontSize: 9, color: cols.border, fontWeight: 700, flexShrink: 0 }}>{label}</span>
-                              </div>
-                            </div>
-                          )
-                        })}
-                        {continuedAppts.map(appt => {
-                          const cols = apptColor(appt, todayStr)
-                          return (
-                            <div
-                              key={`cont-${appt.id}`}
-                              style={{
-                                height: '100%',
-                                borderLeft: `3px solid ${cols.border}`,
-                                background: `${cols.bg}88`,
-                                borderRadius: 4,
-                                cursor: 'pointer',
-                                minHeight: 28,
-                              }}
-                              onClick={() => openEditAppt(appt)}
-                            />
-                          )
-                        })}
+                    <div
+                      key={ds}
+                      onClick={() => setSelectedDay(isSel ? '' : ds)}
+                      onDoubleClick={() => { setSelectedDay(ds); switchView('day') }}
+                      title="Clic : voir le jour · Double-clic : vue jour"
+                      style={{
+                        borderRadius: 6, padding: '4px 2px', minHeight: 44, cursor: 'pointer',
+                        background: isSel ? 'var(--accent)' : isT ? 'var(--accent-light)' : dots ? 'var(--surface-hover)' : 'transparent',
+                        border: isT && !isSel ? '2px solid var(--accent)' : isSel ? '2px solid var(--accent)' : '2px solid transparent',
+                        transition: 'all .12s',
+                      }}
+                    >
+                      <div style={{
+                        textAlign: 'center', fontSize: 12,
+                        fontWeight: isT || isSel ? 700 : 400,
+                        color: isSel ? 'white' : isT ? 'var(--accent)' : 'var(--text)',
+                        marginBottom: 2,
+                      }}>
+                        {day}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 2 }}>
+                        {sess.slice(0, 2).map((_, i) => (
+                          <div key={`s${i}`} style={{ width: 6, height: 6, borderRadius: '50%', background: isSel ? 'rgba(255,255,255,.9)' : 'var(--accent)' }} />
+                        ))}
+                        {appts.filter(a => !a.is_done && a.date >= todayStr).slice(0, 2).map((_, i) => (
+                          <div key={`ap${i}`} style={{ width: 6, height: 6, borderRadius: '50%', background: isSel ? 'rgba(255,255,255,.9)' : 'var(--blue)' }} />
+                        ))}
+                        {appts.filter(a => !a.is_done && a.date < todayStr).slice(0, 1).map((_, i) => (
+                          <div key={`am${i}`} style={{ width: 6, height: 6, borderRadius: '50%', background: isSel ? 'rgba(255,255,255,.9)' : 'var(--amber)' }} />
+                        ))}
                       </div>
                     </div>
                   )
                 })}
               </div>
             </div>
-          ) : (
-            /* Résumé mensuel si aucun jour sélectionné */
-            <div className="card" style={{ padding: '14px' }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 12 }}>
-                Résumé — {MONTH_NAMES[month]} {year}
-              </div>
-              {monthSess.length === 0 && monthAppt.length === 0 ? (
-                <div className="empty">Aucune activité ce mois-ci.</div>
-              ) : (
-                <>
-                  {monthSess.length > 0 && (
-                    <div style={{ marginBottom: 14 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '.06em', marginBottom: 8 }}>
-                        Séances réalisées ({monthSess.length})
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 6 }}>
-                        {Array.from(new Set(monthSess.map(s => s.patient_id))).map(pid => {
-                          const pat   = getPatient(pid)
-                          const count = monthSess.filter(s => s.patient_id === pid).length
-                          return (
-                            <div key={pid} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', background: '#EAF0E8', borderRadius: 8 }}>
-                              <div className="initials" style={{ width: 24, height: 24, fontSize: 9, flexShrink: 0, background: 'var(--accent)', color: 'white' }}>
-                                {pat ? getInitials(pat.first_name, pat.last_name) : '?'}
-                              </div>
-                              <div style={{ minWidth: 0 }}>
-                                <div style={{ fontSize: 11, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#2F5D34' }}>
-                                  {pat ? `${pat.first_name} ${pat.last_name}` : '—'}
-                                </div>
-                                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{count} séance{count > 1 ? 's' : ''}</div>
-                              </div>
-                            </div>
-                          )
-                        })}
+
+            {/* Panneau jour ou résumé mensuel */}
+            <div>
+              {selectedDay ? (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <div>
+                      <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', margin: 0 }}>{fmtDate(selectedDay)}</h3>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, cursor: 'pointer' }}
+                        onClick={() => switchView('day')}>
+                        → Vue jour complète
                       </div>
                     </div>
-                  )}
-                  {monthAppt.length > 0 && (
-                    <div>
-                      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '.06em', marginBottom: 8 }}>
-                        RDV du mois ({monthAppt.length})
+                    <button className="btn btn-primary btn-sm" onClick={() => openNewAppt(selectedDay)}>
+                      + Nouveau RDV
+                    </button>
+                  </div>
+
+                  {daySessions.length > 0 && (
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>
+                        Séances réalisées
                       </div>
-                      {monthAppt.sort((a,b) => a.date.localeCompare(b.date) || a.heure_debut.localeCompare(b.heure_debut)).map(appt => {
-                        const cols = apptColor(appt, todayStr)
+                      {daySessions.map(sess => {
+                        const pat = getPatient(sess.patient_id)
                         return (
-                          <div key={appt.id}
-                            onClick={() => { setSelectedDay(appt.date); openEditAppt(appt) }}
-                            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', background: cols.bg, border: `1px solid ${cols.border}`, borderRadius: 8, marginBottom: 4, cursor: 'pointer' }}>
-                            <div style={{ fontSize: 11, fontWeight: 700, color: cols.text, minWidth: 36 }}>{appt.heure_debut}</div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 11, fontWeight: 600, color: cols.text }}>
-                                {getApptLabel(appt)}
-                              </div>
-                              {appt.guest_phone && !appt.patient_id && (
-                                <div style={{ fontSize: 10, color: cols.text, opacity: .75 }}>☎ {appt.guest_phone}</div>
-                              )}
-                              {appt.note && <div style={{ fontSize: 10, color: cols.text, opacity: .7 }}>{appt.note}</div>}
+                          <div key={sess.id} onClick={() => navigate(`/seances/${sess.id}`)}
+                            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, marginBottom: 4, background: '#EAF0E8', border: '1px solid #4A6741', cursor: 'pointer' }}
+                            onMouseEnter={e => (e.currentTarget.style.opacity = '.85')}
+                            onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                          >
+                            <div className="initials" style={{ width: 28, height: 28, fontSize: 10, flexShrink: 0, background: 'var(--accent)', color: 'white' }}>
+                              {pat ? getInitials(pat.first_name, pat.last_name) : '?'}
                             </div>
-                            <div style={{ fontSize: 10, color: cols.text, opacity: .7 }}>{fmtDate(appt.date)}</div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontWeight: 600, fontSize: 12, color: '#2F5D34' }}>
+                                {pat ? `${pat.first_name} ${pat.last_name}` : '—'}
+                              </div>
+                              {sess.motif && (
+                                <div style={{ fontSize: 11, color: '#4A7A54', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {sess.motif.replace(/<[^>]+>/g, '')}
+                                </div>
+                              )}
+                            </div>
+                            <span style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 600 }}>Voir →</span>
                           </div>
                         )
                       })}
                     </div>
                   )}
-                </>
+
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>
+                    Planning du jour
+                  </div>
+                  <div className="time-grid">
+                    {TIME_SLOTS.map((slot, slotIdx) => {
+                      const nextSlot  = TIME_SLOTS[slotIdx + 1] ?? '20:00'
+                      const startAppts = dayAppointments.filter(a => a.heure_debut >= slot && a.heure_debut < nextSlot)
+                      const contAppts  = dayAppointments.filter(a => a.heure_debut < slot && a.heure_fin && a.heure_fin > slot)
+                      const isEmpty    = startAppts.length === 0 && contAppts.length === 0
+
+                      return (
+                        <div key={slot} className="time-slot">
+                          <div className="time-slot-label">{slot}</div>
+                          <div className="time-slot-content">
+                            {isEmpty && (
+                              <div className="time-slot-empty" onClick={() => openNewAppt(selectedDay, slot)} title="Cliquer pour créer un RDV">
+                                <span className="time-slot-plus">+</span>
+                              </div>
+                            )}
+                            {startAppts.map(appt => {
+                              const cols  = apptColor(appt, todayStr)
+                              const label = appt.is_done ? 'Réalisé' : appt.date < todayStr ? 'En attente' : 'Planifié'
+                              const name  = getApptLabel(appt)
+                              const isGuest = !appt.patient_id && (appt.guest_first_name || appt.guest_last_name)
+                              return (
+                                <div key={appt.id} className="rdv-block"
+                                  style={{ background: cols.bg, border: `1.5px solid ${cols.border}` }}
+                                  onClick={() => openEditAppt(appt)}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <div className="initials" style={{ width: 22, height: 22, fontSize: 9, flexShrink: 0, background: cols.border, color: 'white' }}>
+                                      {getApptInitials(appt)}
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <div style={{ fontWeight: 600, fontSize: 11, color: cols.text }}>
+                                        {name}
+                                        {isGuest && <span style={{ fontSize: 9, marginLeft: 4, opacity: .75 }}>· nouveau</span>}
+                                        {appt.heure_fin && <span style={{ fontWeight: 400, marginLeft: 4 }}>({appt.heure_debut}–{appt.heure_fin})</span>}
+                                      </div>
+                                      {appt.note && (
+                                        <div style={{ fontSize: 10, color: cols.text, opacity: .8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{appt.note}</div>
+                                      )}
+                                    </div>
+                                    <span style={{ fontSize: 9, color: cols.border, fontWeight: 700, flexShrink: 0 }}>{label}</span>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                            {contAppts.map(appt => {
+                              const cols = apptColor(appt, todayStr)
+                              return (
+                                <div key={`cont-${appt.id}`}
+                                  style={{ height: '100%', borderLeft: `3px solid ${cols.border}`, background: `${cols.bg}88`, borderRadius: 4, cursor: 'pointer', minHeight: 28 }}
+                                  onClick={() => openEditAppt(appt)} />
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : (
+                /* Résumé mensuel si aucun jour sélectionné */
+                <div className="card" style={{ padding: '14px' }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', marginBottom: 12 }}>
+                    Résumé — {MONTH_NAMES[month]} {year}
+                  </div>
+                  {monthSess.length === 0 && monthAppt.length === 0 ? (
+                    <div className="empty">Aucune activité ce mois-ci.</div>
+                  ) : (
+                    <>
+                      {monthSess.length > 0 && (
+                        <div style={{ marginBottom: 14 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '.06em', marginBottom: 8 }}>
+                            Séances réalisées ({monthSess.length})
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px,1fr))', gap: 6 }}>
+                            {Array.from(new Set(monthSess.map(s => s.patient_id))).map(pid => {
+                              const pat   = getPatient(pid)
+                              const count = monthSess.filter(s => s.patient_id === pid).length
+                              return (
+                                <div key={pid} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', background: '#EAF0E8', borderRadius: 8 }}>
+                                  <div className="initials" style={{ width: 24, height: 24, fontSize: 9, flexShrink: 0, background: 'var(--accent)', color: 'white' }}>
+                                    {pat ? getInitials(pat.first_name, pat.last_name) : '?'}
+                                  </div>
+                                  <div style={{ minWidth: 0 }}>
+                                    <div style={{ fontSize: 11, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#2F5D34' }}>
+                                      {pat ? `${pat.first_name} ${pat.last_name}` : '—'}
+                                    </div>
+                                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{count} séance{count > 1 ? 's' : ''}</div>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      {monthAppt.length > 0 && (
+                        <div>
+                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '.06em', marginBottom: 8 }}>
+                            RDV du mois ({monthAppt.length})
+                          </div>
+                          {monthAppt.sort((a,b) => a.date.localeCompare(b.date) || a.heure_debut.localeCompare(b.heure_debut)).map(appt => {
+                            const cols = apptColor(appt, todayStr)
+                            return (
+                              <div key={appt.id}
+                                onClick={() => { setSelectedDay(appt.date); openEditAppt(appt) }}
+                                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', background: cols.bg, border: `1px solid ${cols.border}`, borderRadius: 8, marginBottom: 4, cursor: 'pointer' }}>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: cols.text, minWidth: 36 }}>{appt.heure_debut}</div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: 11, fontWeight: 600, color: cols.text }}>{getApptLabel(appt)}</div>
+                                  {appt.note && <div style={{ fontSize: 10, color: cols.text, opacity: .7 }}>{appt.note}</div>}
+                                </div>
+                                <div style={{ fontSize: 10, color: cols.text, opacity: .7 }}>{fmtDate(appt.date)}</div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
               )}
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* ═══ VUE SEMAINE ════════════════════════════════════════════ */}
+      {view === 'week' && (
+        <TimeGridView
+          days={weekDays}
+          todayStr={todayStr}
+          sessionsByDate={sessionsByDate}
+          apptByDate={apptByDate}
+          patients={patients}
+          onSlotClick={(ds, time) => openNewAppt(ds, time)}
+          onApptClick={openEditAppt}
+          onSessClick={id => navigate(`/seances/${id}`)}
+          onDayHeaderClick={handleDayHeaderClick}
+        />
+      )}
+
+      {/* ═══ VUE JOUR ═══════════════════════════════════════════════ */}
+      {view === 'day' && (
+        <TimeGridView
+          days={[new Date(selectedDay + 'T12:00:00')]}
+          todayStr={todayStr}
+          sessionsByDate={sessionsByDate}
+          apptByDate={apptByDate}
+          patients={patients}
+          onSlotClick={(ds, time) => openNewAppt(ds, time)}
+          onApptClick={openEditAppt}
+          onSessClick={id => navigate(`/seances/${id}`)}
+          onDayHeaderClick={() => {}}
+        />
+      )}
 
       {/* ── Modal RDV ── */}
       {modalOpen && (
         <ApptModal
-          date={selectedDay || todayStr}
+          date={modalDate}
           slotTime={modalSlot}
           appointment={modalAppt}
           patients={patients}

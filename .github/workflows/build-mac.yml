@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version à builder (ex: 1.3.1)'
+        description: 'Version à builder (ex: 1.4.0)'
         required: false
-        default: '1.3.1'
+        default: '1.4.0'
 
   push:
     tags:
@@ -62,7 +62,7 @@ jobs:
       - name: Upload DMG universel
         uses: actions/upload-artifact@v4
         with:
-          name: Synoria-macOS-${{ github.event.inputs.version || '1.3.1' }}
+          name: Synoria-macOS-${{ github.event.inputs.version || '1.4.0' }}
           path: release/*.dmg
           retention-days: 90
           if-no-files-found: error

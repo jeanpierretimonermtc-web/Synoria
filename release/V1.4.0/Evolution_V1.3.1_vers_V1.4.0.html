@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synoria v1.4.0 — Notes de version</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #2C2C2C; background: white; line-height: 1.7; }
+
+  .cover {
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: linear-gradient(145deg, #3A5F34 0%, #4A7A42 40%, #2A7A6A 100%);
+    color: white; text-align: center; padding: 60px 40px;
+    page-break-after: always; position: relative; overflow: hidden;
+  }
+  .cover::before { content: ''; position: absolute; top: -150px; right: -150px; width: 500px; height: 500px; border-radius: 50%; background: rgba(255,255,255,.05); }
+  .cover::after  { content: ''; position: absolute; bottom: -100px; left: -100px; width: 350px; height: 350px; border-radius: 50%; background: rgba(255,255,255,.04); }
+  .cover-logo    { font-size: 72px; margin-bottom: 18px; position: relative; z-index: 1; }
+  .cover-name    { font-size: 52px; font-weight: 800; letter-spacing: 6px; margin-bottom: 4px; position: relative; z-index: 1; }
+  .cover-version { font-size: 18px; font-weight: 300; opacity: .8; margin-bottom: 10px; position: relative; z-index: 1; letter-spacing: 2px; }
+  .cover-sep     { width: 60px; height: 3px; background: rgba(255,255,255,.5); border-radius: 2px; margin: 20px auto; }
+  .cover-title   { font-size: 24px; font-weight: 700; margin-bottom: 8px; position: relative; z-index: 1; }
+  .cover-subtitle { font-size: 15px; opacity: .8; max-width: 480px; line-height: 1.8; position: relative; z-index: 1; }
+  .cover-badges  { margin-top: 40px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
+  .cover-badge   { background: rgba(255,255,255,.15); border: 1.5px solid rgba(255,255,255,.4); border-radius: 20px; padding: 7px 18px; font-size: 13px; font-weight: 600; }
+  .cover-meta    { margin-top: 60px; font-size: 12px; opacity: .6; line-height: 2; position: relative; z-index: 1; }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 50px 50px 80px; }
+
+  .section-header { display: flex; align-items: center; gap: 14px; margin: 48px 0 20px; padding-bottom: 12px; border-bottom: 2px solid #4A6741; }
+  .section-number { background: linear-gradient(135deg, #4A6741, #2A7A6A); color: white; border-radius: 50%; width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; }
+  .section-title  { font-size: 20px; font-weight: 700; color: #2C3E24; }
+
+  .changelog-block { background: #F9FAF8; border-left: 4px solid #4A6741; border-radius: 0 12px 12px 0; padding: 20px 24px; margin-bottom: 16px; }
+  .changelog-block.new    { border-left-color: #4A6741; }
+  .changelog-block.design { border-left-color: #5B8CF7; }
+  .changelog-block.perf   { border-left-color: #FF9F0A; }
+  .changelog-block-title  { font-weight: 700; font-size: 14px; color: #2C3E24; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .tag { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: .04em; }
+  .tag-new    { background: #EAF0E8; color: #4A6741; }
+  .tag-design { background: #EBF2FF; color: #2A5A8A; }
+  .tag-perf   { background: #FDF3E3; color: #9A5B12; }
+  .tag-compat { background: #F0EDF7; color: #5A4A7A; }
+
+  ul { padding-left: 20px; }
+  ul li { margin-bottom: 5px; color: #444; }
+  ul li strong { color: #2C2C2C; }
+
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+  .summary-card { background: #F5F2ED; border-radius: 12px; padding: 18px 20px; }
+  .summary-card-num  { font-size: 36px; font-weight: 800; color: #4A6741; line-height: 1; }
+  .summary-card-label { font-size: 12px; color: #7A7468; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-top: 4px; }
+
+  .compat-block { background: #EAF0E8; border-radius: 12px; padding: 20px 24px; margin: 24px 0; }
+  .compat-title { font-weight: 700; font-size: 14px; color: #2C3E24; margin-bottom: 12px; }
+  .compat-row   { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .compat-dot   { width: 8px; height: 8px; border-radius: 50%; background: #30D158; flex-shrink: 0; }
+  .compat-dot.warn { background: #FF9F0A; }
+
+  .footer { text-align: center; margin-top: 60px; padding-top: 24px; border-top: 1px solid #E8E4DE; font-size: 11px; color: #B0A99E; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="cover-logo">🌿</div>
+  <div class="cover-name">SYNORIA</div>
+  <div class="cover-version">VERSION 1.4.0</div>
+  <div class="cover-sep"></div>
+  <div class="cover-title">Notes de version</div>
+  <div class="cover-subtitle">Évolutions de la version 1.3.1 vers la version 1.4.0<br>Refonte complète de l'interface utilisateur</div>
+  <div class="cover-badges">
+    <span class="cover-badge">🖥 Windows 10/11</span>
+    <span class="cover-badge">🍎 macOS Intel &amp; Apple Silicon</span>
+    <span class="cover-badge">🔒 Chiffrement AES-256</span>
+  </div>
+  <div class="cover-meta">
+    Synoria — Logiciel de gestion de dossiers patients<br>
+    Conforme RGPD · Données 100% locales<br>
+    Juin 2026
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="section-header">
+    <div class="section-number">1</div>
+    <div class="section-title">Résumé de la mise à jour</div>
+  </div>
+
+  <p style="margin-bottom: 20px; color: #555; font-size: 14px; line-height: 1.8;">
+    La version 1.4.0 est une <strong>refonte complète de l'interface utilisateur</strong> de Synoria.
+    Toutes les fonctionnalités existantes sont conservées sans régression.
+    L'accent a été mis sur la lisibilité, la fluidité et l'expérience quotidienne du praticien.
+  </p>
+
+  <div class="summary-grid">
+    <div class="summary-card"><div class="summary-card-num">15</div><div class="summary-card-label">Améliorations d'interface</div></div>
+    <div class="summary-card"><div class="summary-card-num">0</div><div class="summary-card-label">Régressions</div></div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-number">2</div>
+    <div class="section-title">Navigation &amp; En-tête</div>
+  </div>
+
+  <div class="changelog-block design">
+    <div class="changelog-block-title"><span class="tag tag-design">Design</span> Sidebar de navigation avec icônes iOS-style</div>
+    <ul>
+      <li>Remplacement de la barre d'onglets horizontale par une <strong>sidebar verticale fixe</strong></li>
+      <li>Chaque entrée de navigation dispose d'un <strong>badge icône coloré</strong> (26×26 px, arrondis 7 px, icône blanche) — même esthétique que les icônes iOS/macOS</li>
+      <li>Sections organisées : Navigation principale · Planning · Finances · Administration</li>
+      <li>Bouton <strong>Verrouiller</strong> épinglé en bas de la sidebar (badge rose foncé)</li>
+      <li>Animation scale(1.09) au survol de chaque icône</li>
+    </ul>
+  </div>
+
+  <div class="changelog-block design">
+    <div class="changelog-block-title"><span class="tag tag-design">Design</span> En-tête compact et boutons colorés</div>
+    <ul>
+      <li>Hauteur de l'en-tête réduite à <strong>58 px</strong> (vs 100 px en V1.3.x) — plus de contenu visible</li>
+      <li>Bouton <strong>Sauvegarder</strong> : fond vert translucide + mini badge vert avec icône</li>
+      <li>Bouton <strong>Importer</strong> : fond amber translucide + mini badge amber avec icône</li>
+      <li>Effet <em>translateY(-1px)</em> au survol pour un retour haptique visuel</li>
+    </ul>
+  </div>
+
+  <div class="section-header">
+    <div class="section-number">3</div>
+    <div class="section-title">Calendrier</div>
+  </div>
+
+  <div class="changelog-block new">
+    <div class="changelog-block-title"><span class="tag tag-new">Nouveau</span> Trois vues calendrier</div>
+    <ul>
+      <li><strong>Vue Mois</strong> — grille mensuelle classique avec aperçu des rendez-vous</li>
+      <li><strong>Vue Semaine</strong> — colonne par jour avec grille horaire de 07h00 à 20h00 (créneaux 30 min)</li>
+      <li><strong>Vue Jour</strong> — focus sur une journée avec grille horaire détaillée</li>
+      <li>Indicateur de l'heure courante (ligne rouge) dans les vues Semaine/Jour</li>
+      <li>Ligne "tout-jour" pour les séances sans heure précise</li>
+      <li>Double-clic sur un jour en vue Mois → bascule en vue Jour</li>
+    </ul>
+  </div>
+
+  <div class="section-header">
+    <div class="section-number">4</div>
+    <div class="section-title">Fiches patients</div>
+  </div>
+
+  <div class="changelog-block design">
+    <div class="changelog-block-title"><span class="tag tag-design">Design</span> Page header avec compteur</div>
+    <ul>
+      <li>Titre "Patients" en grand + badge vert avec le nombre de patients actifs</li>
+      <li>Sous-titre contextuel (ex : "3 patients actifs")</li>
+      <li>Bouton d'action "+ Nouveau patient" aligné à droite</li>
+    </ul>
+  </div>
+
+  <div class="changelog-block design">
+    <div class="changelog-block-title"><span class="tag tag-design">Design</span> Carte patient redessinée</div>
+    <ul>
+      <li><strong>Status dot</strong> : petit cercle vert (actif) ou gris (archivé) en badge sur l'avatar</li>
+      <li>Hiérarchie du nom : <strong>NOM en majuscules</strong> + prénom en gris + âge en badge arrondi discret</li>
+      <li>Actions primaires toujours visibles : + Séance · 📋 Séances · 🧾 Facture</li>
+      <li>Actions secondaires (Modifier, Backup, Archiver, Supprimer) <strong>apparaissent au survol</strong></li>
+      <li>Médicaments et antécédents affichés en deux colonnes si présents</li>
+    </ul>
+  </div>
+
+  <div class="section-header">
+    <div class="section-number">5</div>
+    <div class="section-title">Liste des séances</div>
+  </div>
+
+  <div class="changelog-block design">
+    <div class="changelog-block-title"><span class="tag tag-design">Design</span> Séparateurs de mois et états vides</div>
+    <ul>
+      <li>La liste de gauche est maintenant <strong>groupée par mois</strong> avec un en-tête "JUIN 2026" sticky</li>
+      <li>Bordure gauche 3 px qui s'anime au survol (transparente → gris → vert quand sélectionnée)</li>
+      <li>NOM en majuscules + prénom pour cohérence avec les fiches patients</li>
+      <li>État vide illustré quand aucune séance ne correspond aux filtres</li>
+      <li>État vide illustré dans le panneau droit quand aucune séance n'est sélectionnée</li>
+    </ul>
+  </div>
+
+  <div class="section-header">
+    <div class="section-number">6</div>
+    <div class="section-title">Formulaire nouvelle séance</div>
+  </div>
+
+  <div class="changelog-block design">
+    <div class="changelog-block-title"><span class="tag tag-design">Design</span> Sommaire et sections améliorés</div>
+    <ul>
+      <li>Liens du sommaire avec <strong>point coloré animé</strong> (grossit au survol, tourne en vert accent)</li>
+      <li>Bordure gauche accent au survol d'un lien du sommaire</li>
+      <li>Espacement uniforme entre les sections via gap (vs margin individuel)</li>
+      <li>Titres de sections : 12 px, texte sombre lisible (vs 11 px muted en V1.3.x)</li>
+    </ul>
+  </div>
+
+  <div class="section-header">
+    <div class="section-number">7</div>
+    <div class="section-title">Tableau de bord</div>
+  </div>
+
+  <div class="changelog-block new">
+    <div class="changelog-block-title"><span class="tag tag-new">Nouveau</span> Graphe d'activité 6 mois</div>
+    <ul>
+      <li>Nouvelle section <em>Activité — 6 derniers mois</em> avec barres SVG inline</li>
+      <li>Le mois courant est mis en évidence (vert accent), les mois précédents en dégradé d'opacité</li>
+      <li>Total sur la période affiché à droite du titre</li>
+    </ul>
+  </div>
+
+  <div class="changelog-block design">
+    <div class="changelog-block-title"><span class="tag tag-design">Design</span> Cartes statistiques redessinées</div>
+    <ul>
+      <li>Icônes SVG colorées iOS-style (vs emojis en V1.3.x) : bleu, violet, rouge, vert</li>
+      <li>Barres de progression pour "Patients suivis" et "Séances ce mois"</li>
+      <li>Suppression des bordures top colorées au profit d'ombres</li>
+      <li>Noms patients en <strong>NOM prénom</strong> dans la liste des dernières séances</li>
+    </ul>
+  </div>
+
+  <div class="section-header">
+    <div class="section-number">8</div>
+    <div class="section-title">Expérience globale</div>
+  </div>
+
+  <div class="changelog-block perf">
+    <div class="changelog-block-title"><span class="tag tag-perf">Performance &amp; Confort</span> Scrollbar et transitions</div>
+    <ul>
+      <li><strong>Scrollbar fine</strong> : 5 px, fond transparent, arrondie — s'efface visuellement quand inactive</li>
+      <li><strong>Transitions de page</strong> : fondu + glissement vertical de 7 px à chaque navigation (0.22 s, courbe cubique)</li>
+      <li>Ombres cards uniformisées (--shadow-sm / --shadow-md) sur toute l'application</li>
+      <li>Modales avec fond flouté <em>backdrop-filter: blur(6px)</em> et animation d'entrée élastique</li>
+    </ul>
+  </div>
+
+  <div class="changelog-block design">
+    <div class="changelog-block-title"><span class="tag tag-design">Design</span> États vides (Empty States)</div>
+    <ul>
+      <li>Nouveau composant réutilisable : icône dans carré arrondi + titre + description + bouton</li>
+      <li>Utilisé dans : liste patients vide, liste séances vide, panneau résumé séance, dashboard</li>
+    </ul>
+  </div>
+
+  <div class="section-header">
+    <div class="section-number">9</div>
+    <div class="section-title">Compatibilité</div>
+  </div>
+
+  <div class="compat-block">
+    <div class="compat-title">✅ Compatibilité ascendante complète</div>
+    <div class="compat-row"><div class="compat-dot"></div><span>Toutes les données V1.3.x sont lisibles sans migration</span></div>
+    <div class="compat-row"><div class="compat-dot"></div><span>Les sauvegardes .json.enc V1.3.x peuvent être importées en V1.4.0</span></div>
+    <div class="compat-row"><div class="compat-dot"></div><span>Les plugins existants (mtc_jp, kinesio_charlotte) continuent de fonctionner</span></div>
+    <div class="compat-row"><div class="compat-dot warn"></div><span>Mac : nécessite macOS 10.13+ (inchangé)</span></div>
+    <div class="compat-row"><div class="compat-dot warn"></div><span>Windows : nécessite Windows 10 64 bits minimum (inchangé)</span></div>
+  </div>
+
+  <div class="footer">
+    Synoria v1.4.0 · Notes de version · Juin 2026<br>
+    Toutes données stockées localement · Chiffrement AES-256-GCM · Conforme RGPD
+  </div>
+
+</div>
+</body>
+</html>
