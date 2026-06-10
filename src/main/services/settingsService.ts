@@ -39,24 +39,31 @@ Vous disposez d'un droit d'accès, de rectification, d'effacement, de portabilit
 
 En cas de réclamation, vous pouvez saisir la CNIL (www.cnil.fr).`
 
-const DEFAULTS: AppSettings = {
-  backupPatientPath:  'C:\\Users\\timjp\\Desktop\\Entreprise\\Cabinet\\Dossier Patients\\backup patient',
-  backupGeneralPath:  'C:\\Users\\timjp\\Desktop\\Entreprise\\Cabinet\\Dossier Patients\\backup general',
-  autoBackupOnClose:  true,
-  autoBackupDaily:    true,
-  backupRetentionDays: 30,
-  lastGeneralBackup:  null,
-  lastAutoBackup:     null,
-  // Facturation
-  invoicePath:       'C:\\Users\\timjp\\Desktop\\Entreprise\\Cabinet\\Comptabilité\\Facture 2026',
-  invoiceTvaRate:    20,
-  lastInvoiceNumber: 0,
-  lastInvoiceYear:   '',
-  // RGPD
-  rgpdPractitionerName:  '',
-  rgpdPractitionerEmail: 'jeanpierre.timoner.mtc@gmail.com',
-  rgpdNotice:            DEFAULT_NOTICE,
-  dataRetentionYears:    10,
+// Chemins par défaut basés sur le dossier Documents de l'utilisateur (multiplateforme)
+// Évalués lazily après app.whenReady() pour que app.getPath() soit disponible
+let _defaults: AppSettings | null = null
+function getDefaults(): AppSettings {
+  if (_defaults) return _defaults
+  const docs = app.getPath('documents')
+  const base = join(docs, 'Synoria')
+  _defaults = {
+    backupPatientPath:   join(base, 'Sauvegardes', 'Patients'),
+    backupGeneralPath:   join(base, 'Sauvegardes', 'General'),
+    autoBackupOnClose:   true,
+    autoBackupDaily:     true,
+    backupRetentionDays: 30,
+    lastGeneralBackup:   null,
+    lastAutoBackup:      null,
+    invoicePath:         join(base, 'Factures'),
+    invoiceTvaRate:      20,
+    lastInvoiceNumber:   0,
+    lastInvoiceYear:     '',
+    rgpdPractitionerName:  '',
+    rgpdPractitionerEmail: 'jeanpierre.timoner.mtc@gmail.com',
+    rgpdNotice:            DEFAULT_NOTICE,
+    dataRetentionYears:    10,
+  }
+  return _defaults
 }
 
 let cache: AppSettings | null = null
@@ -70,11 +77,11 @@ export function getSettings(): AppSettings {
   const p = settingsPath()
   if (existsSync(p)) {
     try {
-      cache = { ...DEFAULTS, ...JSON.parse(readFileSync(p, 'utf-8')) }
+      cache = { ...getDefaults(), ...JSON.parse(readFileSync(p, 'utf-8')) }
       return cache
     } catch { /* ignore — use defaults */ }
   }
-  cache = { ...DEFAULTS }
+  cache = { ...getDefaults() }
   return cache
 }
 

@@ -311,6 +311,11 @@ export function registerAllHandlers(): void {
   ipcMain.handle('shell:openPath',      (_e, path)    => shell.openPath(path))
   ipcMain.handle('app:getVersion',      ()            => app.getVersion())
   ipcMain.handle('app:launchInstaller', async (_e, exePath: string) => {
+    if (process.platform === 'darwin') {
+      // Sur Mac : ouvrir le DMG avec Finder, ne pas quitter l'app
+      await shell.openPath(exePath)
+      return
+    }
     const { spawn } = require('child_process')
     spawn(exePath, [], { detached: true, stdio: 'ignore' }).unref()
     setTimeout(() => app.quit(), 500)

@@ -165,6 +165,7 @@ const FMT_COLORS = [
 
 function FormattingToolbar() {
   const [active, setActive] = useState(false)
+  const mod = navigator.userAgent.includes('Macintosh') ? '⌘' : 'Ctrl+'
 
   useEffect(() => {
     const onFocusIn = (e: FocusEvent) => {
@@ -194,21 +195,21 @@ function FormattingToolbar() {
       <button
         className="fmt-btn fmt-bold"
         onMouseDown={e => { e.preventDefault(); exec('bold') }}
-        title="Gras (Ctrl+B)"
+        title={`Gras (${mod}B)`}
         tabIndex={-1}
       >G</button>
 
       <button
         className="fmt-btn fmt-italic"
         onMouseDown={e => { e.preventDefault(); exec('italic') }}
-        title="Italique (Ctrl+I)"
+        title={`Italique (${mod}I)`}
         tabIndex={-1}
       >I</button>
 
       <button
         className="fmt-btn fmt-underline"
         onMouseDown={e => { e.preventDefault(); exec('underline') }}
-        title="Souligné (Ctrl+U)"
+        title={`Souligné (${mod}U)`}
         tabIndex={-1}
       >S</button>
 

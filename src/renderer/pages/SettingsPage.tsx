@@ -190,8 +190,13 @@ export default function SettingsPage() {
     setPwdLoading(false)
   }
 
+  const isMac = navigator.userAgent.includes('Macintosh')
+
   const handleSelectUpdate = async () => {
-    const path = await window.mtcApi.showOpenDialog({ filters: [{ name: 'Installateur MTC', extensions: ['exe'] }] })
+    const filters = isMac
+      ? [{ name: 'Installateur Synoria', extensions: ['dmg'] }]
+      : [{ name: 'Installateur Synoria', extensions: ['exe'] }]
+    const path = await window.mtcApi.showOpenDialog({ filters })
     if (path) setUpdatePath(path)
   }
 
@@ -646,8 +651,10 @@ export default function SettingsPage() {
                 </strong>
               </div>
               <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.6 }}>
-                Sélectionnez le fichier <code>.exe</code> de la nouvelle version (clé USB ou téléchargements).
-                L'application se fermera pour lancer l'installation — <strong>vos données ne sont pas supprimées</strong>.
+                {isMac
+                  ? <>Sélectionnez le fichier <code>.dmg</code> de la nouvelle version. Il s'ouvrira dans le Finder — glissez l'app dans Applications pour remplacer l'ancienne version.</>
+                  : <>Sélectionnez le fichier <code>.exe</code> de la nouvelle version (clé USB ou téléchargements). L'application se fermera pour lancer l'installation — <strong>vos données ne sont pas supprimées</strong>.</>
+                }
               </p>
               {updatePath && (
                 <div style={{ padding: '8px 12px', borderRadius: 8, marginBottom: 12, background: 'var(--teal-light)', border: '1px solid rgba(42,122,106,.2)', fontSize: 12, color: 'var(--teal)', wordBreak: 'break-all' }}>
@@ -656,7 +663,7 @@ export default function SettingsPage() {
               )}
               <div className="settings-actions">
                 <button className="btn btn-secondary btn-sm" onClick={handleSelectUpdate} disabled={updating}>
-                  📥 Sélectionner le fichier de mise à jour (.exe)
+                  📥 Sélectionner le fichier de mise à jour ({isMac ? '.dmg' : '.exe'})
                 </button>
                 {updatePath && (
                   <button className="btn btn-primary btn-sm" onClick={handleLaunchUpdate} disabled={updating}
