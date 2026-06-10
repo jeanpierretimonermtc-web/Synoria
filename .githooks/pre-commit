@@ -1,0 +1,14 @@
+#!/bin/sh
+# Sync landing page automatiquement avant chaque commit
+# release/landing_synoria.html -> landing/index.html (../public/ -> assets/)
+
+if git diff --cached --name-only | grep -q "release/landing_synoria\.html"; then
+  node -e "
+    const fs = require('fs');
+    const src = fs.readFileSync('release/landing_synoria.html', 'utf8');
+    const dst = src.replace(/\.\.\/public\//g, 'assets/');
+    fs.writeFileSync('landing/index.html', dst, 'utf8');
+  "
+  git add landing/index.html
+  echo "✓ landing/index.html synchronise"
+fi
