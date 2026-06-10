@@ -442,32 +442,86 @@ footer{background:#1C1A17;padding:52px 64px 32px}
 .footer-bottom-text{font-size:11.5px;color:rgba(255,255,255,.25)}
 
 /* ── Responsive ───────────────────────────────────────────── */
+
+/* ≤ 1024px — Tablette paysage : hero 1 colonne centré */
 @media(max-width:1024px){
   .hero{grid-template-columns:1fr;padding:88px 40px 48px;gap:40px}
-  .hero-right{justify-content:flex-start}
-  .app-frame{max-width:540px}
+  .hero-left{align-items:center;text-align:center}
+  .hero-brand{align-items:center}
+  .hero-actions{justify-content:center}
+  .hero-trust{justify-content:center}
+  .hero-desc{max-width:580px}
+  .hero-right{justify-content:center}
+  .app-frame{max-width:640px;width:100%}
   .section{padding:64px 40px}
   .sec-inner,.plugins-inner{grid-template-columns:1fr;gap:40px}
   .footer-top{grid-template-columns:1fr 1fr;gap:28px}
 }
+
+/* ≤ 768px — Tablette portrait */
 @media(max-width:768px){
-  nav{padding:0 24px}
+  nav{padding:0 20px}
   .nav-links{display:none}
-  .feat-grid,.distrib-grid{grid-template-columns:1fr 1fr}
-  .sec-grid{grid-template-columns:1fr}
-  .hero{padding:80px 24px 40px}
+  .hero{padding:76px 24px 44px;gap:32px}
   .section{padding:56px 24px}
   .cta-section{padding:64px 24px}
   footer{padding:40px 24px 24px}
+  .feat-grid,.distrib-grid{grid-template-columns:1fr 1fr}
+  .sec-grid{grid-template-columns:1fr 1fr}
   .footer-top{grid-template-columns:1fr 1fr}
-  .fc-stats{grid-template-columns:repeat(2,1fr)}
+  /* Mockup : hauteur réduite, contenu s'adapte */
+  .app-frame{max-width:100%}
+  .frame-body{height:360px}
   .fc-bottom{grid-template-columns:1fr}
 }
-@media(max-width:540px){
+
+/* ≤ 600px — Smartphones */
+@media(max-width:600px){
+  .hero{padding:70px 20px 40px}
+  .hero-logo{width:80px;height:80px}
+  /* Boutons hero full-width */
+  .hero-actions{flex-direction:column;align-items:stretch;width:100%;max-width:360px}
+  .btn-main,.btn-outline{width:100%;justify-content:center}
+  /* Mockup : masquer la sidebar — trop étroite sur mobile */
+  .frame-sidebar{display:none}
+  .frame-body{height:310px}
+  .fc-stats{grid-template-columns:repeat(2,1fr)}
+  /* Grilles 1 colonne */
   .feat-grid,.distrib-grid{grid-template-columns:1fr}
-  .cta-btns{flex-direction:column;align-items:center}
-  .hero-actions{flex-direction:column;align-items:flex-start}
+  .sec-grid{grid-template-columns:1fr}
+  /* Plugin cards : badge passe en dessous */
+  .plugin-card{flex-wrap:wrap}
+  .plugin-badge{margin-left:0;margin-top:6px}
+  /* CTA buttons full-width */
+  .cta-btns{flex-direction:column;align-items:stretch;max-width:360px;margin-left:auto;margin-right:auto}
+  .cta-btn{width:100%;justify-content:flex-start}
+  .cta-sub{font-size:15px}
+  /* Footer 1 colonne */
   .footer-top{grid-template-columns:1fr}
+  .section{padding:48px 20px}
+  .cta-section{padding:48px 20px}
+  footer{padding:36px 20px 24px}
+}
+
+/* ≤ 420px — Petits smartphones */
+@media(max-width:420px){
+  nav{padding:0 16px}
+  .nav-dl{padding:7px 12px;font-size:12.5px}
+  .hero{padding:66px 16px 32px}
+  .hero-logo{width:64px;height:64px}
+  .hero-text-img{height:32px}
+  .hero-tagline{font-size:20px}
+  /* Mockup encore plus compact */
+  .frame-body{height:260px}
+  .fc-welcome-btns{display:none}
+  .fah-btn{display:none}
+  .fah-sep{display:none}
+  /* Espacements réduits */
+  .section{padding:40px 16px}
+  .cta-section{padding:40px 16px}
+  footer{padding:32px 16px 20px}
+  .footer-bottom{flex-direction:column;gap:4px;text-align:center}
+  .trust-pill{font-size:11px;padding:4px 10px}
 }
 </style>
 </head>
@@ -978,4 +1032,6 @@ footer{background:#1C1A17;padding:52px 64px 32px}
 
 </body>
 </html>
+
+
 
