@@ -1,6 +1,6 @@
 {
-  "buildCommand": null,
-  "installCommand": null,
+  "buildCommand": "echo done",
+  "installCommand": "echo done",
   "outputDirectory": ".",
   "framework": null,
   "rewrites": [
