@@ -29,14 +29,14 @@ export function createAppointment(data: Omit<Appointment, 'id' | 'created_at' | 
   const appt: Appointment = { ...data, id, created_at: now, updated_at: now }
   getDb().prepare(`
     INSERT INTO appointments
-      (id, patient_id, date, heure_debut, heure_fin, note, is_done,
+      (id, patient_id, date, heure_debut, heure_fin, note, is_done, is_cancelled,
        guest_last_name, guest_first_name, guest_phone,
        google_event_id, created_at, updated_at)
     VALUES
-      (@id, @patient_id, @date, @heure_debut, @heure_fin, @note, @is_done,
+      (@id, @patient_id, @date, @heure_debut, @heure_fin, @note, @is_done, @is_cancelled,
        @guest_last_name, @guest_first_name, @guest_phone,
        @google_event_id, @created_at, @updated_at)
-  `).run({ ...appt, google_event_id: appt.google_event_id ?? null })
+  `).run({ ...appt, google_event_id: appt.google_event_id ?? null, is_cancelled: appt.is_cancelled ?? 0 })
   return appt
 }
 
@@ -48,12 +48,12 @@ export function updateAppointment(id: string, data: Partial<Appointment>): Appoi
   getDb().prepare(`
     UPDATE appointments SET
       patient_id=@patient_id, date=@date, heure_debut=@heure_debut, heure_fin=@heure_fin,
-      note=@note, is_done=@is_done,
+      note=@note, is_done=@is_done, is_cancelled=@is_cancelled,
       guest_last_name=@guest_last_name, guest_first_name=@guest_first_name, guest_phone=@guest_phone,
       google_event_id=@google_event_id,
       updated_at=@updated_at
     WHERE id=@id
-  `).run({ ...updated, google_event_id: updated.google_event_id ?? null })
+  `).run({ ...updated, google_event_id: updated.google_event_id ?? null, is_cancelled: updated.is_cancelled ?? 0 })
   return updated
 }
 

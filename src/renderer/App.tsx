@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Routes, Route, NavLink, useNavigate } from 'react-router-dom'
-import { SaveIcon, FolderIcon, LockIcon as LockIco, DashboardIcon, UsersIcon, PlusCircle, ClipboardIcon, CalendarIcon, BarChartIcon, TrendDownIcon, FileTextIcon, ShieldIcon, SettingsIcon } from './components/common/Icon'
+import { SaveIcon, FolderIcon, LockIcon as LockIco, DashboardIcon, UsersIcon, PlusCircle, ClipboardIcon, CalendarIcon, BarChartIcon, TrendDownIcon, FileTextIcon, ShieldIcon, SettingsIcon, UserIcon } from './components/common/Icon'
 import DashboardPage from './pages/DashboardPage'
 import PatientsPage from './pages/PatientsPage'
 import NewSessionPage from './pages/NewSessionPage'
@@ -16,6 +16,7 @@ import RgpdPage          from './pages/RgpdPage'
 import ComptaPage        from './pages/ComptaPage'
 import DepensesPage      from './pages/DepensesPage'
 import FacturesListPage  from './pages/FacturesListPage'
+import ProfilePage       from './pages/ProfilePage'
 import { useInactivityLock } from './hooks/useInactivityLock'
 
 export const ToastContext = React.createContext<(msg: string, type?: 'success' | 'error') => void>(() => {})
@@ -143,8 +144,14 @@ export default function App() {
 
             </nav>
 
-            {/* Bouton verrouiller en bas */}
+            {/* Boutons bas de sidebar */}
             <div className="sidebar-bottom">
+              <NavLink to="/profil" className={({ isActive }) => `sidebar-profile-btn${isActive ? ' active' : ''}`}>
+                <span className="sidebar-icon" style={{ background: '#2A7A6A' }}>
+                  <UserIcon size={14} />
+                </span>
+                Mon profil
+              </NavLink>
               <button className="sidebar-lock-btn" onClick={handleLock}>
                 <span className="sidebar-icon" style={{ background: '#8A2A4A' }}>
                   <LockIco size={14} />
@@ -175,6 +182,7 @@ export default function App() {
                 <Route path="/factures-liste"      element={<FacturesListPage />} />
                 <Route path="/parametres"          element={<SettingsPage />} />
                 <Route path="/rgpd"                element={<RgpdPage />} />
+                <Route path="/profil"              element={<ProfilePage />} />
               </Routes>
             </main>
           </div>

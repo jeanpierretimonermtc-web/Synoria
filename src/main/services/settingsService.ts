@@ -27,6 +27,16 @@ export interface AppSettings {
   rgpdPractitionerEmail: string
   rgpdNotice:            string
   dataRetentionYears:    number
+  // Profil praticien (affiché sur les factures)
+  practitionerFirstName:    string
+  practitionerLastName:     string
+  practitionerActivity:     string
+  practitionerAddress:      string
+  practitionerSiret:        string
+  practitionerEmail:        string
+  practitionerApe:          string
+  practitionerPaymentTerms: string
+  practitionerLogoPath:     string
 }
 
 const DEFAULT_NOTICE = `Dans le cadre de votre suivi thérapeutique, le cabinet collecte et traite des données personnelles vous concernant (identité, coordonnées, données de santé) sur le fondement de l'article 9(2)(h) du RGPD.
@@ -59,9 +69,18 @@ function getDefaults(): AppSettings {
     lastInvoiceNumber:   0,
     lastInvoiceYear:     '',
     rgpdPractitionerName:  '',
-    rgpdPractitionerEmail: 'jeanpierre.timoner.mtc@gmail.com',
+    rgpdPractitionerEmail: '',
     rgpdNotice:            DEFAULT_NOTICE,
     dataRetentionYears:    10,
+    practitionerFirstName:    '',
+    practitionerLastName:     '',
+    practitionerActivity:     '',
+    practitionerAddress:      '',
+    practitionerSiret:        '',
+    practitionerEmail:        '',
+    practitionerApe:          '',
+    practitionerPaymentTerms: '',
+    practitionerLogoPath:     '',
   }
   return _defaults
 }

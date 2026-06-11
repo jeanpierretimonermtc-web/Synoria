@@ -1,6 +1,6 @@
 import { ipcMain, dialog, shell, app } from 'electron'
-import { mkdirSync, writeFileSync }   from 'fs'
-import { join }                        from 'path'
+import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'fs'
+import { join, extname }               from 'path'
 import * as patientRepo               from '../database/repositories/patientRepository'
 import * as sessionRepo               from '../database/repositories/sessionRepository'
 import * as appointmentRepo           from '../database/repositories/appointmentRepository'
@@ -65,11 +65,12 @@ export function registerAllHandlers(): void {
   })
 
   // ─── PATIENTS ──────────────────────────────────────────────────────────────
-  ipcMain.handle('patients:getAll',  ()           => patientRepo.getAllPatients())
-  ipcMain.handle('patients:getById', (_e, id)     => patientRepo.getPatientById(id))
-  ipcMain.handle('patients:create',  (_e, data)   => patientRepo.createPatient(data))
-  ipcMain.handle('patients:update',  (_e, id, d)  => patientRepo.updatePatient(id, d))
-  ipcMain.handle('patients:delete',  (_e, id)     => patientRepo.deletePatient(id))
+  ipcMain.handle('patients:getAll',    ()           => patientRepo.getAllPatients())
+  ipcMain.handle('patients:getById',   (_e, id)     => patientRepo.getPatientById(id))
+  ipcMain.handle('patients:create',    (_e, data)   => patientRepo.createPatient(data))
+  ipcMain.handle('patients:update',    (_e, id, d)  => patientRepo.updatePatient(id, d))
+  ipcMain.handle('patients:delete',    (_e, id)     => patientRepo.deletePatient(id))
+  ipcMain.handle('patients:followUp',  (_e, days)   => patientRepo.getPatientsToFollowUp(days))
 
   // ─── SESSIONS ──────────────────────────────────────────────────────────────
   ipcMain.handle('sessions:getAll',        (_e, pid)    => sessionRepo.getAllSessions(pid))
@@ -198,7 +199,9 @@ export function registerAllHandlers(): void {
   })
 
   // ─── FACTURATION ───────────────────────────────────────────────────────────
-  ipcMain.handle('invoice:generate', (_e, data) => generateInvoice(data))
+  ipcMain.handle('invoice:generate', (_e, data)       => generateInvoice(data))
+  ipcMain.handle('invoice:update',   (_e, id, data)   => comptaRepo.updateInvoiceLog(id, data))
+  ipcMain.handle('invoice:delete',   (_e, id)         => comptaRepo.deleteInvoiceLog(id))
 
   // ─── COMPTABILITÉ ──────────────────────────────────────────────────────────
   ipcMain.handle('compta:yearData', (_e, year) => {
@@ -309,6 +312,21 @@ export function registerAllHandlers(): void {
   // ─────────────────────────────────────────────────────────────────────────
 
   ipcMain.handle('shell:openPath',      (_e, path)    => shell.openPath(path))
+
+  // Lit un fichier local et retourne un data URL base64 (pour les aperçus dans le renderer)
+  ipcMain.handle('fs:readDataUrl', (_e, filePath: string): string | null => {
+    if (!filePath || !existsSync(filePath)) return null
+    try {
+      const ext  = extname(filePath).toLowerCase().slice(1)
+      const mime = ext === 'png' ? 'image/png'
+                 : ext === 'gif' ? 'image/gif'
+                 : ext === 'webp' ? 'image/webp'
+                 : ext === 'bmp' ? 'image/bmp'
+                 : 'image/jpeg'
+      const b64 = readFileSync(filePath).toString('base64')
+      return `data:${mime};base64,${b64}`
+    } catch { return null }
+  })
   ipcMain.handle('app:getVersion',      ()            => app.getVersion())
   ipcMain.handle('app:launchInstaller', async (_e, exePath: string) => {
     if (process.platform === 'darwin') {

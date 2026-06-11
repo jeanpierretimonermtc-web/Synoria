@@ -153,6 +153,39 @@ export function addInvoiceLog(inv: Omit<InvoiceLog, 'id' | 'created_at'>): void 
   )
 }
 
+export function updateInvoiceLog(id: string, data: Partial<Omit<InvoiceLog, 'id' | 'created_at'>>): void {
+  getDb().prepare(`
+    UPDATE invoices_log SET
+      invoice_number = COALESCE(?, invoice_number),
+      invoice_date   = COALESCE(?, invoice_date),
+      patient_first_name = COALESCE(?, patient_first_name),
+      patient_last_name  = COALESCE(?, patient_last_name),
+      patient_address    = ?,
+      email              = ?,
+      phone              = ?,
+      session_date       = ?,
+      description        = ?,
+      montant            = COALESCE(?, montant)
+    WHERE id = ?
+  `).run(
+    data.invoice_number    ?? null,
+    data.invoice_date      ?? null,
+    data.patient_first_name ?? null,
+    data.patient_last_name  ?? null,
+    data.patient_address   ?? null,
+    data.email             ?? null,
+    data.phone             ?? null,
+    data.session_date      ?? null,
+    data.description       ?? null,
+    data.montant           ?? null,
+    id
+  )
+}
+
+export function deleteInvoiceLog(id: string): void {
+  getDb().prepare('DELETE FROM invoices_log WHERE id = ?').run(id)
+}
+
 // ── Années disponibles ─────────────────────────────────────────────
 
 export function getComptaYears(): number[] {

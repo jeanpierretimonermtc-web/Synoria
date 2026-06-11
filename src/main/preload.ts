@@ -12,11 +12,12 @@ const api: IpcApi = {
   deleteAppointment:        (id)         => ipcRenderer.invoke('appointments:delete', id),
 
   // ─── PATIENTS ────────────────────────────────────────────────────────────────
-  getPatients:      ()        => ipcRenderer.invoke('patients:getAll'),
-  getPatientById:   (id)      => ipcRenderer.invoke('patients:getById', id),
-  createPatient:    (data)    => ipcRenderer.invoke('patients:create', data),
-  updatePatient:    (id, data)=> ipcRenderer.invoke('patients:update', id, data),
-  deletePatient:    (id)      => ipcRenderer.invoke('patients:delete', id),
+  getPatients:            ()        => ipcRenderer.invoke('patients:getAll'),
+  getPatientById:         (id)      => ipcRenderer.invoke('patients:getById', id),
+  createPatient:          (data)    => ipcRenderer.invoke('patients:create', data),
+  updatePatient:          (id, data)=> ipcRenderer.invoke('patients:update', id, data),
+  deletePatient:          (id)      => ipcRenderer.invoke('patients:delete', id),
+  getPatientsToFollowUp:  (days)    => ipcRenderer.invoke('patients:followUp', days),
 
   // ─── SESSIONS ────────────────────────────────────────────────────────────────
   getSessions:          (patientId) => ipcRenderer.invoke('sessions:getAll', patientId),
@@ -44,7 +45,9 @@ const api: IpcApi = {
   openBackupFolder:     (type)       => ipcRenderer.invoke('backup:openFolder', type),
 
   // ─── FACTURATION ─────────────────────────────────────────────────────────────
-  generateInvoice: (data) => ipcRenderer.invoke('invoice:generate', data),
+  generateInvoice:  (data)       => ipcRenderer.invoke('invoice:generate', data),
+  updateInvoiceLog: (id, data)   => ipcRenderer.invoke('invoice:update', id, data),
+  deleteInvoiceLog: (id)         => ipcRenderer.invoke('invoice:delete', id),
 
   // ─── COMPTABILITÉ ─────────────────────────────────────────────────────────────
   getComptaYearData:     (year)                       => ipcRenderer.invoke('compta:yearData', year),
@@ -59,8 +62,9 @@ const api: IpcApi = {
   exportComptaExcel:     (year)                       => ipcRenderer.invoke('compta:exportExcel', year),
 
   // ─── PARAMÈTRES ──────────────────────────────────────────────────────────────
-  getSettings:  ()        => ipcRenderer.invoke('settings:get'),
-  saveSettings: (settings)=> ipcRenderer.invoke('settings:save', settings),
+  getSettings:     ()      => ipcRenderer.invoke('settings:get'),
+  saveSettings:    (s)     => ipcRenderer.invoke('settings:save', s),
+  readFileDataUrl: (path)  => ipcRenderer.invoke('fs:readDataUrl', path),
 
   // ─── FILE DIALOGS ─────────────────────────────────────────────────────────────
   showSaveDialog: (opts)  => ipcRenderer.invoke('dialog:save', opts),

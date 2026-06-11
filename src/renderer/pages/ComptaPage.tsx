@@ -90,7 +90,7 @@ export default function ComptaPage() {
     data.monthlyRevenue.find(r => r.month === m && r.type_id === tid)?.nb_seances ?? 0
 
   const getRate = (m: number) =>
-    data.ursafRates.find(u => u.month === m)?.rate ?? 0.246
+    data.ursafRates.find(u => u.month === m)?.rate ?? 0.256
 
   const fixedTotal = data.expenseConfig.reduce(
     (s, e) => s + (e.is_shared ? e.monthly_amount / 2 : e.monthly_amount), 0

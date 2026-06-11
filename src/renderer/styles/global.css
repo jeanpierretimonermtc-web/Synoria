@@ -215,6 +215,31 @@ body {
 .sidebar-lock-btn:hover { background: var(--rose-light); }
 .sidebar-lock-btn:hover .sidebar-icon { transform: scale(1.09); }
 
+.sidebar-profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-decoration: none;
+  font-family: inherit;
+  text-align: left;
+  transition: background .1s;
+}
+.sidebar-profile-btn svg { flex-shrink: 0; }
+.sidebar-profile-btn:hover { background: var(--teal-light); color: var(--teal); }
+.sidebar-profile-btn.active { background: var(--teal-light); color: var(--teal); font-weight: 600; }
+.sidebar-profile-btn:hover .sidebar-icon,
+.sidebar-profile-btn.active .sidebar-icon { transform: scale(1.09); }
+
 /* Boutons header sauvegarde */
 .btn-header-save {
   display: flex; align-items: center; gap: 7px;
@@ -331,7 +356,7 @@ body {
 .icon-orange { background: var(--orange-light); color: var(--orange); }
 
 /* ─── STATS ──────────────────────────────────────────────────── */
-.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.25rem; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: .75rem; margin-bottom: 1.25rem; }
 .stat-card {
   background: var(--surface);
   border-radius: var(--radius-lg);
@@ -924,6 +949,7 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
 }
 .stat-lbl { font-size: 12.5px; color: var(--text); font-weight: 600; margin-top: 2px; }
 .stat-sub { font-size: 11px; color: var(--text-muted); }
+.stat-trend { font-size: 10px; font-weight: 700; margin-top: 2px; letter-spacing: .02em; }
 
 /* Barre de progression en bas de la stat card */
 .stat-bar-track {
@@ -964,6 +990,56 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
   font-size: 9px; color: var(--text-hint); text-transform: uppercase;
   letter-spacing: .04em; white-space: nowrap;
 }
+
+/* ─── TODAY SECTION ──────────────────────────────────────────── */
+.dash-today-card {
+  background: var(--surface); border-radius: var(--radius-lg);
+  padding: .9rem 1.25rem; box-shadow: var(--shadow-sm);
+  border-left: 3px solid var(--accent);
+  cursor: pointer; transition: box-shadow .15s;
+}
+.dash-today-card:hover { box-shadow: var(--shadow-md); }
+.dash-today-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: .65rem;
+}
+.dash-today-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.dash-today-meta {
+  font-size: 11px; font-weight: 600; color: var(--accent);
+  background: var(--accent-light); border-radius: 20px; padding: 2px 9px;
+}
+.dash-today-slots { display: flex; gap: 7px; flex-wrap: wrap; }
+.dash-today-slot {
+  display: flex; align-items: center; gap: 6px;
+  border: 1.5px solid; border-radius: 8px; padding: 5px 10px;
+  flex-shrink: 0; user-select: none;
+}
+.dash-today-time { font-size: 12px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+.dash-today-dot  { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.dash-today-name { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; }
+
+/* ─── SVG ACTIVITY CHART ─────────────────────────────────────── */
+.dash-activity-chart { padding-top: .25rem; }
+.dash-chart-labels {
+  display: flex; justify-content: space-between; margin-top: 5px;
+}
+.dash-chart-label {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 1px; flex: 1; min-width: 0;
+}
+.dash-chart-label-month {
+  font-size: 9.5px; color: var(--text-hint); font-weight: 500;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.dash-chart-label.active .dash-chart-label-month {
+  color: var(--accent); font-weight: 700;
+}
+.dash-chart-label-count { font-size: 10.5px; color: var(--text-muted); font-weight: 600; }
+.dash-chart-label.active .dash-chart-label-count { color: var(--accent); }
+
+/* ─── RDV DRAWER ─────────────────────────────────────────────── */
+@keyframes fadeIn     { from { opacity: 0 } to { opacity: 1 } }
+@keyframes slideInRight { from { transform: translateX(100%) } to { transform: translateX(0) } }
 
 /* Recent sessions list */
 .recent-sessions-list { display: flex; flex-direction: column; }

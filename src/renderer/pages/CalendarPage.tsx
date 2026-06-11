@@ -57,6 +57,7 @@ function durationPx(start: string, end?: string): number {
   return Math.max(22, (timeToMins(end) - timeToMins(start)) * (HOUR_H / 60))
 }
 function apptColor(appt: Appointment, today: string): { bg: string; border: string; text: string } {
+  if (appt.is_cancelled)  return { bg: '#FBEAEA', border: '#A83232', text: '#7A1E1E' }
   if (appt.is_done)       return { bg: '#EAF0E8', border: '#4A6741', text: '#2F5D34' }
   if (appt.date < today)  return { bg: '#FDF3E3', border: '#C17B2A', text: '#9A5B12' }
   return { bg: '#E8F0F8', border: '#2A5A8A', text: '#1A3A6B' }
@@ -78,6 +79,147 @@ function weekRangeLabel(ws: Date): string {
   if (ws.getFullYear() === we.getFullYear())
     return `${ws.getDate()} ${MONTH_NAMES[ws.getMonth()].slice(0,3)} – ${we.getDate()} ${MONTH_NAMES[we.getMonth()].slice(0,3)} ${ws.getFullYear()}`
   return `${ws.getDate()} ${MONTH_NAMES[ws.getMonth()].slice(0,3)} ${ws.getFullYear()} – ${we.getDate()} ${MONTH_NAMES[we.getMonth()].slice(0,3)} ${we.getFullYear()}`
+}
+
+/* ── COMBOBOX PATIENTS ───────────────────────────────────────────── */
+
+function PatientCombobox({ patients, value, onChange }: {
+  patients: Patient[]
+  value: string
+  onChange: (id: string) => void
+}) {
+  const sorted  = [...patients].sort((a, b) => a.last_name.localeCompare(b.last_name))
+  const selected = sorted.find(p => p.id === value)
+
+  const [query, setQuery] = useState(selected ? `${selected.last_name} ${selected.first_name}` : '')
+  const [open,  setOpen]  = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  // Sync query when value changes from outside (ex: édition d'un RDV existant)
+  useEffect(() => {
+    const p = sorted.find(x => x.id === value)
+    setQuery(p ? `${p.last_name} ${p.first_name}` : '')
+  }, [value])
+
+  // Fermer en cliquant en dehors
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false)
+        // Restaurer le nom du patient sélectionné si l'utilisateur avait tapé sans choisir
+        const p = sorted.find(x => x.id === value)
+        setQuery(p ? `${p.last_name} ${p.first_name}` : '')
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [value, sorted])
+
+  const filtered = query.trim().length === 0
+    ? sorted
+    : sorted.filter(p => {
+        const full = `${p.last_name} ${p.first_name}`.toLowerCase()
+        return full.includes(query.toLowerCase())
+      })
+
+  const handleSelect = (id: string) => {
+    onChange(id)
+    const p = sorted.find(x => x.id === id)
+    setQuery(p ? `${p.last_name} ${p.first_name}` : '')
+    setOpen(false)
+  }
+
+  const handleClear = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onChange('')
+    setQuery('')
+    setOpen(false)
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value)
+    setOpen(true)
+    if (!e.target.value) onChange('')
+  }
+
+  return (
+    <div ref={wrapRef} style={{ position: 'relative' }}>
+      <div style={{ position: 'relative' }}>
+        <input
+          type="text"
+          value={query}
+          onChange={handleInputChange}
+          onFocus={() => setOpen(true)}
+          placeholder="Rechercher un patient…"
+          style={{ paddingRight: 32, width: '100%' }}
+        />
+        {value && (
+          <button
+            type="button"
+            onMouseDown={handleClear}
+            style={{
+              position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--text-muted)', fontSize: 14, lineHeight: 1,
+              padding: '2px 4px', display: 'flex', alignItems: 'center',
+            }}
+            title="Effacer la sélection"
+          >×</button>
+        )}
+      </div>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 9999,
+          background: 'white',
+          border: '1px solid var(--border)',
+          borderRadius: 10,
+          boxShadow: '0 6px 24px rgba(0,0,0,.14)',
+          maxHeight: 220,
+          overflowY: 'auto',
+        }}>
+          {/* Option "sans fiche" toujours visible */}
+          <div
+            onMouseDown={() => handleSelect('')}
+            style={{
+              padding: '9px 13px',
+              cursor: 'pointer',
+              fontSize: 12,
+              color: 'var(--text-muted)',
+              fontStyle: 'italic',
+              borderBottom: '1px solid var(--border-soft)',
+              background: !value ? 'var(--blue-light)' : undefined,
+            }}
+          >
+            — Nouveau patient / sans fiche —
+          </div>
+
+          {filtered.length === 0 ? (
+            <div style={{ padding: '10px 13px', fontSize: 12, color: 'var(--text-hint)' }}>
+              Aucun patient trouvé
+            </div>
+          ) : filtered.map(p => (
+            <div
+              key={p.id}
+              onMouseDown={() => handleSelect(p.id)}
+              style={{
+                padding: '9px 13px',
+                cursor: 'pointer',
+                fontSize: 13,
+                display: 'flex', gap: 8, alignItems: 'baseline',
+                background: p.id === value ? 'var(--blue-light)' : undefined,
+              }}
+              onMouseEnter={e => { if (p.id !== value) (e.currentTarget as HTMLDivElement).style.background = 'var(--surface-hover)' }}
+              onMouseLeave={e => { if (p.id !== value) (e.currentTarget as HTMLDivElement).style.background = '' }}
+            >
+              <span style={{ fontWeight: 700, color: 'var(--text)' }}>{p.last_name}</span>
+              <span style={{ color: 'var(--text-muted)' }}>{p.first_name}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 /* ── MODAL RDV ───────────────────────────────────────────────────── */
@@ -103,6 +245,7 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
   const [guestLastName,  setGuestLastName]  = useState(appointment?.guest_last_name  || '')
   const [guestFirstName, setGuestFirstName] = useState(appointment?.guest_first_name || '')
   const [guestPhone,     setGuestPhone]     = useState(appointment?.guest_phone       || '')
+  const [isCancelled,    setIsCancelled]    = useState(appointment?.is_cancelled === 1)
   const [creating,       setCreating]       = useState(false)
   const navigate = useNavigate()
 
@@ -121,6 +264,7 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
       heure_fin:        heureF || undefined,
       note:             note   || undefined,
       is_done:          isDone ? 1 : 0,
+      is_cancelled:     isCancelled ? 1 : 0,
       guest_last_name:  hasGuest ? (guestLastName  || undefined) : undefined,
       guest_first_name: hasGuest ? (guestFirstName || undefined) : undefined,
       guest_phone:      hasGuest ? (guestPhone     || undefined) : undefined,
@@ -169,9 +313,14 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 460 }}>
-        <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+        <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
           <span>📅</span>
           <span>{appointment ? 'Modifier le RDV' : 'Nouveau rendez-vous'}</span>
+          {isCancelled && (
+            <span style={{ fontSize: 11, fontWeight: 700, background: 'var(--red-light)', color: 'var(--red)', border: '1px solid rgba(168,50,50,.2)', borderRadius: 20, padding: '2px 10px', marginLeft: 4 }}>
+              ✕ Annulé
+            </span>
+          )}
         </h2>
 
         <div className="field" style={{ marginBottom: 14 }}>
@@ -182,12 +331,7 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
 
         <div className="field" style={{ marginBottom: 10 }}>
           <label>Patient existant</label>
-          <select value={patientId} onChange={e => handlePatientChange(e.target.value)}>
-            <option value="">— Nouveau patient / sans fiche —</option>
-            {patients.sort((a,b) => a.last_name.localeCompare(b.last_name)).map(p => (
-              <option key={p.id} value={p.id}>{p.last_name} {p.first_name}</option>
-            ))}
-          </select>
+          <PatientCombobox patients={patients} value={patientId} onChange={handlePatientChange} />
         </div>
 
         {!patientId && (
@@ -265,6 +409,16 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
             <button className="btn btn-secondary" style={{ color: 'var(--teal)', borderColor: 'var(--teal)' }}
               onClick={handleCreatePatient} disabled={creating} title="Crée une fiche patient">
               {creating ? '⏳…' : '👤 Créer la fiche patient'}
+            </button>
+          )}
+          {appointment && (
+            <button
+              className="btn btn-secondary"
+              style={{ color: isCancelled ? 'var(--teal)' : 'var(--amber)' }}
+              onClick={() => { setIsCancelled(c => !c); if (isDone) setIsDone(false) }}
+              title={isCancelled ? 'Rétablir le rendez-vous' : 'Marquer comme annulé'}
+            >
+              {isCancelled ? '↩ Rétablir' : '✕ Annuler le RDV'}
             </button>
           )}
           {appointment && onDelete && (

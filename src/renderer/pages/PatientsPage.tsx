@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react'
+import React, { useEffect, useState, useContext, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Patient } from '../../shared/types'
 import { ToastContext } from '../App'
@@ -13,12 +13,25 @@ function InvoiceModal({ patient, onClose, showToast }: {
   onClose: () => void
   showToast: (msg: string, type?: 'success' | 'error') => void
 }) {
-  const today = new Date().toISOString().slice(0, 10)
+  const navigate  = useNavigate()
+  const today     = new Date().toISOString().slice(0, 10)
+
+  // null = chargement en cours
+  const [profileEmpty, setProfileEmpty] = useState<boolean | null>(null)
+
   const [sessionDate, setSessionDate] = useState(today)
   const [invoiceDate, setInvoiceDate] = useState(today)
-  const [description, setDescription] = useState('Médecine traditionnelle chinoise (acupuncture)')
+  const [description, setDescription] = useState('')
   const [montantStr,  setMontantStr]  = useState('')
   const [generating,  setGenerating]  = useState(false)
+
+  useEffect(() => {
+    window.mtcApi.getSettings().then(s => {
+      const hasName = !!(s.practitionerFirstName?.trim() || s.practitionerLastName?.trim())
+      setProfileEmpty(!hasName)
+      if (hasName) setDescription(s.practitionerActivity?.trim() || '')
+    })
+  }, [])
 
   const montant = parseFloat(montantStr.replace(',', '.')) || 0
   const euro = (n: number) => n.toFixed(2).replace('.', ',') + ' €'
@@ -44,6 +57,57 @@ function InvoiceModal({ patient, onClose, showToast }: {
     setGenerating(false)
   }
 
+  /* ── Chargement ── */
+  if (profileEmpty === null) {
+    return (
+      <div className="modal-overlay">
+        <div className="modal" style={{ maxWidth: 480, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 120 }}>
+          <div className="loading-dots"><span /><span /><span /></div>
+        </div>
+      </div>
+    )
+  }
+
+  /* ── Profil vide : avertissement ── */
+  if (profileEmpty) {
+    return (
+      <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+        <div className="modal" style={{ maxWidth: 440 }}>
+          <div style={{ textAlign: 'center', padding: '8px 0 20px' }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>👤</div>
+            <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 12, color: 'var(--text)' }}>
+              Profil praticien requis
+            </h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.75, marginBottom: 24 }}>
+              Pour générer une facture, vous devez d'abord renseigner votre <strong>profil praticien</strong>
+              (nom, activité, SIRET…).<br />
+              Ces informations apparaissent en en-tête de chaque facture.
+            </p>
+            <div style={{
+              background: 'var(--amber-light)',
+              border: '1px solid rgba(193,123,42,.25)',
+              borderRadius: 10, padding: '10px 16px',
+              fontSize: 12, color: 'var(--amber)', marginBottom: 24, textAlign: 'left',
+            }}>
+              ⚠️ Aucune facture ne peut être émise sans les données du praticien.
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              <button
+                className="btn btn-primary"
+                onClick={() => { onClose(); navigate('/profil') }}
+                style={{ gap: 8 }}
+              >
+                Compléter mon profil →
+              </button>
+              <button className="btn btn-secondary" onClick={onClose}>Fermer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  /* ── Formulaire facture ── */
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 480 }}>
@@ -72,7 +136,7 @@ function InvoiceModal({ patient, onClose, showToast }: {
 
         <div className="field" style={{ marginBottom: 16 }}>
           <label>Désignation</label>
-          <input type="text" value={description} onChange={e => setDescription(e.target.value)} />
+          <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Prestation de soin" />
         </div>
 
         <div className="field" style={{ marginBottom: 16 }}>
@@ -86,7 +150,6 @@ function InvoiceModal({ patient, onClose, showToast }: {
           />
         </div>
 
-        {/* Aperçu montant */}
         {montant > 0 && (
           <div className="invoice-recap">
             <div className="invoice-recap-ttc" style={{ justifyContent: 'space-between', display: 'flex' }}>

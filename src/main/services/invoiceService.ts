@@ -10,7 +10,7 @@
 import { BrowserWindow, app } from 'electron'
 import { writeFileSync, mkdirSync, readFileSync, existsSync, unlinkSync } from 'fs'
 import { join } from 'path'
-import { getSettings, saveSettings } from './settingsService'
+import { getSettings, saveSettings, invalidateCache } from './settingsService'
 import { addInvoiceLog } from '../database/repositories/comptaRepository'
 
 // ── Types ─────────────────────────────────────────────────────────
@@ -47,22 +47,22 @@ function getNextInvoiceNumber(): string {
 
 // ── Logo (base64) ─────────────────────────────────────────────────
 
-function getLogoDataUrl(): string {
-  const candidates = [
-    join(app.getAppPath(), 'dist', 'logo_entreprise.jpg'),
-    join(__dirname, '../../dist/logo_entreprise.jpg'),
-    join(__dirname, '../../../dist/logo_entreprise.jpg'),
-    join(__dirname, '../../../public/logo_entreprise.jpg'),
-  ]
-  for (const p of candidates) {
-    if (existsSync(p)) {
-      try {
-        const b64 = readFileSync(p).toString('base64')
-        return `data:image/jpeg;base64,${b64}`
-      } catch { /* essayer suivant */ }
-    }
-  }
-  return ''
+function mimeFromExt(filePath: string): string {
+  const ext = filePath.split('.').pop()?.toLowerCase() ?? ''
+  if (ext === 'png')  return 'image/png'
+  if (ext === 'gif')  return 'image/gif'
+  if (ext === 'webp') return 'image/webp'
+  if (ext === 'bmp')  return 'image/bmp'
+  return 'image/jpeg'
+}
+
+function getLogoDataUrl(userLogoPath?: string): string {
+  if (!userLogoPath || !existsSync(userLogoPath)) return ''
+  try {
+    const b64  = readFileSync(userLogoPath).toString('base64')
+    const mime = mimeFromExt(userLogoPath)
+    return `data:${mime};base64,${b64}`
+  } catch { return '' }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────
@@ -82,7 +82,17 @@ const frDate = (iso: string) => {
 
 // ── Template HTML ─────────────────────────────────────────────────
 
-function buildHtml(data: InvoiceData, invoiceNum: string, logoDataUrl: string): string {
+interface PractitionerInfo {
+  name:         string
+  activity:     string
+  address:      string
+  siret:        string
+  email:        string
+  ape:          string
+  paymentTerms: string
+}
+
+function buildHtml(data: InvoiceData, invoiceNum: string, logoDataUrl: string, prat: PractitionerInfo): string {
   const m = data.montant
 
   return /* html */`<!DOCTYPE html>
@@ -211,15 +221,15 @@ function buildHtml(data: InvoiceData, invoiceNum: string, logoDataUrl: string): 
   <div class="prat-block">
     ${logoDataUrl
       ? `<img src="${logoDataUrl}" class="prat-logo" alt="Logo" />`
-      : `<div class="prat-logo-placeholder"></div>`}
+      : ''}
     <div>
-      <div class="prat-name">JEAN-PIERRE TIMONER</div>
-      <div class="prat-activity">Médecine Traditionnelle Chinoise — Acupuncture</div>
+      <div class="prat-name">${prat.name}</div>
+      ${prat.activity ? `<div class="prat-activity">${prat.activity}</div>` : ''}
       <div class="prat-info">
-        19 rue des moulins · 09000 FOIX<br>
-        <strong>SIRET :</strong> 929 311 496 00012<br>
-        <strong>Email :</strong> jeanpierre.timoner.mtc@gmail.com<br>
-        <strong>Code APE :</strong> 8690F
+        ${prat.address ? prat.address.replace(/\n/g, '<br>') + '<br>' : ''}
+        ${prat.siret   ? `<strong>SIRET :</strong> ${prat.siret}<br>` : ''}
+        ${prat.email   ? `<strong>Email :</strong> ${prat.email}<br>` : ''}
+        ${prat.ape     ? `<strong>Code APE :</strong> ${prat.ape}` : ''}
       </div>
     </div>
   </div>
@@ -266,14 +276,15 @@ function buildHtml(data: InvoiceData, invoiceNum: string, logoDataUrl: string): 
   </div>
 </div>
 
+${prat.paymentTerms ? `
 <div class="payment">
   <strong>Modalités de règlement :</strong>
-  Espèces&nbsp;·&nbsp;Chèque&nbsp;·&nbsp;Virement bancaire&nbsp;·&nbsp;Wero
-</div>
+  ${prat.paymentTerms}
+</div>` : ''}
 
 <div class="footer-bar">
   <div class="lbl">Mentions légales</div>
-  <p>Auto-entrepreneur soumis au régime micro-BNC — JEAN-PIERRE TIMONER — SIRET 929&nbsp;311&nbsp;496&nbsp;00012</p>
+  <p>Auto-entrepreneur soumis au régime micro-BNC${prat.name ? ' — ' + prat.name : ''}${prat.siret ? ' — SIRET ' + prat.siret : ''}</p>
   <p>TVA non applicable — article 293B du Code Général des Impôts.</p>
   <p>Dispensé d'immatriculation au Registre du Commerce et des Sociétés (RCS) et au Répertoire des Métiers (RM) — art. L123-1-1 et L130-1 du Code de Commerce.</p>
 </div>
@@ -285,13 +296,30 @@ function buildHtml(data: InvoiceData, invoiceNum: string, logoDataUrl: string): 
 // ── Génération ────────────────────────────────────────────────────
 
 export async function generateInvoice(data: InvoiceData): Promise<InvoiceResult> {
-  const invoiceNum  = getNextInvoiceNumber()
-  const logoDataUrl = getLogoDataUrl()
-  const html        = buildHtml(data, invoiceNum, logoDataUrl)
+  // Force un rechargement depuis le disque pour avoir les dernières données du profil
+  invalidateCache()
+  const invoiceNum = getNextInvoiceNumber()
+  const settings   = getSettings() as any
 
-  const settings = getSettings() as any
-  const dir = settings.invoicePath ||
-    'C:\\Users\\timjp\\Desktop\\Entreprise\\Cabinet\\Comptabilité\\Facture 2026'
+  const firstName = (settings.practitionerFirstName as string | undefined) || ''
+  const lastName  = (settings.practitionerLastName  as string | undefined) || ''
+  const fullName  = [firstName, lastName].filter(Boolean).join(' ').toUpperCase()
+
+  const prat: PractitionerInfo = {
+    name:         fullName,
+    activity:     (settings.practitionerActivity     as string | undefined) || '',
+    address:      (settings.practitionerAddress      as string | undefined) || '',
+    siret:        (settings.practitionerSiret        as string | undefined) || '',
+    email:        (settings.practitionerEmail        as string | undefined) || '',
+    ape:          (settings.practitionerApe          as string | undefined) || '',
+    paymentTerms: (settings.practitionerPaymentTerms as string | undefined) || '',
+  }
+
+  const logoDataUrl = getLogoDataUrl((settings.practitionerLogoPath as string | undefined) || '')
+  const html        = buildHtml(data, invoiceNum, logoDataUrl, prat)
+
+  const dir = (settings.invoicePath as string) || ''
+  if (!dir) throw new Error('Aucun dossier de destination configuré. Définissez-le dans Paramètres > Facturation.')
   mkdirSync(dir, { recursive: true })
 
   const slug     = `${data.patientLastName.toUpperCase()}_${data.patientFirstName}`

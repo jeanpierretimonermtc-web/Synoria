@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import { getDb } from '../connection'
-import type { Patient } from '../../../shared/types'
+import type { Patient, FollowUpPatient } from '../../../shared/types'
 
 export function getAllPatients(): Patient[] {
   return getDb().prepare('SELECT * FROM patients ORDER BY last_name, first_name').all() as Patient[]
@@ -44,6 +44,37 @@ export function updatePatient(id: string, data: Partial<Patient>): Patient {
 
 export function deletePatient(id: string): void {
   getDb().prepare('DELETE FROM patients WHERE id = ?').run(id)
+}
+
+/**
+ * Patients actifs dont la dernière séance remonte à plus de `daysSince` jours
+ * (ou qui n'ont aucune séance). Limité aux 8 premiers résultats, les plus anciens en tête.
+ */
+export function getPatientsToFollowUp(daysSince: number): FollowUpPatient[] {
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - daysSince)
+  const cutoffStr = cutoff.toISOString().slice(0, 10)
+
+  type Row = Patient & { last_session_date: string | null }
+  const rows = getDb().prepare(`
+    SELECT p.*, MAX(s.date) AS last_session_date
+    FROM patients p
+    LEFT JOIN sessions s ON s.patient_id = p.id
+    WHERE p.is_active = 1
+    GROUP BY p.id
+    HAVING MAX(s.date) IS NULL OR MAX(s.date) < ?
+    ORDER BY MAX(s.date) ASC
+    LIMIT 8
+  `).all(cutoffStr) as Row[]
+
+  const today = new Date()
+  return rows.map(row => {
+    const { last_session_date, ...rest } = row as any
+    const days = last_session_date
+      ? Math.floor((today.getTime() - new Date((last_session_date as string) + 'T00:00').getTime()) / 86400000)
+      : null
+    return { patient: rest as Patient, lastSessionDate: last_session_date as string | null, daysSince: days }
+  })
 }
 
 /**

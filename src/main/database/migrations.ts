@@ -115,12 +115,7 @@ export function runMigrations(db: Database.Database): void {
         sort_order  INTEGER NOT NULL DEFAULT 0
       );
       INSERT OR IGNORE INTO consultation_types VALUES
-        ('normal',     'Séance normale',               65, 1, 0),
-        ('dietetique', 'Séance diététique chinoise',   70, 1, 1),
-        ('reduction',  'Réductions tarifs',            60, 1, 2),
-        ('offerte',    'Séance offerte',               35, 1, 3),
-        ('barrage',    'Barrage',                      30, 1, 4),
-        ('distance',   'Séance à distance',            50, 1, 5);
+        ('standard', 'Consultation standard', 0, 1, 0);
 
       -- Nb séances saisi manuellement par mois/type/année
       CREATE TABLE IF NOT EXISTS monthly_revenue (
@@ -135,7 +130,7 @@ export function runMigrations(db: Database.Database): void {
       CREATE TABLE IF NOT EXISTS ursaf_rates (
         year  INTEGER NOT NULL,
         month INTEGER NOT NULL,
-        rate  REAL NOT NULL DEFAULT 0.246,
+        rate  REAL NOT NULL DEFAULT 0.256,
         PRIMARY KEY (year, month)
       );
 
@@ -149,8 +144,8 @@ export function runMigrations(db: Database.Database): void {
         sort_order      INTEGER NOT NULL DEFAULT 0
       );
       INSERT OR IGNORE INTO expense_config VALUES
-        ('loyer',     'loyer_assurance', 'Loyer',     311.4,  1, 0),
-        ('assurance', 'loyer_assurance', 'Assurance',  13.23, 1, 1);
+        ('loyer',     'loyer_assurance', 'Loyer',     0, 1, 0),
+        ('assurance', 'loyer_assurance', 'Assurance', 0, 1, 1);
 
       -- Dépenses variables par mois (publicité, logiciel, DASRI, autres)
       CREATE TABLE IF NOT EXISTS monthly_var_expenses (
@@ -257,5 +252,38 @@ export function runMigrations(db: Database.Database): void {
       INSERT INTO schema_version(version) VALUES(9);
     `)
     console.log('[DB] Migration v9 done')
+  }
+
+  if (currentVersion < 10) {
+    console.log('[DB] Running migration v10 (neutralisation données personnelles)...')
+    db.exec(`
+      -- Remet les types de consultation à un seul exemple neutre
+      DELETE FROM consultation_types;
+      INSERT INTO consultation_types VALUES ('standard', 'Consultation standard', 0, 1, 0);
+
+      -- Remet les montants des charges fixes à zéro
+      UPDATE expense_config SET monthly_amount = 0;
+
+      INSERT INTO schema_version(version) VALUES(10);
+    `)
+    console.log('[DB] Migration v10 done')
+  }
+
+  if (currentVersion < 12) {
+    console.log('[DB] Running migration v12 (appointments.is_cancelled)...')
+    db.exec(`
+      ALTER TABLE appointments ADD COLUMN is_cancelled INTEGER DEFAULT 0;
+      INSERT INTO schema_version(version) VALUES(12);
+    `)
+    console.log('[DB] Migration v12 done')
+  }
+
+  if (currentVersion < 11) {
+    console.log('[DB] Running migration v11 (taux URSAF 21,2 %)...')
+    db.exec(`
+      UPDATE ursaf_rates SET rate = 0.256 WHERE rate = 0.246;
+      INSERT INTO schema_version(version) VALUES(11);
+    `)
+    console.log('[DB] Migration v11 done')
   }
 }

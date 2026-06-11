@@ -6,7 +6,7 @@ on:
       version:
         description: 'Version à builder (ex: 1.4.0)'
         required: false
-        default: '1.4.0'
+        default: '1.4.1'
 
   push:
     tags:
@@ -62,7 +62,7 @@ jobs:
       - name: Upload DMG universel
         uses: actions/upload-artifact@v4
         with:
-          name: Synoria-macOS-${{ github.event.inputs.version || '1.4.0' }}
+          name: Synoria-macOS-${{ github.event.inputs.version || '1.4.1' }}
           path: release/*.dmg
           retention-days: 90
           if-no-files-found: error

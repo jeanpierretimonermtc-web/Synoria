@@ -37,6 +37,7 @@ export interface Appointment {
   heure_fin?: string      // HH:MM
   note?: string           // motif de visite
   is_done: number         // 0 = planifié, 1 = réalisé
+  is_cancelled?: number   // 1 = annulé
   guest_last_name?: string   // nom si nouveau patient non encore dans la base
   guest_first_name?: string  // prénom
   guest_phone?: string       // téléphone
@@ -194,6 +195,13 @@ export interface SystemesQuestionnaire {
   masculin: SystemeData
 }
 
+// ─── FOLLOW-UP ────────────────────────────────────────────────────────────────
+export interface FollowUpPatient {
+  patient: Patient
+  lastSessionDate: string | null
+  daysSince: number | null
+}
+
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
 export interface DashboardStats {
   total_patients: number
@@ -307,6 +315,16 @@ export interface AppSettings {
   rgpdPractitionerEmail: string
   rgpdNotice:            string
   dataRetentionYears:    number  // durée de conservation (défaut 10 ans)
+  // Profil praticien (affiché sur les factures)
+  practitionerFirstName:    string
+  practitionerLastName:     string
+  practitionerActivity:     string
+  practitionerAddress:      string
+  practitionerSiret:        string
+  practitionerEmail:        string
+  practitionerApe:          string
+  practitionerPaymentTerms: string
+  practitionerLogoPath:     string
 }
 
 export interface InvoiceData {
@@ -352,6 +370,7 @@ export interface IpcApi {
   deleteAppointment: (id: string) => Promise<void>
   // Patients
   getPatients: () => Promise<Patient[]>
+  getPatientsToFollowUp: (daysSince: number) => Promise<FollowUpPatient[]>
   getPatientById: (id: string) => Promise<Patient | null>
   createPatient: (data: Omit<Patient, 'id' | 'created_at' | 'updated_at'>) => Promise<Patient>
   updatePatient: (id: string, data: Partial<Patient>) => Promise<Patient>
@@ -398,8 +417,12 @@ export interface IpcApi {
   // Settings
   getSettings: () => Promise<AppSettings>
   saveSettings: (settings: Partial<AppSettings>) => Promise<AppSettings>
+  // Lecture fichier local → data URL base64 (aperçu logos)
+  readFileDataUrl: (path: string) => Promise<string | null>
   // Factures
-  generateInvoice: (data: InvoiceData) => Promise<InvoiceResult>
+  generateInvoice:  (data: InvoiceData) => Promise<InvoiceResult>
+  updateInvoiceLog: (id: string, data: Partial<Omit<InvoiceLog, 'id' | 'created_at'>>) => Promise<void>
+  deleteInvoiceLog: (id: string) => Promise<void>
   // Comptabilité
   getComptaYearData: (year: number) => Promise<ComptaYearData>
   setMonthlyRevenue: (year: number, month: number, typeId: string, nbSeances: number) => Promise<void>

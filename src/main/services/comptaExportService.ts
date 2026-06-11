@@ -1,8 +1,9 @@
 /**
- * Export Excel comptabilité — 3 feuilles (même structure que le .xlsm de l'utilisateur)
- *   1. COMPTABILITÉ  — tableau revenus / dépenses / URSAF
- *   2. DÉTAILS DÉPENSES — config des charges fixes
- *   3. FACTURES — liste des factures générées
+ * Export Excel comptabilité — 4 feuilles
+ *   1. COMPTABILITÉ   — vue générale revenus / dépenses / URSAF / résultats (existante)
+ *   2. DÉPENSES        — charges fixes par mois + dépenses variables détaillées
+ *   3. FACTURES        — liste triée par date avec AutoFilter (mois, nom, n° facture)
+ *   4. CA PAR MOIS     — résumé mensuel CA brut / dépenses / URSAF / CA net
  */
 
 import { app } from 'electron'
@@ -25,40 +26,32 @@ const C = {
   green:  '4A6741',
   white:  'FFFFFF',
   bg:     'F9F7F4',
+  bgAlt:  'EEF2F8',
   muted:  '9B9590',
   border: 'DDD8CF',
   amber:  'C17B2A',
   red:    'A83232',
+  rowEven:'F4F7FB',
 }
 
-function cell(v: string | number, s: Record<string, unknown> = {}) {
-  return { v: v ?? '', t: typeof v === 'number' ? 'n' : 's', s }
-}
-
-function hdr(label: string, bg = C.navy, color = C.white) {
-  return cell(label, {
-    font: { bold: true, sz: 10, color: { rgb: color } },
-    fill: { fgColor: { rgb: bg }, patternType: 'solid' },
-    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
-    border: { top: s('thin', C.border), bottom: s('thin', C.border), left: s('thin', C.border), right: s('thin', C.border) },
-  })
-}
+// ── Primitives ────────────────────────────────────────────────────
 
 function s(style: 'thin' | 'medium', color = C.border) {
   return { style, color: { rgb: color } }
 }
+const border = { top: s('thin'), bottom: s('thin'), left: s('thin'), right: s('thin') }
 
-function numCell(v: number, isCurrency = false, bold = false) {
-  return {
-    v, t: 'n',
-    z: isCurrency ? '#,##0.00 "€"' : '0',
-    s: {
-      font: { sz: 9, bold, color: { rgb: v < 0 ? C.red : C.navy } },
-      fill: { fgColor: { rgb: C.white }, patternType: 'solid' },
-      alignment: { horizontal: 'right' },
-      border: { top: s('thin'), bottom: s('thin'), left: s('thin'), right: s('thin') },
-    },
-  }
+function cell(v: string | number, style: Record<string, unknown> = {}) {
+  return { v: v ?? '', t: typeof v === 'number' ? 'n' : 's', s: style }
+}
+
+function hdr(label: string, bg = C.navy, color = C.white, wrap = true) {
+  return cell(label, {
+    font: { bold: true, sz: 10, color: { rgb: color } },
+    fill: { fgColor: { rgb: bg }, patternType: 'solid' },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: wrap },
+    border: { top: s('thin', bg), bottom: s('thin', bg), left: s('thin', bg), right: s('thin', bg) },
+  })
 }
 
 function labelCell(v: string, indent = 0, bold = false, bg = C.white) {
@@ -66,8 +59,21 @@ function labelCell(v: string, indent = 0, bold = false, bg = C.white) {
     font: { sz: 9, bold, color: { rgb: C.navy } },
     fill: { fgColor: { rgb: bg }, patternType: 'solid' },
     alignment: { horizontal: 'left', indent },
-    border: { top: s('thin'), bottom: s('thin'), left: s('thin'), right: s('thin') },
+    border,
   })
+}
+
+function numCell(v: number, isCurrency = false, bold = false, bg = C.white) {
+  return {
+    v, t: 'n',
+    z: isCurrency ? '#,##0.00 "€"' : '0',
+    s: {
+      font: { sz: 9, bold, color: { rgb: v < 0 ? C.red : C.navy } },
+      fill: { fgColor: { rgb: bg }, patternType: 'solid' },
+      alignment: { horizontal: 'right' },
+      border,
+    },
+  }
 }
 
 function totalCell(v: number, bg = C.navy) {
@@ -82,97 +88,110 @@ function totalCell(v: number, bg = C.navy) {
   }
 }
 
+function rateCell(v: number, bg = C.white) {
+  return {
+    v, t: 'n', z: '0.0%',
+    s: {
+      font: { sz: 9, bold: true, color: { rgb: C.teal } },
+      fill: { fgColor: { rgb: bg }, patternType: 'solid' },
+      alignment: { horizontal: 'center' },
+      border,
+    },
+  }
+}
+
+function emptyRow(cols: number) {
+  return Array(cols).fill(cell(''))
+}
+
 const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
+const MONTHS3 = MONTHS.map(m => m.slice(0, 3).toUpperCase())
 
-// ── Feuille 1 : COMPTABILITÉ ──────────────────────────────────────
+// ── Données partagées (calculées une fois) ───────────────────────
 
-function buildComptaSheet(year: number) {
+function buildComptaData(year: number) {
   const types    = getConsultationTypes().filter(t => t.is_active)
   const revenues = getMonthlyRevenue(year)
   const ursafs   = getUrsafRates(year)
   const fixedExp = getExpenseConfig()
   const varExp   = getMonthlyVarExpenses(year)
 
-  // Helper : nb séances pour (month, typeId)
   const getNb = (m: number, tid: string) =>
     revenues.find(r => r.month === m && r.type_id === tid)?.nb_seances ?? 0
 
-  // URSAF rate pour le mois (défaut 24.6%)
   const getRate = (m: number) =>
-    ursafs.find(u => u.month === m)?.rate ?? 0.246
+    ursafs.find(u => u.month === m)?.rate ?? 0.256
 
-  // Charges fixes effectives pour un mois donné (tient compte du champ months)
-  const fixedTotalForMonth = (m: number) => fixedExp.reduce((s, e) => {
-    if (e.months) {
-      const active = e.months.split(',').map(Number)
-      if (!active.includes(m)) return s
-    }
+  const fixedForMonth = (m: number) => fixedExp.reduce((s, e) => {
+    if (e.months && !e.months.split(',').map(Number).includes(m)) return s
     return s + (e.is_shared ? e.monthly_amount / 2 : e.monthly_amount)
   }, 0)
-  // Total fixe du mois courant pour l'affichage d'en-tête
-  const fixedTotal = fixedTotalForMonth(new Date().getMonth() + 1)
 
-  // Variable expense for (month, category)
-  const getVar = (m: number, cat: string) =>
-    varExp.find(v => v.month === m && v.category === cat)?.amount ?? 0
-
-  const varCats = ['publicite', 'logiciel', 'dasri']
+  const varCats    = ['publicite', 'logiciel', 'dasri']
   const varLabels: Record<string, string> = { publicite: 'Publicité', logiciel: 'Logiciel', dasri: 'DASRI' }
+  const getVarCat  = (m: number, cat: string) =>
+    varExp.find(v => v.month === m && v.category === cat)?.amount ?? 0
+  const getVarTotal = (m: number) =>
+    varExp.filter(v => v.month === m).reduce((s, v) => s + v.amount, 0)
+
+  const caForMonth = (m: number) => types.reduce((s, t) => s + getNb(m, t.id) * t.price, 0)
+  const nbForMonth = (m: number) => types.reduce((s, t) => s + getNb(m, t.id), 0)
+
+  return { types, revenues, ursafs, fixedExp, varExp, varCats, varLabels, getNb, getRate, fixedForMonth, getVarCat, getVarTotal, caForMonth, nbForMonth }
+}
+
+// ── Feuille 1 : COMPTABILITÉ (vue générale) ───────────────────────
+
+function buildComptaSheet(year: number) {
+  const d = buildComptaData(year)
+  const { types, getNb, getRate, fixedForMonth, getVarCat, varCats, varLabels } = d
 
   const ws_data: unknown[][] = []
   let ri = 0
 
-  // ── Titre ──
-  const titleRow = [
+  // Titre
+  ws_data.push([
     cell(`COMPTABILITÉ ${year}`, {
       font: { bold: true, sz: 14, color: { rgb: C.white } },
       fill: { fgColor: { rgb: C.navy }, patternType: 'solid' },
       alignment: { horizontal: 'center', vertical: 'center' },
     }),
     ...Array(26).fill(cell('', { fill: { fgColor: { rgb: C.navy }, patternType: 'solid' } }))
-  ]
-  ws_data.push(titleRow); ri++
+  ]); ri++
 
-  // ── Sous-titre colonnes ──
-  const subHdr = [
-    hdr('TYPE CONSULTATION', C.teal),
+  // En-têtes colonnes
+  ws_data.push([
+    hdr('TYPE / DÉSIGNATION', C.teal),
     hdr('TARIF', C.teal),
-    ...MONTHS.flatMap(m => [hdr(`NB\n${m.slice(0,3).toUpperCase()}`, C.teal), hdr(`REV\n${m.slice(0,3).toUpperCase()}`, C.teal)]),
-  ]
-  ws_data.push(subHdr); ri++
+    ...MONTHS3.flatMap(m => [hdr(`NB\n${m}`, C.teal), hdr(`REV\n${m}`, C.teal)]),
+  ]); ri++
 
-  // ── Lignes revenus ──
-  const revenueStartRi = ri
+  // Revenus par type
   for (const t of types) {
-    const row: unknown[] = [
-      labelCell(t.name, 1),
-      numCell(t.price, true),
-    ]
+    const row: unknown[] = [labelCell(t.name, 1), numCell(t.price, true)]
     for (let m = 1; m <= 12; m++) {
-      const nb  = getNb(m, t.id)
-      const rev = nb * t.price
-      row.push(numCell(nb), numCell(rev, true))
+      const nb = getNb(m, t.id)
+      row.push(numCell(nb), numCell(nb * t.price, true))
     }
     ws_data.push(row); ri++
   }
 
-  // ── Total revenus ──
+  // Total revenus
   const totRevRow: unknown[] = [labelCell('TOTAL REVENUS', 0, true, C.bg), cell('')]
   for (let m = 1; m <= 12; m++) {
-    const totalNb  = types.reduce((s, t) => s + getNb(m, t.id), 0)
-    const totalRev = types.reduce((s, t) => s + getNb(m, t.id) * t.price, 0)
-    totRevRow.push(numCell(totalNb, false, true), totalCell(totalRev, C.green))
+    totRevRow.push(
+      numCell(types.reduce((s, t) => s + getNb(m, t.id), 0), false, true),
+      totalCell(types.reduce((s, t) => s + getNb(m, t.id) * t.price, 0), C.green)
+    )
   }
   ws_data.push(totRevRow); ri++
 
-  // ── Séparation ──
-  ws_data.push(Array(26).fill(cell(''))); ri++
+  ws_data.push(emptyRow(26)); ri++
 
-  // ── Dépenses titre ──
+  // Dépenses
   ws_data.push([hdr('DÉPENSES', C.amber, C.white), ...Array(25).fill(hdr('', C.amber))]); ri++
 
-  // Charges fixes — une ligne par charge, montant variable selon les mois actifs
-  for (const exp of fixedExp) {
+  for (const exp of d.fixedExp) {
     const expRow: unknown[] = [labelCell(exp.label), cell('')]
     for (let m = 1; m <= 12; m++) {
       const active = !exp.months || exp.months.split(',').map(Number).includes(m)
@@ -182,177 +201,339 @@ function buildComptaSheet(year: number) {
     ws_data.push(expRow); ri++
   }
 
-  // Variable expenses
   for (const cat of varCats) {
     const vRow: unknown[] = [labelCell(varLabels[cat]), cell('')]
-    for (let m = 1; m <= 12; m++) {
-      vRow.push(cell(''), numCell(getVar(m, cat), true))
-    }
+    for (let m = 1; m <= 12; m++) vRow.push(cell(''), numCell(getVarCat(m, cat), true))
     ws_data.push(vRow); ri++
   }
 
-  // Total dépenses (charges fixes filtrées par mois + variables)
   const totDepRow: unknown[] = [labelCell('TOTAL DÉPENSES', 0, true, C.bg), cell('')]
   for (let m = 1; m <= 12; m++) {
-    const total = fixedTotalForMonth(m) + varCats.reduce((s, c) => s + getVar(m, c), 0)
-    totDepRow.push(cell(''), totalCell(total, C.amber))
+    totDepRow.push(cell(''), totalCell(fixedForMonth(m) + d.getVarTotal(m), C.amber))
   }
   ws_data.push(totDepRow); ri++
 
-  // ── Séparation ──
-  ws_data.push(Array(26).fill(cell(''))); ri++
+  ws_data.push(emptyRow(26)); ri++
 
-  // ── URSAF ──
+  // URSAF
   ws_data.push([hdr('URSAF', C.teal, C.white), ...Array(25).fill(hdr('', C.teal))]); ri++
 
   const rateRow: unknown[] = [labelCell('Taux URSAF'), cell('')]
-  for (let m = 1; m <= 12; m++) {
-    rateRow.push(cell(''), {
-      v: getRate(m), t: 'n', z: '0.0%',
-      s: { font: { sz: 9, bold: true, color: { rgb: C.teal } }, fill: { fgColor: { rgb: C.white }, patternType: 'solid' }, alignment: { horizontal: 'center' } },
-    })
-  }
+  for (let m = 1; m <= 12; m++) rateRow.push(cell(''), rateCell(getRate(m)))
   ws_data.push(rateRow); ri++
 
   const coutRow: unknown[] = [labelCell('Coût URSAF'), cell('')]
   for (let m = 1; m <= 12; m++) {
-    const rev  = types.reduce((s, t) => s + getNb(m, t.id) * t.price, 0)
-    const cout = rev * getRate(m)
-    coutRow.push(cell(''), numCell(cout, true))
+    const rev = types.reduce((s, t) => s + getNb(m, t.id) * t.price, 0)
+    coutRow.push(cell(''), numCell(rev * getRate(m), true))
   }
   ws_data.push(coutRow); ri++
 
-  // ── Séparation ──
-  ws_data.push(Array(26).fill(cell(''))); ri++
+  ws_data.push(emptyRow(26)); ri++
 
-  // ── Résultats ──
+  // Résultats
   ws_data.push([hdr('RÉSULTATS', C.navy, C.white), ...Array(25).fill(hdr('', C.navy))]); ri++
 
-  const caRows = [
-    { label: 'CA BRUT', fn: (m: number) => types.reduce((s, t) => s + getNb(m, t.id) * t.price, 0), bg: C.teal },
-    { label: 'CA NET (hors URSAF)', fn: (m: number) => {
-      const rev  = types.reduce((s, t) => s + getNb(m, t.id) * t.price, 0)
-      const dep  = fixedTotalForMonth(m) + varCats.reduce((s, c) => s + getVar(m, c), 0)
-      return rev - dep
-    }, bg: C.teal },
-    { label: 'CA NET (après URSAF)', fn: (m: number) => {
-      const rev  = types.reduce((s, t) => s + getNb(m, t.id) * t.price, 0)
-      const dep  = fixedTotalForMonth(m) + varCats.reduce((s, c) => s + getVar(m, c), 0)
-      const urs  = rev * getRate(m)
-      return rev - dep - urs
-    }, bg: C.navy },
+  const resultRows = [
+    { label: 'CA BRUT',             fn: (m: number) => types.reduce((s, t) => s + getNb(m, t.id) * t.price, 0), bg: C.teal },
+    { label: 'CA NET (hors URSAF)', fn: (m: number) => types.reduce((s, t) => s + getNb(m, t.id) * t.price, 0) - fixedForMonth(m) - d.getVarTotal(m), bg: C.teal },
+    { label: 'CA NET (après URSAF)',fn: (m: number) => { const ca = types.reduce((s, t) => s + getNb(m, t.id) * t.price, 0); return ca - fixedForMonth(m) - d.getVarTotal(m) - ca * getRate(m) }, bg: C.navy },
   ]
-
-  for (const { label, fn, bg } of caRows) {
+  for (const { label, fn, bg } of resultRows) {
     const r: unknown[] = [labelCell(label, 0, true, C.bg), cell('')]
     for (let m = 1; m <= 12; m++) r.push(cell(''), totalCell(fn(m), bg))
     ws_data.push(r); ri++
   }
 
-  // ── Totaux annuels ──
-  ws_data.push(Array(26).fill(cell(''))); ri++
+  ws_data.push(emptyRow(26)); ri++
   ws_data.push([hdr('TOTAUX ANNUELS', C.navy, C.white), ...Array(25).fill(hdr('', C.navy))]); ri++
 
   const annualRows = [
-    { label: 'CA BRUT ANNUEL', fn: () => types.reduce((s, t) => s + Array.from({length:12}, (_,i) => getNb(i+1, t.id) * t.price).reduce((a,b)=>a+b,0), 0) },
-    { label: 'CA NET ANNUEL (hors URSAF)', fn: () => Array.from({length:12}, (_,i) => {
-      const rev = types.reduce((s,t) => s + getNb(i+1, t.id) * t.price, 0)
-      const dep = fixedTotalForMonth(i+1) + varCats.reduce((s,c) => s + getVar(i+1, c), 0)
-      return rev - dep
-    }).reduce((a,b)=>a+b,0) },
-    { label: 'CA NET ANNUEL (après URSAF)', fn: () => Array.from({length:12}, (_,i) => {
-      const rev = types.reduce((s,t) => s + getNb(i+1, t.id) * t.price, 0)
-      const dep = fixedTotalForMonth(i+1) + varCats.reduce((s,c) => s + getVar(i+1, c), 0)
-      return rev - dep - rev * getRate(i+1)
-    }).reduce((a,b)=>a+b,0) },
+    { label: 'CA BRUT ANNUEL',                fn: () => Array.from({length:12},(_,i) => types.reduce((s,t)=>s+getNb(i+1,t.id)*t.price,0)).reduce((a,b)=>a+b,0) },
+    { label: 'CA NET ANNUEL (hors URSAF)',     fn: () => Array.from({length:12},(_,i) => types.reduce((s,t)=>s+getNb(i+1,t.id)*t.price,0) - fixedForMonth(i+1) - d.getVarTotal(i+1)).reduce((a,b)=>a+b,0) },
+    { label: 'CA NET ANNUEL (après URSAF)',    fn: () => Array.from({length:12},(_,i) => { const ca=types.reduce((s,t)=>s+getNb(i+1,t.id)*t.price,0); return ca-fixedForMonth(i+1)-d.getVarTotal(i+1)-ca*getRate(i+1) }).reduce((a,b)=>a+b,0) },
   ]
-
   for (const { label, fn } of annualRows) {
-    ws_data.push([
-      labelCell(label, 0, true, C.bg),
-      totalCell(fn(), C.navy),
-      ...Array(24).fill(cell('')),
-    ])
+    ws_data.push([labelCell(label, 0, true, C.bg), totalCell(fn(), C.navy), ...Array(24).fill(cell(''))])
     ri++
   }
 
-  // Build worksheet
   const ws = XLSX.utils.aoa_to_sheet(ws_data)
   ws['!cols'] = [{ wch: 28 }, { wch: 8 }, ...Array(24).fill({ wch: 7 })]
   ws['!rows'] = ws_data.map((_, i) => ({ hpx: i === 0 ? 28 : i === 1 ? 30 : 18 }))
-
-  // Merge titre
   ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 25 } }]
-
   return ws
 }
 
-// ── Feuille 2 : DÉTAILS DÉPENSES ─────────────────────────────────
+// ── Feuille 2 : DÉPENSES ──────────────────────────────────────────
 
-function buildDepensesSheet() {
-  const configs = getExpenseConfig()
+function buildDepensesSheet(year: number) {
+  const fixedExp = getExpenseConfig()
+  const varExp   = getMonthlyVarExpenses(year)
   const rows: unknown[][] = []
 
-  rows.push([hdr('DÉTAILS DÉPENSES', C.navy), ...Array(3).fill(hdr('', C.navy))])
-  rows.push([labelCell('Désignation', 0, true), labelCell('Montant mensuel', 0, true), labelCell('Partagé ?', 0, true), labelCell('Montant effectif', 0, true)])
-
-  for (const c of configs) {
-    const eff = c.is_shared ? c.monthly_amount / 2 : c.monthly_amount
-    rows.push([
-      labelCell(c.label),
-      numCell(c.monthly_amount, true),
-      cell(c.is_shared ? 'Oui (÷2)' : 'Non'),
-      numCell(eff, true),
-    ])
-  }
-
-  const total = configs.reduce((s, c) => s + (c.is_shared ? c.monthly_amount / 2 : c.monthly_amount), 0)
-  rows.push([labelCell('TOTAL MENSUEL', 0, true, C.bg), totalCell(total, C.navy), cell(''), totalCell(total, C.navy)])
-
-  const ws = XLSX.utils.aoa_to_sheet(rows)
-  ws['!cols'] = [{ wch: 24 }, { wch: 16 }, { wch: 14 }, { wch: 16 }]
-  ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }]
-  return ws
-}
-
-// ── Feuille 3 : FACTURES ─────────────────────────────────────────
-
-function buildFacturesSheet(year: number) {
-  const invoices = getInvoicesLog(year)
-  const rows: unknown[][] = []
-
-  rows.push([hdr(`FACTURES ${year}`, C.navy), ...Array(6).fill(hdr('', C.navy))])
+  // ─ Charges fixes
+  rows.push([hdr(`CHARGES FIXES — ${year}`, C.amber), ...Array(14).fill(hdr('', C.amber))])
   rows.push([
-    hdr('N° FACTURE', C.teal), hdr('DATE', C.teal), hdr('NOM', C.teal),
-    hdr('PRÉNOM', C.teal), hdr('ADRESSE', C.teal), hdr('EMAIL', C.teal),
-    hdr('TÉLÉPHONE', C.teal), hdr('MONTANT', C.teal),
+    hdr('DÉSIGNATION', C.navy), hdr('MONTANT\nMENSUEL', C.navy), hdr('PARTAGÉ', C.navy),
+    hdr('MOIS\nACTIFS', C.navy),
+    ...MONTHS3.map(m => hdr(m, C.navy)),
+    hdr('TOTAL\nANNUEL', C.gold),
   ])
 
-  for (const inv of invoices) {
-    const d = new Date(inv.invoice_date)
-    const dateStr = isNaN(d.getTime()) ? inv.invoice_date : d.toLocaleDateString('fr-FR')
+  let totalAnnuelFixe = 0
+  for (const exp of fixedExp) {
+    const montantEff = exp.is_shared ? exp.monthly_amount / 2 : exp.monthly_amount
+    const moisActifs = exp.months ? exp.months.split(',').map(Number) : Array.from({length:12},(_,i)=>i+1)
+    const totalAnn   = moisActifs.reduce((s, m) => s + montantEff, 0)
+    totalAnnuelFixe += totalAnn
+    const row: unknown[] = [
+      labelCell(exp.label, 0, true),
+      numCell(exp.monthly_amount, true),
+      labelCell(exp.is_shared ? 'Oui (÷2)' : 'Non', 0, false, exp.is_shared ? C.rowEven : C.white),
+      labelCell(moisActifs.length === 12 ? 'Tous' : moisActifs.map(m => MONTHS3[m-1]).join(', ')),
+    ]
+    for (let m = 1; m <= 12; m++) {
+      const active = moisActifs.includes(m)
+      row.push(active ? numCell(montantEff, true) : cell('—', { font: { sz: 9, color: { rgb: C.muted } }, fill: { fgColor: { rgb: C.rowEven }, patternType: 'solid' }, alignment: { horizontal: 'center' }, border }))
+    }
+    row.push(totalCell(totalAnn, C.amber))
+    rows.push(row)
+  }
+
+  // Total charges fixes
+  const totFixeRow: unknown[] = [labelCell('TOTAL CHARGES FIXES', 0, true, C.bg), cell(''), cell(''), cell('')]
+  for (let m = 1; m <= 12; m++) {
+    const total = fixedExp.reduce((s, e) => {
+      const active = !e.months || e.months.split(',').map(Number).includes(m)
+      return s + (active ? (e.is_shared ? e.monthly_amount / 2 : e.monthly_amount) : 0)
+    }, 0)
+    totFixeRow.push(totalCell(total, C.amber))
+  }
+  totFixeRow.push(totalCell(totalAnnuelFixe, C.amber))
+  rows.push(totFixeRow)
+
+  rows.push(emptyRow(16))
+
+  // ─ Dépenses variables
+  rows.push([hdr(`DÉPENSES VARIABLES — ${year}`, C.teal), ...Array(3).fill(hdr('', C.teal))])
+  rows.push([hdr('MOIS', C.navy), hdr('CATÉGORIE', C.navy), hdr('LIBELLÉ', C.navy), hdr('MONTANT', C.navy)])
+
+  const sorted = [...varExp].sort((a, b) => a.month - b.month || a.category.localeCompare(b.category))
+  let totalVar = 0
+  for (let idx = 0; idx < sorted.length; idx++) {
+    const v   = sorted[idx]
+    const bg  = idx % 2 === 0 ? C.white : C.rowEven
+    totalVar += v.amount
     rows.push([
-      labelCell(inv.invoice_number),
-      labelCell(dateStr),
-      labelCell(inv.patient_last_name.toUpperCase()),
-      labelCell(inv.patient_first_name),
-      labelCell(inv.patient_address || ''),
-      labelCell(inv.email || ''),
-      labelCell(inv.phone || ''),
-      numCell(inv.montant, true),
+      labelCell(MONTHS[v.month - 1], 0, false, bg),
+      labelCell(v.category, 0, false, bg),
+      labelCell(v.label, 0, false, bg),
+      numCell(v.amount, true, false, bg),
     ])
   }
 
-  // Total
-  const total = invoices.reduce((s, i) => s + i.montant, 0)
+  if (sorted.length === 0) {
+    rows.push([cell('Aucune dépense variable enregistrée', { font: { sz: 9, color: { rgb: C.muted }, italic: true }, fill: { fgColor: { rgb: C.white }, patternType: 'solid' }, alignment: { horizontal: 'left' }, border }), cell(''), cell(''), cell('')])
+  }
+
+  rows.push([labelCell('TOTAL DÉPENSES VARIABLES', 0, true, C.bg), cell(''), cell(''), totalCell(totalVar, C.teal)])
+
+  rows.push(emptyRow(4))
+
+  // ─ Récap total dépenses
   rows.push([
-    labelCell('TOTAL', 0, true, C.bg), ...Array(6).fill(cell('')),
+    labelCell('TOTAL DÉPENSES (fixes + variables)', 0, true, C.bg),
+    cell(''), cell(''),
+    totalCell(totalAnnuelFixe + totalVar, C.navy),
+  ])
+
+  const ws = XLSX.utils.aoa_to_sheet(rows)
+  ws['!cols'] = [{ wch: 26 }, { wch: 14 }, { wch: 12 }, { wch: 22 }, ...Array(12).fill({ wch: 9 }), { wch: 12 }]
+
+  // AutoFilter sur les dépenses variables (header row)
+  const varHdrRowIdx = rows.findIndex((r: any) => r[0]?.v === 'MOIS')
+  if (varHdrRowIdx >= 0) {
+    ws['!autofilter'] = { ref: `A${varHdrRowIdx + 1}:D${varHdrRowIdx + 1}` }
+  }
+
+  ws['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 15 } },
+  ]
+  return ws
+}
+
+// ── Feuille 3 : FACTURES (avec AutoFilter) ────────────────────────
+
+function buildFacturesSheet(year: number) {
+  const invoices = [...getInvoicesLog(year)].sort((a, b) =>
+    new Date(a.invoice_date).getTime() - new Date(b.invoice_date).getTime()
+  )
+  const rows: unknown[][] = []
+
+  // Titre
+  rows.push([hdr(`FACTURES ${year}`, C.navy), ...Array(8).fill(hdr('', C.navy))])
+
+  // En-têtes avec AutoFilter
+  rows.push([
+    hdr('MOIS', C.teal), hdr('N° FACTURE', C.teal), hdr('DATE ÉMISSION', C.teal),
+    hdr('NOM', C.teal), hdr('PRÉNOM', C.teal), hdr('DÉSIGNATION', C.teal),
+    hdr('DATE SÉANCE', C.teal), hdr('EMAIL', C.teal), hdr('MONTANT', C.teal),
+  ])
+
+  let total = 0
+  for (let idx = 0; idx < invoices.length; idx++) {
+    const inv = invoices[idx]
+    const d   = new Date(inv.invoice_date)
+    const bg  = idx % 2 === 0 ? C.white : C.rowEven
+    const moisStr  = !isNaN(d.getTime()) ? MONTHS[d.getMonth()] : ''
+    const dateStr  = !isNaN(d.getTime()) ? d.toLocaleDateString('fr-FR') : inv.invoice_date
+    const sd       = inv.session_date ? new Date(inv.session_date) : null
+    const sessStr  = sd && !isNaN(sd.getTime()) ? sd.toLocaleDateString('fr-FR') : ''
+    total += inv.montant
+    rows.push([
+      labelCell(moisStr, 0, false, bg),
+      labelCell(inv.invoice_number, 0, true, bg),
+      labelCell(dateStr, 0, false, bg),
+      labelCell(inv.patient_last_name.toUpperCase(), 0, true, bg),
+      labelCell(inv.patient_first_name, 0, false, bg),
+      labelCell(inv.description || '', 0, false, bg),
+      labelCell(sessStr, 0, false, bg),
+      labelCell(inv.email || '', 0, false, bg),
+      numCell(inv.montant, true, false, bg),
+    ])
+  }
+
+  if (invoices.length === 0) {
+    rows.push([cell('Aucune facture pour cette période', { font: { sz: 9, color: { rgb: C.muted }, italic: true }, fill: { fgColor: { rgb: C.white }, patternType: 'solid' }, alignment: { horizontal: 'left' }, border }), ...Array(8).fill(cell(''))])
+  }
+
+  rows.push([
+    labelCell('TOTAL', 0, true, C.bg), ...Array(7).fill(cell('')),
     totalCell(total, C.navy),
   ])
 
   const ws = XLSX.utils.aoa_to_sheet(rows)
-  ws['!cols'] = [{ wch: 14 }, { wch: 12 }, { wch: 16 }, { wch: 14 }, { wch: 36 }, { wch: 28 }, { wch: 14 }, { wch: 12 }]
-  ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }]
+  ws['!cols'] = [{ wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 14 }, { wch: 30 }, { wch: 12 }, { wch: 26 }, { wch: 12 }]
+  ws['!rows'] = [{ hpx: 28 }, { hpx: 30 }, ...Array(invoices.length + 1).fill({ hpx: 18 })]
+  ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }]
+  // AutoFilter sur la ligne d'en-têtes (row index 1)
+  ws['!autofilter'] = { ref: 'A2:I2' }
+  return ws
+}
+
+// ── Feuille 4 : CA PAR MOIS ───────────────────────────────────────
+
+function buildCaParMoisSheet(year: number) {
+  const d  = buildComptaData(year)
+  const { types, getNb, getRate, fixedForMonth, getVarTotal, caForMonth, nbForMonth } = d
+  const currentYear  = new Date().getFullYear()
+  const currentMonth = new Date().getMonth() + 1
+
+  const rows: unknown[][] = []
+
+  // Titre
+  rows.push([hdr(`RÉSUMÉ CA PAR MOIS — ${year}`, C.navy), ...Array(8).fill(hdr('', C.navy))])
+
+  // En-têtes
+  rows.push([
+    hdr('MOIS', C.teal),
+    hdr('NB\nSÉANCES', C.teal),
+    hdr('CA BRUT', C.teal),
+    hdr('CHARGES\nFIXES', C.amber),
+    hdr('DÉPENSES\nVAR.', C.amber),
+    hdr('TOTAL\nDÉPENSES', C.amber),
+    hdr('TAUX\nURSAF', C.teal),
+    hdr('COÛT\nURSAF', C.teal),
+    hdr('CA NET', C.green),
+  ])
+
+  let annNb = 0, annCA = 0, annFixed = 0, annVar = 0, annUrsaf = 0, annNet = 0
+
+  for (let m = 1; m <= 12; m++) {
+    const isCurrentMonth = year === currentYear && m === currentMonth
+    const bg  = isCurrentMonth ? 'E8F5E9' : m % 2 === 0 ? C.rowEven : C.white
+    const nb  = nbForMonth(m)
+    const ca  = caForMonth(m)
+    const fix = fixedForMonth(m)
+    const vari = getVarTotal(m)
+    const dep  = fix + vari
+    const rate = getRate(m)
+    const urs  = ca * rate
+    const net  = ca - dep - urs
+
+    annNb += nb; annCA += ca; annFixed += fix; annVar += vari; annUrsaf += urs; annNet += net
+
+    const netStyle = {
+      v: net, t: 'n', z: '#,##0.00 "€"',
+      s: {
+        font: { sz: 9, bold: true, color: { rgb: net >= 0 ? C.green : C.red } },
+        fill: { fgColor: { rgb: bg }, patternType: 'solid' },
+        alignment: { horizontal: 'right' },
+        border,
+      },
+    }
+
+    rows.push([
+      cell(MONTHS[m - 1], {
+        font: { bold: isCurrentMonth, sz: 10, color: { rgb: C.navy } },
+        fill: { fgColor: { rgb: bg }, patternType: 'solid' },
+        alignment: { horizontal: 'left' }, border,
+      }),
+      numCell(nb, false, isCurrentMonth, bg),
+      numCell(ca, true, isCurrentMonth, bg),
+      numCell(fix, true, false, bg),
+      numCell(vari, true, false, bg),
+      numCell(dep, true, false, bg),
+      rateCell(rate, bg),
+      numCell(urs, true, false, bg),
+      netStyle,
+    ])
+  }
+
+  rows.push(emptyRow(9))
+
+  // Totaux annuels
+  rows.push([
+    cell('TOTAL ANNUEL', {
+      font: { bold: true, sz: 11, color: { rgb: C.white } },
+      fill: { fgColor: { rgb: C.navy }, patternType: 'solid' },
+      alignment: { horizontal: 'center' }, border,
+    }),
+    { v: annNb, t: 'n', z: '0', s: { font: { bold: true, sz: 10, color: { rgb: C.white } }, fill: { fgColor: { rgb: C.navy }, patternType: 'solid' }, alignment: { horizontal: 'center' }, border } },
+    totalCell(annCA, C.teal),
+    totalCell(annFixed, C.amber),
+    totalCell(annVar, C.amber),
+    totalCell(annFixed + annVar, C.amber),
+    cell('', { fill: { fgColor: { rgb: C.bg }, patternType: 'solid' }, border }),
+    totalCell(annUrsaf, C.teal),
+    totalCell(annNet, annNet >= 0 ? C.green : C.red),
+  ])
+
+  rows.push(emptyRow(9))
+
+  // Légende
+  rows.push([
+    cell('ℹ️  CA NET = CA Brut − Total Dépenses − Coût URSAF', {
+      font: { sz: 9, italic: true, color: { rgb: C.muted } },
+      fill: { fgColor: { rgb: C.bg }, patternType: 'solid' },
+      alignment: { horizontal: 'left' },
+    }),
+    ...Array(8).fill(cell('', { fill: { fgColor: { rgb: C.bg }, patternType: 'solid' } }))
+  ])
+  rows.push([
+    cell(`★  Mois en cours mis en évidence (fond vert clair)`, {
+      font: { sz: 9, italic: true, color: { rgb: C.muted } },
+      fill: { fgColor: { rgb: C.bg }, patternType: 'solid' },
+      alignment: { horizontal: 'left' },
+    }),
+    ...Array(8).fill(cell('', { fill: { fgColor: { rgb: C.bg }, patternType: 'solid' } }))
+  ])
+
+  const ws = XLSX.utils.aoa_to_sheet(rows)
+  ws['!cols'] = [{ wch: 14 }, { wch: 10 }, { wch: 14 }, { wch: 14 }, { wch: 13 }, { wch: 14 }, { wch: 10 }, { wch: 13 }, { wch: 14 }]
+  ws['!rows'] = [{ hpx: 28 }, { hpx: 32 }, ...Array(12).fill({ hpx: 22 }), { hpx: 8 }, { hpx: 24 }, { hpx: 8 }, { hpx: 16 }, { hpx: 16 }]
+  ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }]
   return ws
 }
 
@@ -360,13 +541,14 @@ function buildFacturesSheet(year: number) {
 
 export function exportComptaExcel(year: number): string {
   const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, buildComptaSheet(year),   'COMPTABILITÉ')
-  XLSX.utils.book_append_sheet(wb, buildDepensesSheet(),      'DÉTAILS DÉPENSES')
-  XLSX.utils.book_append_sheet(wb, buildFacturesSheet(year),  'FACTURES')
+  XLSX.utils.book_append_sheet(wb, buildComptaSheet(year),      'COMPTABILITÉ')
+  XLSX.utils.book_append_sheet(wb, buildDepensesSheet(year),    'DÉPENSES')
+  XLSX.utils.book_append_sheet(wb, buildFacturesSheet(year),    'FACTURES')
+  XLSX.utils.book_append_sheet(wb, buildCaParMoisSheet(year),   'CA PAR MOIS')
 
   const settings = getSettings() as any
-  const dir = settings.invoicePath ||
-    'C:\\Users\\timjp\\Desktop\\Entreprise\\Cabinet\\Comptabilité\\Facture 2026'
+  const dir = (settings.invoicePath as string) || ''
+  if (!dir) throw new Error('Aucun dossier de destination configuré. Définissez-le dans Paramètres > Facturation.')
   mkdirSync(dir, { recursive: true })
   const filePath = join(dir, `Comptabilité_${year}.xlsx`)
 

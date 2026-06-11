@@ -506,7 +506,7 @@ export default function SettingsPage() {
                   <input type="text" value={settings.rgpdPractitionerName || ''}
                     onChange={e => setSettings({ ...settings, rgpdPractitionerName: e.target.value })}
                     onBlur={e => save({ rgpdPractitionerName: e.target.value })}
-                    placeholder="Jean-Pierre Timoner MTC" />
+                    placeholder="Nom Prénom ou Cabinet" />
                 </div>
                 <div className="field" style={{ margin: 0 }}>
                   <label>Email du praticien</label>

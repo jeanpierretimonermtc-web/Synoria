@@ -251,7 +251,7 @@ export default function LockScreen({ mode, onUnlock }: Props) {
           }}>
             {isSetup
               ? '⚠️ Attention : sans votre mot de passe, vos données seront irrécupérables.'
-              : 'En cas de mot de passe oublié, contactez jeanpierre.timoner.mtc@gmail.com'}
+              : 'En cas de mot de passe oublié, contactez le support Synoria.'}
           </div>
         </div>
       </div>
