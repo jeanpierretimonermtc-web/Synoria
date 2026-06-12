@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import type { Session, Patient } from '../../shared/types'
 import type { PluginDefinition } from '../../shared/pluginTypes'
 import { ToastContext } from '../App'
+import { showConfirm } from '../components/common/ConfirmDialog'
 import { fmtDate, getInitials, getEvolBadgeClass } from '../utils/format'
 import { SummaryContent } from './SummaryPage'
 import EmptyState from '../components/common/EmptyState'
@@ -84,7 +85,7 @@ export default function SeancesPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer cette séance ?')) return
+    if (!await showConfirm({ message: 'Supprimer cette séance ? Cette action est irréversible.', title: 'Supprimer la séance', confirmLabel: 'Supprimer', danger: true })) return
     try {
       await window.mtcApi.deleteSession(id)
       showToast('Séance supprimée')

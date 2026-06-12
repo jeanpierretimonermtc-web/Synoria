@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Patient } from '../../shared/types'
 import { ToastContext } from '../App'
+import { showConfirm } from '../components/common/ConfirmDialog'
 import { fmtDate, getInitials, calcAge } from '../utils/format'
 import PageHeader from '../components/common/PageHeader'
 import EmptyState from '../components/common/EmptyState'
@@ -176,7 +177,7 @@ function InvoiceModal({ patient, onClose, showToast }: {
 type FilterTab = 'active' | 'all' | 'archived'
 
 const EMPTY_PATIENT = {
-  first_name: '', last_name: '', birth_date: '', phone: '', email: '',
+  civility: '', first_name: '', last_name: '', birth_date: '', phone: '', email: '',
   address: '', profession: '', notes_general: '', alerts: '', regular_doctor: '',
   medications: '', antecedents: '', consent_given: 0, consent_date: '',
 }
@@ -227,6 +228,7 @@ export default function PatientsPage() {
   const openEdit = (p: Patient) => {
     setEditPatient(p)
     setForm({
+      civility: p.civility || '',
       first_name: p.first_name, last_name: p.last_name, birth_date: p.birth_date || '',
       phone: p.phone || '', email: p.email || '', address: p.address || '',
       profession: p.profession || '',
@@ -258,7 +260,7 @@ export default function PatientsPage() {
   }
 
   const handleDelete = async (p: Patient) => {
-    if (!confirm(`Supprimer ${p.first_name} ${p.last_name} et toutes ses séances ?`)) return
+    if (!await showConfirm({ message: `Supprimer ${p.first_name} ${p.last_name} et toutes ses séances ?\n\nCette action est irréversible.`, title: 'Supprimer le patient', confirmLabel: 'Supprimer', danger: true })) return
     try { await window.mtcApi.deletePatient(p.id); showToast('Patient supprimé'); load() }
     catch { showToast('Erreur lors de la suppression', 'error') }
   }
@@ -396,7 +398,21 @@ export default function PatientsPage() {
       {showModal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
           <div className="modal">
+            <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
             <h2>{editPatient ? 'Modifier le patient' : 'Nouveau patient'}</h2>
+            <div className="field" style={{ marginBottom: 12 }}>
+              <label>Civilité</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {(['', 'M', 'Mme'] as const).map(v => (
+                  <label key={v} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, padding: '6px 14px', borderRadius: 20, border: '1.5px solid', borderColor: (form as any).civility === v ? 'var(--accent)' : 'var(--border)', background: (form as any).civility === v ? 'var(--accent-light)' : 'transparent', fontWeight: (form as any).civility === v ? 700 : 400, color: (form as any).civility === v ? 'var(--accent)' : 'var(--text-muted)', transition: 'all .12s' }}>
+                    <input type="radio" name="civility" value={v} checked={(form as any).civility === v}
+                      onChange={() => setForm(prev => ({ ...prev, civility: v } as any))}
+                      style={{ display: 'none' }} />
+                    {v === '' ? 'Non précisé' : v === 'M' ? 'M.' : 'Mme'}
+                  </label>
+                ))}
+              </div>
+            </div>
             <div className="grid2" style={{ marginBottom: 12 }}>
               <div className="field"><label>Nom *</label><input type="text" value={form.last_name} onChange={f('last_name')} placeholder="Dupont" /></div>
               <div className="field"><label>Prénom *</label><input type="text" value={form.first_name} onChange={f('first_name')} placeholder="Marie" /></div>
@@ -453,9 +469,9 @@ export default function PatientsPage() {
               )}
             </div>
 
-            <div className="row-btns" style={{ marginTop: '1rem' }}>
-              <button className="btn btn-primary" onClick={handleSave}>Enregistrer</button>
+            <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowModal(false)}>Annuler</button>
+              <button className="btn btn-primary" onClick={handleSave}>Enregistrer</button>
             </div>
           </div>
         </div>

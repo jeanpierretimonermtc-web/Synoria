@@ -10,6 +10,7 @@ const api: IpcApi = {
   createAppointment:        (data)       => ipcRenderer.invoke('appointments:create', data),
   updateAppointment:        (id, data)   => ipcRenderer.invoke('appointments:update', id, data),
   deleteAppointment:        (id)         => ipcRenderer.invoke('appointments:delete', id),
+  sendAppointmentReminder:  (id)         => ipcRenderer.invoke('appointments:sendReminder', id),
 
   // ─── PATIENTS ────────────────────────────────────────────────────────────────
   getPatients:            ()        => ipcRenderer.invoke('patients:getAll'),
@@ -45,9 +46,10 @@ const api: IpcApi = {
   openBackupFolder:     (type)       => ipcRenderer.invoke('backup:openFolder', type),
 
   // ─── FACTURATION ─────────────────────────────────────────────────────────────
-  generateInvoice:  (data)       => ipcRenderer.invoke('invoice:generate', data),
-  updateInvoiceLog: (id, data)   => ipcRenderer.invoke('invoice:update', id, data),
-  deleteInvoiceLog: (id)         => ipcRenderer.invoke('invoice:delete', id),
+  generateInvoice:     (data)       => ipcRenderer.invoke('invoice:generate', data),
+  updateInvoiceLog:    (id, data)   => ipcRenderer.invoke('invoice:update', id, data),
+  deleteInvoiceLog:    (id)         => ipcRenderer.invoke('invoice:delete', id),
+  sendInvoiceByEmail:  (id)         => ipcRenderer.invoke('invoice:sendByEmail', id),
 
   // ─── COMPTABILITÉ ─────────────────────────────────────────────────────────────
   getComptaYearData:     (year)                       => ipcRenderer.invoke('compta:yearData', year),
@@ -88,7 +90,16 @@ const api: IpcApi = {
   pluginSet:    (def)    => ipcRenderer.invoke('plugin:set', def),
   pluginRemove: ()       => ipcRenderer.invoke('plugin:remove'),
   pluginImport: (path)   => ipcRenderer.invoke('plugin:import', path),
-  getDataPath:    ()      => ipcRenderer.invoke('app:dataPath'),
+  getDataPath:       ()          => ipcRenderer.invoke('app:dataPath'),
+  setMenuBarVisible: (v: boolean)=> ipcRenderer.invoke('win:setMenuBarVisible', v),
+  onFormatPopup: (cb: (pos: { x: number; y: number }) => void) => {
+    ipcRenderer.on('format:popup', (_e, pos) => cb(pos))
+  },
+  searchGlobal:   (q)           => ipcRenderer.invoke('search:global', q),
+  verifyBackup:   (path)        => ipcRenderer.invoke('backup:verify', path),
+  getTemplates:   ()            => ipcRenderer.invoke('templates:getAll'),
+  saveTemplate:   (n, d, j)     => ipcRenderer.invoke('templates:save', n, d, j),
+  deleteTemplate: (id)          => ipcRenderer.invoke('templates:delete', id),
   // Google Calendar
   gcalStatus:        ()              => ipcRenderer.invoke('gcal:status'),
   gcalConnect:       (cid, csec)     => ipcRenderer.invoke('gcal:connect', cid, csec),

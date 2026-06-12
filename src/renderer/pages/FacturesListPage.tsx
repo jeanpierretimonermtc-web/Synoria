@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext } from 'react'
 import type { InvoiceLog } from '../../shared/types'
 import { ToastContext } from '../App'
 import { EditIcon, TrashIcon } from '../components/common/Icon'
+import { showConfirm } from '../components/common/ConfirmDialog'
 
 const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
 
@@ -55,7 +56,7 @@ function EditModal({ inv, onClose, onSaved }: {
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 540 }}>
-
+        <button className="modal-close" onClick={onClose}>×</button>
         {/* En-tête */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
           <span style={{ fontSize: 20 }}>✏️</span>
@@ -131,11 +132,11 @@ function EditModal({ inv, onClose, onSaved }: {
           ⚠️ Cette modification met à jour uniquement l'enregistrement dans le journal. Le fichier PDF sur disque n'est pas modifié.
         </div>
 
-        <div className="row-btns">
-          <button className="btn btn-primary" onClick={handleSave} disabled={saving} style={{ flex: 1, justifyContent: 'center' }}>
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={onClose}>Annuler</button>
+          <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
             {saving ? '⏳ Enregistrement…' : '✓ Enregistrer'}
           </button>
-          <button className="btn btn-secondary" onClick={onClose}>Annuler</button>
         </div>
       </div>
     </div>
@@ -167,6 +168,7 @@ function DeleteModal({ inv, onClose, onDeleted }: {
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 420 }}>
+        <button className="modal-close" onClick={onClose}>×</button>
         <div style={{ textAlign: 'center', padding: '8px 0 8px' }}>
           <div style={{ fontSize: 44, marginBottom: 14 }}>🗑️</div>
           <h2 style={{ fontSize: 17, fontWeight: 700, marginBottom: 10 }}>Supprimer la facture ?</h2>
@@ -252,6 +254,19 @@ export default function FacturesListPage() {
   const handleSaved = () => { setEditInv(null);   load(year) }
   const handleDeleted = () => { setDeleteInv(null); load(year) }
 
+  const handleSendEmail = async (inv: InvoiceLog) => {
+    try {
+      const { pdfAttached } = await window.mtcApi.sendInvoiceByEmail(inv.id)
+      if (pdfAttached) {
+        showToast('Email préparé dans Outlook avec la facture en pièce jointe. Vérifiez et envoyez.')
+      } else {
+        showToast("Email préparé dans votre client mail. La facture PDF a été mise en évidence dans l'Explorateur — glissez-la dans l'email si nécessaire.", 'warning')
+      }
+    } catch (e: any) {
+      showToast(`Impossible d'ouvrir le client mail : ${e?.message || e}`, 'error')
+    }
+  }
+
   return (
     <div>
       {/* ── Filtres ── */}
@@ -316,6 +331,19 @@ export default function FacturesListPage() {
                   </td>
                   <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
                     <div style={{ display: 'flex', gap: 6 }}>
+                      {inv.email && (
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          title={`Envoyer par email à ${inv.email}`}
+                          onClick={() => handleSendEmail(inv)}
+                          style={{ padding: '4px 8px', color: 'var(--teal)' }}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="2" y="4" width="20" height="16" rx="2" />
+                            <path d="M2 7l10 7 10-7" />
+                          </svg>
+                        </button>
+                      )}
                       <button
                         className="btn btn-secondary btn-sm"
                         title="Modifier"

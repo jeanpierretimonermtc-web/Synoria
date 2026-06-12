@@ -22,6 +22,7 @@ export interface Patient {
   medications?: string
   antecedents?: string
   is_active?: number     // 1 = actif (défaut), 0 = archivé
+  civility?: string      // 'M' | 'Mme' | ''
   consent_given?: number // 1 = consentement donné, 0 = non
   consent_date?: string  // date ISO du consentement
   created_at: string
@@ -325,6 +326,27 @@ export interface AppSettings {
   practitionerApe:          string
   practitionerPaymentTerms: string
   practitionerLogoPath:     string
+  theme?: 'light' | 'dark'
+}
+
+// ─── RECHERCHE GLOBALE ────────────────────────────────────────────────────────
+export interface SearchResult {
+  type:      'patient' | 'session'
+  id:        string
+  patientId?: string
+  title:     string
+  subtitle:  string
+  date?:     string
+}
+
+// ─── TEMPLATES DE SÉANCE ─────────────────────────────────────────────────────
+export interface SessionTemplate {
+  id:          string
+  name:        string
+  description: string
+  data_json:   string
+  created_at:  string
+  updated_at:  string
 }
 
 export interface InvoiceData {
@@ -368,6 +390,7 @@ export interface IpcApi {
   createAppointment: (data: Omit<Appointment, 'id' | 'created_at' | 'updated_at'>) => Promise<Appointment>
   updateAppointment: (id: string, data: Partial<Appointment>) => Promise<Appointment>
   deleteAppointment: (id: string) => Promise<void>
+  sendAppointmentReminder: (appointmentId: string) => Promise<void>
   // Patients
   getPatients: () => Promise<Patient[]>
   getPatientsToFollowUp: (daysSince: number) => Promise<FollowUpPatient[]>
@@ -414,15 +437,23 @@ export interface IpcApi {
   pluginRemove: () => Promise<void>
   pluginImport: (filePath: string) => Promise<import('./pluginTypes').PluginDefinition>
   getDataPath: () => Promise<string>
+  setMenuBarVisible: (visible: boolean) => Promise<void>
+  onFormatPopup: (cb: (pos: { x: number; y: number }) => void) => void
+  searchGlobal: (query: string) => Promise<SearchResult[]>
+  verifyBackup: (filePath: string) => Promise<{ patients: number; sessions: number; exportedAt: string }>
+  getTemplates: () => Promise<SessionTemplate[]>
+  saveTemplate: (name: string, description: string, dataJson: string) => Promise<SessionTemplate>
+  deleteTemplate: (id: string) => Promise<void>
   // Settings
   getSettings: () => Promise<AppSettings>
   saveSettings: (settings: Partial<AppSettings>) => Promise<AppSettings>
   // Lecture fichier local → data URL base64 (aperçu logos)
   readFileDataUrl: (path: string) => Promise<string | null>
   // Factures
-  generateInvoice:  (data: InvoiceData) => Promise<InvoiceResult>
-  updateInvoiceLog: (id: string, data: Partial<Omit<InvoiceLog, 'id' | 'created_at'>>) => Promise<void>
-  deleteInvoiceLog: (id: string) => Promise<void>
+  generateInvoice:    (data: InvoiceData) => Promise<InvoiceResult>
+  updateInvoiceLog:   (id: string, data: Partial<Omit<InvoiceLog, 'id' | 'created_at'>>) => Promise<void>
+  deleteInvoiceLog:   (id: string) => Promise<void>
+  sendInvoiceByEmail: (invoiceId: string) => Promise<{ pdfAttached: boolean }>
   // Comptabilité
   getComptaYearData: (year: number) => Promise<ComptaYearData>
   setMonthlyRevenue: (year: number, month: number, typeId: string, nbSeances: number) => Promise<void>

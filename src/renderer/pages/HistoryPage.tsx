@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { Session, Patient } from '../../shared/types'
 import { ToastContext } from '../App'
+import { showConfirm } from '../components/common/ConfirmDialog'
 import { fmtDate, getInitials, getEvolBadgeClass } from '../utils/format'
 
 export default function HistoryPage() {
@@ -28,7 +29,7 @@ export default function HistoryPage() {
   useEffect(() => { load() }, [])
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer cette séance ?')) return
+    if (!await showConfirm({ message: 'Supprimer cette séance ? Cette action est irréversible.', title: 'Supprimer la séance', confirmLabel: 'Supprimer', danger: true })) return
     try { await window.mtcApi.deleteSession(id); showToast('Séance supprimée'); load() }
     catch { showToast('Erreur lors de la suppression', 'error') }
   }

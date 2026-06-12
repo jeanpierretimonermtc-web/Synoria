@@ -3,10 +3,12 @@ import React, { useState, useRef, useEffect } from 'react'
 interface Props {
   mode: 'setup' | 'locked'
   onUnlock: () => void
+  theme?: 'light' | 'dark'
 }
 
-export default function LockScreen({ mode, onUnlock }: Props) {
+export default function LockScreen({ mode, onUnlock, theme = 'light' }: Props) {
   const isSetup = mode === 'setup'
+  const dark = theme === 'dark'
 
   const [password,  setPassword]  = useState('')
   const [confirm,   setConfirm]   = useState('')
@@ -55,24 +57,43 @@ export default function LockScreen({ mode, onUnlock }: Props) {
     setLoading(false)
   }
 
+  // Couleurs selon le thème
+  const outerBg    = dark ? '#0f0f13' : '#F0EDE8'
+  const panelBg    = dark ? '#18181c' : '#ffffff'
+  const cardBg     = dark ? '#1e1e24' : '#ffffff'
+  const cardBorder = dark ? '#38383f' : 'rgba(74,103,65,.12)'
+  const cardShadow = dark
+    ? '0 8px 40px rgba(0,0,0,.5), 0 2px 10px rgba(0,0,0,.3)'
+    : '0 8px 40px rgba(74,103,65,.1), 0 2px 10px rgba(0,0,0,.05)'
+  const inputBg    = dark ? '#2a2a32' : '#ffffff'
+  const inputBorder = dark ? '#38383f' : '#DDD8CF'
+  const inputColor = dark ? '#e8e4db' : '#1C1A17'
+  const textColor  = dark ? '#e8e4db' : '#1C1A17'
+  const mutedColor = dark ? '#96918a' : '#7A7468'
+  const hintColor  = dark ? '#62605a' : '#aaa59e'
+  const infoBg     = dark ? '#122420' : 'rgba(42,122,106,.08)'
+  const dividerBg  = dark ? '#38383f' : 'rgba(74,103,65,.12)'
+
   return (
     <div style={{
       display: 'flex', height: '100vh',
       fontFamily: 'var(--font-sans)',
-      background: '#F0EDE8',
+      background: outerBg,
+      transition: 'background .3s',
     }}>
 
       {/* ── PANNEAU GAUCHE — Branding ── */}
       <div style={{
         width: '42%', minWidth: 360,
-        background: 'white',
+        background: panelBg,
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
         padding: '60px 48px',
         gap: 0,
-        borderRight: '1px solid rgba(74,103,65,.12)',
+        borderRight: `1px solid ${cardBorder}`,
         position: 'relative',
         overflow: 'hidden',
+        transition: 'background .3s',
       }}>
         {/* Bande verte en haut */}
         <div style={{
@@ -85,26 +106,30 @@ export default function LockScreen({ mode, onUnlock }: Props) {
         <div style={{
           position: 'absolute', bottom: -120, right: -120,
           width: 380, height: 380, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(74,103,65,.06) 0%, transparent 70%)',
+          background: dark
+            ? 'radial-gradient(circle, rgba(106,170,99,.08) 0%, transparent 70%)'
+            : 'radial-gradient(circle, rgba(74,103,65,.06) 0%, transparent 70%)',
           pointerEvents: 'none',
         }} />
         <div style={{
           position: 'absolute', top: -80, left: -80,
           width: 280, height: 280, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(42,122,106,.05) 0%, transparent 70%)',
+          background: dark
+            ? 'radial-gradient(circle, rgba(58,154,136,.07) 0%, transparent 70%)'
+            : 'radial-gradient(circle, rgba(42,122,106,.05) 0%, transparent 70%)',
           pointerEvents: 'none',
         }} />
 
         {/* Logo */}
         <img
-          src="./Synoria.png"
+          src={dark ? './Synoria fond noir.png' : './Synoria.png'}
           alt="Logo Synoria"
           style={{ width: 150, height: 150, objectFit: 'contain', marginBottom: 28 }}
         />
 
         {/* Texte SYNORIA */}
         <img
-          src="./Text Synoria fond blanc.png"
+          src={dark ? './Text Synoria fond noir.png' : './Text Synoria fond blanc.png'}
           alt="SYNORIA"
           style={{ height: 144, objectFit: 'contain', marginBottom: 20 }}
         />
@@ -112,7 +137,7 @@ export default function LockScreen({ mode, onUnlock }: Props) {
         {/* Tagline */}
         <div style={{
           textAlign: 'center',
-          color: 'var(--text-muted)',
+          color: mutedColor,
           fontSize: 13,
           lineHeight: 1.8,
           maxWidth: 260,
@@ -126,11 +151,11 @@ export default function LockScreen({ mode, onUnlock }: Props) {
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8,
           padding: '9px 18px',
-          background: 'linear-gradient(135deg, rgba(74,103,65,.08), rgba(42,122,106,.08))',
+          background: infoBg,
           borderRadius: 24,
-          border: '1px solid rgba(42,122,106,.2)',
+          border: `1px solid rgba(42,122,106,${dark ? '.35' : '.2'})`,
           fontSize: 12, fontWeight: 600,
-          color: 'var(--teal)',
+          color: dark ? '#3a9a88' : 'var(--teal)',
         }}>
           🔒 Données chiffrées AES-256
         </div>
@@ -138,9 +163,9 @@ export default function LockScreen({ mode, onUnlock }: Props) {
         {/* Version */}
         <div style={{
           position: 'absolute', bottom: 20,
-          fontSize: 11, color: 'var(--text-hint)',
+          fontSize: 11, color: hintColor,
         }}>
-          v1.3.1
+          v1.4.2
         </div>
       </div>
 
@@ -151,23 +176,24 @@ export default function LockScreen({ mode, onUnlock }: Props) {
         padding: '48px 40px',
       }}>
         <div style={{
-          background: 'white',
+          background: cardBg,
           borderRadius: 20,
           padding: '48px 52px',
           width: '100%', maxWidth: 440,
-          boxShadow: '0 8px 40px rgba(74,103,65,.1), 0 2px 10px rgba(0,0,0,.05)',
-          border: '1px solid var(--border-soft)',
+          boxShadow: cardShadow,
+          border: `1px solid ${cardBorder}`,
+          transition: 'background .3s',
         }}>
 
           {/* Titre formulaire */}
           <div style={{ marginBottom: 32 }}>
             <div style={{
-              fontSize: 22, fontWeight: 700, color: 'var(--text)',
+              fontSize: 22, fontWeight: 700, color: textColor,
               fontFamily: 'var(--font-serif)', marginBottom: 8,
             }}>
               {isSetup ? 'Créer un mot de passe' : 'Accès sécurisé'}
             </div>
-            <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+            <div style={{ fontSize: 13, color: mutedColor, lineHeight: 1.6 }}>
               {isSetup
                 ? 'Choisissez un mot de passe fort pour chiffrer vos données patients'
                 : 'Entrez votre mot de passe pour accéder à vos dossiers'}
@@ -177,11 +203,11 @@ export default function LockScreen({ mode, onUnlock }: Props) {
           {/* Bandeau info setup */}
           {isSetup && (
             <div style={{
-              background: 'var(--teal-light)',
-              border: '1px solid rgba(42,122,106,.25)',
+              background: dark ? '#122420' : 'var(--teal-light)',
+              border: `1px solid rgba(42,122,106,${dark ? '.35' : '.25'})`,
               borderRadius: 10, padding: '12px 16px',
               marginBottom: 24, fontSize: 12,
-              color: 'var(--teal)', lineHeight: 1.7,
+              color: dark ? '#3a9a88' : 'var(--teal)', lineHeight: 1.7,
             }}>
               🔒 Ce mot de passe chiffre votre base en <strong>AES-256</strong>.<br />
               Sans lui, vos données seront illisibles. <strong>Notez-le en lieu sûr.</strong>
@@ -190,8 +216,8 @@ export default function LockScreen({ mode, onUnlock }: Props) {
 
           {/* Formulaire */}
           <form onSubmit={handleSubmit}>
-            <div className="field" style={{ marginBottom: 16 }}>
-              <label style={{ fontWeight: 600 }}>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontWeight: 600, marginBottom: 6, fontSize: 13, color: textColor }}>
                 {isSetup ? 'Nouveau mot de passe' : 'Mot de passe'}
               </label>
               <input
@@ -200,20 +226,36 @@ export default function LockScreen({ mode, onUnlock }: Props) {
                 value={password}
                 onChange={e => { setPassword(e.target.value); setError('') }}
                 placeholder={isSetup ? 'Minimum 6 caractères' : '••••••••'}
-                style={{ fontSize: 16, letterSpacing: '0.12em' }}
+                style={{
+                  width: '100%', padding: '11px 14px', fontSize: 16,
+                  letterSpacing: '0.12em', borderRadius: 10, boxSizing: 'border-box',
+                  border: `1.5px solid ${inputBorder}`,
+                  background: inputBg, color: inputColor,
+                  outline: 'none', fontFamily: 'inherit',
+                  transition: 'border-color .15s, background .3s',
+                }}
                 autoComplete={isSetup ? 'new-password' : 'current-password'}
               />
             </div>
 
             {isSetup && (
-              <div className="field" style={{ marginBottom: 20 }}>
-                <label style={{ fontWeight: 600 }}>Confirmer le mot de passe</label>
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', fontWeight: 600, marginBottom: 6, fontSize: 13, color: textColor }}>
+                  Confirmer le mot de passe
+                </label>
                 <input
                   type="password"
                   value={confirm}
                   onChange={e => { setConfirm(e.target.value); setError('') }}
                   placeholder="••••••••"
-                  style={{ fontSize: 16, letterSpacing: '0.12em' }}
+                  style={{
+                    width: '100%', padding: '11px 14px', fontSize: 16,
+                    letterSpacing: '0.12em', borderRadius: 10, boxSizing: 'border-box',
+                    border: `1.5px solid ${inputBorder}`,
+                    background: inputBg, color: inputColor,
+                    outline: 'none', fontFamily: 'inherit',
+                    transition: 'border-color .15s, background .3s',
+                  }}
                   autoComplete="new-password"
                 />
               </div>
@@ -221,9 +263,11 @@ export default function LockScreen({ mode, onUnlock }: Props) {
 
             {error && (
               <div style={{
-                background: '#FEF0F0', border: '1px solid rgba(168,50,50,.25)',
+                background: dark ? '#2a1515' : '#FEF0F0',
+                border: `1px solid rgba(168,50,50,${dark ? '.4' : '.25'})`,
                 borderRadius: 8, padding: '10px 12px',
-                marginBottom: 16, fontSize: 13, color: 'var(--red)',
+                marginBottom: 16, fontSize: 13,
+                color: dark ? '#c44444' : 'var(--red)',
               }}>
                 ⚠️ {error}
               </div>
@@ -247,7 +291,7 @@ export default function LockScreen({ mode, onUnlock }: Props) {
 
           <div style={{
             marginTop: 24, fontSize: 11,
-            color: 'var(--text-hint)', textAlign: 'center', lineHeight: 1.6,
+            color: hintColor, textAlign: 'center', lineHeight: 1.6,
           }}>
             {isSetup
               ? '⚠️ Attention : sans votre mot de passe, vos données seront irrécupérables.'

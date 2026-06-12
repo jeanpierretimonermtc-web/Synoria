@@ -186,6 +186,10 @@ export function deleteInvoiceLog(id: string): void {
   getDb().prepare('DELETE FROM invoices_log WHERE id = ?').run(id)
 }
 
+export function getInvoiceLogById(id: string): InvoiceLog | null {
+  return getDb().prepare('SELECT * FROM invoices_log WHERE id = ?').get(id) as InvoiceLog | null
+}
+
 // ── Années disponibles ─────────────────────────────────────────────
 
 export function getComptaYears(): number[] {

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext, useCallback, useRef } from 'rea
 import { useNavigate } from 'react-router-dom'
 import type { Session, Patient, Appointment } from '../../shared/types'
 import { ToastContext } from '../App'
+import { showConfirm } from '../components/common/ConfirmDialog'
 import { fmtDate, getInitials } from '../utils/format'
 
 /* ── Constantes ──────────────────────────────────────────────────── */
@@ -236,6 +237,7 @@ interface ApptModalProps {
 }
 
 function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, onClose, onPatientCreated }: ApptModalProps) {
+  const showToast = useContext(ToastContext)
   const [localDate,      setLocalDate]      = useState(appointment?.date || date)
   const [patientId,      setPatientId]      = useState(appointment?.patient_id   || '')
   const [heureD,         setHeureD]         = useState(appointment?.heure_debut  || slotTime || '09:00')
@@ -282,7 +284,7 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
 
   const handleCreatePatient = async () => {
     if (!guestLastName && !guestFirstName) return
-    if (!confirm(`Créer une fiche patient pour ${guestFirstName} ${guestLastName} ?`)) return
+    if (!await showConfirm({ message: `Créer une fiche patient pour ${guestFirstName} ${guestLastName} ?`, title: 'Nouvelle fiche patient', confirmLabel: 'Créer' })) return
     setCreating(true)
     try {
       const now = new Date().toISOString().slice(0, 10)
@@ -304,15 +306,29 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
       }
       onPatientCreated?.()
       onClose()
-    } catch (e: any) { alert(`Erreur : ${e?.message || e}`) }
+    } catch (e: any) { showToast(`Erreur : ${(e as any)?.message || e}`, 'error') }
     setCreating(false)
   }
 
   const hasGuestInfo = !patientId && (guestLastName || guestFirstName)
 
+  const patientEmail = patientId ? (patients.find(p => p.id === patientId)?.email || '') : ''
+  const canSendReminder = !!appointment && !!patientId && !!patientEmail && !isDone
+
+  const handleSendReminder = async () => {
+    if (!appointment) return
+    try {
+      await window.mtcApi.sendAppointmentReminder(appointment.id)
+      showToast("Le mail de rappel a été préparé dans votre client mail. S'il n'est pas envoyé immédiatement, il partira automatiquement dès que votre connexion sera rétablie.")
+    } catch (e: any) {
+      showToast(`Impossible d'ouvrir le client mail : ${e?.message || e}`, 'error')
+    }
+  }
+
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 460 }}>
+        <button className="modal-close" onClick={onClose}>×</button>
         <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
           <span>📅</span>
           <span>{appointment ? 'Modifier le RDV' : 'Nouveau rendez-vous'}</span>
@@ -396,7 +412,7 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
           <span>Marquer comme réalisé</span>
         </label>
 
-        <div className="row-btns" style={{ marginTop: 4, flexWrap: 'wrap' }}>
+        <div className="modal-footer" style={{ flexWrap: 'wrap', justifyContent: 'flex-start' }}>
           <button className="btn btn-primary" onClick={handleSave}>
             {appointment ? '💾 Mettre à jour' : '+ Créer le RDV'}
           </button>
@@ -419,6 +435,13 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
               title={isCancelled ? 'Rétablir le rendez-vous' : 'Marquer comme annulé'}
             >
               {isCancelled ? '↩ Rétablir' : '✕ Annuler le RDV'}
+            </button>
+          )}
+          {canSendReminder && (
+            <button className="btn btn-secondary btn-sm" style={{ color: 'var(--teal)' }}
+              onClick={handleSendReminder}
+              title={`Envoyer un rappel à ${patientEmail}`}>
+              ✉ Rappel par email
             </button>
           )}
           {appointment && onDelete && (
@@ -735,7 +758,7 @@ export default function CalendarPage() {
     } catch { showToast('Erreur enregistrement RDV', 'error') }
   }
   const handleDeleteAppt = async () => {
-    if (!modalAppt || !confirm('Supprimer ce rendez-vous ?')) return
+    if (!modalAppt || !await showConfirm({ message: 'Supprimer ce rendez-vous ?', title: 'Supprimer le RDV', confirmLabel: 'Supprimer', danger: true })) return
     try {
       await window.mtcApi.deleteAppointment(modalAppt.id)
       showToast('RDV supprimé'); setModalOpen(false); load()

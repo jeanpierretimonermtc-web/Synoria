@@ -278,6 +278,15 @@ export function runMigrations(db: Database.Database): void {
     console.log('[DB] Migration v12 done')
   }
 
+  if (currentVersion < 13) {
+    console.log('[DB] Running migration v13 (patients.civility)...')
+    db.exec(`
+      ALTER TABLE patients ADD COLUMN civility TEXT DEFAULT '';
+      INSERT INTO schema_version(version) VALUES(13);
+    `)
+    console.log('[DB] Migration v13 done')
+  }
+
   if (currentVersion < 11) {
     console.log('[DB] Running migration v11 (taux URSAF 21,2 %)...')
     db.exec(`
@@ -285,5 +294,21 @@ export function runMigrations(db: Database.Database): void {
       INSERT INTO schema_version(version) VALUES(11);
     `)
     console.log('[DB] Migration v11 done')
+  }
+
+  if (currentVersion < 14) {
+    console.log('[DB] Running migration v14 (session_templates)...')
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS session_templates (
+        id          TEXT PRIMARY KEY,
+        name        TEXT NOT NULL,
+        description TEXT DEFAULT '',
+        data_json   TEXT NOT NULL DEFAULT '{}',
+        created_at  TEXT NOT NULL,
+        updated_at  TEXT NOT NULL
+      );
+      INSERT INTO schema_version(version) VALUES(14);
+    `)
+    console.log('[DB] Migration v14 done')
   }
 }

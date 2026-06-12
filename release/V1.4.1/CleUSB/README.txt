@@ -1,0 +1,47 @@
+SYNORIA v1.4.1 — Version Clé USB
+==================================
+
+Ce dossier contient la version portable de Synoria,
+prévue pour fonctionner directement depuis une clé USB.
+
+CONTENU
+-------
+  Synoria 1.4.1.exe   — Exécutable portable (aucune installation requise)
+  data/               — Créé automatiquement au premier lancement
+                        Contient la base de données chiffrée et les paramètres
+
+UTILISATION
+-----------
+1. Copiez ce dossier (ou son contenu) à la racine de votre clé USB
+2. Branchez la clé USB sur n'importe quel PC Windows 10/11 64 bits
+3. Double-cliquez sur "Synoria 1.4.1.exe"
+4. Les données sont stockées dans le dossier "data/" sur la clé USB,
+   pas sur l'ordinateur utilisé
+
+PREMIER LANCEMENT
+-----------------
+Au premier démarrage, Synoria vous demande de créer un mot de passe
+et de remplir votre profil praticien (nom, adresse, SIRET…).
+Ce mot de passe chiffre votre base de données. Conservez-le précieusement —
+il ne peut pas être récupéré en cas d'oubli.
+
+ATTENTION — ÉJECTION
+--------------------
+Fermez toujours Synoria avant d'éjecter la clé USB.
+Le logiciel rechiffre la base de données à la fermeture.
+Une éjection brusque pendant que Synoria est ouvert
+pourrait corrompre vos données.
+
+MISE À JOUR depuis v1.4.0
+--------------------------
+1. Fermez Synoria
+2. Remplacez "Synoria 1.4.0.exe" par "Synoria 1.4.1.exe"
+3. Le dossier "data/" est conservé — vos données sont intactes
+4. Au premier lancement, les migrations de base de données s'appliquent
+   automatiquement (nouvelles colonnes RDV annulés, etc.)
+
+------
+Synoria — Logiciel de gestion de dossiers patients
+Conforme RGPD · Données 100% locales · Chiffrement AES-256-GCM
+Windows 10/11 64 bits
+Juin 2026

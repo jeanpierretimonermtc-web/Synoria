@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synoria v1.4.1 — Notes de version</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #2C2C2C; background: white; line-height: 1.7; }
+
+  .cover {
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: linear-gradient(145deg, #3A5F34 0%, #4A7A42 40%, #2A7A6A 100%);
+    color: white; text-align: center; padding: 60px 40px;
+    page-break-after: always; position: relative; overflow: hidden;
+  }
+  .cover::before { content: ''; position: absolute; top: -150px; right: -150px; width: 500px; height: 500px; border-radius: 50%; background: rgba(255,255,255,.05); }
+  .cover::after  { content: ''; position: absolute; bottom: -100px; left: -100px; width: 350px; height: 350px; border-radius: 50%; background: rgba(255,255,255,.04); }
+  .cover-logo    { font-size: 72px; margin-bottom: 18px; position: relative; z-index: 1; }
+  .cover-name    { font-size: 52px; font-weight: 800; letter-spacing: 6px; margin-bottom: 4px; position: relative; z-index: 1; }
+  .cover-version { font-size: 18px; font-weight: 300; opacity: .8; margin-bottom: 10px; position: relative; z-index: 1; letter-spacing: 2px; }
+  .cover-sep     { width: 60px; height: 3px; background: rgba(255,255,255,.5); border-radius: 2px; margin: 20px auto; }
+  .cover-title   { font-size: 24px; font-weight: 700; margin-bottom: 8px; position: relative; z-index: 1; }
+  .cover-subtitle { font-size: 15px; opacity: .8; max-width: 480px; line-height: 1.8; position: relative; z-index: 1; }
+  .cover-badges  { margin-top: 40px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
+  .cover-badge   { background: rgba(255,255,255,.15); border: 1.5px solid rgba(255,255,255,.4); border-radius: 20px; padding: 7px 18px; font-size: 13px; font-weight: 600; }
+  .cover-meta    { margin-top: 60px; font-size: 12px; opacity: .6; line-height: 2; position: relative; z-index: 1; }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 50px 50px 80px; }
+
+  .section-header { display: flex; align-items: center; gap: 14px; margin: 48px 0 20px; padding-bottom: 12px; border-bottom: 2px solid #4A6741; }
+  .section-number { background: linear-gradient(135deg, #4A6741, #2A7A6A); color: white; border-radius: 50%; width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; }
+  .section-title  { font-size: 20px; font-weight: 700; color: #2C3E24; }
+
+  .changelog-block { background: #F9FAF8; border-left: 4px solid #4A6741; border-radius: 0 12px 12px 0; padding: 20px 24px; margin-bottom: 16px; }
+  .changelog-block.design { border-left-color: #5B8CF7; }
+  .changelog-block.perf   { border-left-color: #FF9F0A; }
+  .changelog-block.fix    { border-left-color: #30D158; }
+  .changelog-block.security { border-left-color: #FF453A; }
+  .changelog-block-title  { font-weight: 700; font-size: 14px; color: #2C3E24; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .tag { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: .04em; }
+  .tag-new      { background: #EAF0E8; color: #4A6741; }
+  .tag-design   { background: #EBF2FF; color: #2A5A8A; }
+  .tag-fix      { background: #E8F5EC; color: #1A7A3A; }
+  .tag-security { background: #FBEAEA; color: #A83232; }
+  .tag-perf     { background: #FDF3E3; color: #9A5B12; }
+
+  ul { padding-left: 20px; }
+  ul li { margin-bottom: 5px; color: #444; }
+  ul li strong { color: #2C2C2C; }
+
+  .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 28px 0; }
+  .summary-card { background: #F5F2ED; border-radius: 12px; padding: 18px 20px; text-align: center; }
+  .summary-card-num   { font-size: 36px; font-weight: 800; color: #4A6741; line-height: 1; }
+  .summary-card-label { font-size: 12px; color: #7A7468; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-top: 6px; }
+
+  .migration-box { background: #FDF3E3; border: 1.5px solid #E8B96A; border-radius: 12px; padding: 18px 22px; margin: 20px 0; }
+  .migration-box-title { font-weight: 700; font-size: 13px; color: #9A5B12; margin-bottom: 8px; }
+
+  .compat-block { background: #EAF0E8; border-radius: 12px; padding: 20px 24px; margin: 24px 0; }
+  .compat-title { font-weight: 700; font-size: 14px; color: #2C3E24; margin-bottom: 12px; }
+  .compat-row   { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .compat-dot   { width: 8px; height: 8px; border-radius: 50%; background: #30D158; flex-shrink: 0; }
+
+  .footer { text-align: center; margin-top: 60px; padding-top: 24px; border-top: 1px solid #E8E4DE; font-size: 11px; color: #B0A99E; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="cover-logo">🌿</div>
+  <div class="cover-name">SYNORIA</div>
+  <div class="cover-version">VERSION 1.4.1</div>
+  <div class="cover-sep"></div>
+  <div class="cover-title">Notes de version</div>
+  <div class="cover-subtitle">Évolutions de la version 1.4.0 vers la version 1.4.1<br>Tableau de bord enrichi · Calendrier amélioré · Profil praticien</div>
+  <div class="cover-badges">
+    <span class="cover-badge">🖥 Windows 10/11</span>
+    <span class="cover-badge">🍎 macOS Intel &amp; Apple Silicon</span>
+    <span class="cover-badge">🔒 Chiffrement AES-256</span>
+  </div>
+  <div class="cover-meta">
+    Synoria — Logiciel de gestion de dossiers patients<br>
+    Juin 2026
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Résumé chiffré -->
+  <div class="section-header">
+    <div class="section-number">→</div>
+    <div class="section-title">Résumé des évolutions</div>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-card-num">5</div>
+      <div class="summary-card-label">Nouvelles fonctionnalités</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-num">4</div>
+      <div class="summary-card-label">Améliorations</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-num">3</div>
+      <div class="summary-card-label">Corrections</div>
+    </div>
+  </div>
+
+  <div class="migration-box">
+    <div class="migration-box-title">⚠ Migration base de données</div>
+    Cette version applique automatiquement deux migrations à votre base de données au premier lancement :
+    <ul style="margin-top:8px">
+      <li><strong>Migration v11</strong> — Mise à jour du taux URSAF à 25,6 %</li>
+      <li><strong>Migration v12</strong> — Ajout de la colonne <code>is_cancelled</code> sur les rendez-vous</li>
+    </ul>
+    Aucune action requise — la migration est transparente et non destructive.
+  </div>
+
+  <!-- 1. Tableau de bord -->
+  <div class="section-header">
+    <div class="section-number">1</div>
+    <div class="section-title">Tableau de bord</div>
+  </div>
+
+  <div class="changelog-block">
+    <div class="changelog-block-title">
+      <span class="tag tag-new">NOUVEAU</span>
+      Section « Aujourd'hui »
+    </div>
+    <ul>
+      <li>Bandeau compact affiché entre la bienvenue et les statistiques</li>
+      <li>Chips des rendez-vous du jour avec code couleur : <strong>bleu</strong> planifié, <strong>vert</strong> réalisé, <strong>orange</strong> à confirmer, <strong>rouge</strong> annulé</li>
+      <li>Affichage de l'heure, du statut et du nom du patient</li>
+      <li>Disparaît automatiquement si aucun rendez-vous n'est prévu aujourd'hui</li>
+      <li>Clic → navigation directe vers le calendrier</li>
+    </ul>
+  </div>
+
+  <div class="changelog-block">
+    <div class="changelog-block-title">
+      <span class="tag tag-new">NOUVEAU</span>
+      Tendance sur la card « Ce mois »
+    </div>
+    <ul>
+      <li>Affiche le delta par rapport au mois précédent : <strong>+N</strong> en vert, <strong>−N</strong> en rouge, <strong>=</strong> en gris</li>
+      <li>La card « Patients suivis » affiche désormais le pourcentage d'actifs</li>
+    </ul>
+  </div>
+
+  <div class="changelog-block">
+    <div class="changelog-block-title">
+      <span class="tag tag-new">NOUVEAU</span>
+      Carte « Patients à revoir »
+    </div>
+    <ul>
+      <li>Liste les patients actifs non revus depuis plus de <strong>90 jours</strong></li>
+      <li>Avatar <strong>rouge</strong> si absence &gt; 6 mois, <strong>orange</strong> si 3–6 mois</li>
+      <li>Requête SQL optimisée (une seule requête groupée, 8 résultats max)</li>
+      <li>Clic sur un patient → ouvre la liste des patients</li>
+    </ul>
+  </div>
+
+  <div class="changelog-block design">
+    <div class="changelog-block-title">
+      <span class="tag tag-design">DESIGN</span>
+      Graphique d'activité — courbe SVG
+    </div>
+    <ul>
+      <li>Le graphique 6 mois est maintenant une courbe de Bézier lissée avec aire dégradée</li>
+      <li>Points de données sur chaque mois (le mois courant mis en évidence)</li>
+      <li>Remplacement des barres CSS par un rendu SVG natif</li>
+    </ul>
+  </div>
+
+  <div class="changelog-block fix">
+    <div class="changelog-block-title">
+      <span class="tag tag-fix">CORRECTION</span>
+      Layout des cards statistiques
+    </div>
+    <ul>
+      <li>Les 5 cards s'étirent maintenant sur toute la largeur disponible</li>
+      <li>Correction du bug <code>auto-fill</code> qui laissait un espace vide à droite</li>
+    </ul>
+  </div>
+
+  <!-- 2. Calendrier -->
+  <div class="section-header">
+    <div class="section-number">2</div>
+    <div class="section-title">Calendrier</div>
+  </div>
+
+  <div class="changelog-block">
+    <div class="changelog-block-title">
+      <span class="tag tag-new">NOUVEAU</span>
+      Statut « Annulé » sur les rendez-vous
+    </div>
+    <ul>
+      <li>Nouveau bouton <strong>✕ Annuler le RDV</strong> dans la modal de rendez-vous</li>
+      <li>Badge rouge dans le titre de la modal quand le RDV est annulé</li>
+      <li>Couleur rouge dans le calendrier et dans le drawer du tableau de bord</li>
+      <li>Bouton <strong>↩ Rétablir</strong> pour annuler l'annulation</li>
+    </ul>
+  </div>
+
+  <div class="changelog-block">
+    <div class="changelog-block-title">
+      <span class="tag tag-new">NOUVEAU</span>
+      Combobox autocomplete pour les patients
+    </div>
+    <ul>
+      <li>Remplace le menu déroulant statique par un <strong>champ de recherche</strong></li>
+      <li>Filtrage en temps réel sur nom et prénom</li>
+      <li>Sélection au clic ou à la touche Entrée</li>
+      <li>Compatible avec la saisie manuelle d'un invité (nom/prénom/téléphone)</li>
+    </ul>
+  </div>
+
+  <div class="changelog-block">
+    <div class="changelog-block-title">
+      <span class="tag tag-new">NOUVEAU</span>
+      Marquer « Réalisé » depuis le tableau de bord
+    </div>
+    <ul>
+      <li>Dans le drawer RDV du mois, les cards oranges (« À confirmer ») ont un bouton direct</li>
+      <li>Mise à jour optimiste sans rechargement — le statut change instantanément</li>
+    </ul>
+  </div>
+
+  <!-- 3. Comptabilité et Factures -->
+  <div class="section-header">
+    <div class="section-number">3</div>
+    <div class="section-title">Comptabilité et Factures</div>
+  </div>
+
+  <div class="changelog-block">
+    <div class="changelog-block-title">
+      <span class="tag tag-new">NOUVEAU</span>
+      Export Excel 4 feuilles
+    </div>
+    <ul>
+      <li><strong>Vue générale</strong> — tableau annuel comme auparavant</li>
+      <li><strong>Dépenses</strong> — charges fixes par mois + dépenses variables</li>
+      <li><strong>Factures</strong> — journal complet avec colonne Mois, filtre automatique (AutoFilter) sur toutes les colonnes</li>
+      <li><strong>CA par mois</strong> — 12 lignes mensuelles, mois courant surligné en vert, ligne totaux</li>
+    </ul>
+  </div>
+
+  <div class="changelog-block">
+    <div class="changelog-block-title">
+      <span class="tag tag-new">NOUVEAU</span>
+      Modifier et Supprimer une facture
+    </div>
+    <ul>
+      <li>Bouton <strong>Modifier</strong> : ouvre une modal de modification de toutes les données de la facture</li>
+      <li>Bouton <strong>Supprimer</strong> : suppression avec confirmation</li>
+    </ul>
+  </div>
+
+  <div class="changelog-block fix">
+    <div class="changelog-block-title">
+      <span class="tag tag-fix">CORRECTION</span>
+      Taux URSAF et données PDF
+    </div>
+    <ul>
+      <li>Taux URSAF mis à jour à <strong>25,6 %</strong> (migration v11)</li>
+      <li>Correction : les données du profil praticien sont bien rechargées avant la génération du PDF</li>
+    </ul>
+  </div>
+
+  <!-- 4. Profil praticien -->
+  <div class="section-header">
+    <div class="section-number">4</div>
+    <div class="section-title">Profil praticien (nouvelle page)</div>
+  </div>
+
+  <div class="changelog-block">
+    <div class="changelog-block-title">
+      <span class="tag tag-new">NOUVEAU</span>
+      Page « Mon Profil »
+    </div>
+    <ul>
+      <li>Accessible depuis la navigation principale</li>
+      <li>Champs : prénom, nom, activité, adresse complète, SIRET, code APE, email, conditions de paiement</li>
+      <li>Logo praticien : sélection du fichier, aperçu en temps réel (fonctionne avec les chemins contenant des espaces)</li>
+      <li>Champs <code>textarea</code> auto-redimensionnables selon le contenu</li>
+      <li>Toutes les données du profil sont utilisées dans les factures PDF générées</li>
+    </ul>
+  </div>
+
+  <!-- 5. Sécurité -->
+  <div class="section-header">
+    <div class="section-number">5</div>
+    <div class="section-title">Sécurité et données</div>
+  </div>
+
+  <div class="changelog-block security">
+    <div class="changelog-block-title">
+      <span class="tag tag-security">SÉCURITÉ</span>
+      Neutralisation des données personnelles
+    </div>
+    <ul>
+      <li>Suppression du logo personnel des assets publics de l'application</li>
+      <li>Aucune donnée personnelle (nom, adresse, SIRET, tarifs…) pré-remplie dans le logiciel vierge</li>
+      <li>Migration v10 : remise à zéro des montants de charges et neutralisation des types de consultation</li>
+      <li>Le logiciel est désormais <strong>totalement neutre</strong> pour tout nouveau praticien</li>
+    </ul>
+  </div>
+
+  <!-- Compatibilité -->
+  <div class="section-header">
+    <div class="section-number">✓</div>
+    <div class="section-title">Compatibilité</div>
+  </div>
+
+  <div class="compat-block">
+    <div class="compat-title">Plateformes supportées</div>
+    <div class="compat-row"><div class="compat-dot"></div><strong>Windows 10/11 64 bits</strong> — Installateur NSIS + version portable</div>
+    <div class="compat-row"><div class="compat-dot"></div><strong>macOS Intel (x64)</strong> — DMG universel via GitHub Actions</div>
+    <div class="compat-row"><div class="compat-dot"></div><strong>macOS Apple Silicon M1/M2/M3/M4</strong> — DMG universel via GitHub Actions</div>
+  </div>
+
+  <div class="footer">
+    Synoria v1.4.1 — Logiciel de gestion de dossiers patients<br>
+    Conforme RGPD · Données 100% locales · Chiffrement AES-256-GCM<br>
+    Juin 2026
+  </div>
+
+</div>
+</body>
+</html>

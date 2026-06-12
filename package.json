@@ -1,6 +1,6 @@
 {
   "name": "dossier-patient-mtc",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Synoria - Logiciel de gestion de dossiers patients",
   "main": "dist-electron/main/index.js",
   "scripts": {

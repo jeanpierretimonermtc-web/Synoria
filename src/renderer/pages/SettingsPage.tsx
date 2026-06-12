@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext } from 'react'
 import type { AppSettings, BackupInfo, GoogleCalendarInfo, GCalCalendar } from '../../shared/types'
 import type { PluginDefinition } from '../../shared/pluginTypes'
 import { ToastContext } from '../App'
+import { showConfirm } from '../components/common/ConfirmDialog'
 
 // ── Helpers ───────────────────────────────────────────────────────
 
@@ -44,6 +45,7 @@ export default function SettingsPage() {
   const [loading, setLoading]     = useState(true)
   const [saving, setSaving]       = useState(false)
   const [backingUp, setBackingUp] = useState(false)
+  const [verifying, setVerifying] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>('sauvegardes')
 
   // Sécurité / MAJ
@@ -102,7 +104,7 @@ export default function SettingsPage() {
   }
 
   const handleGcalDisconnect = async () => {
-    if (!confirm('Déconnecter Google Calendar ? Les futurs RDV ne seront plus synchronisés.')) return
+    if (!await showConfirm({ message: 'Déconnecter Google Calendar ?\n\nLes futurs RDV ne seront plus synchronisés.', title: 'Déconnecter Google Calendar', confirmLabel: 'Déconnecter', danger: true })) return
     await window.mtcApi.gcalDisconnect()
     setGcalInfo(null); setGcalCalendars([])
     showToast('Déconnecté de Google Calendar', 'success')
@@ -169,13 +171,25 @@ export default function SettingsPage() {
   }
 
   const handleImport = async () => {
-    const path = await window.mtcApi.showOpenDialog({ filters: [{ name: 'Sauvegarde MTC', extensions: ['enc', 'json'] }] })
+    const path = await window.mtcApi.showOpenDialog({ filters: [{ name: 'Sauvegarde Synoria', extensions: ['enc', 'json'] }] })
     if (!path) return
     try {
       const result = await window.mtcApi.importBackupJson(path)
       showToast(`Import terminé ✓ — ${result.patientsUpserted} patient(s), ${result.sessionsUpserted} séance(s)${result.errors.length ? ` (${result.errors.length} ignoré(s))` : ''}`, 'success')
       window.location.reload()
     } catch (e: any) { showToast(`Erreur import : ${e?.message || e}`, 'error') }
+  }
+
+  const handleVerifyBackup = async () => {
+    const path = await window.mtcApi.showOpenDialog({ filters: [{ name: 'Sauvegarde Synoria', extensions: ['enc', 'json'] }] })
+    if (!path) return
+    setVerifying(true)
+    try {
+      const r = await window.mtcApi.verifyBackup(path)
+      const date = r.exportedAt ? new Date(r.exportedAt).toLocaleString('fr-FR') : '?'
+      showToast(`✅ Sauvegarde valide — ${r.patients} patient(s), ${r.sessions} séance(s) — exportée le ${date}`, 'success')
+    } catch (e: any) { showToast(`❌ Sauvegarde corrompue ou illisible : ${e?.message || e}`, 'error') }
+    setVerifying(false)
   }
 
   const handleChangePassword = async () => {
@@ -202,7 +216,7 @@ export default function SettingsPage() {
 
   const handleLaunchUpdate = async () => {
     if (!updatePath) return
-    if (!confirm('L\'application va se fermer pour lancer l\'installation.\n\nVos données ne seront pas supprimées.\n\nContinuer ?')) return
+    if (!await showConfirm({ message: 'L\'application va se fermer pour lancer l\'installation.\n\nVos données ne seront pas supprimées.\n\nContinuer ?', title: 'Lancer la mise à jour', confirmLabel: 'Mettre à jour' })) return
     setUpdating(true)
     try { await window.mtcApi.launchInstaller(updatePath) }
     catch (e: any) { showToast(`Erreur : ${e?.message || e}`, 'error'); setUpdating(false) }
@@ -210,7 +224,7 @@ export default function SettingsPage() {
 
   const handleImportPlugin = async () => {
     setPluginError('')
-    const path = await window.mtcApi.showOpenDialog({ filters: [{ name: 'Plugin MTC', extensions: ['json'] }] })
+    const path = await window.mtcApi.showOpenDialog({ filters: [{ name: 'Plugin Synoria', extensions: ['json'] }] })
     if (!path) return
     setPluginLoading(true)
     try {
@@ -223,7 +237,7 @@ export default function SettingsPage() {
   }
 
   const handleRemovePlugin = async () => {
-    if (!confirm('Supprimer le plugin et revenir au formulaire MTC intégré ?')) return
+    if (!await showConfirm({ message: 'Supprimer le plugin et revenir au formulaire intégré ?', title: 'Supprimer le plugin', confirmLabel: 'Supprimer', danger: true })) return
     await window.mtcApi.pluginRemove()
     setActivePlugin(null)
     showToast('Plugin supprimé — formulaire MTC restauré', 'success')
@@ -321,6 +335,9 @@ export default function SettingsPage() {
                 </button>
                 <button className="btn btn-secondary btn-sm" onClick={handleImport}>
                   📥 Importer une sauvegarde
+                </button>
+                <button className="btn btn-secondary btn-sm" onClick={handleVerifyBackup} disabled={verifying}>
+                  {verifying ? '⏳ Vérification…' : '🔍 Vérifier une sauvegarde'}
                 </button>
               </div>
               <div className="settings-enc-note">
@@ -645,10 +662,27 @@ export default function SettingsPage() {
                 <span className="card-title-icon icon-blue">🔄</span>
                 Mise à jour de l'application
               </div>
-              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14 }}>
-                Version installée : <strong style={{ color: 'var(--accent)', fontFamily: 'monospace', fontSize: 14 }}>
-                  v{appVersion || '…'}
-                </strong>
+              {/* Badge version */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, padding: '10px 14px', borderRadius: 10, background: 'var(--accent-light)', border: '1px solid rgba(var(--accent-rgb, 42,122,106),.2)' }}>
+                <span style={{ fontSize: 28 }}>📦</span>
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Version installée</div>
+                  <div style={{ fontFamily: 'monospace', fontSize: 20, fontWeight: 700, color: 'var(--accent)', letterSpacing: 1 }}>
+                    v{appVersion || '…'}
+                  </div>
+                </div>
+                {!updatePath && (
+                  <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--teal)', background: 'var(--teal-light)', borderRadius: 20, padding: '4px 12px', border: '1px solid rgba(42,122,106,.2)' }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--teal)', display: 'inline-block' }} />
+                    À jour
+                  </div>
+                )}
+                {updatePath && (
+                  <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--amber)', background: 'var(--amber-light)', borderRadius: 20, padding: '4px 12px', border: '1px solid rgba(215,119,0,.2)' }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--amber)', display: 'inline-block' }} />
+                    Mise à jour prête
+                  </div>
+                )}
               </div>
               <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.6 }}>
                 {isMac

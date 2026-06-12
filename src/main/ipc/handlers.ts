@@ -1,7 +1,9 @@
 import { ipcMain, dialog, shell, app } from 'electron'
-import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'fs'
+import { spawn }                         from 'child_process'
+import { mkdirSync, writeFileSync, unlinkSync, readFileSync, existsSync } from 'fs'
 import { join, extname }               from 'path'
 import * as patientRepo               from '../database/repositories/patientRepository'
+import * as templateRepo              from '../database/repositories/templateRepository'
 import * as sessionRepo               from '../database/repositories/sessionRepository'
 import * as appointmentRepo           from '../database/repositories/appointmentRepository'
 import { encryptToFile }              from '../services/encryptionService'
@@ -14,6 +16,7 @@ import {
   exportPatientBackup,
   importBackupJson,
   getBackupInfo,
+  verifyBackup,
 } from '../services/backupService'
 import { exportSessionExcel }         from '../services/exportService'
 import { initDatabase, closeDatabase, isDatabaseOpen } from '../database/connection'
@@ -203,6 +206,202 @@ export function registerAllHandlers(): void {
   ipcMain.handle('invoice:update',   (_e, id, data)   => comptaRepo.updateInvoiceLog(id, data))
   ipcMain.handle('invoice:delete',   (_e, id)         => comptaRepo.deleteInvoiceLog(id))
 
+  ipcMain.handle('invoice:sendByEmail', async (_e, invoiceId: string) => {
+    const inv = comptaRepo.getInvoiceLogById(invoiceId)
+    if (!inv)        throw new Error('Facture introuvable')
+    if (!inv.email)  throw new Error('Aucun email renseigné pour cette facture')
+
+    const settings   = getSettings()
+    const firstName  = settings.practitionerFirstName || ''
+    const lastName   = settings.practitionerLastName  || ''
+    const practName  = [firstName, lastName].filter(Boolean).join(' ')
+                       || settings.rgpdPractitionerName || ''
+    const practEmail = settings.practitionerEmail || settings.rgpdPractitionerEmail || ''
+
+    const fmtMontant = inv.montant.toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' €'
+    const fmtD = (iso: string) => {
+      const d = new Date(iso)
+      return isNaN(d.getTime()) ? iso : d.toLocaleDateString('fr-FR')
+    }
+
+    const subject = `Votre facture ${inv.invoice_number}${practName ? ` — Cabinet ${practName}` : ''}`
+
+    const allPats  = patientRepo.getAllPatients()
+    const civPat   = allPats.find(p => !!p.email && p.email === inv.email)
+    const civility = civPat?.civility || ''
+
+    const bodyLines = [
+      `${civility === 'M' ? 'Monsieur' : civility === 'Mme' ? 'Madame' : 'Madame, Monsieur'} ${inv.patient_first_name} ${inv.patient_last_name},`,
+      '',
+      `Veuillez trouver ci-joint votre facture n° ${inv.invoice_number} d'un montant de ${fmtMontant}.`,
+      '',
+      `Date de la séance : ${fmtD(inv.session_date || inv.invoice_date)}`,
+      ...(inv.description ? [`Prestation : ${inv.description}`] : []),
+      '',
+      'Cordialement,',
+      ...(practName  ? [practName]  : []),
+      ...(practEmail ? [practEmail] : []),
+    ]
+    const bodyText = bodyLines.join('\r\n')
+
+    const hasPdf  = !!(inv.file_path && existsSync(inv.file_path))
+    const pdfPath = hasPdf ? inv.file_path! : ''
+
+    // ── Tentative 1 : Outlook COM via -EncodedCommand (pas de fichier temp, UTF-16 LE natif) ─
+    if (hasPdf) {
+      try {
+        const subB64   = Buffer.from(subject,    'utf8').toString('base64')
+        const bodyB64  = Buffer.from(bodyText,   'utf8').toString('base64')
+        const pdfB64   = Buffer.from(pdfPath,    'utf8').toString('base64')
+        const emailB64 = Buffer.from(inv.email,  'utf8').toString('base64')
+        const fromB64  = Buffer.from(practEmail, 'utf8').toString('base64')
+
+        // PowerShell script construit en tableau puis encodé UTF-16 LE Base64
+        // -EncodedCommand : pas de fichier temp, contourne les restrictions ExecutionPolicy
+        const ps1Script = [
+          `\$email   = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${emailB64}'))`,
+          `\$subject = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${subB64}'))`,
+          `\$body    = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${bodyB64}'))`,
+          `\$pdf     = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${pdfB64}'))`,
+          `\$from    = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${fromB64}'))`,
+          '\$ol = New-Object -ComObject Outlook.Application',
+          '\$m  = \$ol.CreateItem(0)',
+          '\$m.To      = \$email',
+          '\$m.Subject = \$subject',
+          '\$m.Body    = \$body',
+          // Attachement avec throw pour que le script échoue si le fichier est inaccessible
+          'try { \$null = \$m.Attachments.Add(\$pdf) } catch { throw "Attach: \$_" }',
+          // SendUsingAccount : sélectionne le bon compte Outlook par email (pas SentOnBehalfOfName)
+          'if (\$from) {',
+          '  \$accs = \$ol.Session.Accounts',
+          '  for (\$i = 1; \$i -le \$accs.Count; \$i++) {',
+          '    if (\$accs.Item(\$i).SmtpAddress -ieq \$from) { \$m.SendUsingAccount = \$accs.Item(\$i); break }',
+          '  }',
+          '}',
+          '\$m.Display()',
+        ].join('\r\n')
+
+        // Encode en UTF-16 LE Base64 pour -EncodedCommand
+        const encodedCmd = Buffer.from(ps1Script, 'utf16le').toString('base64')
+
+        await new Promise<void>((resolve, reject) => {
+          const timer = setTimeout(() => reject(new Error('timeout')), 20000)
+          let   stderr = ''
+          const proc  = spawn('powershell', [
+            '-NoProfile', '-NonInteractive', '-EncodedCommand', encodedCmd,
+          ], { windowsHide: true })
+          proc.stderr?.on('data', (d: Buffer) => { stderr += d.toString() })
+          proc.once('close', (code) => {
+            clearTimeout(timer)
+            code === 0 ? resolve() : reject(new Error(`PS:${code} ${stderr.slice(0, 400)}`))
+          })
+          proc.once('error', (err) => { clearTimeout(timer); reject(err) })
+        })
+
+        return { pdfAttached: true }
+      } catch (e) {
+        console.warn('[sendByEmail] Outlook COM:', (e as any)?.message)
+      }
+    }
+
+
+        // ── Tentative 2 : Thunderbird CLI (attachment= natif) ────────────────────
+    if (hasPdf) {
+      const tbPaths = [
+        'C:\\Program Files\\Mozilla Thunderbird\\thunderbird.exe',
+        'C:\\Program Files (x86)\\Mozilla Thunderbird\\thunderbird.exe',
+        join(process.env['LOCALAPPDATA'] || '', 'Mozilla Thunderbird', 'thunderbird.exe'),
+      ]
+      const tbExe = tbPaths.find(p => { try { return existsSync(p) } catch { return false } })
+      if (tbExe) {
+        try {
+          const fileUri = 'file:///' + pdfPath.replace(/\\/g, '/')
+          const esc     = (s: string) => s.replace(/'/g, "\\'")
+          const parts   = [
+            `to='${esc(inv.email)}'`,
+            `subject='${esc(subject)}'`,
+            `body='${esc(bodyText)}'`,
+            `attachment='${fileUri}'`,
+            ...(practEmail ? [`from='${esc(practEmail)}'`] : []),
+          ]
+          spawn(tbExe, ['-compose', parts.join(',')], {
+            detached: true, stdio: 'ignore', windowsHide: false,
+          }).unref()
+          return { pdfAttached: true }
+        } catch (e) {
+          console.warn('[sendByEmail] Thunderbird CLI:', (e as any)?.message)
+        }
+      }
+    }
+
+    // ── Tentative 3 : mailto: URI (attach= fonctionne avec Outlook MAPI) ─────
+    let mailto = `mailto:${encodeURIComponent(inv.email)}`
+               + `?subject=${encodeURIComponent(subject)}`
+               + `&body=${encodeURIComponent(bodyText)}`
+               + (practEmail ? `&from=${encodeURIComponent(practEmail)}` : '')
+
+    if (hasPdf) {
+      mailto += `&attach=${inv.file_path}`
+    }
+
+    await shell.openExternal(mailto)
+
+    if (hasPdf) {
+      shell.showItemInFolder(pdfPath)
+    }
+
+    return { pdfAttached: false }
+  })
+
+    // ─── RAPPEL RDV PAR EMAIL ──────────────────────────────────────────────────
+  ipcMain.handle('appointments:sendReminder', async (_e, appointmentId: string) => {
+    const appt = appointmentRepo.getAppointmentById(appointmentId)
+    if (!appt) throw new Error('Rendez-vous introuvable')
+    if (!appt.patient_id) throw new Error("Ce rendez-vous n'a pas de patient associé")
+
+    const patient = patientRepo.getPatientById(appt.patient_id)
+    if (!patient)       throw new Error('Patient introuvable')
+    if (!patient.email) throw new Error('Aucun email renseigné pour ce patient')
+
+    const settings   = getSettings()
+    const firstName  = settings.practitionerFirstName || ''
+    const lastName   = settings.practitionerLastName  || ''
+    const practName  = [firstName, lastName].filter(Boolean).join(' ')
+                       || settings.rgpdPractitionerName || ''
+    const practEmail = settings.practitionerEmail || settings.rgpdPractitionerEmail || ''
+
+    const fmtDate = (iso: string) => {
+      const d = new Date(iso + 'T12:00:00')
+      return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    }
+
+    const dateLabel  = fmtDate(appt.date)
+    const heureLabel = appt.heure_fin
+      ? `${appt.heure_debut} – ${appt.heure_fin}`
+      : appt.heure_debut
+
+    const subject = `Rappel de votre rendez-vous du ${dateLabel} à ${appt.heure_debut}${practName ? ` — Cabinet ${practName}` : ''}`
+
+    const bodyLines = [
+      `${patient.civility === 'M' ? 'Monsieur' : patient.civility === 'Mme' ? 'Madame' : 'Madame, Monsieur'} ${patient.first_name} ${patient.last_name},`,
+      '',
+      `Nous vous rappelons votre rendez-vous prévu le ${dateLabel} de ${heureLabel}.`,
+      ...(appt.note ? [`Motif : ${appt.note}`] : []),
+      '',
+      "En cas d'empêchement, n'hésitez pas à nous contacter.",
+      '',
+      'Cordialement,',
+      ...(practName ? [practName] : []),
+    ]
+
+    const mailto = `mailto:${encodeURIComponent(patient.email)}`
+                 + `?subject=${encodeURIComponent(subject)}`
+                 + `&body=${encodeURIComponent(bodyLines.join('\r\n'))}`
+                 + (practEmail ? `&from=${encodeURIComponent(practEmail)}` : '')
+
+    await shell.openExternal(mailto)
+  })
+
   // ─── COMPTABILITÉ ──────────────────────────────────────────────────────────
   ipcMain.handle('compta:yearData', (_e, year) => {
     const [consultationTypes, monthlyRevenue, ursafRates, expenseConfig, monthlyVarExpenses, years] = [
@@ -346,4 +545,58 @@ export function registerAllHandlers(): void {
   ipcMain.handle('gcal:disconnect',    ()              => gcalSvc.disconnect())
   ipcMain.handle('gcal:listCalendars', async ()        => gcalSvc.listCalendars())
   ipcMain.handle('gcal:setCalendar',   (_e, id, name) => gcalSvc.setCalendar(id, name))
+
+  // ── Recherche globale (patients + séances) ───────────────────────
+  ipcMain.handle('search:global', (_e, query: string) => {
+    const q = query.toLowerCase()
+    const patients = patientRepo.getAllPatients()
+      .filter(p =>
+        p.first_name.toLowerCase().includes(q) ||
+        p.last_name.toLowerCase().includes(q) ||
+        (p.email  || '').toLowerCase().includes(q) ||
+        (p.phone  || '').includes(q)
+      ).slice(0, 6).map(p => ({
+        type: 'patient' as const,
+        id: p.id,
+        title: `${p.last_name} ${p.first_name}`,
+        subtitle: [p.birth_date ? 'Né(e) le ' + p.birth_date : '', p.phone].filter(Boolean).join(' · '),
+      }))
+
+    const patMap = new Map(patientRepo.getAllPatients().map(p => [p.id, p]))
+    const sessions = (sessionRepo.getAllSessions() as any[])
+      .filter(s =>
+        (s.motif             || '').toLowerCase().includes(q) ||
+        (s.evolution         || '').toLowerCase().includes(q) ||
+        (s.traitement_notes  || '').toLowerCase().includes(q) ||
+        (s.diagnostic_mtc    || '').toLowerCase().includes(q) ||
+        (s.full_data_json    || '').toLowerCase().includes(q)
+      ).slice(0, 6).map(s => {
+        const pat = patMap.get(s.patient_id) as any
+        return {
+          type: 'session' as const,
+          id: s.id,
+          patientId: s.patient_id,
+          title: pat ? `${pat.last_name} ${pat.first_name} — ${s.date}` : s.date,
+          subtitle: (s.motif || s.diagnostic_mtc || s.traitement_notes || '').slice(0, 90),
+          date: s.date,
+        }
+      })
+    return [...patients, ...sessions]
+  })
+
+  // ── Vérification d'intégrité d'une sauvegarde ────────────────────
+  ipcMain.handle('backup:verify', (_e, filePath: string) => {
+    return verifyBackup(filePath)
+  })
+
+  // ── Templates de séance ──────────────────────────────────────────
+  ipcMain.handle('templates:getAll', () => templateRepo.getAllTemplates())
+
+  ipcMain.handle('templates:save', (_e, name: string, description: string, dataJson: string) => {
+    return templateRepo.saveTemplate(name, description, dataJson)
+  })
+
+  ipcMain.handle('templates:delete', (_e, id: string) => {
+    templateRepo.deleteTemplate(id)
+  })
 }

@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synoria v1.4.2 — Notes de version</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #2C2C2C; background: white; line-height: 1.7; }
+
+  .cover {
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: linear-gradient(145deg, #3A5F34 0%, #4A7A42 40%, #2A7A6A 100%);
+    color: white; text-align: center; padding: 60px 40px;
+    page-break-after: always; position: relative; overflow: hidden;
+  }
+  .cover::before { content: ''; position: absolute; top: -150px; right: -150px; width: 500px; height: 500px; border-radius: 50%; background: rgba(255,255,255,.05); }
+  .cover::after  { content: ''; position: absolute; bottom: -100px; left: -100px; width: 350px; height: 350px; border-radius: 50%; background: rgba(255,255,255,.04); }
+  .cover-logo    { font-size: 72px; margin-bottom: 18px; position: relative; z-index: 1; }
+  .cover-name    { font-size: 52px; font-weight: 800; letter-spacing: 6px; margin-bottom: 4px; position: relative; z-index: 1; }
+  .cover-version { font-size: 18px; font-weight: 300; opacity: .8; margin-bottom: 10px; position: relative; z-index: 1; letter-spacing: 2px; }
+  .cover-sep     { width: 60px; height: 3px; background: rgba(255,255,255,.5); border-radius: 2px; margin: 20px auto; }
+  .cover-title   { font-size: 24px; font-weight: 700; margin-bottom: 8px; position: relative; z-index: 1; }
+  .cover-subtitle { font-size: 15px; opacity: .8; max-width: 520px; line-height: 1.8; position: relative; z-index: 1; }
+  .cover-badges  { margin-top: 40px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
+  .cover-badge   { background: rgba(255,255,255,.15); border: 1.5px solid rgba(255,255,255,.4); border-radius: 20px; padding: 7px 18px; font-size: 13px; font-weight: 600; }
+  .cover-meta    { margin-top: 60px; font-size: 12px; opacity: .6; line-height: 2; position: relative; z-index: 1; }
+
+  /* Navigation onglets */
+  .tabs-nav {
+    position: sticky; top: 0; z-index: 100;
+    background: white; border-bottom: 2px solid #E8E4DE;
+    display: flex; gap: 0; padding: 0 40px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  }
+  .tab-btn {
+    padding: 14px 22px; font-size: 13px; font-weight: 600;
+    color: #7A7468; background: none; border: none; cursor: pointer;
+    border-bottom: 3px solid transparent; margin-bottom: -2px;
+    transition: color .15s, border-color .15s;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: #4A6741; }
+  .tab-btn.active { color: #4A6741; border-bottom-color: #4A6741; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 50px 50px 80px; }
+
+  .section-header { display: flex; align-items: center; gap: 14px; margin: 48px 0 20px; padding-bottom: 12px; border-bottom: 2px solid #4A6741; }
+  .section-number { background: linear-gradient(135deg, #4A6741, #2A7A6A); color: white; border-radius: 50%; width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; }
+  .section-title  { font-size: 20px; font-weight: 700; color: #2C3E24; }
+
+  .changelog-block { background: #F9FAF8; border-left: 4px solid #4A6741; border-radius: 0 12px 12px 0; padding: 20px 24px; margin-bottom: 16px; }
+  .changelog-block.design   { border-left-color: #5B8CF7; }
+  .changelog-block.perf     { border-left-color: #FF9F0A; }
+  .changelog-block.fix      { border-left-color: #30D158; }
+  .changelog-block.security { border-left-color: #FF453A; }
+  .changelog-block-title    { font-weight: 700; font-size: 14px; color: #2C3E24; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .tag { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: .04em; }
+  .tag-new      { background: #EAF0E8; color: #4A6741; }
+  .tag-design   { background: #EBF2FF; color: #2A5A8A; }
+  .tag-fix      { background: #E8F5EC; color: #1A7A3A; }
+  .tag-security { background: #FBEAEA; color: #A83232; }
+  .tag-perf     { background: #FDF3E3; color: #9A5B12; }
+
+  ul { padding-left: 20px; }
+  ul li { margin-bottom: 5px; color: #444; }
+  ul li strong { color: #2C2C2C; }
+
+  .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 28px 0; }
+  .summary-card { background: #F5F2ED; border-radius: 12px; padding: 18px 20px; text-align: center; }
+  .summary-card-num   { font-size: 36px; font-weight: 800; color: #4A6741; line-height: 1; }
+  .summary-card-label { font-size: 12px; color: #7A7468; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-top: 6px; }
+
+  .migration-box { background: #FDF3E3; border: 1.5px solid #E8B96A; border-radius: 12px; padding: 18px 22px; margin: 20px 0; }
+  .migration-box-title { font-weight: 700; font-size: 13px; color: #9A5B12; margin-bottom: 8px; }
+
+  .compat-block { background: #EAF0E8; border-radius: 12px; padding: 20px 24px; margin: 24px 0; }
+  .compat-title { font-weight: 700; font-size: 14px; color: #2C3E24; margin-bottom: 12px; }
+  .compat-row   { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .compat-dot   { width: 8px; height: 8px; border-radius: 50%; background: #30D158; flex-shrink: 0; }
+
+  /* Onglet raccourcis */
+  .shortcuts-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 28px 0;
+  }
+  .shortcuts-card {
+    background: #F9FAF8; border-radius: 14px; padding: 22px 24px;
+    border: 1px solid #E8E4DE;
+  }
+  .shortcuts-card-title {
+    font-size: 14px; font-weight: 700; color: #2C3E24;
+    margin-bottom: 16px; padding-bottom: 10px;
+    border-bottom: 1.5px solid #E0DDD8;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .shortcut-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 0; border-bottom: 1px solid #F0EDE8;
+  }
+  .shortcut-row:last-child { border-bottom: none; }
+  .shortcut-label { font-size: 12.5px; color: #444; }
+  .shortcut-keys  { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+  kbd {
+    display: inline-block; padding: 3px 8px;
+    background: white; border: 1.5px solid #CCC8BF;
+    border-radius: 5px; border-bottom-width: 3px;
+    font-family: 'Segoe UI', monospace; font-size: 11px; font-weight: 700;
+    color: #2C2C2C; box-shadow: 0 1px 2px rgba(0,0,0,.08);
+    white-space: nowrap;
+  }
+  .key-plus { font-size: 11px; color: #999; margin: 0 1px; }
+
+  .shortcuts-note {
+    background: #EAF0E8; border-radius: 10px; padding: 14px 18px;
+    margin-top: 20px; font-size: 12px; color: #4A6741; line-height: 1.7;
+  }
+
+  .footer { text-align: center; margin-top: 60px; padding-top: 24px; border-top: 1px solid #E8E4DE; font-size: 11px; color: #B0A99E; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ PAGE DE COUVERTURE ═══════════════ -->
+<div class="cover">
+  <div class="cover-logo">🌿</div>
+  <div class="cover-name">SYNORIA</div>
+  <div class="cover-version">VERSION 1.4.2</div>
+  <div class="cover-sep"></div>
+  <div class="cover-title">Notes de version</div>
+  <div class="cover-subtitle">Évolutions de la version 1.4.1 vers la version 1.4.2<br>
+    Templates · Recherche globale · Mode sombre complet · Raccourcis clavier</div>
+  <div class="cover-badges">
+    <span class="cover-badge">🖥 Windows 10/11</span>
+    <span class="cover-badge">🍎 macOS Intel &amp; Apple Silicon</span>
+    <span class="cover-badge">🔒 Chiffrement AES-256</span>
+  </div>
+  <div class="cover-meta">
+    Synoria — Logiciel de gestion de dossiers patients<br>
+    Juin 2026
+  </div>
+</div>
+
+<!-- ═══════════════ NAVIGATION ONGLETS ═══════════════ -->
+<div class="tabs-nav">
+  <button class="tab-btn active" onclick="showTab('evolutions')">📋 Évolutions</button>
+  <button class="tab-btn" onclick="showTab('raccourcis')">⌨️ Raccourcis clavier</button>
+  <button class="tab-btn" onclick="showTab('compat')">✅ Compatibilité</button>
+</div>
+
+<!-- ═══════════════ ONGLET 1 : ÉVOLUTIONS ═══════════════ -->
+<div id="tab-evolutions" class="tab-content active">
+<div class="container">
+
+  <!-- Résumé chiffré -->
+  <div class="section-header">
+    <div class="section-number">→</div>
+    <div class="section-title">Résumé des évolutions</div>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-card-num">6</div>
+      <div class="summary-card-label">Nouvelles fonctionnalités</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-num">3</div>
+      <div class="summary-card-label">Améliorations design</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-num">3</div>
+      <div class="summary-card-label">Corrections de bugs</div>
+    </div>
+  </div>
+
+  <div class="migration-box">
+    <div class="migration-box-title">⚠ Migration base de données</div>
+    Cette version applique automatiquement une migration au premier lancement :
+    <ul style="margin-top:8px">
+      <li><strong>Migration v14</strong> — Création de la table <code>session_templates</code> pour la sauvegarde des modèles de séance</li>
+    </ul>
+    Aucune action requise — la migration est transparente et non destructive.
+  </div>
+
+  <!-- 1. Templates de séance -->
+  <div class="section-header">
+    <div class="section-number">1</div>
+    <div class="section-title">Templates de séance</div>
+  </div>
+
+  <div class="changelog-block">
+    <div class="changelog-block-title">
+      <span class="tag tag-new">NOUVEAU</span>
+      Sauvegarde et chargement de modèles cliniques
+    </div>
+    <ul>
+      <li>Bouton <strong>⭐ Sauver comme modèle</strong> en haut de la page Nouvelle Séance — capture tous les champs cliniques remplis</li>
+      <li>Bouton <strong>📂 Modèles</strong> pour charger un modèle existant — les données saisies sont restaurées instantanément</li>
+      <li>Chaque modèle possède un <strong>nom</strong> et une <strong>description optionnelle</strong></li>
+      <li>Bouton <strong>Supprimer</strong> par modèle avec confirmation</li>
+      <li>Les modèles sont persistants dans la base de données SQLite (table <code>session_templates</code>)</li>
+      <li>Champs capturés : motif, évolution, tags, anamnèse, observation, traitement, réactions, techniques, langue, pouls, constitution, type de corps, teint, diagnostic MTC, 5 éléments, causes, analyse, principes, points, oreille, plantes, barrage (niveaux 1–4)</li>
+    </ul>
+  </div>
+
+  <!-- 2. Recherche globale -->
+  <div class="section-header">
+    <div class="section-number">2</div>
+    <div class="section-title">Recherche globale</div>
+  </div>
+
+  <div class="changelog-block">
+    <div class="changelog-block-title">
+      <span class="tag tag-new">NOUVEAU</span>
+      Barre de recherche universelle — Ctrl+K
+    </div>
+    <ul>
+      <li>Raccourci <strong>Ctrl+K</strong> (ou <strong>⌘K</strong> sur Mac) pour ouvrir la palette de recherche</li>
+      <li>Recherche simultanée dans les <strong>patients</strong> et les <strong>séances</strong></li>
+      <li>Résultats en temps réel avec affichage du nom, de la date et du motif</li>
+      <li>Navigation rapide : clic ou <strong>Entrée</strong> pour accéder au dossier ou à la séance</li>
+      <li>Fermeture avec <strong>Échap</strong> ou clic hors du panneau</li>
+    </ul>
+  </div>
+
+  <!-- 3. Mode sombre -->
+  <div class="section-header">
+    <div class="section-number">3</div>
+    <div class="section-title">Mode sombre — finalisation complète</div>
+  </div>
+
+  <div class="changelog-block design">
+    <div class="changelog-block-title">
+      <span class="tag tag-design">DESIGN</span>
+      Écran de verrouillage entièrement redesigné
+    </div>
+    <ul>
+      <li>L'écran de connexion (LockScreen) est désormais <strong>entièrement thémé</strong> en mode sombre</li>
+      <li>Panneau gauche branding, panneau droit formulaire — tous les deux adaptés au thème</li>
+      <li>Fond, panneaux, inputs, textes, ombres et badges passent en couleurs sombres cohérentes</li>
+      <li>Transition fluide <code>background: .3s</code> lors du changement de thème</li>
+    </ul>
+  </div>
+
+  <div class="changelog-block design">
+    <div class="changelog-block-title">
+      <span class="tag tag-design">DESIGN</span>
+      Nouvelles images pour le mode sombre
+    </div>
+    <ul>
+      <li>Logo Synoria version fond noir (<code>Synoria fond noir.png</code>)</li>
+      <li>Titre SYNORIA version fond noir (<code>Text Synoria fond noir.png</code>)</li>
+      <li>Basculement automatique entre les variantes claire et sombre selon le thème actif</li>
+      <li>Appliqué à la fois sur l'écran de connexion et dans la barre de navigation principale</li>
+    </ul>
+  </div>
+
+  <!-- 4. Raccourcis clavier -->
+  <div class="section-header">
+    <div class="section-number">4</div>
+    <div class="section-title">Raccourcis clavier — référence complète</div>
+  </div>
+
+  <div class="changelog-block">
+    <div class="changelog-block-title">
+      <span class="tag tag-new">NOUVEAU</span>
+      Navigation rapide entre les pages
+    </div>
+    <ul>
+      <li><strong>Ctrl+1</strong> → Tableau de bord</li>
+      <li><strong>Ctrl+2</strong> → Patients</li>
+      <li><strong>Ctrl+3</strong> → Nouvelle séance</li>
+      <li><strong>Ctrl+4</strong> → Historique des séances</li>
+      <li><strong>Ctrl+5</strong> → Calendrier</li>
+      <li><strong>Ctrl+6</strong> → Comptabilité</li>
+      <li><strong>Ctrl+7</strong> → Paramètres</li>
+      <li>Voir l'onglet <strong>Raccourcis clavier</strong> de ce document pour la liste complète</li>
+    </ul>
+  </div>
+
+  <!-- 5. Paramètres -->
+  <div class="section-header">
+    <div class="section-number">5</div>
+    <div class="section-title">Paramètres — nouvelles fonctions</div>
+  </div>
+
+  <div class="changelog-block">
+    <div class="changelog-block-title">
+      <span class="tag tag-new">NOUVEAU</span>
+      Badge de version installée
+    </div>
+    <ul>
+      <li>L'onglet <strong>Sécurité</strong> des paramètres affiche désormais la version exacte installée</li>
+      <li>Badge vert <em>À jour</em> ou orange <em>Mise à jour prête</em> selon l'état de la mise à jour</li>
+      <li>Affiché en grands caractères monochromes pour un repérage immédiat</li>
+    </ul>
+  </div>
+
+  <div class="changelog-block">
+    <div class="changelog-block-title">
+      <span class="tag tag-new">NOUVEAU</span>
+      Vérification d'intégrité des sauvegardes
+    </div>
+    <ul>
+      <li>Nouveau bouton <strong>🔍 Vérifier une sauvegarde</strong> dans l'onglet Sauvegardes</li>
+      <li>Ouvre un sélecteur de fichier pointant sur un fichier <code>.json.enc</code></li>
+      <li>Déchiffre et valide la structure du fichier — confirme que la sauvegarde est lisible et non corrompue</li>
+      <li>Affiche le nombre de patients et de séances contenus dans la sauvegarde vérifiée</li>
+    </ul>
+  </div>
+
+  <!-- 6. Fiabilité -->
+  <div class="section-header">
+    <div class="section-number">6</div>
+    <div class="section-title">Fiabilité et corrections</div>
+  </div>
+
+  <div class="changelog-block fix">
+    <div class="changelog-block-title">
+      <span class="tag tag-fix">CORRECTION</span>
+      Page blanche sur « Nouvelle Séance »
+    </div>
+    <ul>
+      <li>Correction d'une erreur JavaScript <em>Temporal Dead Zone</em> : <code>loadTemplates</code> était référencé avant sa déclaration <code>const</code></li>
+      <li>La page Nouvelle Séance s'ouvre désormais correctement sans page blanche</li>
+    </ul>
+  </div>
+
+  <div class="changelog-block fix">
+    <div class="changelog-block-title">
+      <span class="tag tag-fix">CORRECTION</span>
+      ErrorBoundary — affichage des erreurs React
+    </div>
+    <ul>
+      <li>Un composant <code>ErrorBoundary</code> entoure toutes les pages de l'application</li>
+      <li>En cas d'erreur de rendu, le message d'erreur et la stack trace s'affichent à la place de la page blanche</li>
+      <li>Bouton <strong>↺ Réessayer</strong> pour relancer le rendu sans redémarrer</li>
+    </ul>
+  </div>
+
+  <div class="changelog-block fix">
+    <div class="changelog-block-title">
+      <span class="tag tag-fix">CORRECTION</span>
+      Erreurs de cache GPU dans la console
+    </div>
+    <ul>
+      <li>Masquage des erreurs <code>cache_util_win.cc</code> / <code>gpu_disk_cache.cc</code> causées par les permissions Windows sur le cache Chromium</li>
+      <li>Le flag <code>disable-gpu-shader-disk-cache</code> est activé au démarrage d'Electron</li>
+      <li>La console de développement est désormais propre au lancement</li>
+    </ul>
+  </div>
+
+  <!-- Compatibilité -->
+  <div class="section-header">
+    <div class="section-number">✓</div>
+    <div class="section-title">Compatibilité</div>
+  </div>
+
+  <div class="compat-block">
+    <div class="compat-title">Plateformes supportées</div>
+    <div class="compat-row"><div class="compat-dot"></div><strong>Windows 10/11 64 bits</strong> — Installateur NSIS + version portable</div>
+    <div class="compat-row"><div class="compat-dot"></div><strong>macOS Intel (x64)</strong> — DMG universel via GitHub Actions</div>
+    <div class="compat-row"><div class="compat-dot"></div><strong>macOS Apple Silicon M1/M2/M3/M4</strong> — DMG universel via GitHub Actions</div>
+  </div>
+
+  <div class="footer">
+    Synoria v1.4.2 — Logiciel de gestion de dossiers patients<br>
+    Conforme RGPD · Données 100% locales · Chiffrement AES-256-GCM<br>
+    Juin 2026
+  </div>
+
+</div>
+</div>
+
+<!-- ═══════════════ ONGLET 2 : RACCOURCIS CLAVIER ═══════════════ -->
+<div id="tab-raccourcis" class="tab-content">
+<div class="container">
+
+  <div class="section-header" style="margin-top: 32px;">
+    <div class="section-number">⌨</div>
+    <div class="section-title">Tous les raccourcis clavier de Synoria</div>
+  </div>
+
+  <p style="color:#7A7468; font-size:13px; margin-bottom:24px; line-height:1.8;">
+    Sur Mac, remplacez <kbd>Ctrl</kbd> par <kbd>⌘</kbd> (Commande) pour tous les raccourcis ci-dessous.
+  </p>
+
+  <div class="shortcuts-grid">
+
+    <!-- Navigation -->
+    <div class="shortcuts-card">
+      <div class="shortcuts-card-title">🧭 Navigation entre les pages</div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Tableau de bord</span>
+        <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>1</kbd></span>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Patients</span>
+        <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>2</kbd></span>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Nouvelle séance</span>
+        <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>3</kbd></span>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Historique des séances</span>
+        <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>4</kbd></span>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Calendrier</span>
+        <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>5</kbd></span>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Comptabilité</span>
+        <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>6</kbd></span>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Paramètres</span>
+        <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>7</kbd></span>
+      </div>
+    </div>
+
+    <!-- Recherche et actions globales -->
+    <div class="shortcuts-card">
+      <div class="shortcuts-card-title">🔍 Recherche &amp; actions globales</div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Recherche globale (patients, séances)</span>
+        <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>K</kbd></span>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Fermer la recherche / dialogue</span>
+        <span class="shortcut-keys"><kbd>Échap</kbd></span>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Imprimer la page courante</span>
+        <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>P</kbd></span>
+      </div>
+    </div>
+
+    <!-- Édition de texte -->
+    <div class="shortcuts-card">
+      <div class="shortcuts-card-title">✏️ Mise en forme du texte</div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Gras</span>
+        <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>B</kbd></span>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Italique</span>
+        <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>I</kbd></span>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Souligné</span>
+        <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>U</kbd></span>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Liste à puces</span>
+        <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>L</kbd></span>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Annuler</span>
+        <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>Z</kbd></span>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Rétablir</span>
+        <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>Y</kbd></span>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Tout sélectionner</span>
+        <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>A</kbd></span>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Copier</span>
+        <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>C</kbd></span>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Coller</span>
+        <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>V</kbd></span>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Coller sans formatage</span>
+        <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>Maj</kbd><span class="key-plus">+</span><kbd>V</kbd></span>
+      </div>
+    </div>
+
+    <!-- Affichage -->
+    <div class="shortcuts-card">
+      <div class="shortcuts-card-title">🖥️ Affichage &amp; zoom</div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Agrandir le zoom</span>
+        <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>+</kbd></span>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Réduire le zoom</span>
+        <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>−</kbd></span>
+      </div>
+      <div class="shortcut-row">
+        <span class="shortcut-label">Zoom normal (100 %)</span>
+        <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="key-plus">+</span><kbd>0</kbd></span>
+      </div>
+      <div class="shortcut-row" style="margin-top:14px; padding-top:14px; border-top: 1px dashed #E0DDD8;">
+        <span class="shortcut-label" style="color:#7A7468; font-style:italic;">Clic droit dans un champ de texte</span>
+        <span class="shortcut-keys" style="font-size:11px; color:#7A7468;">Menu formatage</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="shortcuts-note">
+    💡 <strong>Conseil :</strong> La barre de formatage flottante (Gras / Italique / Souligné / Liste) apparaît automatiquement
+    dès qu'un champ de texte enrichi est actif. Utilisez les raccourcis clavier ou cliquez sur les boutons de la barre.
+    Le clic droit dans n'importe quel champ ouvre également un menu contextuel de formatage.
+  </div>
+
+  <div class="footer" style="margin-top:40px;">
+    Synoria v1.4.2 — Logiciel de gestion de dossiers patients<br>
+    Conforme RGPD · Données 100% locales · Chiffrement AES-256-GCM<br>
+    Juin 2026
+  </div>
+
+</div>
+</div>
+
+<!-- ═══════════════ ONGLET 3 : COMPATIBILITÉ ═══════════════ -->
+<div id="tab-compat" class="tab-content">
+<div class="container">
+
+  <div class="section-header" style="margin-top: 32px;">
+    <div class="section-number">✓</div>
+    <div class="section-title">Compatibilité et installation</div>
+  </div>
+
+  <div class="compat-block">
+    <div class="compat-title">🖥️ Windows</div>
+    <div class="compat-row"><div class="compat-dot"></div><strong>Windows 10</strong> (version 1903 ou ultérieure) — 64 bits</div>
+    <div class="compat-row"><div class="compat-dot"></div><strong>Windows 11</strong> — 64 bits</div>
+    <div class="compat-row"><div class="compat-dot"></div>Deux versions disponibles : installateur NSIS (.exe Setup) et portable (.exe clé USB)</div>
+  </div>
+
+  <div class="compat-block" style="background: #EBF2FF;">
+    <div class="compat-title" style="color: #1A4A8A;">🍎 macOS</div>
+    <div class="compat-row"><div class="compat-dot" style="background:#5B8CF7;"></div><strong>macOS Intel (x64)</strong> — Mac avant fin 2020</div>
+    <div class="compat-row"><div class="compat-dot" style="background:#5B8CF7;"></div><strong>macOS Apple Silicon M1/M2/M3/M4</strong> — Mac depuis fin 2020</div>
+    <div class="compat-row"><div class="compat-dot" style="background:#5B8CF7;"></div>DMG universel unique — fonctionne sur les deux architectures</div>
+    <div class="compat-row"><div class="compat-dot" style="background:#5B8CF7;"></div>macOS 10.13 High Sierra minimum</div>
+    <div style="margin-top: 12px; padding: 12px 16px; background: rgba(91,140,247,.1); border-radius: 8px; font-size: 12px; color: #1A4A8A; line-height: 1.7;">
+      ⓘ Le DMG macOS est généré via <strong>GitHub Actions</strong>. Consultez le dossier <code>Mac/README_Mac.txt</code> pour les instructions de téléchargement.
+    </div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-number">↑</div>
+    <div class="section-title">Mise à jour depuis la version 1.4.1</div>
+  </div>
+
+  <div class="changelog-block">
+    <div class="changelog-block-title">Windows — Installateur</div>
+    <ul>
+      <li>Lancez <code>Synoria Setup 1.4.2.exe</code> — l'installateur met à jour l'application automatiquement</li>
+      <li>Vos données, paramètres et mots de passe sont <strong>intégralement conservés</strong></li>
+    </ul>
+  </div>
+
+  <div class="changelog-block">
+    <div class="changelog-block-title">Windows — Clé USB (portable)</div>
+    <ul>
+      <li>Remplacez <code>Synoria 1.4.1.exe</code> par <code>Synoria 1.4.2.exe</code> sur votre clé USB</li>
+      <li>Le dossier <code>data/</code> est conservé — vos données sont intactes</li>
+      <li>La migration v14 s'applique automatiquement au premier lancement</li>
+    </ul>
+  </div>
+
+  <div class="changelog-block">
+    <div class="changelog-block-title">macOS</div>
+    <ul>
+      <li>Téléchargez le nouveau DMG depuis GitHub Actions (voir <code>Mac/README_Mac.txt</code>)</li>
+      <li>Glissez la nouvelle version de <code>Synoria.app</code> dans le dossier Applications (remplace l'ancienne)</li>
+      <li>Vos données sont stockées dans <code>~/Library/Application Support/Synoria/</code> et ne sont pas affectées</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    Synoria v1.4.2 — Logiciel de gestion de dossiers patients<br>
+    Conforme RGPD · Données 100% locales · Chiffrement AES-256-GCM<br>
+    Juin 2026
+  </div>
+
+</div>
+</div>
+
+<script>
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>

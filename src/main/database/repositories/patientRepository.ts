@@ -17,11 +17,11 @@ export function createPatient(data: Omit<Patient, 'id' | 'created_at' | 'updated
   getDb().prepare(`
     INSERT INTO patients (id, first_name, last_name, birth_date, phone, email, address,
       notes_general, alerts, regular_doctor, medications, antecedents, profession,
-      is_active, consent_given, consent_date, created_at, updated_at)
+      civility, is_active, consent_given, consent_date, created_at, updated_at)
     VALUES (@id, @first_name, @last_name, @birth_date, @phone, @email, @address,
       @notes_general, @alerts, @regular_doctor, @medications, @antecedents, @profession,
-      @is_active, @consent_given, @consent_date, @created_at, @updated_at)
-  `).run({ consent_given: 0, consent_date: null, ...patient })
+      @civility, @is_active, @consent_given, @consent_date, @created_at, @updated_at)
+  `).run({ civility: '', consent_given: 0, consent_date: null, ...patient })
   return patient
 }
 
@@ -35,8 +35,9 @@ export function updatePatient(id: string, data: Partial<Patient>): Patient {
       first_name=@first_name, last_name=@last_name, birth_date=@birth_date,
       phone=@phone, email=@email, address=@address, notes_general=@notes_general,
       alerts=@alerts, regular_doctor=@regular_doctor, medications=@medications,
-      antecedents=@antecedents, profession=@profession, is_active=@is_active,
-      consent_given=@consent_given, consent_date=@consent_date, updated_at=@updated_at
+      antecedents=@antecedents, profession=@profession, civility=@civility,
+      is_active=@is_active, consent_given=@consent_given, consent_date=@consent_date,
+      updated_at=@updated_at
     WHERE id=@id
   `).run(updated)
   return updated

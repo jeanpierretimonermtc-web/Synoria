@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useContext } from 'react'
 import type { ConsultationType, ExpenseConfig } from '../../shared/types'
 import { ToastContext } from '../App'
+import { showConfirm } from '../components/common/ConfirmDialog'
 
 // ── Helpers mois ──────────────────────────────────────────────────
 
@@ -101,6 +102,7 @@ function ExpenseModal({ config, onSave, onClose }: ExpenseModalProps) {
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 480 }}>
+        <button className="modal-close" onClick={onClose}>×</button>
         <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
           <span>📉</span>
           <span>{config.label ? 'Modifier la charge' : 'Nouvelle charge fixe'}</span>
@@ -228,7 +230,8 @@ function ExpenseModal({ config, onSave, onClose }: ExpenseModalProps) {
           )}
         </div>
 
-        <div className="row-btns">
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={onClose}>Annuler</button>
           <button
             className="btn btn-primary"
             onClick={handleSave}
@@ -236,7 +239,6 @@ function ExpenseModal({ config, onSave, onClose }: ExpenseModalProps) {
           >
             💾 {config.label ? 'Enregistrer les modifications' : 'Ajouter la charge'}
           </button>
-          <button className="btn btn-secondary" onClick={onClose}>Annuler</button>
         </div>
       </div>
     </div>
@@ -290,7 +292,7 @@ export default function DepensesPage() {
   }
 
   const handleDeleteType = async (id: string, name: string) => {
-    if (!confirm(`Supprimer le type de consultation "${name}" ?\n\nCette action ne supprime pas les séances existantes.`)) return
+    if (!await showConfirm({ message: `Supprimer le type "${name}" ?\n\nCette action ne supprime pas les séances existantes.`, title: 'Supprimer le type', confirmLabel: 'Supprimer', danger: true })) return
     const next = types.filter(t => t.id !== id)
     setTypes(next)
     await saveTypes(next)
@@ -310,7 +312,7 @@ export default function DepensesPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer cette charge fixe ?')) return
+    if (!await showConfirm({ message: 'Supprimer cette charge fixe ?', title: 'Supprimer la charge', confirmLabel: 'Supprimer', danger: true })) return
     const next = configs.filter(c => c.id !== id)
     setConfigs(next)
     await saveConfigs(next)

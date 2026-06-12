@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Système de Licence — Dossier Patient MTC</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 13px;
+      color: #1a1a2e;
+      line-height: 1.6;
+      background: #fff;
+      padding: 40px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 26px;
+      color: #0f3460;
+      border-bottom: 3px solid #e94560;
+      padding-bottom: 10px;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      color: #666;
+      font-size: 13px;
+      margin-bottom: 30px;
+    }
+    h2 {
+      font-size: 17px;
+      color: #0f3460;
+      background: #f0f4ff;
+      padding: 8px 14px;
+      border-left: 4px solid #e94560;
+      margin: 28px 0 14px 0;
+    }
+    h3 {
+      font-size: 14px;
+      color: #16213e;
+      margin: 18px 0 8px 0;
+      font-weight: 600;
+    }
+    p { margin-bottom: 10px; }
+    ul, ol { margin: 8px 0 12px 22px; }
+    li { margin-bottom: 5px; }
+    pre {
+      background: #1a1a2e;
+      color: #e2e8f0;
+      padding: 16px 18px;
+      border-radius: 6px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 12px;
+      overflow-x: auto;
+      margin: 10px 0 14px 0;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    code {
+      background: #eef2ff;
+      color: #3730a3;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Consolas', monospace;
+      font-size: 12px;
+    }
+    .secret-box {
+      background: #fff3cd;
+      border: 2px solid #e94560;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 14px 0;
+    }
+    .secret-box strong { color: #c0392b; }
+    .info-box {
+      background: #e8f4fd;
+      border-left: 4px solid #3498db;
+      padding: 12px 16px;
+      margin: 12px 0;
+      border-radius: 0 6px 6px 0;
+    }
+    .success-box {
+      background: #eafaf1;
+      border-left: 4px solid #27ae60;
+      padding: 12px 16px;
+      margin: 12px 0;
+      border-radius: 0 6px 6px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 18px 0;
+      font-size: 12px;
+    }
+    th {
+      background: #0f3460;
+      color: #fff;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    tr:nth-child(even) td { background: #f8faff; }
+    .step {
+      display: flex;
+      gap: 14px;
+      margin: 12px 0;
+      align-items: flex-start;
+    }
+    .step-num {
+      background: #e94560;
+      color: #fff;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 13px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .step-content { flex: 1; }
+    .file-tag {
+      display: inline-block;
+      background: #e94560;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: monospace;
+      margin-bottom: 6px;
+    }
+    .private-tag {
+      display: inline-block;
+      background: #c0392b;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      margin-left: 8px;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #e2e8f0;
+      margin: 24px 0;
+    }
+    .key-example {
+      font-family: monospace;
+      font-size: 13px;
+      background: #1a1a2e;
+      color: #68d391;
+      padding: 10px 16px;
+      border-radius: 6px;
+      letter-spacing: 1px;
+      display: block;
+      margin: 10px 0;
+    }
+    @media print {
+      body { padding: 20px; font-size: 12px; }
+      h2 { break-before: auto; }
+      pre { font-size: 10px; }
+      .secret-box { break-inside: avoid; }
+      a { color: inherit; text-decoration: none; }
+    }
+    .page-break { page-break-before: always; }
+    .header-meta {
+      display: flex;
+      justify-content: space-between;
+      color: #888;
+      font-size: 11px;
+      margin-bottom: 30px;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Système de Licence — Dossier Patient MTC</h1>
+  <div class="header-meta">
+    <span>Documentation technique &amp; procédure d'implémentation</span>
+    <span>Version 1.0 — Juin 2026</span>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2>1. Vue d'ensemble</h2>
+
+  <p>Le système de licence proposé fonctionne <strong>100% hors-ligne</strong> (offline). Il ne nécessite aucun serveur et valide chaque clé par signature cryptographique HMAC-SHA256.</p>
+
+  <table>
+    <tr><th>Critère</th><th>Valeur</th></tr>
+    <tr><td>Algorithme</td><td>HMAC-SHA256 (Node.js natif)</td></tr>
+    <tr><td>Dépendances supplémentaires</td><td>Aucune (crypto intégré)</td></tr>
+    <tr><td>Serveur requis</td><td>Non — validation locale uniquement</td></tr>
+    <tr><td>Connexion internet requise</td><td>Non</td></tr>
+    <tr><td>Stockage licence</td><td><code>userData/license.json</code></td></tr>
+    <tr><td>Clé secrète</td><td>Dans le main process uniquement (jamais exposée)</td></tr>
+    <tr><td>Mode trial</td><td>30 jours à partir du 1er lancement</td></tr>
+  </table>
+
+  <div class="info-box">
+    <strong>Principe :</strong> Tu génères les clés avec un script privé (sur ton PC uniquement). L'app vérifie la signature au démarrage sans contacter Internet. Si la signature est valide → l'app s'ouvre. Sinon → écran d'activation ou message trial expiré.
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2>2. Format de la clé de licence</h2>
+
+  <p>Format : <code>MTC1-{PAYLOAD_BASE64}-{SIGNATURE_HEX_8}</code></p>
+
+  <span class="key-example">MTC1-eyJuYW1lIjoiSmVhbi1QaWVycmUiLCJlbWFpbCI6ImV4YUBleGFtcGxlLmNvbSIsImV4cGlyeSI6IjIwMjctMDYtMTIiLCJlZGl0aW9uIjoicHJvIn0=-a3f9b2c1</span>
+
+  <p>Le <strong>PAYLOAD</strong> est un JSON encodé en Base64 contenant :</p>
+
+  <pre>{
+  "name":    "Jean Dupont",          // Nom du praticien
+  "email":   "contact@cabinet.fr",   // Email d'achat
+  "issued":  "2026-06-12",           // Date d'émission
+  "expiry":  "2027-06-12",           // Date d'expiration (ou "perpetual")
+  "edition": "pro",                  // "trial" | "standard" | "pro"
+  "seats":   1                       // Nombre de postes autorisés
+}</pre>
+
+  <p>La <strong>SIGNATURE</strong> est les 8 premiers caractères du HMAC-SHA256 du payload avec ta clé secrète. C'est ce qui garantit que la clé n'a pas été falsifiée.</p>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="page-break"></div>
+  <h2>3. Clé secrète — À CONSERVER PRÉCIEUSEMENT</h2>
+
+  <div class="secret-box">
+    <strong>⚠ CONFIDENTIEL — Ne jamais partager, ne jamais mettre dans Git</strong><br><br>
+    <strong>Ta clé secrète HMAC :</strong><br><br>
+    <code style="font-size:14px; background:#fff3cd; color:#7d1a1a; letter-spacing:2px;">
+      e418dbf96d47f7a2e199b34d89c5933e7aa1f5dca99206f2d56de4ed45b1ef10
+    </code><br><br>
+    <strong>Cette clé doit être :</strong>
+    <ul style="margin-top:8px;">
+      <li>Copiée dans un gestionnaire de mots de passe (Bitwarden, KeePass…)</li>
+      <li>Ajoutée dans <code>src/main/services/licenseService.ts</code> (variable privée)</li>
+      <li>Ajoutée dans <code>scripts/generate-license.cjs</code> (script local uniquement)</li>
+      <li><strong>Jamais</strong> committée dans Git ou partagée</li>
+    </ul>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2>4. Fichiers à créer</h2>
+
+  <table>
+    <tr><th>Fichier</th><th>Rôle</th><th>Distribué ?</th></tr>
+    <tr><td><code>scripts/generate-license.cjs</code></td><td>Génère les clés de licence (usage privé)</td><td>Non — local uniquement</td></tr>
+    <tr><td><code>src/main/services/licenseService.ts</code></td><td>Valide la licence au démarrage</td><td>Oui (compilé dans l'app)</td></tr>
+    <tr><td><code>src/renderer/pages/ActivationPage.tsx</code></td><td>Écran de saisie de la clé</td><td>Oui (compilé dans l'app)</td></tr>
+    <tr><td><code>userData/license.json</code></td><td>Licence activée (générée à l'activation)</td><td>N/A (créé chez l'utilisateur)</td></tr>
+  </table>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2>5. Code — Générateur de licences (PRIVÉ)</h2>
+
+  <div class="file-tag">scripts/generate-license.cjs</div>
+  <span class="private-tag">🔒 NE PAS DISTRIBUER</span>
+
+  <pre>// ─── Générateur de licences Dossier Patient MTC ─────────────────────────────
+// Usage : node scripts/generate-license.cjs
+// Ce script ne doit JAMAIS être inclus dans le build ou distribué.
+
+const crypto = require('crypto')
+
+// ⚠ Remplace par ta clé secrète (la même que dans licenseService.ts)
+const SECRET = 'e418dbf96d47f7a2e199b34d89c5933e7aa1f5dca99206f2d56de4ed45b1ef10'
+
+// ─── Configuration de la licence à générer ───────────────────────────────────
+const payload = {
+  name:    'Jean Dupont',             // Nom du praticien
+  email:   'jean.dupont@cabinet.fr',  // Email
+  issued:  new Date().toISOString().slice(0, 10),  // Aujourd'hui
+  expiry:  '2027-06-12',             // Date d'expiration  (ou 'perpetual')
+  edition: 'pro',                    // 'standard' ou 'pro'
+  seats:   1
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
+function generateLicense(payload, secret) {
+  const payloadStr  = JSON.stringify(payload)
+  const payloadB64  = Buffer.from(payloadStr).toString('base64')
+  const sig         = crypto.createHmac('sha256', secret)
+                            .update(payloadB64)
+                            .digest('hex')
+                            .slice(0, 8)
+  return `MTC1-${payloadB64}-${sig}`
+}
+
+const key = generateLicense(payload, SECRET)
+
+console.log('\n═══════════════════════════════════════════')
+console.log(' LICENCE GÉNÉRÉE')
+console.log('═══════════════════════════════════════════')
+console.log(' Nom     :', payload.name)
+console.log(' Email   :', payload.email)
+console.log(' Édition :', payload.edition)
+console.log(' Expiry  :', payload.expiry)
+console.log('───────────────────────────────────────────')
+console.log(' CLÉ     :', key)
+console.log('═══════════════════════════════════════════\n')
+</pre>
+
+  <div class="success-box">
+    <strong>Utilisation :</strong> <code>node scripts/generate-license.cjs</code><br>
+    Modifier les champs <code>name</code>, <code>email</code>, <code>expiry</code> pour chaque client avant de lancer.
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="page-break"></div>
+  <h2>6. Code — Service de validation (dans l'app)</h2>
+
+  <div class="file-tag">src/main/services/licenseService.ts</div>
+
+  <pre>import * as crypto from 'crypto'
+import * as fs from 'fs'
+import * as path from 'path'
+import { app } from 'electron'
+
+// ⚠ Même clé que dans generate-license.cjs — main process uniquement
+const HMAC_SECRET = 'e418dbf96d47f7a2e199b34d89c5933e7aa1f5dca99206f2d56de4ed45b1ef10'
+const TRIAL_DAYS  = 30
+
+export interface LicenseInfo {
+  valid:     boolean
+  mode:      'licensed' | 'trial' | 'expired' | 'invalid'
+  name?:     string
+  email?:    string
+  edition?:  string
+  expiry?:   string
+  trialDaysLeft?: number
+  daysLeft?:      number
+}
+
+// ─── Chemin du fichier licence utilisateur ───────────────────────────────────
+function getLicensePath(): string {
+  const base = process.env.PORTABLE_EXECUTABLE_DIR
+    ? path.join(process.env.PORTABLE_EXECUTABLE_DIR, 'data')
+    : app.getPath('userData')
+  return path.join(base, 'license.json')
+}
+
+// ─── Validation cryptographique d'une clé ────────────────────────────────────
+function verifyKey(licenseKey: string): { ok: boolean; payload?: any } {
+  try {
+    const parts = licenseKey.trim().split('-')
+    if (parts.length < 3 || parts[0] !== 'MTC1') return { ok: false }
+    const sig        = parts[parts.length - 1]
+    const payloadB64 = parts.slice(1, -1).join('-')
+    const expected   = crypto.createHmac('sha256', HMAC_SECRET)
+                             .update(payloadB64)
+                             .digest('hex')
+                             .slice(0, 8)
+    if (expected !== sig) return { ok: false }
+    const payload = JSON.parse(Buffer.from(payloadB64, 'base64').toString('utf8'))
+    return { ok: true, payload }
+  } catch {
+    return { ok: false }
+  }
+}
+
+// ─── Vérification de l'expiration ────────────────────────────────────────────
+function daysUntil(dateStr: string): number {
+  if (dateStr === 'perpetual') return 9999
+  const diff = new Date(dateStr).getTime() - Date.now()
+  return Math.ceil(diff / 86400000)
+}
+
+// ─── Activation : enregistre la licence après vérification ───────────────────
+export function activateLicense(licenseKey: string): LicenseInfo {
+  const { ok, payload } = verifyKey(licenseKey)
+  if (!ok || !payload) return { valid: false, mode: 'invalid' }
+
+  const days = daysUntil(payload.expiry)
+  if (days <= 0) return { valid: false, mode: 'expired', ...payload }
+
+  fs.writeFileSync(getLicensePath(), JSON.stringify({
+    key: licenseKey, activatedAt: new Date().toISOString()
+  }), 'utf8')
+
+  return { valid: true, mode: 'licensed', daysLeft: days, ...payload }
+}
+
+// ─── Lecture du statut au démarrage ──────────────────────────────────────────
+export function getLicenseStatus(): LicenseInfo {
+  const lp = getLicensePath()
+
+  // 1. Licence activée ?
+  if (fs.existsSync(lp)) {
+    try {
+      const { key } = JSON.parse(fs.readFileSync(lp, 'utf8'))
+      const { ok, payload } = verifyKey(key)
+      if (ok && payload) {
+        const days = daysUntil(payload.expiry)
+        if (days > 0) return { valid: true, mode: 'licensed', daysLeft: days, ...payload }
+        return { valid: false, mode: 'expired', ...payload }
+      }
+    } catch { /* fichier corrompu → trial */ }
+  }
+
+  // 2. Mode trial : date du premier lancement
+  const trialPath = lp.replace('license.json', 'trial.json')
+  let trialStart: string
+  if (fs.existsSync(trialPath)) {
+    try { trialStart = JSON.parse(fs.readFileSync(trialPath, 'utf8')).start }
+    catch { trialStart = new Date().toISOString() }
+  } else {
+    trialStart = new Date().toISOString()
+    fs.writeFileSync(trialPath, JSON.stringify({ start: trialStart }), 'utf8')
+  }
+
+  const trialDaysLeft = TRIAL_DAYS - Math.floor(
+    (Date.now() - new Date(trialStart).getTime()) / 86400000
+  )
+
+  if (trialDaysLeft > 0) {
+    return { valid: true, mode: 'trial', trialDaysLeft }
+  }
+
+  return { valid: false, mode: 'expired', trialDaysLeft: 0 }
+}
+</pre>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2>7. Code — Handlers IPC (à ajouter dans handlers.ts)</h2>
+
+  <div class="file-tag">src/main/ipc/handlers.ts</div>
+  <p>Ajouter ces deux handlers dans la fonction <code>registerAllHandlers()</code> :</p>
+
+  <pre>import { getLicenseStatus, activateLicense } from '../services/licenseService'
+
+// Dans registerAllHandlers() :
+ipcMain.handle('license:status', () => getLicenseStatus())
+
+ipcMain.handle('license:activate', (_e, key: string) => activateLicense(key))
+</pre>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2>8. Code — Interface d'activation (Renderer)</h2>
+
+  <div class="file-tag">src/renderer/pages/ActivationPage.tsx</div>
+
+  <pre>import React, { useState } from 'react'
+
+interface Props {
+  mode: 'trial' | 'expired' | 'invalid'
+  trialDaysLeft?: number
+  onActivated: () => void
+}
+
+export function ActivationPage({ mode, trialDaysLeft, onActivated }: Props) {
+  const [key, setKey]     = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleActivate = async () => {
+    if (!key.trim()) return
+    setLoading(true); setError('')
+    try {
+      const result = await window.mtcApi.activateLicense(key.trim())
+      if (result.valid) { onActivated() }
+      else { setError('Clé invalide ou expirée. Vérifiez la clé fournie.') }
+    } catch {
+      setError('Erreur lors de la validation.')
+    } finally { setLoading(false) }
+  }
+
+  return (
+    &lt;div style={{ display:'flex', alignItems:'center', justifyContent:'center',
+      height:'100vh', background:'var(--bg)' }}&gt;
+      &lt;div className="card" style={{ maxWidth:460, width:'100%', padding:36 }}&gt;
+        &lt;h2 style={{ marginBottom:8, color:'var(--accent)' }}&gt;Dossier Patient MTC&lt;/h2&gt;
+
+        {mode === 'trial' &amp;&amp; trialDaysLeft !== undefined &amp;&amp; (
+          &lt;div style={{ background:'#fff3cd', padding:'10px 14px', borderRadius:6,
+            marginBottom:20, fontSize:13 }}&gt;
+            ⏳ Mode essai — {trialDaysLeft} jour{trialDaysLeft &gt; 1 ? 's' : ''} restant{trialDaysLeft &gt; 1 ? 's' : ''}
+          &lt;/div&gt;
+        )}
+        {mode === 'expired' &amp;&amp; (
+          &lt;div style={{ background:'#fde8e8', padding:'10px 14px', borderRadius:6,
+            marginBottom:20, fontSize:13, color:'#c0392b' }}&gt;
+            ⛔ Période d'essai terminée. Entrez votre clé de licence pour continuer.
+          &lt;/div&gt;
+        )}
+
+        &lt;div className="field"&gt;
+          &lt;label&gt;Clé de licence&lt;/label&gt;
+          &lt;input
+            type="text" className="input"
+            placeholder="MTC1-xxxx-xxxx-xxxx"
+            value={key}
+            onChange={e =&gt; setKey(e.target.value)}
+            onKeyDown={e =&gt; e.key === 'Enter' &amp;&amp; handleActivate()}
+          /&gt;
+        &lt;/div&gt;
+
+        {error &amp;&amp; &lt;p style={{ color:'var(--red)', fontSize:12, marginBottom:10 }}&gt;{error}&lt;/p&gt;}
+
+        &lt;div style={{ display:'flex', gap:10, marginTop:8 }}&gt;
+          &lt;button className="btn btn-primary" onClick={handleActivate} disabled={loading}&gt;
+            {loading ? 'Vérification…' : 'Activer'}
+          &lt;/button&gt;
+          {mode === 'trial' &amp;&amp; (
+            &lt;button className="btn btn-secondary" onClick={onActivated}&gt;
+              Continuer en mode essai
+            &lt;/button&gt;
+          )}
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  )
+}
+</pre>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div class="page-break"></div>
+  <h2>9. Intégration dans App.tsx</h2>
+
+  <p>Dans <code>src/renderer/App.tsx</code>, ajouter la vérification de licence dans le flux de démarrage :</p>
+
+  <pre>// 1. Ajouter les états
+const [licenseMode, setLicenseMode] = useState&lt;'licensed'|'trial'|'expired'|'invalid'|null&gt;(null)
+const [trialDaysLeft, setTrialDaysLeft] = useState&lt;number | undefined&gt;()
+
+// 2. Dans useEffect au démarrage (après authStatus) :
+const lic = await window.mtcApi.licenseStatus()
+if (lic.mode === 'expired' || lic.mode === 'invalid') {
+  setLicenseMode(lic.mode)
+  return  // bloque le reste du chargement
+}
+if (lic.mode === 'trial') {
+  setLicenseMode('trial')
+  setTrialDaysLeft(lic.trialDaysLeft)
+  // on continue (trial valide)
+}
+
+// 3. Dans le rendu, avant le reste :
+if (licenseMode === 'expired' || licenseMode === 'invalid') {
+  return &lt;ActivationPage mode={licenseMode}
+    onActivated={() => setLicenseMode('licensed')} /&gt;
+}
+if (licenseMode === 'trial') {
+  // Afficher une bannière discrète (optionnel)
+}
+</pre>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2>10. Ajouter dans preload.ts et types.ts</h2>
+
+  <div class="file-tag">src/main/preload.ts</div>
+  <pre>licenseStatus:   ()        =&gt; ipcRenderer.invoke('license:status'),
+activateLicense: (key: string) =&gt; ipcRenderer.invoke('license:activate', key),</pre>
+
+  <div class="file-tag">src/shared/types.ts</div>
+  <p>Dans l'interface <code>IpcApi</code> :</p>
+  <pre>licenseStatus:   () =&gt; Promise&lt;LicenseInfo&gt;
+activateLicense: (key: string) =&gt; Promise&lt;LicenseInfo&gt;</pre>
+  <p>Et ajouter l'interface <code>LicenseInfo</code> :</p>
+  <pre>export interface LicenseInfo {
+  valid:          boolean
+  mode:           'licensed' | 'trial' | 'expired' | 'invalid'
+  name?:          string
+  email?:         string
+  edition?:       string
+  expiry?:        string
+  trialDaysLeft?: number
+  daysLeft?:      number
+}</pre>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2>11. Procédure complète — Vendre une licence</h2>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <strong>Le client commande et paie</strong> (virement, PayPal, Stripe…)<br>
+      Tu récupères son <strong>nom complet</strong> et son <strong>adresse email</strong>.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <strong>Modifier le script</strong> <code>scripts/generate-license.cjs</code> :<br>
+      <pre style="margin-top:8px">const payload = {
+  name:    'Prénom Nom du client',
+  email:   'client@email.com',
+  issued:  '2026-06-12',
+  expiry:  '2027-06-12',   // ou 'perpetual' pour licence à vie
+  edition: 'pro',
+  seats:   1
+}</pre>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <strong>Générer la clé :</strong><br>
+      <code>node scripts/generate-license.cjs</code><br>
+      → La clé s'affiche dans le terminal.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <strong>Envoyer la clé par email</strong> au client avec le lien de téléchargement de l'installateur.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <strong>Le client</strong> installe l'app, saisit sa clé dans l'écran d'activation → c'est parti.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2>12. Sécurité — Ce qui est protégé</h2>
+
+  <table>
+    <tr><th>Risque</th><th>Protection</th></tr>
+    <tr><td>Falsifier une clé</td><td>Impossible sans la clé secrète HMAC (non distribuée)</td></tr>
+    <tr><td>Modifier la date d'expiration</td><td>Tout changement invalide la signature</td></tr>
+    <tr><td>Copier la clé sur un autre poste</td><td>Non bloqué (offline) — acceptable pour v1</td></tr>
+    <tr><td>Extraire la clé secrète</td><td>Compilée dans le main process (non accessible du renderer)</td></tr>
+    <tr><td>Supprimer license.json</td><td>Retour en mode trial (puis expiration)</td></tr>
+  </table>
+
+  <div class="info-box">
+    <strong>Note :</strong> Pour une protection plus forte (verrouillage machine), une v2 peut ajouter l'identifiant matériel (fingerprint CPU/disque) dans le payload. Mais pour une v1 commerciale, ce niveau est largement suffisant.
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2>13. Checklist avant mise en vente</h2>
+
+  <table>
+    <tr><th>✓</th><th>Tâche</th><th>Statut</th></tr>
+    <tr><td>☐</td><td>Implémenter <code>licenseService.ts</code></td><td>À faire</td></tr>
+    <tr><td>☐</td><td>Ajouter les handlers IPC dans <code>handlers.ts</code></td><td>À faire</td></tr>
+    <tr><td>☐</td><td>Créer <code>ActivationPage.tsx</code></td><td>À faire</td></tr>
+    <tr><td>☐</td><td>Intégrer dans <code>App.tsx</code></td><td>À faire</td></tr>
+    <tr><td>☐</td><td>Mettre <code>scripts/</code> dans <code>.gitignore</code></td><td>À faire</td></tr>
+    <tr><td>☐</td><td>Tester trial 30j → expiration → activation</td><td>À faire</td></tr>
+    <tr><td>☐</td><td>Générer une licence de test pour toi-même</td><td>À faire</td></tr>
+    <tr><td>☐</td><td>Build final + test sur machine propre</td><td>À faire</td></tr>
+    <tr><td>☐</td><td>Page web / formulaire de commande</td><td>Optionnel v1</td></tr>
+    <tr><td>☐</td><td>CGV / conditions d'utilisation</td><td>Recommandé</td></tr>
+  </table>
+
+  <hr>
+  <p style="text-align:center; color:#888; font-size:11px; margin-top:20px;">
+    Document confidentiel — Dossier Patient MTC — Jean-Pierre Timoner — Juin 2026
+  </p>
+
+</body>
+</html>

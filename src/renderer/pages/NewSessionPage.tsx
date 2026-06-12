@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useContext, useRef } from 'react'
+import React, { useEffect, useState, useContext, useRef, useCallback } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import type { Patient, SystemesQuestionnaire, EnergyTests, Appointment } from '../../shared/types'
+import type { Patient, SystemesQuestionnaire, EnergyTests, Appointment, SessionTemplate } from '../../shared/types'
 import type { PluginDefinition } from '../../shared/pluginTypes'
 import PluginFormRenderer from '../components/plugin/PluginFormRenderer'
+import { showConfirm } from '../components/common/ConfirmDialog'
 import { ToastContext } from '../App'
 import RichTextArea from '../components/common/RichTextArea'
 import { defaultSystemes, defaultEnergyTests, migrateSystemes, MV_LIST, RECHAUFFEURS, FOYERS, POINTS_MU, SYNDROMES_BASE, SYNDROMES_CLIMAT, PENETRATION_LEVELS } from '../utils/sessionData'
@@ -93,6 +94,12 @@ export default function NewSessionPage() {
   const [anamnese, setAnamnese] = useState('')
   // Brouillon auto-sauvegardé
   const [draftInfo, setDraftInfo] = useState<{ patientName: string; date: string } | null>(null)
+  // Templates
+  const [templates, setTemplates] = useState<SessionTemplate[]>([])
+  const [showTemplateModal, setShowTemplateModal] = useState<'save' | 'load' | null>(null)
+  const [templateName, setTemplateName] = useState('')
+  const [templateDesc, setTemplateDesc] = useState('')
+  const [savingTemplate, setSavingTemplate] = useState(false)
   // Systèmes
   const [systemes, setSystemes] = useState<SystemesQuestionnaire>(defaultSystemes())
   // Tests énergétiques
@@ -125,9 +132,14 @@ export default function NewSessionPage() {
     })
   }, [patientId])
 
+  const loadTemplates = useCallback(async () => {
+    try { setTemplates(await window.mtcApi.getTemplates()) } catch { /* silent */ }
+  }, [])
+
   useEffect(() => {
     window.mtcApi.pluginGet().then(p => setActivePlugin(p || null)).catch(() => {})
-  }, [])
+    loadTemplates()
+  }, [loadTemplates])
 
   useEffect(() => {
     if (routePatientId) setPatientId(routePatientId)
@@ -317,6 +329,72 @@ export default function NewSessionPage() {
     } catch { showToast('Erreur mise à jour patient', 'error') }
   }
 
+  // ─── TEMPLATES ───────────────────────────────────────────────
+  const handleSaveTemplate = async () => {
+    if (!templateName.trim()) return
+    setSavingTemplate(true)
+    try {
+      const data = JSON.stringify({
+        motif, evolution, evolutionTags,
+        anamnese, observation, traitementNotes, reactions, techniques,
+        langue, langueNote, pouls, poulsNote, poulsPos,
+        constitution, typeCorps, teint,
+        diagnostic, cinqElements, causes, analyse, principes,
+        points, ptsOreille, plantes,
+        barrageNiv1, barrageNiv2, barrageNiv3, barrageNiv4,
+        pluginData,
+      })
+      await window.mtcApi.saveTemplate(templateName.trim(), templateDesc.trim(), data)
+      showToast('Modèle enregistré ✓', 'success')
+      setShowTemplateModal(null); setTemplateName(''); setTemplateDesc('')
+      await loadTemplates()
+    } catch (e: any) { showToast(`Erreur : ${e?.message}`, 'error') }
+    setSavingTemplate(false)
+  }
+
+  const handleLoadTemplate = (tpl: SessionTemplate) => {
+    try {
+      const d = JSON.parse(tpl.data_json)
+      if (d.motif           !== undefined) setMotif(d.motif)
+      if (d.evolution       !== undefined) setEvolution(d.evolution)
+      if (d.evolutionTags   !== undefined) setEvolutionTags(d.evolutionTags)
+      if (d.anamnese        !== undefined) setAnamnese(d.anamnese)
+      if (d.traitementNotes !== undefined) setTraitementNotes(d.traitementNotes)
+      if (d.reactions       !== undefined) setReactions(d.reactions)
+      if (d.techniques      !== undefined) setTechniques(d.techniques)
+      if (d.langue          !== undefined) setLangue(d.langue)
+      if (d.langueNote      !== undefined) setLangueNote(d.langueNote)
+      if (d.pouls           !== undefined) setPouls(d.pouls)
+      if (d.poulsNote       !== undefined) setPoulsNote(d.poulsNote)
+      if (d.poulsPos        !== undefined) setPoulsPos(d.poulsPos)
+      if (d.constitution    !== undefined) setConstitution(d.constitution)
+      if (d.typeCorps       !== undefined) setTypeCorps(d.typeCorps)
+      if (d.teint           !== undefined) setTeint(d.teint)
+      if (d.diagnostic      !== undefined) setDiagnostic(d.diagnostic)
+      if (d.cinqElements    !== undefined) setCinqElements(d.cinqElements)
+      if (d.causes          !== undefined) setCauses(d.causes)
+      if (d.analyse         !== undefined) setAnalyse(d.analyse)
+      if (d.principes       !== undefined) setPrincipes(d.principes)
+      if (d.points          !== undefined) setPoints(d.points)
+      if (d.ptsOreille      !== undefined) setPtsOreille(d.ptsOreille)
+      if (d.plantes         !== undefined) setPlantes(d.plantes)
+      if (d.barrageNiv1     !== undefined) setBarrageNiv1(d.barrageNiv1)
+      if (d.barrageNiv2     !== undefined) setBarrageNiv2(d.barrageNiv2)
+      if (d.barrageNiv3     !== undefined) setBarrageNiv3(d.barrageNiv3)
+      if (d.barrageNiv4     !== undefined) setBarrageNiv4(d.barrageNiv4)
+      if (d.pluginData      !== undefined) setPluginData(d.pluginData)
+      showToast(`Modèle « ${tpl.name} » chargé ✓`, 'success')
+      setShowTemplateModal(null)
+    } catch { showToast('Impossible de charger le modèle', 'error') }
+  }
+
+  const handleDeleteTemplate = async (id: string) => {
+    try {
+      await window.mtcApi.deleteTemplate(id)
+      await loadTemplates()
+    } catch { /* silent */ }
+  }
+
   // ─── SAVE ─────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!patientId) { showToast('Sélectionnez un patient', 'error'); return }
@@ -405,8 +483,8 @@ export default function NewSessionPage() {
     } catch (e) { showToast('Erreur lors de l\'enregistrement', 'error') }
   }
 
-  const handleClear = () => {
-    if (!confirm('Vider tous les champs du formulaire ?')) return
+  const handleClear = async () => {
+    if (!await showConfirm({ message: 'Vider tous les champs du formulaire ?', title: 'Réinitialiser', confirmLabel: 'Vider' })) return
     setPatientId(''); setDate(new Date().toISOString().slice(0, 10)); setPractitioner('')
     setMotif(''); setEvolutionTags([]); setEvolution(''); setProblematiques(''); setAnamnese('')
     setLangue([]); setLangueNote(''); setPouls([]); setPoulsNote('')
@@ -532,6 +610,14 @@ export default function NewSessionPage() {
           <div className="progress-bar"><div className="progress-fill" style={{ width: progress + '%' }} /></div>
           <div style={{ fontSize: 11, color: 'var(--text-hint)', marginTop: 4, textAlign: 'right' }}>{progress}%</div>
         </div>
+        <div style={{ padding: '8px 4px 2px' }}>
+          <button className="session-toc-save-btn" onClick={handleSave}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            {isEditing ? 'Mettre à jour la séance' : 'Enregistrer la séance'}
+          </button>
+        </div>
       </aside>
 
       {/* ─── CONTENU PRINCIPAL ──────────────────────────────── */}
@@ -562,6 +648,16 @@ export default function NewSessionPage() {
             </button>
             {!isEditing && <button className="btn btn-secondary" onClick={handleClear}>↺ Vider le formulaire</button>}
             {isEditing && <button className="btn btn-secondary" onClick={() => navigate('/seances')}>✕ Annuler</button>}
+          </div>
+          <div className="top-actions-right" style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-secondary btn-sm" title="Charger un modèle de séance"
+              onClick={() => { loadTemplates(); setShowTemplateModal('load') }}>
+              📂 Modèles
+            </button>
+            <button className="btn btn-secondary btn-sm" title="Sauvegarder comme modèle"
+              onClick={() => setShowTemplateModal('save')}>
+              ⭐ Sauver comme modèle
+            </button>
           </div>
         </div>
 
@@ -894,8 +990,94 @@ export default function NewSessionPage() {
           </button>
           {!isEditing && <button className="btn btn-secondary" onClick={handleClear}>↺ Vider le formulaire</button>}
           {isEditing && <button className="btn btn-secondary" onClick={() => navigate('/seances')}>✕ Annuler</button>}
+          <button className="btn btn-secondary" onClick={() => { loadTemplates(); setShowTemplateModal('load') }}>📂 Modèles</button>
         </div>
       </section>
+
+      {/* ── MODALE TEMPLATES ──────────────────────────────────── */}
+      {showTemplateModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onMouseDown={e => { if (e.target === e.currentTarget) setShowTemplateModal(null) }}>
+          <div style={{ background: 'var(--surface)', borderRadius: 14, boxShadow: 'var(--shadow-lg)', width: 500, maxWidth: '92vw', maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', border: '1px solid var(--border)' }}>
+
+            {/* En-tête modale */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>
+                {showTemplateModal === 'save' ? '⭐ Sauvegarder comme modèle' : '📂 Charger un modèle'}
+              </h3>
+              <button className="btn btn-secondary btn-sm" onClick={() => setShowTemplateModal(null)}>✕</button>
+            </div>
+
+            <div style={{ overflowY: 'auto', padding: 20, flex: 1 }}>
+              {showTemplateModal === 'save' ? (
+                /* ── Formulaire sauvegarde ── */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text)' }}>Nom du modèle *</label>
+                    <input
+                      type="text"
+                      value={templateName}
+                      onChange={e => setTemplateName(e.target.value)}
+                      placeholder="ex: Bilan initial, Traitement douleur dorsale…"
+                      autoFocus
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 14, boxSizing: 'border-box' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text)' }}>Description (optionnel)</label>
+                    <textarea
+                      value={templateDesc}
+                      onChange={e => setTemplateDesc(e.target.value)}
+                      placeholder="Courte description du modèle…"
+                      rows={3}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13, resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '8px 12px', borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border-soft)' }}>
+                    Le modèle inclut : motif, évolution, anamnèse, traitement, diagnostic, points, plantes et tous les champs remplis.
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                    <button className="btn btn-secondary" onClick={() => setShowTemplateModal(null)}>Annuler</button>
+                    <button className="btn btn-primary" onClick={handleSaveTemplate} disabled={savingTemplate || !templateName.trim()}>
+                      {savingTemplate ? '⏳ Sauvegarde…' : '⭐ Sauvegarder'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* ── Liste des modèles ── */
+                templates.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
+                    <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
+                    <p style={{ fontSize: 14 }}>Aucun modèle enregistré</p>
+                    <p style={{ fontSize: 12 }}>Remplissez un formulaire et sauvegardez-le comme modèle réutilisable.</p>
+                    <button className="btn btn-primary btn-sm" style={{ marginTop: 8 }} onClick={() => setShowTemplateModal('save')}>⭐ Créer un modèle</button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {templates.map(tpl => (
+                      <div key={tpl.id} style={{ border: '1.5px solid var(--border)', borderRadius: 10, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg)', cursor: 'pointer', transition: 'border-color .15s' }}
+                        onClick={() => handleLoadTemplate(tpl)}
+                        onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
+                        onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
+                        <span style={{ fontSize: 24, flexShrink: 0 }}>📋</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{tpl.name}</div>
+                          {tpl.description && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{tpl.description}</div>}
+                          <div style={{ fontSize: 11, color: 'var(--text-hint)', marginTop: 4 }}>
+                            {new Date(tpl.created_at).toLocaleDateString('fr-FR')}
+                          </div>
+                        </div>
+                        <button className="btn btn-secondary btn-sm" style={{ color: 'var(--red)', flexShrink: 0 }}
+                          onClick={e => { e.stopPropagation(); handleDeleteTemplate(tpl.id) }}>🗑</button>
+                      </div>
+                    ))}
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1061,7 +1243,7 @@ function NextRdvSection({
 
   // Supprimer un RDV depuis cette section
   const deleteAppt = async (id: string) => {
-    if (!confirm('Supprimer ce rendez-vous du calendrier ?')) return
+    if (!await showConfirm({ message: 'Supprimer ce rendez-vous du calendrier ?', title: 'Supprimer le RDV', confirmLabel: 'Supprimer', danger: true })) return
     try {
       await window.mtcApi.deleteAppointment(id)
       onApptDeleted(id)

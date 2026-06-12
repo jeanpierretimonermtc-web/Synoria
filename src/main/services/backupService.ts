@@ -199,6 +199,23 @@ export function importBackupJson(filePath: string): ImportResult {
   return { patientsUpserted, sessionsUpserted, errors }
 }
 
+// ── VÉRIFICATION D'INTÉGRITÉ ──────────────────────────────────────
+
+export interface BackupVerifyResult {
+  patients:   number
+  sessions:   number
+  exportedAt: string
+}
+
+export function verifyBackup(filePath: string): BackupVerifyResult {
+  const raw  = filePath.endsWith('.enc') ? decryptFromFile(filePath) : readFileSync(filePath, 'utf-8')
+  const data = JSON.parse(raw)
+  const patients = Array.isArray(data.patients) ? data.patients.length
+    : data.patient ? 1 : 0
+  const sessions = Array.isArray(data.sessions) ? data.sessions.length : 0
+  return { patients, sessions, exportedAt: data.exportedAt ?? '' }
+}
+
 // ── INFORMATIONS BACKUP ────────────────────────────────────────────
 
 export interface BackupFolderInfo {

@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef, Component } from 'react'
 import { Routes, Route, NavLink, useNavigate } from 'react-router-dom'
+import { ConfirmDialog } from './components/common/ConfirmDialog'
 import { SaveIcon, FolderIcon, LockIcon as LockIco, DashboardIcon, UsersIcon, PlusCircle, ClipboardIcon, CalendarIcon, BarChartIcon, TrendDownIcon, FileTextIcon, ShieldIcon, SettingsIcon, UserIcon } from './components/common/Icon'
 import DashboardPage from './pages/DashboardPage'
 import PatientsPage from './pages/PatientsPage'
@@ -18,6 +19,7 @@ import DepensesPage      from './pages/DepensesPage'
 import FacturesListPage  from './pages/FacturesListPage'
 import ProfilePage       from './pages/ProfilePage'
 import { useInactivityLock } from './hooks/useInactivityLock'
+import GlobalSearch from './components/common/GlobalSearch'
 
 export const ToastContext = React.createContext<(msg: string, type?: 'success' | 'error') => void>(() => {})
 
@@ -26,6 +28,56 @@ type AuthState = 'splash' | 'checking' | 'setup' | 'locked' | 'unlocked'
 export default function App() {
   const { toast, showToast } = useToast()
   const [authState, setAuthState] = useState<AuthState>('splash')
+  const navigate = useNavigate()
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+
+  // ── Chargement et application du thème ──
+  useEffect(() => {
+    window.mtcApi.getSettings().then(s => {
+      if (s.theme === 'dark') setTheme('dark')
+    }).catch(() => {})
+  }, [])
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
+
+  const toggleTheme = () => {
+    const next = theme === 'light' ? 'dark' : 'light'
+    setTheme(next)
+    window.mtcApi.saveSettings({ theme: next }).catch(() => {})
+  }
+
+  const [searchOpen, setSearchOpen] = useState(false)
+
+  // ── Ctrl+K → recherche globale ──
+  useEffect(() => {
+    if (authState !== 'unlocked') return
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault()
+        setSearchOpen(v => !v)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [authState])
+
+  // ── Raccourcis clavier de navigation ──
+  useEffect(() => {
+    if (authState !== 'unlocked') return
+    const handler = (e: KeyboardEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return
+      const target = e.target as HTMLElement
+      if (target.isContentEditable || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return
+      const routes: Record<string, string> = {
+        '1': '/', '2': '/patients', '3': '/nouvelle',
+        '4': '/calendrier', '5': '/comptabilite', '6': '/parametres', '7': '/rgpd',
+      }
+      if (routes[e.key]) { e.preventDefault(); navigate(routes[e.key]) }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [authState, navigate])
 
   // Verrou automatique après 20 min d'inactivité
   const handleInactivityLock = useCallback(async () => {
@@ -60,7 +112,7 @@ export default function App() {
   }
 
   if (authState === 'setup' || authState === 'locked') {
-    return <LockScreen mode={authState} onUnlock={() => setAuthState('unlocked')} />
+    return <LockScreen mode={authState} onUnlock={() => setAuthState('unlocked')} theme={theme} />
   }
 
   const handleLock = async () => {
@@ -70,16 +122,22 @@ export default function App() {
 
   return (
     <ToastContext.Provider value={showToast}>
+      <FormattingPopup />
+      <MenuBarHotspot />
+      {searchOpen && <GlobalSearch onClose={() => setSearchOpen(false)} />}
       <div className="app-shell">
 
         {/* ── HEADER compact ── */}
         <header className="app-header">
           <div className="logo">
-            <img src="./Synoria.png" alt="Logo" className="logo-img" />
-            <img src="./Text Synoria fond blanc.png" alt="SYNORIA" className="logo-title-img" />
+            <img src={theme === 'dark' ? './Synoria fond noir.png' : './Synoria.png'} alt="Logo" className="logo-img" />
+            <img src={theme === 'dark' ? './Text Synoria fond noir.png' : './Text Synoria fond blanc.png'} alt="SYNORIA" className="logo-title-img" />
             <span title="Données chiffrées AES-256" className="logo-secure">🔒 chiffré</span>
           </div>
-          <div className="header-actions">
+          <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button className="theme-toggle-btn" onClick={toggleTheme} title={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}>
+              {theme === 'dark' ? '☀' : '🌙'}
+            </button>
             <BackupButton showToast={showToast} />
           </div>
         </header>
@@ -165,6 +223,7 @@ export default function App() {
           <div className="app-content">
             <FormattingToolbar />
             <main className="app-main">
+              <PageErrorBoundary>
               <Routes>
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/patients" element={<PatientsPage />} />
@@ -184,12 +243,14 @@ export default function App() {
                 <Route path="/rgpd"                element={<RgpdPage />} />
                 <Route path="/profil"              element={<ProfilePage />} />
               </Routes>
+              </PageErrorBoundary>
             </main>
           </div>
 
         </div>{/* fin app-body */}
 
         {toast && <Toast message={toast.message} type={toast.type} />}
+        <ConfirmDialog />
       </div>
     </ToastContext.Provider>
   )
@@ -214,6 +275,151 @@ const FMT_COLORS = [
   { label: 'Orange', value: '#C17B2A' },
   { label: 'Violet', value: '#5A4A7A' },
 ]
+
+// ── Popup de mise en forme flottant (déclenché par clic droit → Mise en forme) ─
+const POPUP_COLORS = [
+  { label: 'Rouge',  value: '#A83232' },
+  { label: 'Bleu',   value: '#2A5A8A' },
+  { label: 'Vert',   value: '#2A6A32' },
+  { label: 'Orange', value: '#C17B2A' },
+  { label: 'Violet', value: '#5A4A7A' },
+  { label: 'Noir',   value: '#1a1a1a' },
+]
+
+// ── Error boundary — affiche une erreur lisible au lieu d'une page blanche ───
+class PageErrorBoundary extends Component<
+  { children: React.ReactNode },
+  { error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props)
+    this.state = { error: null }
+  }
+  static getDerivedStateFromError(e: Error) { return { error: e } }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: '3rem 2rem', color: 'var(--text)' }}>
+          <h2 style={{ color: 'var(--red)', marginBottom: 12 }}>⚠️ Erreur dans cette page</h2>
+          <pre style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 16, fontSize: 12, overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: 'var(--text)' }}>
+            {this.state.error.message}{'\n\n'}{this.state.error.stack}
+          </pre>
+          <button className="btn btn-secondary" style={{ marginTop: 16 }} onClick={() => this.setState({ error: null })}>
+            ↺ Réessayer
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
+function FormattingPopup() {
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
+  const ref           = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    window.mtcApi.onFormatPopup(p => setPos(p))
+  }, [])
+
+  useEffect(() => {
+    if (!pos) return
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setPos(null)
+    }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setPos(null) }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown',   onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown',   onKey)
+    }
+  }, [pos])
+
+  if (!pos) return null
+
+  const exec = (cmd: string, arg?: string) => {
+    document.execCommand(cmd, false, arg)
+  }
+
+  // Empêche le popup de sortir de l'écran
+  const left = Math.min(pos.x, window.innerWidth  - 268)
+  const top  = Math.min(pos.y + 6, window.innerHeight - 52)
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        position:     'fixed',
+        left,
+        top,
+        zIndex:       99999,
+        background:   'var(--surface, #fff)',
+        border:       '1px solid var(--border, #ddd)',
+        borderRadius: 8,
+        boxShadow:    '0 4px 20px rgba(0,0,0,0.18)',
+        display:      'flex',
+        alignItems:   'center',
+        gap:          2,
+        padding:      '5px 10px',
+        userSelect:   'none',
+      }}
+    >
+      <button className="fmt-btn fmt-bold"
+        onMouseDown={e => { e.preventDefault(); exec('bold') }}
+        title="Gras (Ctrl+B)">G</button>
+      <button className="fmt-btn fmt-italic"
+        onMouseDown={e => { e.preventDefault(); exec('italic') }}
+        title="Italique (Ctrl+I)">I</button>
+      <button className="fmt-btn fmt-underline"
+        onMouseDown={e => { e.preventDefault(); exec('underline') }}
+        title="Souligné (Ctrl+U)">S</button>
+
+      <div style={{ width: 1, height: 20, background: 'var(--border, #ddd)', margin: '0 6px', flexShrink: 0 }} />
+
+      {POPUP_COLORS.map(c => (
+        <button
+          key={c.value}
+          className="fmt-color-btn"
+          style={{ background: c.value }}
+          onMouseDown={e => { e.preventDefault(); exec('foreColor', c.value) }}
+          title={c.label}
+        />
+      ))}
+    </div>
+  )
+}
+
+// ── Zone de survol pour afficher la barre de menu native ──────────────────────
+function MenuBarHotspot() {
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const show = () => {
+    if (hideTimer.current) clearTimeout(hideTimer.current)
+    window.mtcApi.setMenuBarVisible(true).catch(() => {})
+  }
+
+  const hide = () => {
+    if (hideTimer.current) clearTimeout(hideTimer.current)
+    hideTimer.current = setTimeout(() => {
+      window.mtcApi.setMenuBarVisible(false).catch(() => {})
+    }, 2000)
+  }
+
+  return (
+    <div
+      onMouseEnter={show}
+      onMouseLeave={hide}
+      style={{
+        position: 'fixed',
+        top: 0, left: 0, right: 0,
+        height: 4,
+        zIndex: 9999,
+        cursor: 'default',
+      }}
+    />
+  )
+}
 
 function FormattingToolbar() {
   const [active, setActive] = useState(false)
@@ -297,7 +503,20 @@ function FormattingToolbar() {
 
 
 function BackupButton({ showToast }: { showToast: (msg: string, type?: 'success' | 'error') => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
   const handleBackup = async () => {
+    setOpen(false)
     try {
       await window.mtcApi.exportBackupJson()
       showToast('Sauvegarde créée ✓', 'success')
@@ -305,7 +524,9 @@ function BackupButton({ showToast }: { showToast: (msg: string, type?: 'success'
       showToast(`Erreur sauvegarde : ${e?.message || e}`, 'error')
     }
   }
+
   const handleImport = async () => {
+    setOpen(false)
     const path = await window.mtcApi.showOpenDialog({
       filters: [{ name: 'Sauvegarde Synoria', extensions: ['enc', 'json'] }],
     })
@@ -319,20 +540,45 @@ function BackupButton({ showToast }: { showToast: (msg: string, type?: 'success'
       showToast(`Erreur import : ${e?.message || e}`, 'error')
     }
   }
+
   return (
-    <div style={{ display: 'flex', gap: 6 }}>
-      <button className="btn-header-save" onClick={handleBackup}>
-        <span className="btn-header-icon" style={{ background: '#4A6741' }}>
-          <SaveIcon size={12} />
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button className="btn-header-data" onClick={() => setOpen(o => !o)}>
+        <span className="btn-header-icon" style={{ background: '#6E6CD8' }}>
+          <SvgIcon>
+            <ellipse cx="12" cy="5" rx="9" ry="3" />
+            <path d="M3 5v4c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+            <path d="M3 9v4c0 1.66 4 3 9 3s9-1.34 9-3V9" />
+            <path d="M3 13v4c0 1.66 4 3 9 3s9-1.34 9-3v-4" />
+          </SvgIcon>
         </span>
-        Sauvegarder
+        Données
+        <span style={{ fontSize: 9, opacity: .6, marginLeft: 1 }}>▾</span>
       </button>
-      <button className="btn-header-import" onClick={handleImport}>
-        <span className="btn-header-icon" style={{ background: '#C17B2A' }}>
-          <FolderIcon size={12} />
-        </span>
-        Importer
-      </button>
+
+      {open && (
+        <div className="header-dropdown">
+          <button className="header-dropdown-item" onClick={handleBackup}>
+            <span className="header-dropdown-icon" style={{ background: '#4A6741' }}>
+              <SaveIcon size={13} />
+            </span>
+            <div>
+              <div className="header-dropdown-label">Sauvegarder la base de données</div>
+              <div className="header-dropdown-sub">Exporte tous les patients et séances dans un fichier chiffré</div>
+            </div>
+          </button>
+          <div className="header-dropdown-sep" />
+          <button className="header-dropdown-item" onClick={handleImport}>
+            <span className="header-dropdown-icon" style={{ background: '#C17B2A' }}>
+              <FolderIcon size={13} />
+            </span>
+            <div>
+              <div className="header-dropdown-label">Restaurer une sauvegarde…</div>
+              <div className="header-dropdown-sub">Importe un fichier .enc — remplace les données existantes</div>
+            </div>
+          </button>
+        </div>
+      )}
     </div>
   )
 }
