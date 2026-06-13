@@ -1,0 +1,340 @@
+{
+  "id": "osteopathie",
+  "name": "Ostéopathie",
+  "specialty": "Ostéopathie",
+  "version": "1.0.0",
+  "description": "Fiche d'anamnèse ostéopathique complète : motif, douleur, antécédents, bilan fonctionnel, traitement et suivi.",
+  "icon": "🦴",
+  "accentColor": "#8B6F5E",
+
+  "sections": [
+
+    {
+      "id": "motif",
+      "title": "Motif de consultation",
+      "icon": "📋",
+      "accentColor": "#8B6F5E",
+      "fields": [
+        {
+          "id": "motifPrincipal",
+          "type": "richtext",
+          "label": "Motif principal",
+          "placeholder": "Plainte principale exprimée par le patient, pourquoi il consulte aujourd'hui…",
+          "width": "full",
+          "minHeight": 90
+        },
+        {
+          "id": "debutProbleme",
+          "type": "richtext",
+          "label": "Début et circonstances d'apparition",
+          "placeholder": "Date d'apparition, progressif ou brutal, suite à un événement (chute, effort, stress, accouchement…)…",
+          "width": "half",
+          "minHeight": 90
+        },
+        {
+          "id": "evolutionSymptomes",
+          "type": "richtext",
+          "label": "Évolution depuis l'apparition",
+          "placeholder": "Amélioration, aggravation, plateau, épisodes récurrents, fréquence…",
+          "width": "half",
+          "minHeight": 90
+        },
+        {
+          "id": "traitementsDeja",
+          "type": "richtext",
+          "label": "Traitements déjà effectués pour ce motif",
+          "placeholder": "Médecin, kiné, radio, IRM, médicaments pris, résultats obtenus…",
+          "width": "full",
+          "minHeight": 75
+        }
+      ]
+    },
+
+    {
+      "id": "douleur",
+      "title": "Évaluation de la douleur",
+      "icon": "📍",
+      "accentColor": "#B07A6A",
+      "fields": [
+        {
+          "id": "localisation",
+          "type": "richtext",
+          "label": "Localisation et irradiation",
+          "placeholder": "Localisation précise, uni/bilatérale, irradiation éventuelle (ex : lombalgie irradiant en jambe)…",
+          "width": "full",
+          "minHeight": 80
+        },
+        {
+          "id": "intensiteDouleur",
+          "type": "rating",
+          "label": "Intensité de la douleur (EVA)",
+          "min": 0,
+          "max": 10,
+          "width": "third",
+          "hint": "0 = aucune · 10 = maximale"
+        },
+        {
+          "id": "typeDouleur",
+          "type": "checkboxgroup",
+          "label": "Type de douleur",
+          "options": ["Mécanique", "Inflammatoire", "Neuropathique", "Fonctionnelle", "Référée"],
+          "width": "half"
+        },
+        {
+          "id": "caractereDouleur",
+          "type": "checkboxgroup",
+          "label": "Caractère de la douleur",
+          "options": ["Sourde / profonde", "Aiguë / électrique", "Brûlure", "Pression / pesanteur", "Pulsatile", "Tiraillement"],
+          "width": "half"
+        },
+        {
+          "id": "sep1", "type": "separator", "label": ""
+        },
+        {
+          "id": "facteurAggravants",
+          "type": "richtext",
+          "label": "Facteurs aggravants",
+          "placeholder": "Positions, mouvements, effort, froid, stress, alimentation, fin de journée…",
+          "width": "half",
+          "minHeight": 80
+        },
+        {
+          "id": "facteurSoulageants",
+          "type": "richtext",
+          "label": "Facteurs soulageants",
+          "placeholder": "Repos, chaleur, étirements, position antalgique, médicaments…",
+          "width": "half",
+          "minHeight": 80
+        },
+        {
+          "id": "rythmeDouleur",
+          "type": "checkboxgroup",
+          "label": "Rythme nycthéméral",
+          "options": ["Matin au réveil", "En cours de journée", "Le soir", "La nuit", "Permanent", "Variable"],
+          "width": "full"
+        }
+      ]
+    },
+
+    {
+      "id": "antecedents",
+      "title": "Antécédents médicaux et chirurgicaux",
+      "icon": "📁",
+      "accentColor": "#6A7E8B",
+      "fields": [
+        {
+          "id": "antecedentsTraumatiques",
+          "type": "richtext",
+          "label": "Antécédents traumatiques",
+          "placeholder": "Chutes, accidents (voiture, sport), fractures, entorses, contusions importantes, whiplash…",
+          "width": "full",
+          "minHeight": 85
+        },
+        {
+          "id": "antecedentsChirurgicaux",
+          "type": "richtext",
+          "label": "Antécédents chirurgicaux",
+          "placeholder": "Type d'intervention, date approximative, suites opératoires, cicatrices…",
+          "width": "half",
+          "minHeight": 85
+        },
+        {
+          "id": "antecedentsMedicaux",
+          "type": "richtext",
+          "label": "Antécédents médicaux notables",
+          "placeholder": "Maladies chroniques, hospitalisations, pathologies diagnostiquées…",
+          "width": "half",
+          "minHeight": 85
+        },
+        {
+          "id": "antecedentsObstetricaux",
+          "type": "richtext",
+          "label": "Antécédents obstétricaux (si applicable)",
+          "placeholder": "Grossesses, accouchements (voie basse / césarienne), épisiotomie, post-partum…",
+          "width": "half",
+          "minHeight": 75
+        },
+        {
+          "id": "medicamentsActuels",
+          "type": "richtext",
+          "label": "Médicaments / traitements en cours",
+          "placeholder": "Anticoagulants, corticoïdes, AINS, antalgiques, autres…",
+          "width": "half",
+          "minHeight": 75
+        }
+      ]
+    },
+
+    {
+      "id": "bilan_fonctionnel",
+      "title": "Bilan fonctionnel et postural",
+      "icon": "🧍",
+      "accentColor": "#6B8B6A",
+      "fields": [
+        {
+          "id": "posture",
+          "type": "richtext",
+          "label": "Bilan postural",
+          "placeholder": "Observation statique : équilibre des épaules, bassin, courbures rachidiennes, appui plantaire, ligne de gravité…",
+          "width": "full",
+          "minHeight": 90
+        },
+        {
+          "id": "mobilite",
+          "type": "richtext",
+          "label": "Mobilité et amplitudes articulaires",
+          "placeholder": "Flexion/extension, rotations, inclinaisons, limitations constatées, compensations…",
+          "width": "half",
+          "minHeight": 90
+        },
+        {
+          "id": "testsOrtho",
+          "type": "richtext",
+          "label": "Tests orthopédiques / neurologiques",
+          "placeholder": "Lasègue, Slump, Patrick, tests de compression, réflexes, sensibilité…",
+          "width": "half",
+          "minHeight": 90
+        },
+        {
+          "id": "tensionsMusculaires",
+          "type": "richtext",
+          "label": "Tensions musculaires et points douloureux",
+          "placeholder": "Muscles contracturés, points trigger, chaînes musculaires en tension…",
+          "width": "full",
+          "minHeight": 75
+        },
+        {
+          "id": "restrictionsTissulaires",
+          "type": "richtext",
+          "label": "Restrictions tissulaires / fasciales",
+          "placeholder": "Zones de densification, adhérences, cicatrices, restrictions de glissement…",
+          "width": "full",
+          "minHeight": 75
+        }
+      ]
+    },
+
+    {
+      "id": "bilan_visceral_cranien",
+      "title": "Bilan viscéral et crânio-sacré",
+      "icon": "🫀",
+      "accentColor": "#7A6B8B",
+      "fields": [
+        {
+          "id": "bilanDigestif",
+          "type": "richtext",
+          "label": "Sphère digestive",
+          "placeholder": "Troubles digestifs (ballonnements, reflux, transit), ptôse, tensions hépatiques, douleurs abdominales…",
+          "width": "half",
+          "minHeight": 85
+        },
+        {
+          "id": "bilanUroGenital",
+          "type": "richtext",
+          "label": "Sphère uro-génitale et pelvis",
+          "placeholder": "Troubles urinaires, douleurs pelviennes, cycles menstruels, périnée, prolapsus…",
+          "width": "half",
+          "minHeight": 85
+        },
+        {
+          "id": "bilanRespiratoire",
+          "type": "richtext",
+          "label": "Sphère thoracique et respiratoire",
+          "placeholder": "Respiration, mobilité diaphragmatique, côtes, sternum, tensions péricardiques…",
+          "width": "half",
+          "minHeight": 75
+        },
+        {
+          "id": "bilanCranien",
+          "type": "richtext",
+          "label": "Sphère crânio-sacrée",
+          "placeholder": "MRP, sutures crâniennes, mobilité sacrée, tensions durales, céphalées, mâchoire (ATM)…",
+          "width": "half",
+          "minHeight": 75
+        }
+      ]
+    },
+
+    {
+      "id": "traitement",
+      "title": "Traitement ostéopathique",
+      "icon": "🤲",
+      "accentColor": "#8B6F5E",
+      "fields": [
+        {
+          "id": "dysfonctionsPrincipales",
+          "type": "richtext",
+          "label": "Dysfonctions principales retenues",
+          "placeholder": "Dysfonctions structurelles, viscérales, crâniennes à traiter en priorité, chaîne lésionnelle…",
+          "width": "full",
+          "minHeight": 90
+        },
+        {
+          "id": "techniquesMises",
+          "type": "richtext",
+          "label": "Techniques utilisées",
+          "placeholder": "HVBA, techniques myofasciales, fonctionnelles, crâniennes, viscérales, Jones, pompage…",
+          "width": "full",
+          "minHeight": 85
+        },
+        {
+          "id": "zonesTraitees",
+          "type": "richtext",
+          "label": "Zones et structures traitées",
+          "placeholder": "Rachis (cervical, dorsal, lombaire), bassin, membres, viscères, crâne, sacrum…",
+          "width": "half",
+          "minHeight": 80
+        },
+        {
+          "id": "reactionPendant",
+          "type": "richtext",
+          "label": "Réactions pendant et après la séance",
+          "placeholder": "Libérations émotionnelles, sensations thermiques, détente, douleurs provoquées, vertiges…",
+          "width": "half",
+          "minHeight": 80
+        }
+      ]
+    },
+
+    {
+      "id": "suivi",
+      "title": "Conseils et suivi",
+      "icon": "🔄",
+      "accentColor": "#6B8B6A",
+      "fields": [
+        {
+          "id": "conseilsPostSeance",
+          "type": "richtext",
+          "label": "Conseils post-séance",
+          "placeholder": "Repos recommandé, éviter les efforts, hydratation, chaleur/froid, postures à éviter…",
+          "width": "full",
+          "minHeight": 80
+        },
+        {
+          "id": "exercicesAutorééducation",
+          "type": "richtext",
+          "label": "Exercices d'auto-rééducation",
+          "placeholder": "Étirements, renforcement spécifique, mobilisations douces, exercices de respiration…",
+          "width": "full",
+          "minHeight": 80
+        },
+        {
+          "id": "orientationsComplementaires",
+          "type": "richtext",
+          "label": "Orientations et avis complémentaires",
+          "placeholder": "Kinésithérapie, podologie, dentiste (ATM), médecin, bilan complémentaire conseillé…",
+          "width": "half",
+          "minHeight": 75
+        },
+        {
+          "id": "reactionGlobale",
+          "type": "radio",
+          "label": "Réaction globale en fin de séance",
+          "options": ["Très bien", "Bien — détendu(e)", "Neutre", "Légèrement douloureux", "Fatigué(e)"],
+          "width": "half"
+        }
+      ]
+    }
+
+  ]
+}

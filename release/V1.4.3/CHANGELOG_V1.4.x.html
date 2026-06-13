@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Synoria — Journal des évolutions V1.4.x</title>
+  <style>
+    :root {
+      --teal: #2a9d8f;
+      --teal-light: #e8f5f3;
+      --blue: #3b82f6;
+      --blue-light: #eff6ff;
+      --amber: #f59e0b;
+      --amber-light: #fffbeb;
+      --purple: #8b5cf6;
+      --purple-light: #f5f3ff;
+      --green: #10b981;
+      --green-light: #ecfdf5;
+      --red: #ef4444;
+      --red-light: #fef2f2;
+      --gray: #6b7280;
+      --gray-light: #f9fafb;
+      --dark: #1f2937;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f3f4f6;
+      color: var(--dark);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, var(--teal), #1a7a6e);
+      color: white;
+      border-radius: 16px;
+      padding: 40px;
+      text-align: center;
+      margin-bottom: 40px;
+      box-shadow: 0 8px 32px rgba(42,157,143,0.3);
+    }
+    .header .logo {
+      font-size: 48px;
+      margin-bottom: 8px;
+    }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .header .subtitle {
+      font-size: 16px;
+      opacity: 0.85;
+      margin-bottom: 16px;
+    }
+    .header .badge-series {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 20px;
+      padding: 6px 18px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    /* Version card */
+    .version-card {
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      margin-bottom: 28px;
+      overflow: hidden;
+    }
+    .version-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 22px 28px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .version-badge {
+      font-size: 18px;
+      font-weight: 800;
+      padding: 8px 18px;
+      border-radius: 10px;
+      letter-spacing: 0.5px;
+      min-width: 100px;
+      text-align: center;
+    }
+    .v143 .version-badge { background: var(--teal-light); color: var(--teal); border: 2px solid var(--teal); }
+    .v142 .version-badge { background: var(--blue-light); color: var(--blue); border: 2px solid var(--blue); }
+    .v141 .version-badge { background: var(--purple-light); color: var(--purple); border: 2px solid var(--purple); }
+    .v140 .version-badge { background: var(--amber-light); color: var(--amber); border: 2px solid var(--amber); }
+
+    .version-meta { flex: 1; }
+    .version-meta h2 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .version-meta .date { color: var(--gray); font-size: 13px; }
+    .version-tag {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: var(--gray-light);
+      color: var(--gray);
+    }
+    .version-tag.latest {
+      background: var(--green-light);
+      color: var(--green);
+    }
+
+    .version-body { padding: 24px 28px; }
+
+    /* Sections */
+    .section {
+      margin-bottom: 20px;
+    }
+    .section:last-child { margin-bottom: 0; }
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    .section-icon { font-size: 16px; }
+
+    /* Features grid */
+    .features-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 600px) {
+      .features-grid { grid-template-columns: 1fr; }
+    }
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: var(--gray-light);
+    }
+    .feature-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+    .v143 .feature-dot { background: var(--teal); }
+    .v142 .feature-dot { background: var(--blue); }
+    .v141 .feature-dot { background: var(--purple); }
+    .v140 .feature-dot { background: var(--amber); }
+
+    .feature-text { font-size: 14px; line-height: 1.5; }
+    .feature-text strong { display: block; font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+    .feature-text span { color: var(--gray); font-size: 12px; }
+
+    /* Full width feature */
+    .feature-item.full {
+      grid-column: 1 / -1;
+    }
+
+    /* Fix/Bugfix items */
+    .fix-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .fix-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      background: #fef2f2;
+      color: #7f1d1d;
+    }
+    .fix-item::before { content: "🔧"; font-size: 14px; }
+
+    /* Security items */
+    .security-item {
+      background: var(--green-light) !important;
+      color: #065f46 !important;
+    }
+    .security-item::before { content: "🔒"; font-size: 14px; }
+
+    /* Technical items */
+    .tech-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .tech-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-family: 'Consolas', 'SF Mono', monospace;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: #1e293b;
+      color: #94a3b8;
+    }
+    .tech-item .code-tag {
+      color: #00d084;
+      font-weight: 600;
+    }
+
+    /* Summary bar */
+    .summary-bar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 16px 28px;
+      background: var(--gray-light);
+      border-top: 1px solid #f0f0f0;
+    }
+    .stat-pill {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+    .v143 .stat-pill { background: var(--teal-light); color: var(--teal); }
+    .v142 .stat-pill { background: var(--blue-light); color: var(--blue); }
+    .v141 .stat-pill { background: var(--purple-light); color: var(--purple); }
+    .v140 .stat-pill { background: var(--amber-light); color: var(--amber); }
+
+    /* Timeline connector */
+    .timeline-connector {
+      display: flex;
+      justify-content: center;
+      margin: -8px 0;
+      color: var(--gray);
+      font-size: 24px;
+      opacity: 0.3;
+      z-index: 0;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      margin-top: 32px;
+      padding: 24px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .footer p { color: var(--gray); font-size: 13px; margin-bottom: 4px; }
+    .footer strong { color: var(--teal); }
+
+    @media print {
+      body { background: white; padding: 20px; }
+      .version-card { box-shadow: none; border: 1px solid #e5e7eb; break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- En-tête -->
+  <div class="header">
+    <div class="logo">🌿</div>
+    <h1>Synoria — Journal des évolutions</h1>
+    <div class="subtitle">Historique complet des versions 1.4.0 à 1.4.3</div>
+    <div class="badge-series">Série 1.4.x — Juin 2026</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       VERSION 1.4.3 — La plus récente
+  ═══════════════════════════════════════════════════════ -->
+  <div class="version-card v143">
+    <div class="version-header">
+      <div class="version-badge">V 1.4.3</div>
+      <div class="version-meta">
+        <h2>Panneau administrateur, diagnostic & documentation</h2>
+        <div class="date">Juin 2026</div>
+      </div>
+      <div class="version-tag latest">✦ Actuelle</div>
+    </div>
+
+    <div class="version-body">
+
+      <!-- Nouvelles fonctionnalités -->
+      <div class="section">
+        <div class="section-title">
+          <span class="section-icon">✨</span> Nouvelles fonctionnalités
+        </div>
+        <div class="features-grid">
+          <div class="feature-item full">
+            <div class="feature-dot"></div>
+            <div class="feature-text">
+              <strong>Panneau administrateur caché (Ctrl + Shift + Alt + A)</strong>
+              <span>Interface sécurisée par mot de passe réservée au créateur du logiciel. 4 onglets : Système (version, OS, RAM), Logs (journal de session), Base de données (intégrité, stats), Configuration (paramètres bruts). Accessible depuis n'importe quelle page, sans connexion réseau.</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <div class="feature-text">
+              <strong>Procédure "Mot de passe oublié"</strong>
+              <span>Lien cliquable sur l'écran de connexion. Génère un document HTML avec la procédure complète de récupération, adapté à l'environnement de l'utilisateur.</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <div class="feature-text">
+              <strong>Outil de diagnostic avancé</strong>
+              <span>Rapport HTML complet (système, base de données, derniers logs) exportable depuis les Paramètres. Facilite le support technique à distance.</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <div class="feature-text">
+              <strong>Guides utilisateur intégrés</strong>
+              <span>Guide d'installation, guide d'utilisation complet, protocole de récupération MDP, procédure d'envoi des logs — tous disponibles dans le dossier release.</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <div class="feature-text">
+              <strong>Build macOS via GitHub Actions</strong>
+              <span>Workflow CI automatique : chaque nouvelle version déclenche la compilation d'un DMG universel (Intel + Apple Silicon) sur serveur Mac distant.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Améliorations -->
+      <div class="section">
+        <div class="section-title">
+          <span class="section-icon">⚡</span> Améliorations
+        </div>
+        <div class="features-grid">
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <div class="feature-text">
+              <strong>Identité visuelle unifiée</strong>
+              <span>Toutes les références "Dossier Patient MTC" remplacées par "Synoria" dans l'interface, les documents et les métadonnées.</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <div class="feature-text">
+              <strong>Code source allégé</strong>
+              <span>Suppression du code de migration de l'ancienne application (aucun utilisateur pré-1.4). Démarrage plus rapide et code plus maintenable.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="summary-bar">
+      <span class="stat-pill">1 panneau admin</span>
+      <span class="stat-pill">9 canaux IPC admin</span>
+      <span class="stat-pill">4 guides utilisateur</span>
+      <span class="stat-pill">Build Mac CI</span>
+      <span class="stat-pill">Diagnostic avancé</span>
+    </div>
+  </div>
+
+  <div class="timeline-connector">↑</div>
+
+  <!-- ══════════════════════════════════════════════════
+       VERSION 1.4.2
+  ═══════════════════════════════════════════════════════ -->
+  <div class="version-card v142">
+    <div class="version-header">
+      <div class="version-badge">V 1.4.2</div>
+      <div class="version-meta">
+        <h2>Templates, recherche globale, mode sombre & raccourcis</h2>
+        <div class="date">Mai 2026</div>
+      </div>
+      <div class="version-tag">Précédente</div>
+    </div>
+
+    <div class="version-body">
+
+      <div class="section">
+        <div class="section-title">
+          <span class="section-icon">✨</span> Nouvelles fonctionnalités
+        </div>
+        <div class="features-grid">
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <div class="feature-text">
+              <strong>Templates de séances</strong>
+              <span>Sauvegarde et réutilisation de modèles de séances. Gain de temps pour les consultations récurrentes avec le même protocole.</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <div class="feature-text">
+              <strong>Recherche globale</strong>
+              <span>Barre de recherche unifiée permettant de retrouver un patient, une séance ou un rendez-vous depuis n'importe quelle page.</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <div class="feature-text">
+              <strong>Mode sombre complet</strong>
+              <span>Thème sombre appliqué à l'intégralité de l'interface, y compris les modales, formulaires de séance et module comptabilité.</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <div class="feature-text">
+              <strong>Raccourcis clavier</strong>
+              <span>Naviguer dans l'application sans souris. Raccourcis pour les actions fréquentes : nouvelle séance, nouveau patient, sauvegarde rapide.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="summary-bar">
+      <span class="stat-pill">Templates séance</span>
+      <span class="stat-pill">Recherche globale</span>
+      <span class="stat-pill">Mode sombre complet</span>
+      <span class="stat-pill">Raccourcis clavier</span>
+    </div>
+  </div>
+
+  <div class="timeline-connector">↑</div>
+
+  <!-- ══════════════════════════════════════════════════
+       VERSION 1.4.1
+  ═══════════════════════════════════════════════════════ -->
+  <div class="version-card v141">
+    <div class="version-header">
+      <div class="version-badge">V 1.4.1</div>
+      <div class="version-meta">
+        <h2>Tableau de bord enrichi, calendrier & profil praticien</h2>
+        <div class="date">Avril 2026</div>
+      </div>
+      <div class="version-tag">Archivée</div>
+    </div>
+
+    <div class="version-body">
+
+      <div class="section">
+        <div class="section-title">
+          <span class="section-icon">✨</span> Nouvelles fonctionnalités
+        </div>
+        <div class="features-grid">
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <div class="feature-text">
+              <strong>Tableau de bord enrichi</strong>
+              <span>Nouvelles statistiques : taux d'activité mensuel, évolution du nombre de patients, revenus comparatifs. Graphiques interactifs intégrés.</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <div class="feature-text">
+              <strong>Améliorations du calendrier</strong>
+              <span>Navigation améliorée entre les vues. Meilleure gestion des conflits de créneaux. Affichage du nom du patient directement dans la grille horaire.</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <div class="feature-text">
+              <strong>Module comptabilité renforcé</strong>
+              <span>Export Excel enrichi avec les catégories de dépenses. Calcul URSSAF mis à jour. Gestion des types de consultations personnalisables.</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <div class="feature-text">
+              <strong>Profil praticien</strong>
+              <span>Paramétrage du nom, spécialité et coordonnées du praticien, utilisés automatiquement dans les factures et exports PDF.</span>
+            </div>
+          </div>
+          <div class="feature-item full">
+            <div class="feature-dot"></div>
+            <div class="feature-text">
+              <strong>Landing page Synoria hébergée sur Vercel</strong>
+              <span>Page de présentation du logiciel avec liens de téléchargement vers les releases GitHub. Favicon Synoria dans l'onglet navigateur. Responsive 4 breakpoints.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="summary-bar">
+      <span class="stat-pill">Dashboard enrichi</span>
+      <span class="stat-pill">Calendrier amélioré</span>
+      <span class="stat-pill">Comptabilité+</span>
+      <span class="stat-pill">Profil praticien</span>
+      <span class="stat-pill">Landing Vercel</span>
+    </div>
+  </div>
+
+  <div class="timeline-connector">↑</div>
+
+  <!-- ══════════════════════════════════════════════════
+       VERSION 1.4.0 — Point de départ de la série
+  ═══════════════════════════════════════════════════════ -->
+  <div class="version-card v140">
+    <div class="version-header">
+      <div class="version-badge">V 1.4.0</div>
+      <div class="version-meta">
+        <h2>Refonte de l'interface & calendrier 3 vues</h2>
+        <div class="date">Mars 2026</div>
+      </div>
+      <div class="version-tag">Fondation 1.4.x</div>
+    </div>
+
+    <div class="version-body">
+
+      <div class="section">
+        <div class="section-title">
+          <span class="section-icon">🚀</span> Version fondatrice de la série 1.4.x
+        </div>
+        <div class="features-grid">
+          <div class="feature-item full">
+            <div class="feature-dot"></div>
+            <div class="feature-text">
+              <strong>Refonte complète de l'interface utilisateur</strong>
+              <span>Nouvelle identité visuelle Synoria. Palette de couleurs cohérente, typographie affinée, navigation latérale repensée. Transition de "Dossier Patient MTC" vers la marque Synoria.</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <div class="feature-text">
+              <strong>Calendrier 3 vues</strong>
+              <span>Vue mensuelle (planning global), vue hebdomadaire (organisation de la semaine), vue journalière (créneaux de 30 min de 08h00 à 19h30).</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <div class="feature-text">
+              <strong>Compatibilité macOS</strong>
+              <span>Corrections de compatibilité pour macOS : chemins de fichiers, menu Édition natif, raccourcis clavier, fenêtre toujours visible.</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <div class="feature-text">
+              <strong>Google Calendar</strong>
+              <span>Synchronisation bidirectionnelle OAuth2 avec Google Agenda (lecture, création, mise à jour et suppression de rendez-vous).</span>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <div class="feature-text">
+              <strong>Sécurité renforcée</strong>
+              <span>Rollback automatique de auth.json si l'initialisation de la base échoue pendant la création du mot de passe. Évite les états incohérents.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="summary-bar">
+      <span class="stat-pill">Refonte UI complète</span>
+      <span class="stat-pill">Calendrier 3 vues</span>
+      <span class="stat-pill">Google Calendar</span>
+      <span class="stat-pill">Compat. macOS</span>
+    </div>
+  </div>
+
+  <!-- Tableau récapitulatif -->
+  <div class="version-card" style="margin-top: 12px;">
+    <div class="version-header" style="background: #f8fafc;">
+      <div style="font-size: 20px;">📊</div>
+      <div class="version-meta">
+        <h2 style="font-size: 16px;">Récapitulatif de la série 1.4.x</h2>
+        <div class="date">Mars – Juin 2026</div>
+      </div>
+    </div>
+    <div class="version-body">
+      <table style="width:100%; border-collapse: collapse; font-size: 14px;">
+        <thead>
+          <tr style="background: #f1f5f9;">
+            <th style="padding: 10px 14px; text-align: left; border-bottom: 2px solid #e2e8f0; font-weight: 700;">Version</th>
+            <th style="padding: 10px 14px; text-align: left; border-bottom: 2px solid #e2e8f0; font-weight: 700;">Focus principal</th>
+            <th style="padding: 10px 14px; text-align: left; border-bottom: 2px solid #e2e8f0; font-weight: 700;">Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #f0f0f0; font-weight: 700; color: var(--teal);">V 1.4.3</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #f0f0f0;">Admin panel · Diagnostic · Documentation complète</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #f0f0f0;"><span style="background: var(--green-light); color: var(--green); padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 600;">Actuelle</span></td>
+          </tr>
+          <tr style="background: #fafafa;">
+            <td style="padding: 10px 14px; border-bottom: 1px solid #f0f0f0; font-weight: 700; color: var(--blue);">V 1.4.2</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #f0f0f0;">Templates · Recherche · Mode sombre · Raccourcis</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #f0f0f0;"><span style="background: #f1f5f9; color: var(--gray); padding: 2px 10px; border-radius: 10px; font-size: 12px;">Archivée</span></td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #f0f0f0; font-weight: 700; color: var(--purple);">V 1.4.1</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #f0f0f0;">Dashboard · Comptabilité · Profil praticien · Landing</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #f0f0f0;"><span style="background: #f1f5f9; color: var(--gray); padding: 2px 10px; border-radius: 10px; font-size: 12px;">Archivée</span></td>
+          </tr>
+          <tr style="background: #fafafa;">
+            <td style="padding: 10px 14px; font-weight: 700; color: var(--amber);">V 1.4.0</td>
+            <td style="padding: 10px 14px;">Refonte UI · Calendrier 3 vues · Google Calendar · Mac</td>
+            <td style="padding: 10px 14px;"><span style="background: #f1f5f9; color: var(--gray); padding: 2px 10px; border-radius: 10px; font-size: 12px;">Archivée</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p><strong>Synoria</strong> — Logiciel de gestion de dossiers patients</p>
+    <p>Créé par Jean-Pierre Timoner · <a href="mailto:jeanpierre.timoner.mtc@gmail.com" style="color: var(--teal);">jeanpierre.timoner.mtc@gmail.com</a></p>
+    <p style="margin-top: 8px; font-size: 11px; color: #9ca3af;">Ce document décrit les évolutions de la série 1.4.x du logiciel Synoria. Document non contractuel.</p>
+  </div>
+
+</div>
+</body>
+</html>

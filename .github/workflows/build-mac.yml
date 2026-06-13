@@ -1,38 +1,54 @@
-name: Build macOS
+name: Build macOS — Synoria
 
 on:
   push:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version à builder (ex: 1.4.3)'
+        required: false
+        default: '1.4.3'
 
 jobs:
   build-mac:
     runs-on: macos-latest
 
+    # Requis depuis le 16 juin 2026 : runtime Node.js 24 pour les actions GitHub
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 20 LTS
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build macOS
-        run: npm run electron:build -- --mac
+      - name: Build Vite (renderer + electron)
+        run: npx vite build
+
+      - name: Build Electron app — DMG universel (Intel + Apple Silicon)
+        run: npx electron-builder --mac --x64 --arm64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload artifacts
+      - name: List build output
+        run: ls -lh release/ | grep -E "\.(dmg|zip)$" || echo "Aucun DMG/ZIP trouvé"
+
+      - name: Upload DMG universel
         uses: actions/upload-artifact@v4
         with:
-          name: Synoria-mac
+          name: Synoria-macOS-${{ github.event.inputs.version || github.ref_name }}
           path: |
             release/*.dmg
             release/*.zip
           retention-days: 30
+          if-no-files-found: warn
