@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Synoria — Fiche de tests fonctionnels</title>
+<style>
+  @page { size: A4; margin: 15mm 14mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; color: #1a1a2e; background: #fff; }
+
+  /* ── Cover ── */
+  .cover {
+    background: linear-gradient(135deg, #2d6a4f, #1a4a3a);
+    color: #fff; padding: 48px 48px 40px; min-height: 180px;
+    border-radius: 0 0 16px 16px; margin-bottom: 32px;
+    position: relative; overflow: hidden;
+  }
+  .cover::after {
+    content: ''; position: absolute; bottom: -40px; right: -40px;
+    width: 200px; height: 200px; border-radius: 50%;
+    background: rgba(255,255,255,.05);
+  }
+  .cover-tag  { font-size: 10px; font-weight: 700; letter-spacing: 2px; opacity: .7; margin-bottom: 10px; }
+  .cover-title { font-size: 28px; font-weight: 800; margin-bottom: 6px; }
+  .cover-sub  { font-size: 13px; opacity: .8; margin-bottom: 20px; }
+  .cover-meta { display: flex; gap: 24px; font-size: 11px; opacity: .75; }
+  .cover-meta span { display: flex; align-items: center; gap: 6px; }
+
+  /* ── Layout ── */
+  .container { padding: 0 24px 40px; max-width: 100%; }
+
+  /* ── Section ── */
+  .section { margin-bottom: 28px; page-break-inside: avoid; }
+  .section-header {
+    display: flex; align-items: center; gap: 10px;
+    background: linear-gradient(90deg, #2d6a4f, #1e5c42);
+    color: #fff; padding: 9px 16px; border-radius: 8px 8px 0 0;
+    font-size: 12px; font-weight: 700; letter-spacing: .5px;
+  }
+  .section-icon { font-size: 16px; }
+
+  /* ── Test table ── */
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: #f0f4f0; }
+  thead th {
+    padding: 7px 10px; text-align: left; font-size: 10px;
+    font-weight: 700; color: #2d6a4f; border: 1px solid #dde8dd;
+    letter-spacing: .5px; text-transform: uppercase;
+  }
+  tbody tr { border: 1px solid #e8ede8; }
+  tbody tr:nth-child(even) { background: #fafcfa; }
+  tbody td { padding: 7px 10px; vertical-align: top; border: 1px solid #e0e8e0; font-size: 10.5px; }
+
+  .col-id     { width: 52px; font-weight: 700; color: #2d6a4f; white-space: nowrap; }
+  .col-action { width: 35%; color: #1a1a2e; line-height: 1.6; }
+  .col-expect { width: 33%; color: #374151; line-height: 1.6; }
+  .col-result { width: 80px; text-align: center; }
+  .col-note   { width: auto; }
+
+  .checkbox-group { display: flex; gap: 10px; justify-content: center; align-items: center; }
+  .cb { display: flex; align-items: center; gap: 3px; font-size: 10px; }
+  .cb input { width: 12px; height: 12px; }
+  .ok  { color: #16a34a; font-weight: 700; }
+  .nok { color: #dc2626; font-weight: 700; }
+
+  /* ── Criticité badge ── */
+  .crit {
+    display: inline-block; padding: 1px 7px; border-radius: 10px;
+    font-size: 9px; font-weight: 700; letter-spacing: .5px;
+    vertical-align: middle; white-space: nowrap;
+  }
+  .crit-bloquant { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }
+  .crit-majeur   { background: #fff7ed; color: #ea580c; border: 1px solid #fdba74; }
+  .crit-mineur   { background: #f0fdf4; color: #16a34a; border: 1px solid #86efac; }
+
+  /* ── Summary ── */
+  .summary-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;
+  }
+  .summary-card {
+    border-radius: 10px; padding: 14px 16px; text-align: center;
+    border: 1.5px solid;
+  }
+  .summary-card .s-num  { font-size: 28px; font-weight: 800; }
+  .summary-card .s-label{ font-size: 10px; font-weight: 600; margin-top: 4px; opacity: .8; }
+
+  .s-total  { background: #f0f4ff; border-color: #c7d2fe; color: #3730a3; }
+  .s-ok     { background: #f0fdf4; border-color: #86efac; color: #16a34a; }
+  .s-nok    { background: #fef2f2; border-color: #fca5a5; color: #dc2626; }
+  .s-skip   { background: #f9fafb; border-color: #d1d5db; color: #6b7280; }
+
+  /* ── Sign ── */
+  .sign-row { display: flex; gap: 32px; margin-top: 24px; }
+  .sign-box { flex: 1; border: 1px solid #dde8dd; border-radius: 8px; padding: 14px; }
+  .sign-label { font-size: 10px; font-weight: 700; color: #2d6a4f; margin-bottom: 32px; }
+  .sign-line { border-top: 1px solid #aaa; margin-top: 8px; }
+
+  /* ── Notes ── */
+  .note-box {
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
+    padding: 10px 14px; margin: 8px 0; font-size: 10.5px; color: #92400e; line-height: 1.6;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    border-top: 1px solid #dde8dd; padding-top: 10px; margin-top: 20px;
+    display: flex; justify-content: space-between; font-size: 9px; color: #9ca3af;
+  }
+
+  @media print {
+    body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    .section { page-break-inside: avoid; }
+    .no-break { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="cover-tag">🧪 RECETTE · SYNORIA</div>
+  <div class="cover-title">Fiche de tests fonctionnels</div>
+  <div class="cover-sub">Validation avant lancement commercial · Version 1.4.x</div>
+  <div class="cover-meta">
+    <span>📅 Date : _______________</span>
+    <span>👤 Testeur : _______________</span>
+    <span>💻 OS : _______________</span>
+    <span>🔖 Version testée : _______________</span>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ── LÉGENDE ── -->
+<div class="no-break" style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+  <div style="font-size:10.5px;font-weight:700;color:#2d6a4f;align-self:center;">Criticité :</div>
+  <span class="crit crit-bloquant">BLOQUANT</span><span style="font-size:10px;color:#6b7280">= défaut qui empêche la vente</span>
+  <span class="crit crit-majeur">MAJEUR</span><span style="font-size:10px;color:#6b7280">= fonctionnalité dégradée</span>
+  <span class="crit crit-mineur">MINEUR</span><span style="font-size:10px;color:#6b7280">= cosmétique / confort</span>
+</div>
+
+<!-- ── TABLEAU DE BORD RÉCAP ── -->
+<div class="summary-grid">
+  <div class="summary-card s-total"><div class="s-num">68</div><div class="s-label">TESTS TOTAL</div></div>
+  <div class="summary-card s-ok">  <div class="s-num">___</div><div class="s-label">✓ PASSÉS</div></div>
+  <div class="summary-card s-nok"> <div class="s-num">___</div><div class="s-label">✗ ÉCHOUÉS</div></div>
+  <div class="summary-card s-skip"><div class="s-num">___</div><div class="s-label">— IGNORÉS</div></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     1. SÉCURITÉ & AUTHENTIFICATION
+═══════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header"><span class="section-icon">🔒</span> 1 — Sécurité &amp; Authentification</div>
+  <table>
+    <thead><tr>
+      <th class="col-id">ID</th>
+      <th class="col-action">Action à effectuer</th>
+      <th class="col-expect">Résultat attendu</th>
+      <th>Criticité</th>
+      <th class="col-result">Résultat</th>
+      <th class="col-note">Notes</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td class="col-id">SEC-01</td>
+        <td class="col-action">Premier lancement (jamais configuré). Observer l'écran d'accueil.</td>
+        <td class="col-expect">Splash animé → écran "Créer un mot de passe" s'affiche.</td>
+        <td><span class="crit crit-bloquant">BLOQUANT</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">SEC-02</td>
+        <td class="col-action">Créer un mot de passe de moins de 6 caractères.</td>
+        <td class="col-expect">Bouton "Créer" désactivé ou message d'erreur "6 caractères minimum".</td>
+        <td><span class="crit crit-bloquant">BLOQUANT</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">SEC-03</td>
+        <td class="col-action">Créer un mot de passe valide (ex. "Test1234"). Ne pas cocher la case d'avertissement.</td>
+        <td class="col-expect">Bouton désactivé tant que la case n'est pas cochée.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">SEC-04</td>
+        <td class="col-action">Cocher la case + valider → accéder à l'application.</td>
+        <td class="col-expect">L'application s'ouvre sur le tableau de bord.</td>
+        <td><span class="crit crit-bloquant">BLOQUANT</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">SEC-05</td>
+        <td class="col-action">Fermer et relancer l'application. Entrer un mauvais mot de passe 3 fois.</td>
+        <td class="col-expect">Message "Mot de passe incorrect" à chaque tentative. Après 3 essais : message mentionne le support.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">SEC-06</td>
+        <td class="col-action">Entrer le bon mot de passe.</td>
+        <td class="col-expect">Accès accordé, tableau de bord affiché.</td>
+        <td><span class="crit crit-bloquant">BLOQUANT</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">SEC-07</td>
+        <td class="col-action">Cliquer "Mot de passe oublié ?" sur l'écran de connexion.</td>
+        <td class="col-expect">Un fichier HTML de procédure de récupération s'ouvre dans le navigateur.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">SEC-08</td>
+        <td class="col-action">Laisser l'application inactive 20 minutes (ou forcer via Paramètres → Sécurité → Verrouiller).</td>
+        <td class="col-expect">L'écran de connexion réapparaît automatiquement.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">SEC-09</td>
+        <td class="col-action">Paramètres → Sécurité → Changer le mot de passe.</td>
+        <td class="col-expect">Nouveau mot de passe accepté, fonctionne à la reconnexion.</td>
+        <td><span class="crit crit-bloquant">BLOQUANT</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     2. PATIENTS
+═══════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header"><span class="section-icon">👥</span> 2 — Gestion des patients</div>
+  <table>
+    <thead><tr>
+      <th class="col-id">ID</th><th class="col-action">Action à effectuer</th>
+      <th class="col-expect">Résultat attendu</th><th>Criticité</th>
+      <th class="col-result">Résultat</th><th class="col-note">Notes</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td class="col-id">PAT-01</td>
+        <td class="col-action">Cliquer "Nouveau patient", remplir prénom + nom + date de naissance, valider.</td>
+        <td class="col-expect">Patient créé et visible dans la liste.</td>
+        <td><span class="crit crit-bloquant">BLOQUANT</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">PAT-02</td>
+        <td class="col-action">Créer un 2ème patient avec tous les champs remplis (tel, email, adresse, profession, antécédents, médecin, médicaments, alertes).</td>
+        <td class="col-expect">Toutes les informations sont sauvegardées et réaffichées à la réouverture de la fiche.</td>
+        <td><span class="crit crit-bloquant">BLOQUANT</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">PAT-03</td>
+        <td class="col-action">Rechercher un patient par nom partiel dans la barre de recherche.</td>
+        <td class="col-expect">Liste filtrée en temps réel sur les résultats correspondants.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">PAT-04</td>
+        <td class="col-action">Modifier un patient (changer le numéro de téléphone).</td>
+        <td class="col-expect">Modification sauvegardée et visible immédiatement.</td>
+        <td><span class="crit crit-bloquant">BLOQUANT</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">PAT-05</td>
+        <td class="col-action">Cocher le consentement RGPD d'un patient avec la date du jour.</td>
+        <td class="col-expect">Case cochée sauvegardée, visible dans la page RGPD → onglet Consentements.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">PAT-06</td>
+        <td class="col-action">Archiver un patient (bouton Archiver).</td>
+        <td class="col-expect">Patient masqué de la liste active, visible dans "Patients archivés".</td>
+        <td><span class="crit crit-mineur">MINEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">PAT-07</td>
+        <td class="col-action">Supprimer un patient (confirmation demandée).</td>
+        <td class="col-expect">Patient et toutes ses séances supprimés définitivement.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     3. SÉANCES
+═══════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header"><span class="section-icon">📋</span> 3 — Séances</div>
+  <table>
+    <thead><tr>
+      <th class="col-id">ID</th><th class="col-action">Action à effectuer</th>
+      <th class="col-expect">Résultat attendu</th><th>Criticité</th>
+      <th class="col-result">Résultat</th><th class="col-note">Notes</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td class="col-id">SEA-01</td>
+        <td class="col-action">Créer une nouvelle séance pour un patient (mode simple, sans plugin). Remplir motif, évolution, anamnèse, traitement, réactions.</td>
+        <td class="col-expect">Séance enregistrée. Visible dans l'historique du patient.</td>
+        <td><span class="crit crit-bloquant">BLOQUANT</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">SEA-02</td>
+        <td class="col-action">Dans la zone "Motif", utiliser la barre de formatage : gras, italique, souligné, liste.</td>
+        <td class="col-expect">Le texte se formate correctement. Le format est conservé à la sauvegarde.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">SEA-03</td>
+        <td class="col-action">Créer une séance avec un prochain RDV renseigné (date + heure).</td>
+        <td class="col-expect">Le RDV apparaît dans le calendrier à la date indiquée.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">SEA-04</td>
+        <td class="col-action">Rouvrir la séance créée, modifier un champ, sauvegarder.</td>
+        <td class="col-expect">Modification prise en compte. Date de mise à jour changée.</td>
+        <td><span class="crit crit-bloquant">BLOQUANT</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">SEA-05</td>
+        <td class="col-action">Dupliquer une séance existante.</td>
+        <td class="col-expect">Nouvelle séance avec les mêmes données, date = aujourd'hui.</td>
+        <td><span class="crit crit-mineur">MINEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">SEA-06</td>
+        <td class="col-action">Depuis une séance, exporter en Excel.</td>
+        <td class="col-expect">Fichier .xlsx généré, s'ouvre avec Excel/LibreOffice. Contenu lisible, lignes à hauteur automatique.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">SEA-07</td>
+        <td class="col-action">Imprimer le résumé d'une séance (Ctrl+P ou bouton Imprimer).</td>
+        <td class="col-expect">Aperçu d'impression propre, sans éléments de navigation. Mise en page A4 correcte.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">SEA-08</td>
+        <td class="col-action">Supprimer une séance (avec confirmation).</td>
+        <td class="col-expect">Séance supprimée, n'apparaît plus dans l'historique.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     4. CALENDRIER / RDV
+═══════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header"><span class="section-icon">📅</span> 4 — Calendrier &amp; Rendez-vous</div>
+  <table>
+    <thead><tr>
+      <th class="col-id">ID</th><th class="col-action">Action à effectuer</th>
+      <th class="col-expect">Résultat attendu</th><th>Criticité</th>
+      <th class="col-result">Résultat</th><th class="col-note">Notes</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td class="col-id">CAL-01</td>
+        <td class="col-action">Créer un RDV pour un patient existant depuis le calendrier (clic sur un créneau).</td>
+        <td class="col-expect">RDV visible sur le calendrier mensuel et dans le planning horaire du jour.</td>
+        <td><span class="crit crit-bloquant">BLOQUANT</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">CAL-02</td>
+        <td class="col-action">Créer un RDV "invité" (sans patient dans la base, renseigner nom + prénom + tel).</td>
+        <td class="col-expect">RDV créé avec les infos invité, visible dans le calendrier.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">CAL-03</td>
+        <td class="col-action">Modifier un RDV (changer l'heure).</td>
+        <td class="col-expect">Modification sauvegardée et affichée immédiatement.</td>
+        <td><span class="crit crit-bloquant">BLOQUANT</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">CAL-04</td>
+        <td class="col-action">Depuis un RDV patient, cliquer "Créer la séance".</td>
+        <td class="col-expect">Redirige vers la page nouvelle séance avec le patient et la date pré-remplis.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">CAL-05</td>
+        <td class="col-action">Marquer un RDV comme "Réalisé".</td>
+        <td class="col-expect">Couleur change (vert). Statut mis à jour.</td>
+        <td><span class="crit crit-mineur">MINEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">CAL-06</td>
+        <td class="col-action">Supprimer un RDV.</td>
+        <td class="col-expect">RDV supprimé du calendrier.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">CAL-07</td>
+        <td class="col-action">Naviguer aux mois précédents et suivants.</td>
+        <td class="col-expect">Navigation fluide, RDV affichés correctement à chaque mois.</td>
+        <td><span class="crit crit-mineur">MINEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     5. TABLEAU DE BORD
+═══════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header"><span class="section-icon">📊</span> 5 — Tableau de bord</div>
+  <table>
+    <thead><tr>
+      <th class="col-id">ID</th><th class="col-action">Action à effectuer</th>
+      <th class="col-expect">Résultat attendu</th><th>Criticité</th>
+      <th class="col-result">Résultat</th><th class="col-note">Notes</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td class="col-id">TDB-01</td>
+        <td class="col-action">Observer le tableau de bord après avoir créé au moins 1 patient, 1 séance, 1 RDV.</td>
+        <td class="col-expect">Les statistiques (nb patients, nb séances, nb RDV) sont correctes et cohérentes.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">TDB-02</td>
+        <td class="col-action">Cliquer sur "Prochains RDV" dans le tableau de bord.</td>
+        <td class="col-expect">Liste des prochains RDV affichée, cliquable vers le calendrier.</td>
+        <td><span class="crit crit-mineur">MINEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">TDB-03</td>
+        <td class="col-action">Cliquer sur une séance récente dans le tableau de bord.</td>
+        <td class="col-expect">Navigation vers le résumé de cette séance.</td>
+        <td><span class="crit crit-mineur">MINEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     6. COMPTABILITÉ
+═══════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header"><span class="section-icon">💶</span> 6 — Comptabilité &amp; Facturation</div>
+  <table>
+    <thead><tr>
+      <th class="col-id">ID</th><th class="col-action">Action à effectuer</th>
+      <th class="col-expect">Résultat attendu</th><th>Criticité</th>
+      <th class="col-result">Résultat</th><th class="col-note">Notes</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td class="col-id">CPT-01</td>
+        <td class="col-action">Saisir des recettes pour 3 mois différents. Vérifier les totaux.</td>
+        <td class="col-expect">Les totaux annuels sont calculés correctement.</td>
+        <td><span class="crit crit-bloquant">BLOQUANT</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">CPT-02</td>
+        <td class="col-action">Saisir des dépenses variables (loyer, matériel). Vérifier l'affichage.</td>
+        <td class="col-expect">Dépenses sauvegardées et affichées dans la page Dépenses.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">CPT-03</td>
+        <td class="col-action">Exporter la comptabilité en Excel (année en cours).</td>
+        <td class="col-expect">Fichier .xlsx généré avec les onglets Recettes, Dépenses, Factures. Données exactes.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">CPT-04</td>
+        <td class="col-action">Générer une facture (Paramètres → Facturation, puis depuis une séance ou compta).</td>
+        <td class="col-expect">PDF facture généré, numéro incrémenté, données praticien + patient correctes.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     7. SAUVEGARDES
+═══════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header"><span class="section-icon">💾</span> 7 — Sauvegardes</div>
+  <table>
+    <thead><tr>
+      <th class="col-id">ID</th><th class="col-action">Action à effectuer</th>
+      <th class="col-expect">Résultat attendu</th><th>Criticité</th>
+      <th class="col-result">Résultat</th><th class="col-note">Notes</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td class="col-id">SAV-01</td>
+        <td class="col-action">Paramètres → Sauvegardes → Exporter une sauvegarde générale maintenant.</td>
+        <td class="col-expect">Fichier .json.enc créé dans le dossier configuré. Toast "Sauvegarde réussie".</td>
+        <td><span class="crit crit-bloquant">BLOQUANT</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">SAV-02</td>
+        <td class="col-action">Activer "Sauvegarde à la fermeture". Fermer et relancer l'application.</td>
+        <td class="col-expect">Nouveau fichier .json.enc créé automatiquement.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">SAV-03</td>
+        <td class="col-action">Importer la sauvegarde créée en SAV-01 (Paramètres → Importer).</td>
+        <td class="col-expect">Données restaurées. Patients et séances présents après relance.</td>
+        <td><span class="crit crit-bloquant">BLOQUANT</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">SAV-04</td>
+        <td class="col-action">Exporter une sauvegarde d'un seul patient.</td>
+        <td class="col-expect">Fichier .json.enc spécifique à ce patient généré.</td>
+        <td><span class="crit crit-mineur">MINEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     8. RGPD
+═══════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header"><span class="section-icon">🛡</span> 8 — RGPD</div>
+  <table>
+    <thead><tr>
+      <th class="col-id">ID</th><th class="col-action">Action à effectuer</th>
+      <th class="col-expect">Résultat attendu</th><th>Criticité</th>
+      <th class="col-result">Résultat</th><th class="col-note">Notes</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td class="col-id">RGP-01</td>
+        <td class="col-action">Page RGPD → onglet Consentements. Vérifier le taux de consentement.</td>
+        <td class="col-expect">Barre de progression affichée, pourcentage correct par rapport au nombre de patients.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">RGP-02</td>
+        <td class="col-action">Page RGPD → Journal d'accès. Ouvrir une fiche patient, puis revenir au journal.</td>
+        <td class="col-expect">Une entrée "fiche_ouverte" est enregistrée pour ce patient.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">RGP-03</td>
+        <td class="col-action">Exporter le registre de traitement Art. 30 (bouton dans RGPD).</td>
+        <td class="col-expect">Fichier HTML généré et ouvert automatiquement dans le navigateur.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     9. PARAMÈTRES
+═══════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header"><span class="section-icon">⚙️</span> 9 — Paramètres</div>
+  <table>
+    <thead><tr>
+      <th class="col-id">ID</th><th class="col-action">Action à effectuer</th>
+      <th class="col-expect">Résultat attendu</th><th>Criticité</th>
+      <th class="col-result">Résultat</th><th class="col-note">Notes</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td class="col-id">PAR-01</td>
+        <td class="col-action">Remplir les infos de facturation (nom praticien, adresse, SIRET, taux TVA).</td>
+        <td class="col-expect">Informations sauvegardées, apparaissent sur la prochaine facture générée.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">PAR-02</td>
+        <td class="col-action">Configurer le dossier de sauvegarde (choisir un dossier personnalisé).</td>
+        <td class="col-expect">Chemin sauvegardé, prochaine sauvegarde dans ce dossier.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">PAR-03</td>
+        <td class="col-action">Support → Générer le rapport de diagnostic.</td>
+        <td class="col-expect">Fichier .txt ouvert automatiquement. Contient les infos système, DB, fichiers.</td>
+        <td><span class="crit crit-mineur">MINEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     10. INTERFACE & UX
+═══════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header"><span class="section-icon">🎨</span> 10 — Interface &amp; Expérience utilisateur</div>
+  <table>
+    <thead><tr>
+      <th class="col-id">ID</th><th class="col-action">Action à effectuer</th>
+      <th class="col-expect">Résultat attendu</th><th>Criticité</th>
+      <th class="col-result">Résultat</th><th class="col-note">Notes</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td class="col-id">UX-01</td>
+        <td class="col-action">Basculer en mode sombre (icône lune dans le header).</td>
+        <td class="col-expect">Toute l'interface passe en thème sombre. Logo et texte Synoria visibles. Relancer : thème conservé.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">UX-02</td>
+        <td class="col-action">Utiliser Ctrl+1 à Ctrl+7 pour naviguer entre les pages.</td>
+        <td class="col-expect">Navigation instantanée vers chaque section correspondante.</td>
+        <td><span class="crit crit-mineur">MINEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">UX-03</td>
+        <td class="col-action">Appuyer sur Ctrl+K. Taper un nom de patient.</td>
+        <td class="col-expect">Fenêtre de recherche globale s'ouvre. Résultats affichés en temps réel.</td>
+        <td><span class="crit crit-mineur">MINEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">UX-04</td>
+        <td class="col-action">Redimensionner la fenêtre à 50% de la taille normale.</td>
+        <td class="col-expect">L'interface reste utilisable. Pas de texte tronqué bloquant. Barre de navigation toujours visible.</td>
+        <td><span class="crit crit-mineur">MINEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">UX-05</td>
+        <td class="col-action">Effectuer une action réussie (créer un patient) et observer le feedback.</td>
+        <td class="col-expect">Toast de confirmation vert affiché brièvement en bas de l'écran.</td>
+        <td><span class="crit crit-mineur">MINEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">UX-06</td>
+        <td class="col-action">Observer le splash screen au lancement.</td>
+        <td class="col-expect">Logo Synoria animé, visible en mode clair ET sombre. Pas de fond gris.</td>
+        <td><span class="crit crit-mineur">MINEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     11. INSTALLATION & DÉMARRAGE
+═══════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header"><span class="section-icon">📦</span> 11 — Installation &amp; Démarrage (sur un PC vierge)</div>
+  <div class="note-box">
+    ⚠️ Ces tests doivent être réalisés sur un PC qui n'a <strong>jamais eu l'application installée</strong>, de préférence par les 2 testeurs externes.
+  </div>
+  <table>
+    <thead><tr>
+      <th class="col-id">ID</th><th class="col-action">Action à effectuer</th>
+      <th class="col-expect">Résultat attendu</th><th>Criticité</th>
+      <th class="col-result">Résultat</th><th class="col-note">Notes</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td class="col-id">INS-01</td>
+        <td class="col-action">Lancer le fichier "Synoria Setup X.X.X.exe". Suivre l'installateur.</td>
+        <td class="col-expect">Installation sans erreur. Raccourci bureau créé. Application dans le menu Démarrer.</td>
+        <td><span class="crit crit-bloquant">BLOQUANT</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">INS-02</td>
+        <td class="col-action">Lancer Synoria depuis le raccourci bureau.</td>
+        <td class="col-expect">Splash screen → écran de création de mot de passe. Aucun message d'erreur Windows.</td>
+        <td><span class="crit crit-bloquant">BLOQUANT</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">INS-03</td>
+        <td class="col-action">Observer si Windows Defender ou un antivirus bloque l'application.</td>
+        <td class="col-expect">Idéalement : aucun blocage. Sinon : noter le message exact pour suivi.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">INS-04</td>
+        <td class="col-action">Désinstaller l'application via Ajout/Suppression de programmes Windows.</td>
+        <td class="col-expect">Application supprimée proprement. Les données utilisateur (dans AppData) sont conservées.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">INS-05</td>
+        <td class="col-action">Tester la version portable (fichier .exe sans installation, copié sur clé USB).</td>
+        <td class="col-expect">Application fonctionne depuis la clé USB. Données stockées dans le dossier "data/" à côté du .exe.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     12. SCÉNARIO COMPLET FIL ROUGE
+═══════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header"><span class="section-icon">🎬</span> 12 — Scénario fil rouge (journée type d'un praticien)</div>
+  <div class="note-box">
+    Ce scénario valide le flux de travail complet sans instructions détaillées. Le testeur doit se débrouiller seul comme un vrai utilisateur.
+  </div>
+  <table>
+    <thead><tr>
+      <th class="col-id">ID</th><th class="col-action">Action à effectuer</th>
+      <th class="col-expect">Résultat attendu</th><th>Criticité</th>
+      <th class="col-result">Résultat</th><th class="col-note">Notes</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td class="col-id">FIL-01</td>
+        <td class="col-action">Créer un nouveau patient "Marie Dupont" avec ses coordonnées complètes et obtenir son consentement RGPD.</td>
+        <td class="col-expect">Patient créé, consentement enregistré.</td>
+        <td><span class="crit crit-bloquant">BLOQUANT</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">FIL-02</td>
+        <td class="col-action">Créer un RDV pour Marie Dupont demain à 10h00.</td>
+        <td class="col-expect">RDV visible dans le calendrier.</td>
+        <td><span class="crit crit-bloquant">BLOQUANT</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">FIL-03</td>
+        <td class="col-action">Depuis le RDV, créer la séance. Remplir motif, évolution, traitement. Planifier le prochain RDV dans 3 semaines. Sauvegarder.</td>
+        <td class="col-expect">Séance enregistrée. RDV dans 3 semaines créé dans le calendrier.</td>
+        <td><span class="crit crit-bloquant">BLOQUANT</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">FIL-04</td>
+        <td class="col-action">Enregistrer la recette de la consultation dans la comptabilité du mois.</td>
+        <td class="col-expect">Recette visible, totaux mis à jour.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">FIL-05</td>
+        <td class="col-action">Générer une facture pour Marie Dupont pour cette consultation.</td>
+        <td class="col-expect">PDF facture généré et ouvrable.</td>
+        <td><span class="crit crit-majeur">MAJEUR</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="col-id">FIL-06</td>
+        <td class="col-action">Fermer l'application (avec sauvegarde automatique activée). Relancer. Vérifier que toutes les données sont là.</td>
+        <td class="col-expect">Patient, séance, RDV, comptabilité : tout est intact après redémarrage.</td>
+        <td><span class="crit crit-bloquant">BLOQUANT</span></td>
+        <td><div class="checkbox-group"><label class="cb"><input type="checkbox"/> <span class="ok">✓</span></label><label class="cb"><input type="checkbox"/> <span class="nok">✗</span></label></div></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     ZONE RETOURS LIBRES
+═══════════════════════════════════════════════════════════════ -->
+<div class="no-break" style="margin-bottom:28px;">
+  <div style="font-size:12px;font-weight:700;color:#2d6a4f;margin-bottom:12px;">💬 Retours libres &amp; Bugs observés</div>
+  <table>
+    <thead><tr>
+      <th style="width:60px;">N°</th>
+      <th>Description du problème observé</th>
+      <th style="width:100px;">Page concernée</th>
+      <th>Criticité</th>
+      <th style="width:120px;">Reproduit par</th>
+    </tr></thead>
+    <tbody>
+      <tr><td>1</td><td style="height:30px;"></td><td></td><td></td><td></td></tr>
+      <tr><td>2</td><td style="height:30px;"></td><td></td><td></td><td></td></tr>
+      <tr><td>3</td><td style="height:30px;"></td><td></td><td></td><td></td></tr>
+      <tr><td>4</td><td style="height:30px;"></td><td></td><td></td><td></td></tr>
+      <tr><td>5</td><td style="height:30px;"></td><td></td><td></td><td></td></tr>
+      <tr><td>6</td><td style="height:30px;"></td><td></td><td></td><td></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     VALIDATION FINALE
+═══════════════════════════════════════════════════════════════ -->
+<div class="no-break">
+  <div style="font-size:12px;font-weight:700;color:#2d6a4f;margin-bottom:12px;">✅ Verdict final</div>
+  <table style="margin-bottom:20px;">
+    <tbody>
+      <tr>
+        <td style="width:200px;font-weight:700;padding:10px;">🟢 Validé — Prêt pour la vente</td>
+        <td><label class="cb" style="font-size:11px;"><input type="checkbox"/> Aucun défaut BLOQUANT. Tous les tests FIL passés.</label></td>
+      </tr>
+      <tr>
+        <td style="font-weight:700;padding:10px;">🟡 Conditionnel</td>
+        <td><label class="cb" style="font-size:11px;"><input type="checkbox"/> Défauts MAJEURS identifiés, correction avant lancement.</label></td>
+      </tr>
+      <tr>
+        <td style="font-weight:700;padding:10px;">🔴 Non validé</td>
+        <td><label class="cb" style="font-size:11px;"><input type="checkbox"/> Défauts BLOQUANTS — lancement impossible.</label></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="sign-row">
+    <div class="sign-box">
+      <div class="sign-label">Testeur 1 — Nom &amp; Signature</div>
+      <div class="sign-line"></div>
+    </div>
+    <div class="sign-box">
+      <div class="sign-label">Testeur 2 — Nom &amp; Signature</div>
+      <div class="sign-line"></div>
+    </div>
+    <div class="sign-box">
+      <div class="sign-label">Validé par (Jean-Pierre Timoner) — Date</div>
+      <div class="sign-line"></div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <span>Synoria — Fiche de tests fonctionnels v1.4.x · Confidentiel</span>
+  <span>Jean-Pierre Timoner · jeanpierre.timoner.mtc@gmail.com · Juin 2026</span>
+</div>
+
+</div>
+</body>
+</html>
