@@ -59,7 +59,7 @@ export function importPluginFromFile(filePath: string): PluginDefinition {
   if (!def.name)      throw new Error('Champ requis manquant : "name"')
   if (!def.version)   throw new Error('Champ requis manquant : "version"')
   if (!def.specialty) throw new Error('Champ requis manquant : "specialty"')
-  if (!Array.isArray(def.sections) || def.sections.length === 0) {
+  if (!Array.isArray(def.sections) || (def.sections.length === 0 && !def.useBuiltinForm)) {
     throw new Error('Le plugin doit contenir au moins une section ("sections").')
   }
 

@@ -87,6 +87,21 @@ export default function HistoryPage() {
       ) : filtered.map(s => {
         const p = getPatient(s.patient_id)
         const isOpen = openId === s.id
+
+        // Badge plugin
+        let fd: Record<string, any> = {}
+        try { if (s.full_data_json) fd = JSON.parse(s.full_data_json) } catch {}
+        const pluginId: string | undefined = fd.pluginId
+        const schema = fd.pluginSchema
+        // Fallback pour les plugins builtin (useBuiltinForm) qui ne stockent pas pluginSchema
+        const BUILTIN: Record<string, { icon: string; label: string; accent: string }> = {
+          'mtc_jp': { icon: '🌿', label: 'MTC', accent: '#4A6741' }
+        }
+        const builtin = pluginId ? BUILTIN[pluginId] : undefined
+        const pluginIcon: string | undefined = schema?.icon || builtin?.icon
+        const pluginLabel: string = schema?.specialty || schema?.name || builtin?.label || ''
+        const pluginAccent: string = schema?.accentColor || builtin?.accent || 'var(--accent)'
+
         return (
           <div key={s.id} className="seance-card">
             <div className="seance-header" onClick={() => setOpenId(isOpen ? null : s.id)}>
@@ -102,6 +117,16 @@ export default function HistoryPage() {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                {pluginId && (
+                  <span
+                    className="session-plugin-chip"
+                    style={{ '--chip-accent': pluginAccent } as React.CSSProperties}
+                    title={schema?.name || pluginId}
+                  >
+                    {pluginIcon && <span>{pluginIcon}</span>}
+                    <span>{pluginLabel || pluginId}</span>
+                  </span>
+                )}
                 {s.diagnostic_mtc && <span className="badge badge-green">{s.diagnostic_mtc.slice(0, 40)}</span>}
                 {s.evolution_tags && <span className={`badge ${getEvolBadgeClass(s.evolution_tags)}`}>{s.evolution_tags}</span>}
                 <button className="btn btn-secondary btn-sm" onClick={e => { e.stopPropagation(); navigate(`/resume/${s.id}`) }}>Résumé</button>

@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synoria — Procédure mot de passe oublié</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+    color: #e0e0f0;
+    background: #0d0d1a;
+    line-height: 1.75;
+  }
+
+  .page {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 48px 40px 60px;
+  }
+
+  /* ── En-tête ── */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 40px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid #1e1e38;
+  }
+
+  .logo-mark {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #00d084 0%, #00a86b 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+
+  header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.3px;
+  }
+
+  header p.subtitle {
+    font-size: 13px;
+    color: #7a7a9a;
+    margin-top: 3px;
+  }
+
+  /* ── Bloc avertissement critique ── */
+  .critical {
+    background: #1a0a0a;
+    border: 1.5px solid #c0392b;
+    border-radius: 12px;
+    padding: 22px 26px;
+    margin-bottom: 36px;
+  }
+
+  .critical .critical-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .critical .icon {
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .critical h2 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #e74c3c;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .critical p {
+    color: #d9b0b0;
+    font-size: 13.5px;
+    margin-top: 4px;
+  }
+
+  .critical strong {
+    color: #e74c3c;
+  }
+
+  /* ── Sections ── */
+  section {
+    margin-bottom: 40px;
+  }
+
+  section h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #00d084;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  section h2 .section-icon {
+    font-size: 18px;
+  }
+
+  /* ── Étapes ── */
+  .steps {
+    counter-reset: step-counter;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .step {
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    gap: 0 18px;
+    align-items: start;
+  }
+
+  .step-num {
+    counter-increment: step-counter;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #0a2a1e;
+    border: 2px solid #00d084;
+    color: #00d084;
+    font-weight: 700;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .step-body {
+    background: #13132b;
+    border: 1px solid #1e1e42;
+    border-radius: 10px;
+    padding: 16px 20px;
+  }
+
+  .step-body p {
+    color: #c8c8e8;
+    font-size: 13.5px;
+  }
+
+  .step-body p + p {
+    margin-top: 8px;
+  }
+
+  /* ── Chemins / code ── */
+  code, .path {
+    font-family: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+    font-size: 12.5px;
+    background: #0a0a20;
+    color: #7fcfff;
+    border: 1px solid #1a1a40;
+    border-radius: 5px;
+    padding: 2px 8px;
+    display: inline-block;
+    word-break: break-all;
+  }
+
+  .path-block {
+    font-family: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+    font-size: 12px;
+    background: #0a0a20;
+    color: #7fcfff;
+    border: 1px solid #1a1a40;
+    border-left: 3px solid #00d084;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-top: 10px;
+    word-break: break-all;
+    line-height: 1.8;
+  }
+
+  /* ── Bloc aucune sauvegarde ── */
+  .no-backup {
+    background: #0f0f22;
+    border: 1.5px solid #2a2a5a;
+    border-radius: 12px;
+    padding: 22px 26px;
+  }
+
+  .no-backup p {
+    color: #9090b8;
+    font-size: 13.5px;
+  }
+
+  .no-backup p + p {
+    margin-top: 10px;
+  }
+
+  .no-backup strong {
+    color: #e0e0f0;
+  }
+
+  /* ── Conseil préventif ── */
+  .tip {
+    background: #0a1e16;
+    border: 1.5px solid #00d084;
+    border-radius: 12px;
+    padding: 22px 26px;
+  }
+
+  .tip h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #00d084;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tip ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .tip ul li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    color: #a8d8c0;
+    font-size: 13.5px;
+  }
+
+  .tip ul li::before {
+    content: '✓';
+    color: #00d084;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ── Contact ── */
+  .contact {
+    margin-top: 40px;
+    padding: 20px 24px;
+    background: #13132b;
+    border: 1px solid #1e1e42;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .contact .contact-icon {
+    font-size: 26px;
+    flex-shrink: 0;
+  }
+
+  .contact p {
+    color: #9090b8;
+    font-size: 13px;
+  }
+
+  .contact a {
+    color: #00d084;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .contact a:hover {
+    text-decoration: underline;
+  }
+
+  /* ── Divider ── */
+  hr {
+    border: none;
+    border-top: 1px solid #1e1e38;
+    margin: 36px 0;
+  }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid #1e1e38;
+    text-align: center;
+    color: #454565;
+    font-size: 12px;
+  }
+
+  /* ── Print ── */
+  @media print {
+    body {
+      background: #ffffff;
+      color: #111111;
+    }
+
+    .page {
+      padding: 20px;
+    }
+
+    header {
+      border-bottom-color: #cccccc;
+    }
+
+    .logo-mark {
+      background: #00d084;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    header h1 { color: #111111; }
+    header p.subtitle { color: #555555; }
+
+    .critical {
+      background: #fff5f5;
+      border-color: #c0392b;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .critical h2 { color: #c0392b; }
+    .critical p { color: #333333; }
+
+    section h2 { color: #00963f; }
+
+    .step-num {
+      background: #e6f9f0;
+      border-color: #00963f;
+      color: #00963f;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .step-body {
+      background: #f9f9ff;
+      border-color: #d0d0e0;
+    }
+
+    .step-body p { color: #222222; }
+
+    code, .path {
+      background: #f0f0f8;
+      color: #1a5a8a;
+      border-color: #c0c0d8;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .path-block {
+      background: #f0f0f8;
+      color: #1a5a8a;
+      border-color: #c0c0d8;
+      border-left-color: #00963f;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .no-backup {
+      background: #f5f5ff;
+      border-color: #c0c0d8;
+    }
+
+    .no-backup p { color: #333333; }
+    .no-backup strong { color: #111111; }
+
+    .tip {
+      background: #f0fff7;
+      border-color: #00963f;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .tip h3 { color: #00963f; }
+    .tip ul li { color: #222222; }
+    .tip ul li::before { color: #00963f; }
+
+    .contact {
+      background: #f5f5ff;
+      border-color: #d0d0e8;
+    }
+
+    .contact p { color: #333333; }
+    .contact a { color: #00963f; }
+
+    hr { border-top-color: #dddddd; }
+
+    footer {
+      border-top-color: #cccccc;
+      color: #888888;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- En-tête -->
+  <header>
+    <div class="logo-mark">🔑</div>
+    <div>
+      <h1>Mot de passe oublié — Procédure de récupération</h1>
+      <p class="subtitle">Synoria v1.4.3 &nbsp;·&nbsp; Document standalone — aucune connexion requise</p>
+    </div>
+  </header>
+
+  <!-- Avertissement critique -->
+  <div class="critical">
+    <div class="critical-header">
+      <span class="icon">🔒</span>
+      <h2>Avertissement critique — Lisez ceci en premier</h2>
+    </div>
+    <p>
+      Synoria chiffre l'intégralité de votre base de données avec l'algorithme
+      <strong>AES-256-GCM</strong>, en utilisant une clé dérivée de votre mot de passe
+      via PBKDF2 (600 000 itérations). Cette architecture garantit la confidentialité
+      maximale de vos données de santé.
+    </p>
+    <p style="margin-top: 10px;">
+      La conséquence directe est la suivante : <strong>sans le mot de passe, les données
+      chiffrées sont mathématiquement inaccessibles</strong> — y compris pour l'équipe
+      Synoria. Il n'existe aucune "porte dérobée" ni mécanisme de récupération par le support.
+    </p>
+    <p style="margin-top: 10px;">
+      La procédure ci-dessous permet de reprendre l'accès à l'application <strong>uniquement
+      si vous disposez d'une sauvegarde</strong> <code>.json.enc</code> de vos données.
+    </p>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       CAS 1 — Sauvegarde disponible
+  ══════════════════════════════════════════════════════════════ -->
+  <section>
+    <h2><span class="section-icon">✅</span> Cas 1 — Vous avez une sauvegarde <code>.json.enc</code></h2>
+
+    <div class="steps">
+
+      <!-- Étape 1 -->
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <p><strong>Localiser la sauvegarde la plus récente.</strong></p>
+          <p>
+            Ouvrez l'Explorateur Windows et naviguez vers l'un des emplacements suivants.
+            Recherchez le fichier <code>.json.enc</code> avec la date la plus récente.
+          </p>
+          <div class="path-block">
+            %APPDATA%\Synoria\exports\<br>
+            — ou — dossier de sauvegarde personnalisé configuré dans Paramètres → Sauvegardes
+          </div>
+          <p style="margin-top: 10px; font-size: 13px; color: #7a7a9a;">
+            Astuce : tapez le chemin directement dans la barre d'adresse de l'Explorateur
+            Windows et appuyez sur Entrée.
+          </p>
+        </div>
+      </div>
+
+      <!-- Étape 2 -->
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <p><strong>Supprimer (ou renommer) les fichiers d'authentification existants.</strong></p>
+          <p>
+            Dans l'Explorateur Windows, naviguez vers <code>%APPDATA%\Synoria\</code>
+            et supprimez ou renommez les deux fichiers suivants
+            (ex. : ajouter <code>.bak</code> à la fin du nom) :
+          </p>
+          <div class="path-block">
+            %APPDATA%\Synoria\auth.json<br>
+            %APPDATA%\Synoria\database\mtc.sqlite.enc
+          </div>
+          <p style="margin-top: 10px; color: #c0a060; font-size: 13px;">
+            ⚠️ Renommer plutôt que supprimer est recommandé, par précaution, jusqu'à
+            confirmation que la restauration s'est déroulée correctement.
+          </p>
+        </div>
+      </div>
+
+      <!-- Étape 3 -->
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <p><strong>Relancer Synoria et créer un nouveau mot de passe.</strong></p>
+          <p>
+            Synoria détecte l'absence de mot de passe et affiche l'écran de création.
+            Choisissez un nouveau mot de passe fort et <strong>notez-le immédiatement</strong>
+            dans un gestionnaire de mots de passe ou sur papier en lieu sûr.
+          </p>
+          <p style="margin-top: 8px; font-size: 13px; color: #7a7a9a;">
+            Un bon mot de passe : au moins 12 caractères, mélange de lettres, chiffres et
+            symboles (ex. : <code>Tulipe!2026#Santé</code>).
+          </p>
+        </div>
+      </div>
+
+      <!-- Étape 4 -->
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <p><strong>Importer la sauvegarde pour restaurer vos données.</strong></p>
+          <p>
+            Une fois connecté à l'application vide, allez dans
+            <strong>Paramètres → Sauvegardes → Importer une sauvegarde</strong>,
+            sélectionnez le fichier <code>.json.enc</code> localisé à l'étape 1.
+          </p>
+          <p style="margin-top: 8px;">
+            Synoria déchiffre la sauvegarde avec la clé de chiffrement des exports
+            (distincte du mot de passe) et réimporte l'ensemble de vos données patients,
+            séances et paramètres.
+          </p>
+          <p style="margin-top: 8px; color: #00d084; font-size: 13px;">
+            ✓ Vos données sont restaurées. La procédure est terminée.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       CAS 2 — Aucune sauvegarde
+  ══════════════════════════════════════════════════════════════ -->
+  <section>
+    <h2><span class="section-icon">⛔</span> Cas 2 — Aucune sauvegarde disponible</h2>
+
+    <div class="no-backup">
+      <p>
+        <strong>Nous devons être honnêtes avec vous : dans ce cas, les données sont
+        définitivement perdues.</strong>
+      </p>
+      <p>
+        Le chiffrement AES-256-GCM sans mot de passe connu ne peut pas être cassé dans
+        un délai raisonnable, même avec les ressources informatiques les plus puissantes
+        disponibles à ce jour. Ce n'est pas une limitation du support — c'est la garantie
+        cryptographique qui protège les données de vos patients.
+      </p>
+      <p>
+        Vous pouvez néanmoins relancer Synoria proprement en suivant uniquement les
+        <strong>étapes 2 et 3</strong> décrites ci-dessus (supprimer auth.json et la base
+        chiffrée, puis recréer un mot de passe). L'application repartira avec une base
+        vide, prête à l'utilisation.
+      </p>
+      <p>
+        Pour éviter que cette situation ne se reproduise, consultez les conseils
+        préventifs ci-dessous.
+      </p>
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       Conseils préventifs
+  ══════════════════════════════════════════════════════════════ -->
+  <section>
+    <h2><span class="section-icon">🛡️</span> Conseils pour éviter ce problème à l'avenir</h2>
+
+    <div class="tip">
+      <h3>✦ Bonnes pratiques à mettre en place dès maintenant</h3>
+      <ul>
+        <li>Activer les <strong>sauvegardes automatiques à la fermeture</strong> dans Paramètres → Sauvegardes → Sauvegarde automatique.</li>
+        <li>Configurer un <strong>dossier de sauvegarde sur un disque externe ou réseau</strong> distinct du disque système.</li>
+        <li>Stocker votre mot de passe dans un <strong>gestionnaire de mots de passe</strong> (Bitwarden, KeePass) ou le noter sur papier dans un endroit sécurisé.</li>
+        <li>Effectuer une <strong>sauvegarde manuelle mensuelle</strong> via Paramètres → Sauvegardes → Exporter — et vérifier que le fichier est bien créé.</li>
+        <li>Conserver <strong>au moins deux copies de sauvegarde</strong> à des emplacements distincts (ordinateur + disque externe, ou ordinateur + clé USB).</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Contact support -->
+  <div class="contact">
+    <span class="contact-icon">📧</span>
+    <p>
+      Une question sur cette procédure ?
+      Contactez le support Synoria à l'adresse
+      <a href="mailto:support@synoria.fr">support@synoria.fr</a>.
+      Nous répondons sous 48 heures ouvrées. Précisez votre version de Synoria
+      et les étapes déjà effectuées.
+    </p>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    Synoria v1.4.3 &nbsp;·&nbsp; support@synoria.fr &nbsp;·&nbsp; Juin 2026
+  </footer>
+
+</div>
+</body>
+</html>

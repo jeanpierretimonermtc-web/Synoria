@@ -1,6 +1,6 @@
 import { app, BrowserWindow, shell, Menu, ipcMain, session, Notification } from 'electron'
 import { join }                             from 'path'
-import { existsSync, renameSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { initDatabase, closeDatabase, getDb } from './database/connection'
 import { registerAllHandlers }              from './ipc/handlers'
 import { getSettings }                      from './services/settingsService'
@@ -12,13 +12,8 @@ const portableDir = process.env.PORTABLE_EXECUTABLE_DIR
 if (portableDir) {
   app.setPath('userData', join(portableDir, 'data'))
 } else if (!app.isPackaged) {
-  const appData    = process.env.APPDATA || ''
-  const newPath    = join(appData, 'Synoria')
-  const legacyPath = join(appData, 'Dossier Patient MTC')
-  if (appData && !existsSync(newPath) && existsSync(legacyPath)) {
-    try { renameSync(legacyPath, newPath) } catch {}
-  }
-  if (appData) app.setPath('userData', newPath)
+  const appData = process.env.APPDATA || ''
+  if (appData) app.setPath('userData', join(appData, 'Synoria'))
 }
 
 // ── Supprime les erreurs de cache GPU Chromium (Windows permissions) ──

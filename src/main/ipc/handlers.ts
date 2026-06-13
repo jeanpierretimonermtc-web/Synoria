@@ -3,7 +3,7 @@ import { spawn }                         from 'child_process'
 import { mkdirSync, writeFileSync, unlinkSync, readFileSync, existsSync } from 'fs'
 import { join, extname }               from 'path'
 import * as patientRepo               from '../database/repositories/patientRepository'
-import * as templateRepo              from '../database/repositories/templateRepository'
+
 import * as sessionRepo               from '../database/repositories/sessionRepository'
 import * as appointmentRepo           from '../database/repositories/appointmentRepository'
 import { encryptToFile }              from '../services/encryptionService'
@@ -25,6 +25,9 @@ import * as pluginSvc                 from '../services/pluginService'
 import * as accessLogRepo             from '../database/repositories/accessLogRepository'
 import * as rgpdSvc                   from '../services/rgpdService'
 import * as gcalSvc                   from '../services/googleCalendarService'
+import { logError }                             from '../services/logService'
+import { generateDiagnosticReport, generateSupportDoc, generateRecoveryDoc } from '../services/diagnosticService'
+import { adminVerify, adminGetLogs, adminClearLogs, adminGetSystemInfo, adminDbIntegrity, adminWalCheckpoint, adminDbStats, adminGetSettings, adminForceBackup } from '../services/adminService'
 
 // ── Slug patient (même logique que backupService) ─────────────────
 function patientSlug(lastName: string, firstName: string): string {
@@ -454,6 +457,7 @@ export function registerAllHandlers(): void {
       initDatabase()
       return { ok: true }
     } catch (e: any) {
+      logError('auth:setup', e)
       // Rollback : supprimer auth.json si la config a échoué après sa création
       // pour que l'utilisateur puisse recommencer depuis l'écran de setup
       try {
@@ -491,6 +495,7 @@ export function registerAllHandlers(): void {
       auth.encryptDb()             // re-chiffre avec le nouveau mot de passe
       return { ok: true }
     } catch (e: any) {
+      logError('auth:changePassword', e)
       return { ok: false, error: e?.message || String(e) }
     }
   })
@@ -589,14 +594,20 @@ export function registerAllHandlers(): void {
     return verifyBackup(filePath)
   })
 
-  // ── Templates de séance ──────────────────────────────────────────
-  ipcMain.handle('templates:getAll', () => templateRepo.getAllTemplates())
+  // ── Rapport de diagnostic ─────────────────────────────────────────
+  ipcMain.handle('diagnostic:generate',    () => generateDiagnosticReport())
+  ipcMain.handle('diagnostic:supportDoc',  () => generateSupportDoc())
+  ipcMain.handle('diagnostic:recoveryDoc', () => generateRecoveryDoc())
 
-  ipcMain.handle('templates:save', (_e, name: string, description: string, dataJson: string) => {
-    return templateRepo.saveTemplate(name, description, dataJson)
-  })
+  // ── Admin ─────────────────────────────────────────────────────────
+  ipcMain.handle('admin:verify',        (_e, pwd)  => adminVerify(pwd))
+  ipcMain.handle('admin:getLogs',       (_e, n)    => adminGetLogs(n))
+  ipcMain.handle('admin:clearLogs',     ()         => adminClearLogs())
+  ipcMain.handle('admin:systemInfo',    ()         => adminGetSystemInfo())
+  ipcMain.handle('admin:dbIntegrity',   ()         => adminDbIntegrity())
+  ipcMain.handle('admin:walCheckpoint', ()         => adminWalCheckpoint())
+  ipcMain.handle('admin:dbStats',       ()         => adminDbStats())
+  ipcMain.handle('admin:getSettings',   ()         => adminGetSettings())
+  ipcMain.handle('admin:forceBackup',   ()         => adminForceBackup())
 
-  ipcMain.handle('templates:delete', (_e, id: string) => {
-    templateRepo.deleteTemplate(id)
-  })
 }

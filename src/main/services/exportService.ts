@@ -447,12 +447,23 @@ export function exportSessionExcel(sessionId: string, outputDir?: string): strin
   // Fusions (titre + sous-titre)
   ws['!merges'] = merges
 
-  // Hauteurs de lignes
-  ws['!rows'] = ws_data.map((_, i) => {
-    if (i === 0) return { hpx: 40 }   // titre
-    if (i === 1) return { hpx: 28 }   // sous-titre
-    if (i === 2) return { hpx: 8  }   // gap
-    return { hpx: 20 }
+  // Hauteurs de lignes auto-calculées d'après le contenu de la colonne valeur (B)
+  const COL_A_WCH = 29   // largeur réelle col A en caractères
+  const COL_B_WCH = 79   // largeur réelle col B en caractères
+  ws['!rows'] = ws_data.map((rowData, i) => {
+    if (i === 0) return { hpx: 40 }
+    if (i === 1) return { hpx: 28 }
+    if (i === 2) return { hpx: 8  }
+    let maxLines = 1
+    for (const [ci, wch] of [[0, COL_A_WCH], [1, COL_B_WCH]] as [number, number][]) {
+      const v = (rowData[ci] as any)?.v
+      if (!v) continue
+      const lines = String(v).split('\n').reduce(
+        (n, seg) => n + Math.max(1, Math.ceil((seg.length || 1) / wch)), 0
+      )
+      if (lines > maxLines) maxLines = lines
+    }
+    return { hpx: Math.max(22, maxLines * 16) }
   })
 
   const wb = XLSX.utils.book_new()

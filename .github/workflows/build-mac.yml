@@ -1,68 +1,38 @@
-name: Build macOS (Synoria)
+name: Build macOS
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version à builder (ex: 1.4.0)'
-        required: false
-        default: '1.4.2'
-
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
   build-mac:
     runs-on: macos-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '18'
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --ignore-scripts
+        run: npm ci
 
-      # Compiler better-sqlite3 pour x64 (cross-compile depuis arm64 via clang -arch x86_64)
-      - name: Rebuild better-sqlite3 pour x64
-        run: |
-          npx @electron/rebuild -f -w better-sqlite3 --arch x64
-          cp node_modules/better-sqlite3/build/Release/better_sqlite3.node /tmp/bs3_x64.node
-
-      # Compiler better-sqlite3 pour arm64 (natif)
-      - name: Rebuild better-sqlite3 pour arm64
-        run: |
-          npx @electron/rebuild -f -w better-sqlite3 --arch arm64
-          cp node_modules/better-sqlite3/build/Release/better_sqlite3.node /tmp/bs3_arm64.node
-
-      # Fusionner les deux binaires en un seul "fat binary" universel
-      - name: Créer le binaire universel (lipo)
-        run: |
-          lipo -create /tmp/bs3_x64.node /tmp/bs3_arm64.node \
-            -output node_modules/better-sqlite3/build/Release/better_sqlite3.node
-          lipo -info node_modules/better-sqlite3/build/Release/better_sqlite3.node
-
-      - name: Build avec Vite
-        run: npx vite build
-
-      # npmRebuild=false : electron-builder n'écrase pas le fat binary qu'on vient de créer
-      - name: Build Electron universel (Intel + Apple Silicon)
-        run: npx electron-builder --mac --universal --config.npmRebuild=false
+      - name: Build macOS
+        run: npm run electron:build -- --mac
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload DMG universel
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Synoria-macOS-${{ github.event.inputs.version || '1.4.2' }}
-          path: release/*.dmg
-          retention-days: 90
-          if-no-files-found: error
+          name: Synoria-mac
+          path: |
+            release/*.dmg
+            release/*.zip
+          retention-days: 30

@@ -23,7 +23,7 @@ function StatusDot({ ok }: { ok: boolean }) {
 
 // ── Onglets de la sidebar ─────────────────────────────────────────
 
-type Tab = 'sauvegardes' | 'facturation' | 'rgpd' | 'securite' | 'plugin' | 'gcal'
+type Tab = 'sauvegardes' | 'facturation' | 'rgpd' | 'securite' | 'plugin' | 'gcal' | 'support'
 
 const TABS: { id: Tab; icon: string; label: string; desc: string }[] = [
   { id: 'sauvegardes', icon: '💾', label: 'Sauvegardes',  desc: 'Chemins, automatisation'     },
@@ -32,6 +32,7 @@ const TABS: { id: Tab; icon: string; label: string; desc: string }[] = [
   { id: 'securite',    icon: '🔐', label: 'Sécurité',     desc: 'Mot de passe, mise à jour'    },
   { id: 'plugin',      icon: '🔌', label: 'Plugin',       desc: 'Formulaire de spécialité'     },
   { id: 'gcal',        icon: '📅', label: 'Google Cal.',  desc: 'Sync calendrier téléphone'    },
+  { id: 'support',     icon: '🔧', label: 'Support',      desc: 'Diagnostic, assistance'       },
 ]
 
 // ── PAGE ──────────────────────────────────────────────────────────
@@ -70,6 +71,9 @@ export default function SettingsPage() {
   const [gcalClientSec, setGcalClientSec] = useState('')
   const [gcalCalendars, setGcalCalendars] = useState<GCalCalendar[]>([])
   const [gcalLoading,   setGcalLoading]   = useState(false)
+
+  // Support
+  const [diagGenerating, setDiagGenerating] = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -241,6 +245,27 @@ export default function SettingsPage() {
     await window.mtcApi.pluginRemove()
     setActivePlugin(null)
     showToast('Plugin supprimé — formulaire MTC restauré', 'success')
+  }
+
+  const handleGenerateDiagnostic = async () => {
+    setDiagGenerating(true)
+    try {
+      const path = await window.mtcApi.generateDiagnosticReport()
+      showToast('Rapport généré ✓', 'success')
+      await window.mtcApi.openPath(path)
+    } catch (e: any) {
+      showToast(`Erreur : ${e?.message || e}`, 'error')
+    }
+    setDiagGenerating(false)
+  }
+
+  const handleOpenSupportDoc = async () => {
+    try {
+      const path = await window.mtcApi.generateSupportDoc()
+      await window.mtcApi.openPath(path)
+    } catch (e: any) {
+      showToast(`Erreur : ${e?.message || e}`, 'error')
+    }
   }
 
   if (loading || !settings) {
@@ -945,6 +970,101 @@ export default function SettingsPage() {
               )}
               <div className="settings-enc-note">
                 Le plugin ne modifie pas la base de données. Les données restent accessibles même si le plugin change.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ════ SUPPORT TECHNIQUE ════ */}
+        {activeTab === 'support' && (
+          <div>
+            <div className="settings-tab-header">
+              <div className="settings-tab-title">🔧 Support technique</div>
+              <div className="settings-tab-desc">Diagnostic et assistance</div>
+            </div>
+
+            <div className="settings-card">
+              <div className="settings-card-title">
+                <span className="card-title-icon icon-blue">📋</span>
+                Rapport de diagnostic
+              </div>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.6 }}>
+                En cas de problème, générez un rapport de diagnostic et envoyez-le à&nbsp;
+                <strong>support@synoria.fr</strong>.
+                Le rapport sera ouvert automatiquement dans votre éditeur de texte.
+              </p>
+              <div style={{ background: 'var(--accent-light)', border: '1px solid var(--border-soft)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                ✅ <strong>Ce rapport ne contient aucune donnée patient</strong> (ni nom, prénom, email, notes). Il inclut uniquement des informations techniques : version, OS, statistiques anonymes de la base de données, configuration et journal d'erreurs.
+              </div>
+              <div className="settings-actions">
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={handleGenerateDiagnostic}
+                  disabled={diagGenerating}
+                >
+                  {diagGenerating ? '⏳ Génération…' : '🔧 Générer le rapport de diagnostic'}
+                </button>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleOpenSupportDoc}
+                >
+                  📄 Guide de lecture du rapport
+                </button>
+              </div>
+            </div>
+
+            <div className="settings-card">
+              <div className="settings-card-title">
+                <span className="card-title-icon" style={{ background: '#FEF3C722', color: '#92400E' }}>🔑</span>
+                Mot de passe oublié
+              </div>
+
+              {/* Avertissement principal */}
+              <div style={{ background: '#FEF3C7', border: '1.5px solid #F59E0B', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 12.5, color: '#92400E', lineHeight: 1.7 }}>
+                <strong>⚠️ Il n'existe pas de récupération directe.</strong><br />
+                Le mot de passe est la seule clé de la base de données — même le support Synoria ne peut pas la déchiffrer sans lui.
+              </div>
+
+              {/* Chemin de récupération via sauvegarde */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)', marginBottom: 10 }}>
+                  ✅ Récupération possible si vous avez une sauvegarde
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {([
+                    ['1', 'Localisez votre dernière sauvegarde', 'Fichier .json.enc dans votre dossier de sauvegardes (Paramètres → Sauvegardes → Ouvrir le dossier)'],
+                    ['2', 'Supprimez les fichiers de verrouillage', 'Dans le dossier de données de l\'app, supprimez auth.json et mtc.sqlite.enc — l\'app reviendra en mode "première utilisation"'],
+                    ['3', 'Créez un nouveau mot de passe', 'Au prochain démarrage, l\'app vous proposera de créer un nouveau mot de passe'],
+                    ['4', 'Importez votre sauvegarde', 'Paramètres → Sauvegardes → Importer une sauvegarde — la sauvegarde est chiffrée avec une clé indépendante du mot de passe'],
+                  ] as [string, string, string][]).map(([num, title, desc]) => (
+                    <div key={num} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '8px 12px', background: 'var(--surface-alt, var(--bg))', borderRadius: 8, border: '1px solid var(--border-soft)' }}>
+                      <span style={{ background: 'var(--accent)', color: '#fff', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{num}</span>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 12.5, color: 'var(--text)', marginBottom: 2 }}>{title}</div>
+                        <div style={{ fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.5 }}>{desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Si pas de sauvegarde */}
+              <div style={{ background: 'var(--bg)', border: '1px solid var(--border-soft)', borderRadius: 8, padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 4 }}>
+                <strong style={{ color: 'var(--red)' }}>❌ Sans sauvegarde</strong>, les données sont définitivement inaccessibles.<br />
+                C'est pourquoi les sauvegardes automatiques doivent être activées dès la création du mot de passe.
+              </div>
+            </div>
+
+            <div className="settings-card">
+              <div className="settings-card-title">
+                <span className="card-title-icon icon-green">✉️</span>
+                Contact support
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.8 }}>
+                <div><strong>Email :</strong> support@synoria.fr</div>
+                <div style={{ marginTop: 8, fontSize: 12 }}>
+                  Joignez le rapport de diagnostic à votre message pour accélérer le traitement.
+                </div>
               </div>
             </div>
           </div>

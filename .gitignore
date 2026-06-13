@@ -28,6 +28,11 @@ backup*/
 .env.*
 .claude/
 
+# Documents sensibles & temporaires (ne pas versionner)
+ADMIN_CREDENTIALS.html
+add_new_handlers.cjs
+fix_verify_import.cjs
+
 # OS
 .DS_Store
 Thumbs.db

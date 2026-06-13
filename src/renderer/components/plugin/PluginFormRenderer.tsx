@@ -34,17 +34,19 @@ function PluginSectionCard({ section, data, onChange }: {
 }) {
   const accent = section.accentColor || 'var(--accent)'
   return (
-    <div className="card" id={`sec-plugin-${section.id}`} style={{ borderLeft: `4px solid ${accent}` }}>
+    <div className="card plugin-card" id={`sec-plugin-${section.id}`} style={{ borderLeft: `4px solid ${accent}` }}>
       <div
-        className="plugin-section-title"
-        style={{ color: accent, borderBottomColor: `${accent}55` }}
+        className="plugin-section-header"
+        style={{ '--ph-accent': accent } as React.CSSProperties}
       >
         {section.icon && (
-          <span className="sec-icon-emoji">{section.icon}</span>
+          <span className="sec-icon-wrap">{section.icon}</span>
         )}
         <span className="sec-label">{section.title}</span>
       </div>
-      <FieldsGrid fields={section.fields} data={data} onChange={onChange} />
+      <div className="plugin-section-body">
+        <FieldsGrid fields={section.fields} data={data} onChange={onChange} />
+      </div>
     </div>
   )
 }
@@ -162,7 +164,7 @@ function FieldWrapper({ field, data, onChange }: {
         {field.label}
         {field.required && <span style={{ color: 'var(--red)' }}> *</span>}
       </label>
-      {field.hint && <div style={{ fontSize: 11, color: 'var(--text-hint)', marginBottom: 4, marginTop: -2 }}>{field.hint}</div>}
+      {field.hint && <div className="hint">{field.hint}</div>}
       <DynamicField field={field} value={data[field.id]} onChange={v => onChange(field.id, v)} />
     </>
   )
@@ -243,21 +245,15 @@ function DynamicField({ field, value, onChange }: {
       return (
         <div className="plugin-radio-group">
           {(field.options || []).map(o => (
-            <label
+            <button
               key={o}
+              type="button"
               className={`plugin-radio-option${value === o ? ' active' : ''}`}
               onClick={() => onChange(value === o ? '' : o)}
+              aria-pressed={value === o}
             >
-              <input
-                type="radio"
-                name={field.id}
-                value={o}
-                checked={value === o}
-                onChange={() => onChange(o)}
-                style={{ accentColor: 'var(--accent)' }}
-              />
               {o}
-            </label>
+            </button>
           ))}
         </div>
       )
@@ -269,19 +265,15 @@ function DynamicField({ field, value, onChange }: {
           {(field.options || []).map(o => {
             const checked = sel.includes(o)
             return (
-              <label
+              <button
                 key={o}
+                type="button"
                 className={`plugin-checkbox-option${checked ? ' active' : ''}`}
                 onClick={() => onChange(checked ? sel.filter(s => s !== o) : [...sel, o])}
+                aria-pressed={checked}
               >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => {}}
-                  style={{ accentColor: 'var(--accent)' }}
-                />
                 {o}
-              </label>
+              </button>
             )
           })}
         </div>

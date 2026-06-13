@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react'
 
 interface SplashScreenProps {
   onDone: () => void
+  theme?: 'light' | 'dark'
 }
 
-export default function SplashScreen({ onDone }: SplashScreenProps) {
+export default function SplashScreen({ onDone, theme = 'light' }: SplashScreenProps) {
   const [phase, setPhase] = useState<'in' | 'hold' | 'out'>('in')
+  const dark = theme === 'dark'
 
   useEffect(() => {
     const t1 = setTimeout(() => setPhase('hold'), 400)

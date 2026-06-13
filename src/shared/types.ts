@@ -339,15 +339,6 @@ export interface SearchResult {
   date?:     string
 }
 
-// ─── TEMPLATES DE SÉANCE ─────────────────────────────────────────────────────
-export interface SessionTemplate {
-  id:          string
-  name:        string
-  description: string
-  data_json:   string
-  created_at:  string
-  updated_at:  string
-}
 
 export interface InvoiceData {
   patientFirstName: string
@@ -441,9 +432,6 @@ export interface IpcApi {
   onFormatPopup: (cb: (pos: { x: number; y: number }) => void) => void
   searchGlobal: (query: string) => Promise<SearchResult[]>
   verifyBackup: (filePath: string) => Promise<{ patients: number; sessions: number; exportedAt: string }>
-  getTemplates: () => Promise<SessionTemplate[]>
-  saveTemplate: (name: string, description: string, dataJson: string) => Promise<SessionTemplate>
-  deleteTemplate: (id: string) => Promise<void>
   // Settings
   getSettings: () => Promise<AppSettings>
   saveSettings: (settings: Partial<AppSettings>) => Promise<AppSettings>
@@ -477,6 +465,20 @@ export interface IpcApi {
   gcalDisconnect:    () => Promise<void>
   gcalListCalendars: () => Promise<GCalCalendar[]>
   gcalSetCalendar:   (calendarId: string, calendarName: string) => Promise<void>
+  // Diagnostic
+  generateDiagnosticReport: () => Promise<string>
+  generateSupportDoc: () => Promise<string>
+  generateRecoveryDoc: () => Promise<string>
+  // Admin
+  adminVerify:        (password: string) => Promise<boolean>
+  adminGetLogs:       (n?: number) => Promise<string[]>
+  adminClearLogs:     () => Promise<void>
+  adminGetSystemInfo: () => Promise<{ version: string; userData: string; platform: string; arch: string; nodeVersion: string; electronVersion: string; dbOpen: boolean; memoryUsedMB: number; memoryTotalMB: number; uptimeSeconds: number; hostname: string }>
+  adminDbIntegrity:   () => Promise<string>
+  adminWalCheckpoint: () => Promise<string>
+  adminDbStats:       () => Promise<Record<string, number>>
+  adminGetSettings:   () => Promise<string>
+  adminForceBackup:   () => Promise<string>
 }
 
 declare global {

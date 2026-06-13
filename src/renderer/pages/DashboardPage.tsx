@@ -32,10 +32,10 @@ function getApptStatus(appt: Appointment, todayStr: string): ApptStatus {
 }
 
 const STATUS_CONFIG: Record<ApptStatus, { bg: string; border: string; dot: string; label: string; labelColor: string }> = {
-  upcoming:    { bg: '#E8F0F8', border: '#6A9AC4', dot: '#2A5A8A', label: 'Planifié',      labelColor: '#2A5A8A' },
-  done:        { bg: '#EAF0E8', border: '#8AAF84', dot: '#4A6741', label: 'Réalisé',        labelColor: '#4A6741' },
-  unconfirmed: { bg: '#FDF3E3', border: '#E8B96A', dot: '#C17B2A', label: 'À confirmer',    labelColor: '#C17B2A' },
-  cancelled:   { bg: '#FBEAEA', border: '#D47A7A', dot: '#A83232', label: 'Annulé',         labelColor: '#A83232' },
+  upcoming:    { bg: 'var(--blue-light)',   border: 'var(--blue-mid)',   dot: 'var(--blue)',   label: 'Planifié',     labelColor: 'var(--blue)'   },
+  done:        { bg: 'var(--accent-light)', border: 'var(--accent-mid)', dot: 'var(--accent)', label: 'Réalisé',      labelColor: 'var(--accent)' },
+  unconfirmed: { bg: 'var(--amber-light)',  border: 'var(--amber)',      dot: 'var(--amber)',  label: 'À confirmer',  labelColor: 'var(--amber)'  },
+  cancelled:   { bg: 'var(--red-light)',    border: 'var(--red)',        dot: 'var(--red)',    label: 'Annulé',       labelColor: 'var(--red)'    },
 }
 
 // ── Helpers partagés ──────────────────────────────────────────────
@@ -357,7 +357,7 @@ function RdvDrawer({ initialYear, initialMonth, patients, onClose }: {
                     onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '' }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: cfg.labelColor, background: 'rgba(255,255,255,.7)', borderRadius: 20, padding: '2px 8px' }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: cfg.labelColor, background: 'var(--surface)', borderRadius: 20, padding: '2px 8px' }}>
                         <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: cfg.dot, marginRight: 4, verticalAlign: 'middle' }} />
                         {cfg.label}
                       </span>

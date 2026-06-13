@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext, useRef, useCallback } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import type { Patient, SystemesQuestionnaire, EnergyTests, Appointment, SessionTemplate } from '../../shared/types'
+import type { Patient, SystemesQuestionnaire, EnergyTests, Appointment } from '../../shared/types'
 import type { PluginDefinition } from '../../shared/pluginTypes'
 import PluginFormRenderer from '../components/plugin/PluginFormRenderer'
 import { showConfirm } from '../components/common/ConfirmDialog'
@@ -94,12 +94,6 @@ export default function NewSessionPage() {
   const [anamnese, setAnamnese] = useState('')
   // Brouillon auto-sauvegardé
   const [draftInfo, setDraftInfo] = useState<{ patientName: string; date: string } | null>(null)
-  // Templates
-  const [templates, setTemplates] = useState<SessionTemplate[]>([])
-  const [showTemplateModal, setShowTemplateModal] = useState<'save' | 'load' | null>(null)
-  const [templateName, setTemplateName] = useState('')
-  const [templateDesc, setTemplateDesc] = useState('')
-  const [savingTemplate, setSavingTemplate] = useState(false)
   // Systèmes
   const [systemes, setSystemes] = useState<SystemesQuestionnaire>(defaultSystemes())
   // Tests énergétiques
@@ -132,14 +126,9 @@ export default function NewSessionPage() {
     })
   }, [patientId])
 
-  const loadTemplates = useCallback(async () => {
-    try { setTemplates(await window.mtcApi.getTemplates()) } catch { /* silent */ }
-  }, [])
-
   useEffect(() => {
     window.mtcApi.pluginGet().then(p => setActivePlugin(p || null)).catch(() => {})
-    loadTemplates()
-  }, [loadTemplates])
+  }, [])
 
   useEffect(() => {
     if (routePatientId) setPatientId(routePatientId)
@@ -327,72 +316,6 @@ export default function NewSessionPage() {
       await window.mtcApi.updatePatient(patientId, { [field]: value } as any)
       window.mtcApi.getPatients().then(setPatients)
     } catch { showToast('Erreur mise à jour patient', 'error') }
-  }
-
-  // ─── TEMPLATES ───────────────────────────────────────────────
-  const handleSaveTemplate = async () => {
-    if (!templateName.trim()) return
-    setSavingTemplate(true)
-    try {
-      const data = JSON.stringify({
-        motif, evolution, evolutionTags,
-        anamnese, observation, traitementNotes, reactions, techniques,
-        langue, langueNote, pouls, poulsNote, poulsPos,
-        constitution, typeCorps, teint,
-        diagnostic, cinqElements, causes, analyse, principes,
-        points, ptsOreille, plantes,
-        barrageNiv1, barrageNiv2, barrageNiv3, barrageNiv4,
-        pluginData,
-      })
-      await window.mtcApi.saveTemplate(templateName.trim(), templateDesc.trim(), data)
-      showToast('Modèle enregistré ✓', 'success')
-      setShowTemplateModal(null); setTemplateName(''); setTemplateDesc('')
-      await loadTemplates()
-    } catch (e: any) { showToast(`Erreur : ${e?.message}`, 'error') }
-    setSavingTemplate(false)
-  }
-
-  const handleLoadTemplate = (tpl: SessionTemplate) => {
-    try {
-      const d = JSON.parse(tpl.data_json)
-      if (d.motif           !== undefined) setMotif(d.motif)
-      if (d.evolution       !== undefined) setEvolution(d.evolution)
-      if (d.evolutionTags   !== undefined) setEvolutionTags(d.evolutionTags)
-      if (d.anamnese        !== undefined) setAnamnese(d.anamnese)
-      if (d.traitementNotes !== undefined) setTraitementNotes(d.traitementNotes)
-      if (d.reactions       !== undefined) setReactions(d.reactions)
-      if (d.techniques      !== undefined) setTechniques(d.techniques)
-      if (d.langue          !== undefined) setLangue(d.langue)
-      if (d.langueNote      !== undefined) setLangueNote(d.langueNote)
-      if (d.pouls           !== undefined) setPouls(d.pouls)
-      if (d.poulsNote       !== undefined) setPoulsNote(d.poulsNote)
-      if (d.poulsPos        !== undefined) setPoulsPos(d.poulsPos)
-      if (d.constitution    !== undefined) setConstitution(d.constitution)
-      if (d.typeCorps       !== undefined) setTypeCorps(d.typeCorps)
-      if (d.teint           !== undefined) setTeint(d.teint)
-      if (d.diagnostic      !== undefined) setDiagnostic(d.diagnostic)
-      if (d.cinqElements    !== undefined) setCinqElements(d.cinqElements)
-      if (d.causes          !== undefined) setCauses(d.causes)
-      if (d.analyse         !== undefined) setAnalyse(d.analyse)
-      if (d.principes       !== undefined) setPrincipes(d.principes)
-      if (d.points          !== undefined) setPoints(d.points)
-      if (d.ptsOreille      !== undefined) setPtsOreille(d.ptsOreille)
-      if (d.plantes         !== undefined) setPlantes(d.plantes)
-      if (d.barrageNiv1     !== undefined) setBarrageNiv1(d.barrageNiv1)
-      if (d.barrageNiv2     !== undefined) setBarrageNiv2(d.barrageNiv2)
-      if (d.barrageNiv3     !== undefined) setBarrageNiv3(d.barrageNiv3)
-      if (d.barrageNiv4     !== undefined) setBarrageNiv4(d.barrageNiv4)
-      if (d.pluginData      !== undefined) setPluginData(d.pluginData)
-      showToast(`Modèle « ${tpl.name} » chargé ✓`, 'success')
-      setShowTemplateModal(null)
-    } catch { showToast('Impossible de charger le modèle', 'error') }
-  }
-
-  const handleDeleteTemplate = async (id: string) => {
-    try {
-      await window.mtcApi.deleteTemplate(id)
-      await loadTemplates()
-    } catch { /* silent */ }
   }
 
   // ─── SAVE ─────────────────────────────────────────────────────
@@ -649,27 +572,29 @@ export default function NewSessionPage() {
             {!isEditing && <button className="btn btn-secondary" onClick={handleClear}>↺ Vider le formulaire</button>}
             {isEditing && <button className="btn btn-secondary" onClick={() => navigate('/seances')}>✕ Annuler</button>}
           </div>
-          <div className="top-actions-right" style={{ display: 'flex', gap: 8 }}>
-            <button className="btn btn-secondary btn-sm" title="Charger un modèle de séance"
-              onClick={() => { loadTemplates(); setShowTemplateModal('load') }}>
-              📂 Modèles
-            </button>
-            <button className="btn btn-secondary btn-sm" title="Sauvegarder comme modèle"
-              onClick={() => setShowTemplateModal('save')}>
-              ⭐ Sauver comme modèle
-            </button>
-          </div>
         </div>
 
         {/* 0. IDENTIFICATION */}
         <div className="card" style={{ borderLeft: '4px solid var(--accent)' }} id="sec-identification">
           <div className="card-title" style={{ justifyContent: 'space-between' }}>
             <span><span className="card-title-icon icon-green">👤</span>Identification</span>
-            {patientId && (
-              <span className="session-num-badge">
-                {sessionNum === 1 ? '1ère séance' : `${sessionNum}ème séance`}
-              </span>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {activePlugin && (
+                <span
+                  className="plugin-session-badge"
+                  style={{ '--plugin-accent': activePlugin.accentColor || 'var(--accent)' } as React.CSSProperties}
+                  title={`Spécialité active : ${activePlugin.name}`}
+                >
+                  {activePlugin.icon && <span>{activePlugin.icon}</span>}
+                  <span>{activePlugin.specialty}</span>
+                </span>
+              )}
+              {patientId && (
+                <span className="session-num-badge">
+                  {sessionNum === 1 ? '1ère séance' : `${sessionNum}ème séance`}
+                </span>
+              )}
+            </div>
           </div>
           <div className="grid3">
             <div className="field">
@@ -854,7 +779,7 @@ export default function NewSessionPage() {
                 <TagBtn key={v} label={v} active={langue.includes(v)} onClick={() => setLangue(toggleArr(langue, v))} />
               ))}
             </div>
-            <textarea value={langueNote} onChange={e => setLangueNote(e.target.value)} placeholder="Notes complémentaires sur la langue…" style={{ minHeight: 48 }} />
+            <RichTextArea value={langueNote} onChange={setLangueNote} placeholder="Notes complémentaires sur la langue…" minHeight={48} />
           </div>
 
           {/* Pouls */}
@@ -889,7 +814,7 @@ export default function NewSessionPage() {
                 <input className="pouls-pos-input" type="text" value={poulsPos.gaucheArriere} onChange={e => setPoulsPos(p => ({ ...p, gaucheArriere: e.target.value }))} placeholder="Reins / V" />
               </div>
             </div>
-            <textarea value={poulsNote} onChange={e => setPoulsNote(e.target.value)} placeholder="Notes complémentaires sur le pouls…" style={{ marginTop: 8, minHeight: 48 }} />
+            <RichTextArea value={poulsNote} onChange={setPoulsNote} placeholder="Notes complémentaires sur le pouls…" minHeight={48} />
           </div>
 
           {/* Constitution / Teint */}
@@ -902,7 +827,7 @@ export default function NewSessionPage() {
             <div className="field"><label>Type de corps</label><input type="text" value={typeCorps} onChange={e => setTypeCorps(e.target.value)} placeholder="Ex : longiligne, massif…" /></div>
             <div className="field"><label>Teint</label><input type="text" value={teint} onChange={e => setTeint(e.target.value)} placeholder="Ex : pâle, jaunâtre, rouge…" /></div>
           </div>
-          <div className="field"><label>Notes d'observation générales</label><textarea value={observation} onChange={e => setObservation(e.target.value)} placeholder="Cartographie du visage, cheveux, ongles, palpation, humidité…" /></div>
+          <div className="field"><label>Notes d'observation générales</label><RichTextArea value={observation} onChange={setObservation} placeholder="Cartographie du visage, cheveux, ongles, palpation, humidité…" minHeight={80} /></div>
         </div>
 
         {/* 6. TESTS ÉNERGÉTIQUES */}
@@ -916,8 +841,8 @@ export default function NewSessionPage() {
             <div className="field"><label>5 Éléments</label><input type="text" value={cinqElements} onChange={e => setCinqElements(e.target.value)} placeholder="Ex : Bois-Feu, Eau-Métal…" /></div>
             <div className="field"><label>Causes</label><input type="text" value={causes} onChange={e => setCauses(e.target.value)} placeholder="Ex : émotionnel, alimentaire, climatique…" /></div>
           </div>
-          <div className="field"><label>Mécanisme / terrain</label><textarea value={analyse} onChange={e => setAnalyse(e.target.value)} placeholder="Mécanisme physiopathologique MTC, terrain du patient…" /></div>
-          <div className="field"><label>Principes de traitement</label><textarea value={principes} onChange={e => setPrincipes(e.target.value)} placeholder="Tonifier, disperser, harmoniser…" style={{ minHeight: 55 }} /></div>
+          <div className="field"><label>Mécanisme / terrain</label><RichTextArea value={analyse} onChange={setAnalyse} placeholder="Mécanisme physiopathologique MTC, terrain du patient…" minHeight={80} /></div>
+          <div className="field"><label>Principes de traitement</label><RichTextArea value={principes} onChange={setPrincipes} placeholder="Tonifier, disperser, harmoniser…" minHeight={55} /></div>
         </div>
 
         {/* 7. TRAITEMENT */}
@@ -933,9 +858,9 @@ export default function NewSessionPage() {
               ))}
             </div>
           </div>
-          <div className="field"><label>Formule à base de plantes / dosage</label><textarea value={plantes} onChange={e => setPlantes(e.target.value)} placeholder="Nom de la formule, ingrédients, dosage, fréquence de prise, durée du traitement…" style={{ minHeight: 90 }} /></div>
-          <div className="field"><label>Réactions / observations pendant le soin</label><textarea value={reactions} onChange={e => setReactions(e.target.value)} placeholder="Réactions du patient, sensations, observations…" /></div>
-          <div className="field"><label>📝 Notes libres – Traitement</label><textarea value={traitementNotes} onChange={e => setTraitementNotes(e.target.value)} placeholder="Notes libres sur le traitement…" style={{ minHeight: 80 }} /></div>
+          <div className="field"><label>Formule à base de plantes / dosage</label><RichTextArea value={plantes} onChange={setPlantes} placeholder="Nom de la formule, ingrédients, dosage, fréquence de prise, durée du traitement…" minHeight={90} /></div>
+          <div className="field"><label>Réactions / observations pendant le soin</label><RichTextArea value={reactions} onChange={setReactions} placeholder="Réactions du patient, sensations, observations…" minHeight={80} /></div>
+          <div className="field"><label>📝 Notes libres – Traitement</label><RichTextArea value={traitementNotes} onChange={setTraitementNotes} placeholder="Notes libres sur le traitement…" minHeight={80} /></div>
         </div>
 
         {/* 8. BARRAGE HOMÉOPATHIQUE */}
@@ -944,19 +869,19 @@ export default function NewSessionPage() {
           <div className="grid2">
             <div className="field">
               <label>Niveau 1</label>
-              <textarea value={barrageNiv1} onChange={e => setBarrageNiv1(e.target.value)} placeholder="Remèdes niveau 1…" style={{ minHeight: 80 }} />
+              <RichTextArea value={barrageNiv1} onChange={setBarrageNiv1} placeholder="Remèdes niveau 1…" minHeight={80} />
             </div>
             <div className="field">
               <label>Niveau 2</label>
-              <textarea value={barrageNiv2} onChange={e => setBarrageNiv2(e.target.value)} placeholder="Remèdes niveau 2…" style={{ minHeight: 80 }} />
+              <RichTextArea value={barrageNiv2} onChange={setBarrageNiv2} placeholder="Remèdes niveau 2…" minHeight={80} />
             </div>
             <div className="field">
               <label>Niveau 3</label>
-              <textarea value={barrageNiv3} onChange={e => setBarrageNiv3(e.target.value)} placeholder="Remèdes niveau 3…" style={{ minHeight: 80 }} />
+              <RichTextArea value={barrageNiv3} onChange={setBarrageNiv3} placeholder="Remèdes niveau 3…" minHeight={80} />
             </div>
             <div className="field">
               <label>Niveau 4</label>
-              <textarea value={barrageNiv4} onChange={e => setBarrageNiv4(e.target.value)} placeholder="Remèdes niveau 4…" style={{ minHeight: 80 }} />
+              <RichTextArea value={barrageNiv4} onChange={setBarrageNiv4} placeholder="Remèdes niveau 4…" minHeight={80} />
             </div>
           </div>
         </div>
@@ -990,94 +915,10 @@ export default function NewSessionPage() {
           </button>
           {!isEditing && <button className="btn btn-secondary" onClick={handleClear}>↺ Vider le formulaire</button>}
           {isEditing && <button className="btn btn-secondary" onClick={() => navigate('/seances')}>✕ Annuler</button>}
-          <button className="btn btn-secondary" onClick={() => { loadTemplates(); setShowTemplateModal('load') }}>📂 Modèles</button>
+
         </div>
       </section>
 
-      {/* ── MODALE TEMPLATES ──────────────────────────────────── */}
-      {showTemplateModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          onMouseDown={e => { if (e.target === e.currentTarget) setShowTemplateModal(null) }}>
-          <div style={{ background: 'var(--surface)', borderRadius: 14, boxShadow: 'var(--shadow-lg)', width: 500, maxWidth: '92vw', maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', border: '1px solid var(--border)' }}>
-
-            {/* En-tête modale */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>
-                {showTemplateModal === 'save' ? '⭐ Sauvegarder comme modèle' : '📂 Charger un modèle'}
-              </h3>
-              <button className="btn btn-secondary btn-sm" onClick={() => setShowTemplateModal(null)}>✕</button>
-            </div>
-
-            <div style={{ overflowY: 'auto', padding: 20, flex: 1 }}>
-              {showTemplateModal === 'save' ? (
-                /* ── Formulaire sauvegarde ── */
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text)' }}>Nom du modèle *</label>
-                    <input
-                      type="text"
-                      value={templateName}
-                      onChange={e => setTemplateName(e.target.value)}
-                      placeholder="ex: Bilan initial, Traitement douleur dorsale…"
-                      autoFocus
-                      style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 14, boxSizing: 'border-box' }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text)' }}>Description (optionnel)</label>
-                    <textarea
-                      value={templateDesc}
-                      onChange={e => setTemplateDesc(e.target.value)}
-                      placeholder="Courte description du modèle…"
-                      rows={3}
-                      style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13, resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box' }}
-                    />
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '8px 12px', borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border-soft)' }}>
-                    Le modèle inclut : motif, évolution, anamnèse, traitement, diagnostic, points, plantes et tous les champs remplis.
-                  </div>
-                  <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                    <button className="btn btn-secondary" onClick={() => setShowTemplateModal(null)}>Annuler</button>
-                    <button className="btn btn-primary" onClick={handleSaveTemplate} disabled={savingTemplate || !templateName.trim()}>
-                      {savingTemplate ? '⏳ Sauvegarde…' : '⭐ Sauvegarder'}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                /* ── Liste des modèles ── */
-                templates.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
-                    <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
-                    <p style={{ fontSize: 14 }}>Aucun modèle enregistré</p>
-                    <p style={{ fontSize: 12 }}>Remplissez un formulaire et sauvegardez-le comme modèle réutilisable.</p>
-                    <button className="btn btn-primary btn-sm" style={{ marginTop: 8 }} onClick={() => setShowTemplateModal('save')}>⭐ Créer un modèle</button>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {templates.map(tpl => (
-                      <div key={tpl.id} style={{ border: '1.5px solid var(--border)', borderRadius: 10, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg)', cursor: 'pointer', transition: 'border-color .15s' }}
-                        onClick={() => handleLoadTemplate(tpl)}
-                        onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
-                        onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-                        <span style={{ fontSize: 24, flexShrink: 0 }}>📋</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{tpl.name}</div>
-                          {tpl.description && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{tpl.description}</div>}
-                          <div style={{ fontSize: 11, color: 'var(--text-hint)', marginTop: 4 }}>
-                            {new Date(tpl.created_at).toLocaleDateString('fr-FR')}
-                          </div>
-                        </div>
-                        <button className="btn btn-secondary btn-sm" style={{ color: 'var(--red)', flexShrink: 0 }}
-                          onClick={e => { e.stopPropagation(); handleDeleteTemplate(tpl.id) }}>🗑</button>
-                      </div>
-                    ))}
-                  </div>
-                )
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
@@ -1604,7 +1445,7 @@ function EnergySection({ energy, updateEnergy }: { energy: EnergyTests; updateEn
             })}
           </div>
         </div>
-        <div className="field"><label>Notes tests énergétiques</label><textarea value={energy.testsNotes} onChange={e => updateEnergy({ testsNotes: e.target.value })} placeholder="Résultats kinésiologie, palpations, observations complémentaires…" style={{ minHeight: 60 }} /></div>
+        <div className="field"><label>Notes tests énergétiques</label><RichTextArea value={energy.testsNotes} onChange={html => updateEnergy({ testsNotes: html })} placeholder="Résultats kinésiologie, palpations, observations complémentaires…" minHeight={60} /></div>
       </div>
     </div>
   )

@@ -15,6 +15,7 @@ export default function LockScreen({ mode, onUnlock, theme = 'light' }: Props) {
   const [error,     setError]     = useState('')
   const [loading,   setLoading]   = useState(false)
   const [attempts,  setAttempts]  = useState(0)
+  const [acknowledged, setAcknowledged] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -122,7 +123,7 @@ export default function LockScreen({ mode, onUnlock, theme = 'light' }: Props) {
 
         {/* Logo */}
         <img
-          src={dark ? './Synoria fond noir.png' : './Synoria.png'}
+          src="./Synoria.png"
           alt="Logo Synoria"
           style={{ width: 150, height: 150, objectFit: 'contain', marginBottom: 28 }}
         />
@@ -200,17 +201,38 @@ export default function LockScreen({ mode, onUnlock, theme = 'light' }: Props) {
             </div>
           </div>
 
-          {/* Bandeau info setup */}
+          {/* Bandeau avertissement setup */}
           {isSetup && (
             <div style={{
-              background: dark ? '#122420' : 'var(--teal-light)',
-              border: `1px solid rgba(42,122,106,${dark ? '.35' : '.25'})`,
-              borderRadius: 10, padding: '12px 16px',
-              marginBottom: 24, fontSize: 12,
-              color: dark ? '#3a9a88' : 'var(--teal)', lineHeight: 1.7,
+              background: dark ? '#2a1e08' : '#FFFBEB',
+              border: `1.5px solid ${dark ? '#7a4f10' : '#F59E0B'}`,
+              borderRadius: 12, padding: '14px 16px',
+              marginBottom: 24,
             }}>
-              🔒 Ce mot de passe chiffre votre base en <strong>AES-256</strong>.<br />
-              Sans lui, vos données seront illisibles. <strong>Notez-le en lieu sûr.</strong>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 10 }}>
+                <span style={{ fontSize: 20, lineHeight: 1 }}>⚠️</span>
+                <div style={{ fontSize: 12.5, color: dark ? '#f0c060' : '#92400E', lineHeight: 1.7 }}>
+                  <strong>Ce mot de passe est la seule clé de vos données.</strong><br />
+                  Si vous le perdez, votre base de données sera <strong>définitivement inaccessible</strong> — même pour le support Synoria.<br />
+                  Activez les <strong>sauvegardes automatiques</strong> dans Paramètres : elles constituent votre seul filet de sécurité.
+                </div>
+              </div>
+              <label style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                cursor: 'pointer',
+                background: dark ? 'rgba(240,192,96,.08)' : 'rgba(245,158,11,.1)',
+                borderRadius: 8, padding: '8px 12px',
+                fontSize: 12, fontWeight: 600,
+                color: dark ? '#f0c060' : '#92400E',
+              }}>
+                <input
+                  type="checkbox"
+                  checked={acknowledged}
+                  onChange={e => setAcknowledged(e.target.checked)}
+                  style={{ width: 16, height: 16, accentColor: '#F59E0B', cursor: 'pointer', flexShrink: 0 }}
+                />
+                J'ai noté mon mot de passe en lieu sûr et je comprends qu'il est irremplaçable
+              </label>
             </div>
           )}
 
@@ -276,7 +298,7 @@ export default function LockScreen({ mode, onUnlock, theme = 'light' }: Props) {
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={loading || !password || (isSetup && !confirm)}
+              disabled={loading || !password || (isSetup && (!confirm || !acknowledged))}
               style={{
                 width: '100%', padding: '14px',
                 fontSize: 15, justifyContent: 'center',
@@ -294,8 +316,29 @@ export default function LockScreen({ mode, onUnlock, theme = 'light' }: Props) {
             color: hintColor, textAlign: 'center', lineHeight: 1.6,
           }}>
             {isSetup
-              ? '⚠️ Attention : sans votre mot de passe, vos données seront irrécupérables.'
-              : 'En cas de mot de passe oublié, contactez le support Synoria.'}
+              ? 'Après la création, activez les sauvegardes automatiques dans Paramètres → Sauvegardes.'
+              : (
+                <>
+                  <span
+                    onClick={async () => {
+                      try {
+                        const path = await window.mtcApi.generateRecoveryDoc()
+                        await window.mtcApi.openPath(path)
+                      } catch {}
+                    }}
+                    style={{
+                      color: dark ? '#3a9a88' : 'var(--teal)',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Mot de passe oublié ?
+                  </span>
+                  {' '}Ouvrir la procédure de récupération.
+                </>
+              )
+            }
           </div>
         </div>
       </div>

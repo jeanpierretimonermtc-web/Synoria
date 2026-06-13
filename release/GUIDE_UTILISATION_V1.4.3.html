@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guide d'utilisation — Synoria v1.4.3</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 14px; color: #1a2e20; background: #f4f8f5; line-height: 1.75; }
+
+  /* ── COUVERTURE ── */
+  .cover {
+    background: linear-gradient(150deg, #1b4332 0%, #2d6a4f 55%, #40916c 100%);
+    color: white; text-align: center; padding: 90px 40px 70px;
+    page-break-after: always;
+  }
+  .cover-logo { font-size: 72px; margin-bottom: 20px; line-height: 1; }
+  .cover h1 { font-size: 52px; font-weight: 300; letter-spacing: 6px; margin-bottom: 6px; }
+  .cover .tagline { font-size: 15px; opacity: .7; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 32px; }
+  .cover .subtitle { font-size: 16px; opacity: .85; max-width: 520px; margin: 0 auto; line-height: 1.9; }
+  .cover .divider { width: 60px; height: 2px; background: rgba(255,255,255,.4); margin: 28px auto; }
+  .cover .meta { font-size: 13px; opacity: .6; line-height: 2; }
+  .cover .version-badge {
+    display: inline-block; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35);
+    border-radius: 20px; padding: 5px 18px; font-size: 14px; letter-spacing: 1px; margin-bottom: 36px;
+  }
+
+  /* ── LAYOUT ── */
+  .container { max-width: 900px; margin: 0 auto; padding: 48px 44px 100px; }
+
+  /* ── TYPOGRAPHIE ── */
+  h2 {
+    font-size: 22px; font-weight: 700; color: #2d6a4f;
+    border-bottom: 3px solid #2d6a4f; padding-bottom: 10px;
+    margin: 56px 0 22px; display: flex; align-items: center; gap: 10px;
+  }
+  h2 .section-num {
+    background: #2d6a4f; color: white; border-radius: 50%;
+    width: 34px; height: 34px; display: inline-flex; align-items: center;
+    justify-content: center; font-size: 14px; flex-shrink: 0;
+  }
+  h3 { font-size: 16px; font-weight: 700; color: #1b4332; margin: 32px 0 12px; }
+  h4 { font-size: 14px; font-weight: 700; color: #2d6a4f; margin: 18px 0 7px; }
+  p { margin-bottom: 11px; }
+  ul, ol { padding-left: 24px; margin-bottom: 14px; }
+  li { margin-bottom: 6px; }
+  a { color: #2d6a4f; }
+  code { background: #e8f5ec; border: 1px solid #b7dfc5; border-radius: 4px; padding: 1px 6px; font-size: 12.5px; font-family: Consolas, monospace; color: #1b4332; }
+  strong { color: #1b4332; }
+
+  /* ── TABLE DES MATIÈRES ── */
+  .toc {
+    background: white; border: 2px solid #b7dfc5; border-radius: 14px;
+    padding: 30px 38px; margin: 36px 0 56px;
+  }
+  .toc-title { font-size: 17px; font-weight: 700; color: #2d6a4f; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+  .toc ol { padding-left: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 32px; }
+  .toc li { margin-bottom: 0; }
+  .toc li a {
+    color: #2d6a4f; text-decoration: none; font-size: 13.5px;
+    display: flex; align-items: center; gap: 7px; padding: 5px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .toc li a:hover { color: #1b4332; text-decoration: underline; }
+  .toc li a .toc-num {
+    background: #e8f5ec; color: #2d6a4f; border-radius: 50%;
+    width: 22px; height: 22px; display: inline-flex; align-items: center;
+    justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0;
+  }
+
+  /* ── ALERTES ── */
+  .info  { background: #eaf5ee; border-left: 4px solid #2d6a4f; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 16px 0; font-size: 13.5px; }
+  .warn  { background: #fef8ec; border-left: 4px solid #d4a017; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 16px 0; font-size: 13.5px; }
+  .danger{ background: #fef0f0; border-left: 4px solid #b02020; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 16px 0; font-size: 13.5px; }
+  .tip   { background: #eef4fb; border-left: 4px solid #2a5a8a; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 16px 0; font-size: 13.5px; }
+
+  /* ── CARTES ── */
+  .card { background: white; border: 1px solid #cde8d5; border-radius: 12px; padding: 20px 24px; margin: 14px 0; }
+  .card h4 { margin-top: 0; font-size: 14px; }
+  .card-accent { border-top: 3px solid #2d6a4f; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin: 16px 0; }
+
+  /* ── ÉTAPES ── */
+  .step { display: flex; gap: 14px; margin: 11px 0; align-items: flex-start; }
+  .step-num {
+    background: #2d6a4f; color: white; border-radius: 50%;
+    width: 28px; height: 28px; display: flex; align-items: center;
+    justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; margin-top: 2px;
+  }
+  .step-text { padding-top: 3px; }
+
+  /* ── BADGES ── */
+  .badge { display: inline-block; background: #2d6a4f; color: white; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 12px; margin-right: 4px; vertical-align: middle; }
+  .badge-blue   { background: #2a5a8a; }
+  .badge-teal   { background: #1b7a6a; }
+  .badge-amber  { background: #b07820; }
+  .badge-purple { background: #6a3a8a; }
+  .badge-new    { background: #2d6a4f; }
+
+  /* ── NAVIGATION PILL ── */
+  .nav-item {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: white; border: 1.5px solid #b7dfc5; border-radius: 6px;
+    padding: 2px 10px; font-size: 13px; color: #1b4332; font-weight: 500;
+    white-space: nowrap;
+  }
+
+  /* ── TABLEAUX ── */
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 13.5px; }
+  th { background: #2d6a4f; color: white; text-align: left; padding: 10px 14px; font-weight: 600; }
+  td { padding: 9px 14px; border-bottom: 1px solid #e4f0e8; }
+  tr:nth-child(even) td { background: #f5fbf7; }
+  th:first-child { border-radius: 0; }
+
+  /* ── RACCOURCIS ── */
+  .kbd {
+    display: inline-block; background: #f0f0f0; border: 1px solid #ccc;
+    border-bottom: 2px solid #999; border-radius: 5px; padding: 1px 8px;
+    font-family: Consolas, monospace; font-size: 12px; color: #333;
+  }
+
+  /* ── ÉCRAN TERMINAL ── */
+  .screen {
+    background: #1a2e20; color: #74c99d; font-family: Consolas, monospace;
+    font-size: 12.5px; border-radius: 10px; padding: 16px 20px;
+    margin: 14px 0; white-space: pre; line-height: 1.7;
+  }
+
+  /* ── BANNIÈRE NOUVEAUTÉS ── */
+  .banner {
+    background: linear-gradient(135deg, #1b4332, #2d6a4f);
+    color: white; border-radius: 14px; padding: 26px 30px; margin: 20px 0;
+  }
+  .banner h3 { color: rgba(255,255,255,.9); margin-top: 0; font-size: 16px; }
+  .banner li { margin-bottom: 10px; opacity: .95; font-size: 14px; }
+
+  /* ── SECTION HEADER ── */
+  .section-intro {
+    background: white; border-radius: 10px; border: 1px solid #cde8d5;
+    padding: 16px 20px; margin-bottom: 20px; font-size: 14px; color: #2a4a32;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center; margin-top: 72px; padding: 32px;
+    background: white; border-top: 2px solid #b7dfc5;
+    font-size: 12.5px; color: #6a8a70;
+  }
+  footer strong { color: #2d6a4f; }
+
+  /* ── IMPRESSION ── */
+  @media print {
+    body { background: white; font-size: 13px; }
+    .cover { page-break-after: always; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .container { padding: 16px 24px; max-width: 100%; }
+    h2 { page-break-after: avoid; margin-top: 36px; }
+    h3 { page-break-after: avoid; }
+    .card, .info, .warn, .danger, .tip, .banner { -webkit-print-color-adjust: exact; print-color-adjust: exact; page-break-inside: avoid; }
+    .step { page-break-inside: avoid; }
+    table { page-break-inside: avoid; }
+    .toc { page-break-after: always; }
+    a { color: #2d6a4f; text-decoration: none; }
+    .grid2, .grid3 { display: block; }
+    .grid2 .card, .grid3 .card { margin-bottom: 8px; }
+  }
+
+  @media (max-width: 680px) {
+    .toc ol { grid-template-columns: 1fr; }
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+    .container { padding: 24px 20px; }
+    h2 { font-size: 19px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     COUVERTURE
+════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-logo">🌿</div>
+  <h1>SYNORIA</h1>
+  <div class="tagline">Gestion de dossiers patients</div>
+  <div class="version-badge">Guide d'utilisation — v1.4.3</div>
+  <div class="subtitle">
+    Logiciel desktop sécurisé pour praticiens de santé<br>
+    Médecine Traditionnelle Chinoise · Kinésiologie · Ostéopathie<br>
+    et toutes les disciplines de santé naturelle
+  </div>
+  <div class="divider"></div>
+  <div class="meta">
+    Juin 2026 &nbsp;·&nbsp; Jean-Pierre Timoner &nbsp;·&nbsp; support@synoria.fr<br>
+    Windows 10 / 11 (64 bits) &nbsp;·&nbsp; Données 100 % locales &nbsp;·&nbsp; Chiffrement AES-256
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     CONTAINER PRINCIPAL
+════════════════════════════════════════════ -->
+<div class="container">
+
+<!-- TABLE DES MATIÈRES -->
+<div class="toc">
+  <div class="toc-title">Table des matières</div>
+  <ol>
+    <li><a href="#introduction"><span class="toc-num">1</span>Introduction &amp; navigation</a></li>
+    <li><a href="#patients"><span class="toc-num">2</span>Gestion des patients</a></li>
+    <li><a href="#seances"><span class="toc-num">3</span>Séances</a></li>
+    <li><a href="#calendrier"><span class="toc-num">4</span>Calendrier &amp; rendez-vous</a></li>
+    <li><a href="#dashboard"><span class="toc-num">5</span>Tableau de bord</a></li>
+    <li><a href="#comptabilite"><span class="toc-num">6</span>Comptabilité</a></li>
+    <li><a href="#parametres"><span class="toc-num">7</span>Paramètres</a></li>
+    <li><a href="#rgpd"><span class="toc-num">8</span>RGPD &amp; conformité</a></li>
+    <li><a href="#raccourcis"><span class="toc-num">9</span>Raccourcis clavier</a></li>
+    <li><a href="#mode-sombre"><span class="toc-num">10</span>Mode sombre</a></li>
+  </ol>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     1. INTRODUCTION
+════════════════════════════════════════════ -->
+<h2 id="introduction"><span class="section-num">1</span> Introduction &amp; navigation</h2>
+
+<div class="section-intro">
+  Synoria est un logiciel desktop <strong>entièrement local</strong> : vos données ne quittent jamais votre ordinateur.
+  La base de données est chiffrée en <strong>AES-256-GCM</strong> et verrouillée par votre mot de passe personnel.
+</div>
+
+<h3>Architecture de l'application</h3>
+<p>Synoria s'organise autour de <strong>7 grandes sections</strong> accessibles depuis la barre de navigation latérale ou par raccourci clavier :</p>
+
+<table>
+  <tr><th>Section</th><th>Raccourci</th><th>Rôle</th></tr>
+  <tr><td>Tableau de bord</td><td><span class="kbd">Ctrl+1</span></td><td>Vue d'ensemble : statistiques, prochains RDV, dernières séances</td></tr>
+  <tr><td>Patients</td><td><span class="kbd">Ctrl+2</span></td><td>Liste, création, modification et archivage des dossiers patients</td></tr>
+  <tr><td>Nouvelle séance</td><td><span class="kbd">Ctrl+3</span></td><td>Formulaire complet d'enregistrement d'une consultation</td></tr>
+  <tr><td>Calendrier</td><td><span class="kbd">Ctrl+4</span></td><td>Agenda mensuel et planning horaire des rendez-vous</td></tr>
+  <tr><td>Comptabilité</td><td><span class="kbd">Ctrl+5</span></td><td>Recettes mensuelles, URSAF, factures, export Excel</td></tr>
+  <tr><td>Paramètres</td><td><span class="kbd">Ctrl+6</span></td><td>Sauvegardes, facturation, sécurité, RGPD, plugin</td></tr>
+  <tr><td>RGPD</td><td><span class="kbd">Ctrl+7</span></td><td>Consentements, journal d'accès, alertes, registre Art. 30</td></tr>
+</table>
+
+<h3>Premier démarrage — Création du mot de passe</h3>
+<p>Au tout premier lancement, Synoria vous demande de créer un mot de passe maître. Ce mot de passe chiffre l'intégralité de votre base de données.</p>
+
+<div class="danger">
+  <strong>Important — mot de passe irrécupérable :</strong> Sans ce mot de passe, vos données sont totalement irrécupérables. Conservez-le dans un endroit sûr (gestionnaire de mots de passe, coffre-fort numérique ou carnet sécurisé). Le support technique ne peut pas contourner ce chiffrement.
+</div>
+
+<h3>Déverrouillage automatique</h3>
+<p>Après <strong>20 minutes d'inactivité</strong>, l'application se verrouille automatiquement et redemande le mot de passe. Vous pouvez aussi verrouiller manuellement depuis <span class="nav-item">⚙️ Paramètres</span> → Sécurité → <strong>"Verrouiller l'application"</strong>.</p>
+
+<h3>Barre de mise en forme</h3>
+<p>Une barre de formatage de texte (Gras, Italique, Souligné, listes) est intégrée en haut du contenu. Elle s'active automatiquement lorsque vous cliquez dans une zone de texte enrichi et se désactive en dehors.</p>
+
+<div class="tip">
+  <strong>Astuce :</strong> Les raccourcis standards fonctionnent dans toutes les zones de texte enrichi : <span class="kbd">Ctrl+B</span> (gras), <span class="kbd">Ctrl+I</span> (italique), <span class="kbd">Ctrl+U</span> (souligné).
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     2. GESTION DES PATIENTS
+════════════════════════════════════════════ -->
+<h2 id="patients"><span class="section-num">2</span> Gestion des patients</h2>
+
+<div class="section-intro">
+  La section Patients centralise tous les dossiers. Chaque patient est identifié par un identifiant unique interne et peut être actif ou archivé.
+</div>
+
+<h3>Créer un nouveau patient</h3>
+<div class="step"><div class="step-num">1</div><div class="step-text">Cliquez sur <span class="nav-item">👤 Patients</span> dans la navigation</div></div>
+<div class="step"><div class="step-num">2</div><div class="step-text">Cliquez sur le bouton <strong>"+ Nouveau patient"</strong></div></div>
+<div class="step"><div class="step-num">3</div><div class="step-text">Renseignez les informations — au minimum le nom et le prénom sont requis</div></div>
+<div class="step"><div class="step-num">4</div><div class="step-text">Cliquez <strong>"Enregistrer"</strong> pour valider</div></div>
+
+<h3>Champs disponibles sur la fiche patient</h3>
+
+<div class="grid2">
+  <div class="card card-accent">
+    <h4>Identité</h4>
+    <ul>
+      <li>Nom et prénom</li>
+      <li>Date de naissance (calcul d'âge automatique)</li>
+      <li>Profession</li>
+    </ul>
+  </div>
+  <div class="card card-accent">
+    <h4>Coordonnées</h4>
+    <ul>
+      <li>Numéro de téléphone</li>
+      <li>Adresse e-mail</li>
+      <li>Adresse postale</li>
+    </ul>
+  </div>
+  <div class="card card-accent">
+    <h4>Informations médicales</h4>
+    <ul>
+      <li>Médecin traitant</li>
+      <li>Médicaments en cours</li>
+      <li>Antécédents médicaux</li>
+    </ul>
+  </div>
+  <div class="card card-accent">
+    <h4>Notes &amp; alertes</h4>
+    <ul>
+      <li>Alertes importantes (affichées en rouge)</li>
+      <li>Notes générales libres</li>
+      <li>Consentement RGPD (case + date)</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Modifier un patient</h3>
+<p>Dans la liste des patients, cliquez sur la ligne ou l'icône crayon du patient. La même fenêtre de formulaire s'ouvre en mode modification. Enregistrez pour valider les changements.</p>
+
+<h3>Archiver un patient</h3>
+<p>Ouvrez la fiche patient → cliquez sur <strong>"Archiver"</strong>. Le patient disparaît de la liste principale mais toutes ses données (séances, rendez-vous) sont conservées intactes.</p>
+<p>Pour retrouver les patients archivés, cochez la case <strong>"Afficher les archivés"</strong> en haut de la liste. Vous pouvez les réactiver à tout moment via le même bouton devenu "Réactiver".</p>
+
+<h3>Supprimer un patient</h3>
+<div class="danger">
+  <strong>Suppression irréversible :</strong> La suppression d'un patient efface définitivement son dossier et toutes les séances associées. Il est recommandé d'archiver plutôt que de supprimer pour conserver l'historique.
+</div>
+
+<h3>Recherche en temps réel</h3>
+<p>La barre de recherche en haut de la liste (<span class="kbd">Ctrl+K</span>) filtre les patients en temps réel sur le nom, le prénom, le téléphone et l'e-mail. La recherche s'efface avec la touche <span class="kbd">Échap</span>.</p>
+
+<h3>Consentement RGPD</h3>
+<p>Dans la fiche patient, cochez la case <strong>"Consentement donné"</strong> et saisissez la date d'obtention du consentement. Cette information est obligatoire pour la conformité RGPD (voir <a href="#rgpd">Section 8 — RGPD</a>).</p>
+
+<div class="info">
+  <strong>Bonne pratique :</strong> Faites signer un formulaire de consentement papier ou numérique lors de la première consultation, puis cochez la case dans Synoria avec la date correspondante.
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     3. SÉANCES
+════════════════════════════════════════════ -->
+<h2 id="seances"><span class="section-num">3</span> Séances</h2>
+
+<div class="section-intro">
+  La section Séances regroupe la création de nouvelles consultations et l'historique complet de toutes les séances enregistrées.
+</div>
+
+<h3>Créer une nouvelle séance</h3>
+<div class="step"><div class="step-num">1</div><div class="step-text">Cliquez sur <span class="nav-item">➕ Nouvelle séance</span> (<span class="kbd">Ctrl+3</span>)</div></div>
+<div class="step"><div class="step-num">2</div><div class="step-text">Sélectionnez le <strong>patient</strong> dans la liste déroulante (tapez les premières lettres pour filtrer)</div></div>
+<div class="step"><div class="step-num">3</div><div class="step-text">Vérifiez la <strong>date</strong> — elle est pré-remplie avec la date du jour, modifiable</div></div>
+<div class="step"><div class="step-num">4</div><div class="step-text">Indiquez le nom du <strong>praticien</strong> si plusieurs intervenants</div></div>
+<div class="step"><div class="step-num">5</div><div class="step-text">Remplissez les sections pertinentes du formulaire</div></div>
+<div class="step"><div class="step-num">6</div><div class="step-text">Cliquez sur <strong>"Enregistrer la séance"</strong> en bas de page</div></div>
+
+<h3>Zones de texte enrichi — Barre de mise en forme</h3>
+<p>Les zones de notes (Motif, Évolution, Anamnèse, Traitement, Réactions…) sont des <strong>éditeurs de texte enrichi</strong>. La barre de formatage s'active dès que vous cliquez dans l'une de ces zones.</p>
+
+<table>
+  <tr><th>Outil</th><th>Raccourci</th><th>Effet</th></tr>
+  <tr><td><strong>G</strong> Gras</td><td><span class="kbd">Ctrl+B</span></td><td>Met en gras le texte sélectionné</td></tr>
+  <tr><td><em>I</em> Italique</td><td><span class="kbd">Ctrl+I</span></td><td>Met en italique le texte sélectionné</td></tr>
+  <tr><td><u>S</u> Souligné</td><td><span class="kbd">Ctrl+U</span></td><td>Souligne le texte sélectionné</td></tr>
+  <tr><td>Liste à puces</td><td>—</td><td>Insère une liste non numérotée</td></tr>
+  <tr><td>Liste numérotée</td><td>—</td><td>Insère une liste ordonnée</td></tr>
+  <tr><td>Couleurs</td><td>—</td><td>Colore le texte sélectionné (rouge, orange, vert, bleu)</td></tr>
+</table>
+
+<div class="tip">
+  <strong>Astuce :</strong> Sélectionnez du texte, puis cliquez sur le bouton de format voulu. Pour retirer un format, re-sélectionnez le texte et cliquez à nouveau sur le même bouton.
+</div>
+
+<h3>Structure du formulaire selon le mode actif</h3>
+
+<div class="card card-accent">
+  <h4>Mode Simple — sans plugin de spécialité</h4>
+  <p>Formulaire générique adapté à toutes les pratiques :</p>
+  <ul>
+    <li><strong>Identification</strong> — patient, date, praticien, numéro de séance</li>
+    <li><strong>Motif de consultation</strong> — zone de texte enrichi</li>
+    <li><strong>Évolution</strong> — tags prédéfinis (Mieux, Stable, Moins bien, Douleur…) + texte libre</li>
+    <li><strong>Anamnèse</strong> — interrogatoire et histoire du symptôme</li>
+    <li><strong>Traitement effectué</strong> — techniques utilisées (tags) + notes détaillées</li>
+    <li><strong>Réactions</strong> — observations pendant et après le soin</li>
+    <li><strong>Plan de suivi</strong> — prochain rendez-vous</li>
+  </ul>
+</div>
+
+<div class="card card-accent">
+  <h4>Mode MTC intégré — Plugin MTC JP</h4>
+  <p>Formulaire complet de Médecine Traditionnelle Chinoise :</p>
+  <ul>
+    <li>Identification + Motif + Évolution (idem mode simple)</li>
+    <li><strong>Prise de notes</strong> — anamnèse, langue, état des pouls</li>
+    <li><strong>Questionnaire des systèmes</strong> — bilan énergétique par organe (Cœur, Foie, Rate, Poumon, Rein…)</li>
+    <li><strong>Observation MTC</strong> — constitution, type de corps, teint, observation générale</li>
+    <li><strong>Tests énergétiques</strong> — entonnoir diagnostique, méridiens testés</li>
+    <li><strong>Analyse clinique</strong> — diagnostic MTC, cinq éléments, causes de déséquilibre, analyse, principes de traitement</li>
+    <li><strong>Traitement</strong> — points d'acupuncture, points auriculaires, techniques, plantes</li>
+    <li><strong>Barrage homéopathique</strong> — 4 niveaux de notes</li>
+    <li><strong>Plan de suivi</strong> — prochain rendez-vous</li>
+  </ul>
+</div>
+
+<div class="card card-accent">
+  <h4>Mode Plugin tiers — Kinésiologie, Ostéopathie, etc.</h4>
+  <p>Le formulaire est entièrement défini par le fichier plugin chargé dans Paramètres. Les sections et champs varient selon la spécialité. Les données sont sauvegardées avec le schéma du plugin pour garantir la lisibilité des résumés futurs même si le plugin évolue.</p>
+</div>
+
+<h3>Tags d'évolution</h3>
+<p>La section Évolution propose des <strong>tags cliquables</strong> pour qualifier rapidement l'évolution du patient depuis la dernière séance : <em>Mieux</em>, <em>Beaucoup mieux</em>, <em>Stable</em>, <em>Moins bien</em>, <em>Première séance</em>, <em>Douleur aiguë</em>, etc. Vous pouvez en sélectionner plusieurs et ajouter des précisions en texte libre.</p>
+
+<h3>Planifier le prochain rendez-vous depuis la séance</h3>
+<p>La section <strong>"Plan de suivi"</strong> en bas du formulaire permet de créer immédiatement le prochain rendez-vous :</p>
+<ul>
+  <li>Sélectionnez la <strong>date</strong> du prochain RDV</li>
+  <li>Précisez l'<strong>heure de début</strong> et l'<strong>heure de fin</strong> (sélecteur par pas de 5 minutes)</li>
+  <li>Ajoutez une <strong>note</strong> (ex : "Apporter les résultats d'analyse")</li>
+  <li>Cliquez <strong>"Enregistrer la séance"</strong> — le RDV est automatiquement créé dans le Calendrier</li>
+</ul>
+
+<div class="info">
+  <strong>Synchronisation bidirectionnelle :</strong> Si vous modifiez ce RDV dans le Calendrier (heure, date), la modification est visible dans le résumé de la séance. Si vous ouvrez la séance et modifiez le prochain RDV, le Calendrier est mis à jour automatiquement.
+</div>
+
+<h3>Historique des séances par patient</h3>
+<p>Dans <span class="nav-item">👤 Patients</span>, ouvrez un dossier patient puis cliquez sur l'onglet <strong>"Séances"</strong> pour voir l'ensemble des séances de ce patient, triées par date décroissante.</p>
+
+<h3>Consulter le résumé d'une séance</h3>
+<p>Depuis l'historique, cliquez sur une séance pour afficher son <strong>résumé complet</strong>. Ce résumé inclut tous les champs renseignés, les tags, et les données plugin si applicable.</p>
+
+<h3>Exporter une séance</h3>
+<p>Depuis le résumé d'une séance, les actions disponibles sont :</p>
+<table>
+  <tr><th>Action</th><th>Description</th></tr>
+  <tr><td>Export Excel</td><td>Génère un fichier .xlsx avec toutes les données de la séance</td></tr>
+  <tr><td>Imprimer</td><td>Ouvre la fenêtre d'impression navigateur (<span class="kbd">Ctrl+P</span>)</td></tr>
+  <tr><td>Dupliquer</td><td>Crée une nouvelle séance pré-remplie avec les données de la séance actuelle</td></tr>
+  <tr><td>Générer la facture</td><td>Crée un PDF de facture pour cette consultation</td></tr>
+  <tr><td>Supprimer</td><td>Suppression définitive de la séance (demande confirmation)</td></tr>
+</table>
+
+<div class="tip">
+  <strong>Dupliquer une séance :</strong> Utile pour les patients dont le traitement est stable — dupliquez la dernière séance, ajustez les observations du jour, et enregistrez en quelques secondes.
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     4. CALENDRIER
+════════════════════════════════════════════ -->
+<h2 id="calendrier"><span class="section-num">4</span> Calendrier &amp; rendez-vous</h2>
+
+<div class="section-intro">
+  Le Calendrier offre une vision complète de votre agenda avec deux vues complémentaires et une synchronisation automatique avec la section Plan de suivi des séances.
+</div>
+
+<h3>Les deux vues du Calendrier</h3>
+<div class="grid2">
+  <div class="card">
+    <h4>Vue mensuelle (gauche)</h4>
+    <p>Aperçu du mois entier. Les jours comportant des RDV affichent un indicateur de couleur. Cliquez sur un jour pour voir son planning détaillé à droite.</p>
+  </div>
+  <div class="card">
+    <h4>Planning horaire (droite)</h4>
+    <p>Créneaux de <strong>08h00 à 19h30</strong> par pas de 30 minutes pour le jour sélectionné. Les RDV s'affichent en bloc coloré avec le nom du patient.</p>
+  </div>
+</div>
+
+<h3>Créer un rendez-vous</h3>
+<div class="step"><div class="step-num">1</div><div class="step-text">Cliquez sur un créneau dans le planning horaire <strong>ou</strong> sur le bouton <strong>"+ RDV"</strong></div></div>
+<div class="step"><div class="step-num">2</div><div class="step-text">La fenêtre de création s'ouvre — renseignez la date et les heures (sélecteur par pas de 5 minutes, de 07h00 à 20h00)</div></div>
+<div class="step"><div class="step-num">3</div><div class="step-text">Choisissez entre <strong>patient existant</strong> (sélection dans la liste) ou <strong>invité</strong> (nom, prénom, téléphone)</div></div>
+<div class="step"><div class="step-num">4</div><div class="step-text">Ajoutez une note optionnelle, puis cliquez <strong>"Enregistrer"</strong></div></div>
+
+<h3>Modifier un rendez-vous</h3>
+<p>Cliquez sur un RDV dans le planning → la fenêtre de modification s'ouvre avec toutes les informations pré-remplies. Modifiez les champs souhaités et enregistrez.</p>
+
+<h3>Marquer un RDV comme réalisé</h3>
+<p>Cliquez sur le RDV → bouton <strong>"Marquer comme réalisé"</strong>. Le RDV passe en vert dans le planning. Cette action peut être annulée en cliquant à nouveau sur le RDV.</p>
+
+<h3>Supprimer un rendez-vous</h3>
+<p>Cliquez sur le RDV → bouton <strong>"Supprimer"</strong>. Si ce RDV était lié à un "prochain RDV" d'une séance, le lien est supprimé mais la séance reste intacte.</p>
+
+<h3>Depuis un RDV : créer directement la séance</h3>
+<p>Cliquez sur un RDV de patient existant → bouton <strong>"Créer la séance"</strong>. Vous êtes redirigé vers le formulaire Nouvelle séance avec le patient et la date du RDV déjà renseignés, et le motif du RDV pré-rempli si disponible.</p>
+
+<h3>Code couleur des rendez-vous</h3>
+<table>
+  <tr><th>Couleur</th><th>Statut</th><th>Description</th></tr>
+  <tr><td><span class="badge badge-blue">Bleu</span></td><td>Planifié</td><td>RDV confirmé, séance non encore réalisée</td></tr>
+  <tr><td><span class="badge" style="background:#1b7a3a">Vert</span></td><td>Réalisé</td><td>Séance effectuée (marquée comme réalisée)</td></tr>
+  <tr><td><span class="badge badge-amber">Orange</span></td><td>En attente</td><td>RDV non confirmé ou en cours de planification</td></tr>
+</table>
+
+<h3>RDV pour patients non enregistrés (invités)</h3>
+<p>Pour les consultations ponctuelles de personnes non enregistrées dans Synoria, sélectionnez le type <strong>"Invité"</strong> lors de la création du RDV et renseignez nom, prénom et téléphone. Ces informations sont stockées uniquement dans le RDV.</p>
+
+<div class="info">
+  <strong>Synchronisation avec les séances :</strong> Quand vous créez un "Prochain RDV" depuis le formulaire de séance, il apparaît immédiatement dans le Calendrier. Inversement, si vous créez une séance depuis un RDV du Calendrier, le RDV est automatiquement marqué comme réalisé.
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     5. TABLEAU DE BORD
+════════════════════════════════════════════ -->
+<h2 id="dashboard"><span class="section-num">5</span> Tableau de bord</h2>
+
+<div class="section-intro">
+  Le Tableau de bord est la page d'accueil de Synoria. Il offre une vision instantanée de votre activité sans avoir à naviguer dans chaque section.
+</div>
+
+<h3>Statistiques globales</h3>
+<p>En haut de la page, quatre compteurs affichent :</p>
+
+<div class="grid2">
+  <div class="card">
+    <h4>Patients actifs</h4>
+    <p>Nombre total de patients non archivés dans votre base.</p>
+  </div>
+  <div class="card">
+    <h4>Séances ce mois</h4>
+    <p>Nombre de séances enregistrées sur le mois calendaire en cours.</p>
+  </div>
+  <div class="card">
+    <h4>Prochains RDV</h4>
+    <p>Nombre de rendez-vous planifiés dans les 7 prochains jours.</p>
+  </div>
+  <div class="card">
+    <h4>Total séances</h4>
+    <p>Nombre total de séances enregistrées depuis la création du dossier.</p>
+  </div>
+</div>
+
+<h3>Prochains rendez-vous</h3>
+<p>La liste des prochains RDV affiche les rendez-vous du <strong>jour en cours et des jours suivants</strong>, dans l'ordre chronologique, avec :</p>
+<ul>
+  <li>Le nom et prénom du patient (ou "Invité" pour les RDV sans patient enregistré)</li>
+  <li>La date et l'heure du RDV</li>
+  <li>La note associée si renseignée</li>
+  <li>Un bouton <strong>"Créer la séance"</strong> pour les RDV à venir</li>
+</ul>
+
+<h3>Séances récentes</h3>
+<p>Le tableau des séances récentes liste les <strong>10 dernières séances enregistrées</strong> avec le nom du patient, la date, et un lien direct vers le résumé de la séance.</p>
+
+<div class="tip">
+  <strong>Accès rapide :</strong> Cliquez sur le nom d'un patient dans les séances récentes pour accéder directement à sa fiche, ou sur la date pour ouvrir le résumé complet de la séance.
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     6. COMPTABILITÉ
+════════════════════════════════════════════ -->
+<h2 id="comptabilite"><span class="section-num">6</span> Comptabilité</h2>
+
+<div class="section-intro">
+  La section Comptabilité permet de suivre vos recettes et dépenses au fil de l'année, de calculer vos cotisations URSAF estimées, et de générer des exports Excel pour votre comptable ou vos déclarations.
+</div>
+
+<h3>Tableau de recettes mensuel</h3>
+<p>La page principale affiche un tableau annuel avec, pour chaque mois :</p>
+<ul>
+  <li>Le <strong>nombre de séances</strong> par type de consultation configuré</li>
+  <li>Le <strong>chiffre d'affaires</strong> calculé automatiquement (nombre × tarif unitaire)</li>
+  <li>Le <strong>taux URSAF</strong> applicable (modifiable mois par mois)</li>
+  <li>Les <strong>cotisations URSAF estimées</strong></li>
+  <li>Les <strong>dépenses variables</strong> du mois</li>
+  <li>Le <strong>résultat net estimé</strong></li>
+</ul>
+
+<h3>Saisir les recettes mensuelles</h3>
+<div class="step"><div class="step-num">1</div><div class="step-text">Cliquez sur une cellule du tableau correspondant au mois et au type de consultation</div></div>
+<div class="step"><div class="step-num">2</div><div class="step-text">Saisissez le nombre de séances pour ce type</div></div>
+<div class="step"><div class="step-num">3</div><div class="step-text">Validez avec <span class="kbd">Entrée</span> ou en cliquant ailleurs — la ligne se recalcule automatiquement</div></div>
+
+<h3>Configurer les types de consultation et tarifs</h3>
+<p>Allez dans <span class="nav-item">⚙️ Paramètres</span> → onglet <strong>"Comptabilité"</strong> pour définir :</p>
+<ul>
+  <li>Les intitulés des types de consultation (ex : "Consultation 1h", "Consultation 30 min", "Séance enfant")</li>
+  <li>Le tarif unitaire correspondant en euros</li>
+  <li>Activez ou désactivez des types sans les supprimer</li>
+</ul>
+
+<h3>Dépenses variables mensuelles</h3>
+<p>Sur chaque colonne mensuelle, un bouton <strong>"+ Dépense"</strong> permet d'ajouter une dépense variable :</p>
+<ul>
+  <li>Catégorie (publicité, fournitures, logiciel, DASRI, formation, autre)</li>
+  <li>Libellé libre et montant en euros</li>
+  <li>Plusieurs dépenses peuvent être ajoutées par mois</li>
+</ul>
+
+<h3>Taux URSAF</h3>
+<p>Le taux URSAF peut être ajusté mois par mois pour refléter les changements de taux en cours d'année (première année d'activité, modifications réglementaires). Le taux par défaut est configurable dans les Paramètres.</p>
+
+<h3>Export Excel annuel</h3>
+<p>Le bouton <strong>"Exporter en Excel"</strong> en haut de la page génère un fichier <code>.xlsx</code> complet contenant :</p>
+<ul>
+  <li>Le récapitulatif mensuel (recettes, dépenses, URSAF, net)</li>
+  <li>Le détail par type de consultation</li>
+  <li>La liste des dépenses variables avec catégories</li>
+  <li>Le journal des factures émises</li>
+</ul>
+
+<h3>Génération de factures PDF</h3>
+<div class="step"><div class="step-num">1</div><div class="step-text">Ouvrez le résumé d'une séance (via l'historique ou le Calendrier)</div></div>
+<div class="step"><div class="step-num">2</div><div class="step-text">Cliquez sur <strong>"Générer la facture"</strong></div></div>
+<div class="step"><div class="step-num">3</div><div class="step-text">Vérifiez et ajustez les informations de facturation si nécessaire</div></div>
+<div class="step"><div class="step-num">4</div><div class="step-text">Confirmez — le PDF est généré et enregistré dans votre dossier factures configuré</div></div>
+<div class="step"><div class="step-num">5</div><div class="step-text">Une entrée est automatiquement créée dans le <strong>journal des factures</strong></div></div>
+
+<p>Les factures reprennent vos informations praticien (nom, adresse, SIRET), les coordonnées du patient, le détail de la consultation et la numérotation séquentielle annuelle configurée.</p>
+
+<div class="info">
+  <strong>TVA :</strong> Par défaut, le taux de TVA est à 0 % (soins de santé exonérés de TVA pour les professions réglementées). Vérifiez votre situation avec votre comptable et configurez le taux dans Paramètres → Facturation si nécessaire.
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     7. PARAMÈTRES
+════════════════════════════════════════════ -->
+<h2 id="parametres"><span class="section-num">7</span> Paramètres</h2>
+
+<div class="section-intro">
+  La page Paramètres regroupe tous les réglages de l'application, organisés en onglets thématiques.
+</div>
+
+<h3>Sauvegardes</h3>
+
+<div class="card">
+  <h4>Dossier de destination</h4>
+  <p>Deux dossiers de sauvegarde peuvent être configurés : un dossier <strong>général</strong> (toutes les données) et un dossier <strong>patient</strong> (sauvegarde par patient). Choisissez des emplacements sur un disque externe ou un NAS pour une sécurité maximale.</p>
+</div>
+
+<div class="card">
+  <h4>Sauvegarde automatique à la fermeture</h4>
+  <p>Activez cette option pour qu'une sauvegarde soit automatiquement créée chaque fois que vous quittez l'application. Recommandé pour les praticiens solo.</p>
+</div>
+
+<div class="card">
+  <h4>Sauvegarde quotidienne automatique</h4>
+  <p>Une sauvegarde est créée une fois par jour au premier démarrage de la journée, indépendamment de la sauvegarde à la fermeture.</p>
+</div>
+
+<div class="card">
+  <h4>Rétention des sauvegardes</h4>
+  <p>Définissez le nombre de jours pendant lesquels les anciennes sauvegardes sont conservées avant suppression automatique. Par défaut : 30 jours.</p>
+</div>
+
+<h4>Sauvegarde manuelle</h4>
+<p>Cliquez sur <strong>"Sauvegarder maintenant"</strong> pour créer immédiatement une sauvegarde chiffrée. Le fichier généré porte l'extension <code>.json.enc</code>.</p>
+
+<h4>Importer une sauvegarde</h4>
+<div class="step"><div class="step-num">1</div><div class="step-text">Cliquez sur <strong>"Importer une sauvegarde"</strong></div></div>
+<div class="step"><div class="step-num">2</div><div class="step-text">Sélectionnez le fichier <code>.json.enc</code> à restaurer</div></div>
+<div class="step"><div class="step-num">3</div><div class="step-text">L'application fusionne les données sans créer de doublons — les enregistrements existants sont conservés</div></div>
+
+<div class="danger">
+  <strong>Clé de chiffrement des sauvegardes :</strong> Les sauvegardes utilisent une clé distincte de votre mot de passe. En cas de réinstallation sur un nouveau PC, copiez le fichier <code>encryption.key</code> depuis le dossier de données de l'ancien PC (<code>C:\Users\[nom]\AppData\Roaming\Synoria\</code>).
+</div>
+
+<h3>Facturation</h3>
+<p>Renseignez les informations qui apparaîtront sur vos factures PDF :</p>
+<ul>
+  <li>Nom complet du praticien et raison sociale</li>
+  <li>Adresse professionnelle</li>
+  <li>Numéro SIRET et ADELI/RPPS si applicable</li>
+  <li>Taux de TVA (0 % par défaut)</li>
+  <li>Dossier de destination des factures PDF générées</li>
+  <li>Numéro de facture suivant (format : AAAA-NNN, remise à zéro chaque année)</li>
+</ul>
+
+<h3>Sécurité</h3>
+
+<div class="card">
+  <h4>Changer le mot de passe</h4>
+  <div class="step"><div class="step-num">1</div><div class="step-text">Saisissez votre <strong>mot de passe actuel</strong></div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-text">Saisissez le <strong>nouveau mot de passe</strong> (minimum 6 caractères)</div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-text">Confirmez le nouveau mot de passe et validez</div></div>
+  <div class="step"><div class="step-num">4</div><div class="step-text">La base de données est rechiffrée avec le nouveau mot de passe — opération de quelques secondes</div></div>
+</div>
+
+<div class="card">
+  <h4>Verrouiller l'application</h4>
+  <p>Le bouton <strong>"Verrouiller maintenant"</strong> ferme immédiatement la session et affiche l'écran de saisie du mot de passe. Utile avant de vous éloigner de votre poste de travail.</p>
+</div>
+
+<div class="info">
+  <strong>Verrouillage automatique :</strong> L'application se verrouille après 20 minutes d'inactivité (aucune interaction clavier ou souris). Ce délai n'est pas configurable.
+</div>
+
+<h3>RGPD</h3>
+<p>Paramétrez les éléments de conformité RGPD :</p>
+<ul>
+  <li><strong>Nom du responsable de traitement</strong> — votre nom complet</li>
+  <li><strong>E-mail de contact RGPD</strong> — pour les demandes des patients</li>
+  <li><strong>Durée de conservation des données</strong> — en années (défaut : 10 ans)</li>
+  <li><strong>Texte de la notice patient</strong> — notice Art. 13 RGPD remise aux patients lors de leur premier RDV (modifiable pour l'adapter à votre pratique)</li>
+</ul>
+
+<h3>Plugin de spécialité</h3>
+<p>Les plugins permettent d'adapter le formulaire de séance à votre discipline :</p>
+
+<table>
+  <tr><th>Plugin disponible</th><th>Description</th></tr>
+  <tr><td><strong>MTC JP</strong></td><td>Formulaire MTC complet — barrage, systèmes, tests énergétiques, diagnostic MTC</td></tr>
+  <tr><td><strong>Kinésiologie</strong></td><td>Formulaire kinésiologie adapté (Charlotte Decaens)</td></tr>
+  <tr><td><strong>Plugin personnalisé</strong></td><td>Importez votre propre fichier <code>.plugin.json</code></td></tr>
+  <tr><td><em>Aucun plugin</em></td><td>Formulaire simple universel — adapté à toutes les pratiques</td></tr>
+</table>
+
+<p>Pour changer de plugin : onglet <strong>"Plugin"</strong> → sélectionnez dans la liste ou cliquez <strong>"Importer un plugin"</strong> pour charger un fichier <code>.plugin.json</code> fourni par un tiers.</p>
+
+<h3>Support &amp; diagnostic</h3>
+<p>L'onglet <strong>"Support"</strong> donne accès à :</p>
+<ul>
+  <li><strong>Rapport de diagnostic</strong> — génère un fichier texte avec les informations système (version, chemins de données, taille BDD) à transmettre au support en cas de problème</li>
+  <li><strong>Ouvrir le dossier de données</strong> — ouvre l'explorateur Windows sur le dossier <code>Synoria</code> dans AppData</li>
+  <li><strong>Documentation</strong> — lien vers ce guide d'utilisation</li>
+  <li><strong>Contacter le support</strong> — <a href="mailto:support@synoria.fr">support@synoria.fr</a></li>
+</ul>
+
+
+<!-- ═══════════════════════════════════════════
+     8. RGPD
+════════════════════════════════════════════ -->
+<h2 id="rgpd"><span class="section-num">8</span> RGPD &amp; conformité</h2>
+
+<div class="section-intro">
+  Synoria intègre les outils nécessaires à la conformité RGPD pour les praticiens de santé, conformément à l'article 9(2)(h) du règlement européen (traitement de données de santé à des fins de soins médicaux).
+</div>
+
+<h3>Tableau des consentements patients</h3>
+<p>L'onglet <strong>"Consentements"</strong> affiche :</p>
+<ul>
+  <li>La liste de tous les patients actifs avec leur statut de consentement (Oui / Non)</li>
+  <li>La date à laquelle le consentement a été obtenu</li>
+  <li>Un <strong>taux de couverture global</strong> avec barre de progression visuelle (ex : "47/52 patients — 90 %")</li>
+</ul>
+
+<div class="tip">
+  <strong>Objectif :</strong> Le taux de consentement doit idéalement atteindre 100 %. Synoria ne bloque pas la création de séances pour les patients sans consentement, mais vous alerte sur le tableau de bord.
+</div>
+
+<h3>Journal d'accès automatique</h3>
+<p>Synoria enregistre automatiquement chaque accès à un dossier patient dans un <strong>journal d'accès</strong> horodaté. Les entrées sont créées pour :</p>
+
+<table>
+  <tr><th>Action</th><th>Déclencheur</th></tr>
+  <tr><td>Fiche ouverte</td><td>Ouverture de la fenêtre de modification d'un dossier patient</td></tr>
+  <tr><td>Séance consultée</td><td>Ouverture du résumé d'une séance</td></tr>
+  <tr><td>Séance créée</td><td>Enregistrement d'une nouvelle séance</td></tr>
+  <tr><td>Données exportées</td><td>Export Excel ou JSON d'une séance</td></tr>
+</table>
+
+<p>Consultez le journal dans <span class="nav-item">RGPD</span> → onglet <strong>"Journal d'accès"</strong>. Filtrez par patient pour voir l'historique complet d'accès à un dossier spécifique.</p>
+
+<h3>Alertes de conservation des données</h3>
+<p>L'onglet <strong>"Alertes"</strong> liste automatiquement les patients dont les données approchent ou dépassent la durée de conservation légale :</p>
+
+<div class="grid2">
+  <div class="card" style="border-left: 4px solid #d4a017;">
+    <h4>Bientôt à expiration</h4>
+    <p>Patients dont la dernière séance date de plus de <strong>9 ans</strong> (si durée configurée à 10 ans). Action recommandée : contactez le patient ou archivez le dossier.</p>
+  </div>
+  <div class="card" style="border-left: 4px solid #b02020;">
+    <h4>Dépassé</h4>
+    <p>Patients dont la dernière séance dépasse la durée de conservation configurée. Action recommandée : supprimez les données ou obtenez un nouveau consentement explicite.</p>
+  </div>
+</div>
+
+<div class="info">
+  <strong>Durée de conservation :</strong> Pour les professions de santé réglementées, la durée légale de conservation des dossiers peut varier selon la réglementation applicable. Consultez votre ordre professionnel ou un juriste spécialisé. La valeur par défaut de 10 ans dans Synoria est une valeur courante.
+</div>
+
+<h3>Export du registre Art. 30 RGPD</h3>
+<p>Le RGPD impose aux responsables de traitement de tenir un <strong>registre des activités de traitement</strong> (article 30). Synoria génère ce document automatiquement.</p>
+
+<div class="step"><div class="step-num">1</div><div class="step-text">Allez dans <span class="nav-item">RGPD</span> → onglet <strong>"Registre Art. 30"</strong></div></div>
+<div class="step"><div class="step-num">2</div><div class="step-text">Cliquez sur <strong>"Exporter le registre"</strong></div></div>
+<div class="step"><div class="step-num">3</div><div class="step-text">Le fichier HTML est généré et enregistré dans votre dossier d'exports</div></div>
+<div class="step"><div class="step-num">4</div><div class="step-text">Ouvrez le fichier dans un navigateur pour le consulter ou l'imprimer en PDF</div></div>
+
+<p>Le registre généré inclut :</p>
+<ul>
+  <li>L'identité du responsable de traitement (votre nom, coordonnées)</li>
+  <li>La finalité du traitement (gestion de dossiers de soins)</li>
+  <li>La base légale (Art. 9(2)(h) — soins médicaux)</li>
+  <li>Les catégories de données traitées</li>
+  <li>La durée de conservation configurée</li>
+  <li>Les mesures de sécurité techniques (chiffrement AES-256, contrôle d'accès par mot de passe)</li>
+  <li>Les statistiques globales (nombre de patients, de séances)</li>
+</ul>
+
+<div class="warn">
+  <strong>Mise à jour annuelle recommandée :</strong> Régénérez et archivez ce registre au moins une fois par an, et à chaque modification significative de vos pratiques de traitement des données.
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     9. RACCOURCIS CLAVIER
+════════════════════════════════════════════ -->
+<h2 id="raccourcis"><span class="section-num">9</span> Raccourcis clavier</h2>
+
+<div class="section-intro">
+  Synoria propose des raccourcis clavier pour accélérer la navigation et les actions fréquentes. Ils fonctionnent quelle que soit la page en cours.
+</div>
+
+<h3>Navigation</h3>
+<table>
+  <tr><th>Raccourci</th><th>Action</th></tr>
+  <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">1</span></td><td>Aller au Tableau de bord</td></tr>
+  <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">2</span></td><td>Aller à la liste des Patients</td></tr>
+  <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">3</span></td><td>Ouvrir le formulaire Nouvelle séance</td></tr>
+  <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">4</span></td><td>Aller au Calendrier</td></tr>
+  <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">5</span></td><td>Aller à la Comptabilité</td></tr>
+  <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">6</span></td><td>Aller aux Paramètres</td></tr>
+  <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">7</span></td><td>Aller à la page RGPD</td></tr>
+</table>
+
+<h3>Actions globales</h3>
+<table>
+  <tr><th>Raccourci</th><th>Action</th></tr>
+  <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">K</span></td><td>Ouvrir la recherche globale de patients</td></tr>
+  <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">P</span></td><td>Imprimer la page ou le résumé courant</td></tr>
+  <tr><td><span class="kbd">Échap</span></td><td>Fermer la modale / le panneau ouvert</td></tr>
+</table>
+
+<h3>Mise en forme du texte (dans les zones de notes)</h3>
+<table>
+  <tr><th>Raccourci</th><th>Action</th></tr>
+  <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">B</span></td><td>Gras</td></tr>
+  <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">I</span></td><td>Italique</td></tr>
+  <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">U</span></td><td>Souligné</td></tr>
+  <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">Z</span></td><td>Annuler la dernière saisie</td></tr>
+  <tr><td><span class="kbd">Ctrl</span> + <span class="kbd">A</span></td><td>Sélectionner tout le texte dans la zone active</td></tr>
+</table>
+
+<h3>Navigation dans les modales</h3>
+<table>
+  <tr><th>Raccourci</th><th>Action</th></tr>
+  <tr><td><span class="kbd">Entrée</span></td><td>Valider le formulaire / confirmer la sélection</td></tr>
+  <tr><td><span class="kbd">Échap</span></td><td>Annuler et fermer la modale</td></tr>
+  <tr><td><span class="kbd">Tab</span></td><td>Passer au champ suivant</td></tr>
+  <tr><td><span class="kbd">Maj</span> + <span class="kbd">Tab</span></td><td>Revenir au champ précédent</td></tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════
+     10. MODE SOMBRE
+════════════════════════════════════════════ -->
+<h2 id="mode-sombre"><span class="section-num">10</span> Mode sombre</h2>
+
+<div class="section-intro">
+  Synoria propose un mode sombre complet pour une utilisation confortable en environnement peu éclairé ou en soirée.
+</div>
+
+<h3>Activer / désactiver le mode sombre</h3>
+<p>Cliquez sur l'icône <strong>lune / soleil</strong> dans le coin supérieur droit du header de l'application. L'interface bascule immédiatement entre le thème clair et le thème sombre.</p>
+
+<div class="grid2">
+  <div class="card" style="border-left: 4px solid #2d6a4f;">
+    <h4>Mode clair (défaut)</h4>
+    <p>Fond blanc et gris clair, textes sombres, accents verts. Recommandé pour une utilisation de jour en environnement bien éclairé.</p>
+  </div>
+  <div class="card" style="border-left: 4px solid #555;">
+    <h4>Mode sombre</h4>
+    <p>Fond sombre (gris anthracite), textes clairs, accents verts atténués. Recommandé pour les consultations en soirée ou dans des pièces peu éclairées.</p>
+  </div>
+</div>
+
+<h3>Préférence sauvegardée</h3>
+<p>Votre choix de thème est <strong>automatiquement mémorisé</strong>. À la prochaine ouverture de l'application, Synoria s'affichera dans le thème que vous avez choisi en dernier.</p>
+
+<div class="info">
+  <strong>Impression :</strong> Quelle que soit votre préférence de thème, l'impression et l'export PDF utilisent toujours le thème clair pour garantir une lisibilité optimale sur papier.
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     QUESTIONS FRÉQUENTES
+════════════════════════════════════════════ -->
+<h2 id="faq"><span class="section-num" style="background:#1b4332">?</span> Questions fréquentes</h2>
+
+<h3>J'ai oublié mon mot de passe — que faire ?</h3>
+<div class="danger">
+  Sans mot de passe maître, les données chiffrées sont <strong>totalement irrécupérables</strong>. Si vous possédez une sauvegarde créée avant l'oubli (fichier <code>.json.enc</code>) et que vous avez accès au fichier <code>encryption.key</code> correspondant, vous pouvez réinstaller Synoria sur un PC propre, créer un nouveau mot de passe, puis importer la sauvegarde. Contactez le support : <a href="mailto:support@synoria.fr">support@synoria.fr</a>
+</div>
+
+<h3>L'application ne démarre pas ou affiche un écran blanc</h3>
+<ul>
+  <li>Fermez complètement l'application (vérifiez dans le gestionnaire de tâches) et relancez</li>
+  <li>Clic droit sur l'icône → <strong>"Exécuter en tant qu'administrateur"</strong></li>
+  <li>Vérifiez que Windows est à jour (Paramètres → Windows Update)</li>
+  <li>Désactivez temporairement votre antivirus pour tester (faux positif courant)</li>
+  <li>Si le problème persiste, envoyez un rapport de diagnostic depuis Paramètres → Support</li>
+</ul>
+
+<h3>Comment transférer mes données sur un nouveau PC ?</h3>
+<div class="step"><div class="step-num">1</div><div class="step-text">Sur l'ancien PC : cliquez <strong>"Sauvegarder maintenant"</strong> dans Paramètres — notez l'emplacement du fichier</div></div>
+<div class="step"><div class="step-num">2</div><div class="step-text">Copiez le fichier <code>.json.enc</code> <strong>et</strong> le fichier <code>encryption.key</code> (dossier <code>C:\Users\[nom]\AppData\Roaming\Synoria\</code>) sur une clé USB</div></div>
+<div class="step"><div class="step-num">3</div><div class="step-text">Sur le nouveau PC : installez Synoria, créez un nouveau mot de passe</div></div>
+<div class="step"><div class="step-num">4</div><div class="step-text">Copiez le fichier <code>encryption.key</code> dans le dossier <code>C:\Users\[nom]\AppData\Roaming\Synoria\</code></div></div>
+<div class="step"><div class="step-num">5</div><div class="step-text">Dans Synoria : Paramètres → Sauvegardes → <strong>"Importer une sauvegarde"</strong></div></div>
+
+<h3>Où sont stockées mes données ?</h3>
+<div class="screen">Installation standard : C:\Users\[votre nom]\AppData\Roaming\Synoria\
+    ├── database\
+    │   ├── mtc.sqlite.enc    (base chiffrée permanente)
+    │   └── mtc.sqlite        (base de travail, présente uniquement en session)
+    ├── auth.json             (vérificateur mot de passe)
+    ├── encryption.key        (clé chiffrement sauvegardes)
+    ├── settings.json         (préférences)
+    └── exports\              (exports Excel, JSON, registre RGPD)</div>
+
+<h3>L'antivirus signale le fichier d'installation</h3>
+<p>C'est un faux positif courant pour les logiciels indépendants non signés numériquement. Ajoutez une exception dans votre antivirus pour le dossier Synoria. Le logiciel est développé en France, le code source est disponible sur demande pour audit, et les données ne quittent jamais votre machine.</p>
+
+<h3>Peut-on utiliser Synoria sur Mac ?</h3>
+<p>Le code source est compatible Mac, mais aucune version Mac n'est compilée ni distribuée à ce jour. Contactez le support si vous en avez besoin : <a href="mailto:support@synoria.fr">support@synoria.fr</a></p>
+
+<h3>Les données sont-elles envoyées sur Internet ?</h3>
+<p>Non. Synoria est entièrement local — aucune connexion réseau n'est initiée en dehors des vérifications de mises à jour optionnelles (désactivables dans les Paramètres). Vos données médicales ne quittent jamais votre ordinateur.</p>
+
+
+<!-- ═══════════════════════════════════════════
+     FOOTER
+════════════════════════════════════════════ -->
+<footer>
+  <p><strong>Synoria v1.4.3</strong> — Logiciel de gestion de dossiers patients pour praticiens de santé</p>
+  <p>Développé par Jean-Pierre Timoner &nbsp;·&nbsp; <a href="mailto:support@synoria.fr">support@synoria.fr</a></p>
+  <p style="margin-top: 10px; font-size: 11.5px;">
+    &copy; 2026 — Tous droits réservés &nbsp;·&nbsp;
+    Données 100 % locales et chiffrées &nbsp;·&nbsp;
+    AES-256-GCM &nbsp;·&nbsp;
+    Windows 10 / 11 (64 bits)
+  </p>
+</footer>
+
+</div><!-- /container -->
+</body>
+</html>

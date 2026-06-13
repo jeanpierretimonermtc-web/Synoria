@@ -97,15 +97,26 @@ const api: IpcApi = {
   },
   searchGlobal:   (q)           => ipcRenderer.invoke('search:global', q),
   verifyBackup:   (path)        => ipcRenderer.invoke('backup:verify', path),
-  getTemplates:   ()            => ipcRenderer.invoke('templates:getAll'),
-  saveTemplate:   (n, d, j)     => ipcRenderer.invoke('templates:save', n, d, j),
-  deleteTemplate: (id)          => ipcRenderer.invoke('templates:delete', id),
   // Google Calendar
   gcalStatus:        ()              => ipcRenderer.invoke('gcal:status'),
   gcalConnect:       (cid, csec)     => ipcRenderer.invoke('gcal:connect', cid, csec),
   gcalDisconnect:    ()              => ipcRenderer.invoke('gcal:disconnect'),
   gcalListCalendars: ()              => ipcRenderer.invoke('gcal:listCalendars'),
   gcalSetCalendar:   (id, name)      => ipcRenderer.invoke('gcal:setCalendar', id, name),
+  // Diagnostic
+  generateDiagnosticReport: () => ipcRenderer.invoke('diagnostic:generate'),
+  generateSupportDoc:       () => ipcRenderer.invoke('diagnostic:supportDoc'),
+  generateRecoveryDoc:      () => ipcRenderer.invoke('diagnostic:recoveryDoc'),
+  // Admin
+  adminVerify:        (password: string) => ipcRenderer.invoke('admin:verify', password),
+  adminGetLogs:       (n?: number)       => ipcRenderer.invoke('admin:getLogs', n),
+  adminClearLogs:     ()                 => ipcRenderer.invoke('admin:clearLogs'),
+  adminGetSystemInfo: ()                 => ipcRenderer.invoke('admin:systemInfo'),
+  adminDbIntegrity:   ()                 => ipcRenderer.invoke('admin:dbIntegrity'),
+  adminWalCheckpoint: ()                 => ipcRenderer.invoke('admin:walCheckpoint'),
+  adminDbStats:       ()                 => ipcRenderer.invoke('admin:dbStats'),
+  adminGetSettings:   ()                 => ipcRenderer.invoke('admin:getSettings'),
+  adminForceBackup:   ()                 => ipcRenderer.invoke('admin:forceBackup'),
 }
 
 contextBridge.exposeInMainWorld('mtcApi', api)

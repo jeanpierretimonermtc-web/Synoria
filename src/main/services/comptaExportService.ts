@@ -260,7 +260,14 @@ function buildComptaSheet(year: number) {
 
   const ws = XLSX.utils.aoa_to_sheet(ws_data)
   ws['!cols'] = [{ wch: 28 }, { wch: 8 }, ...Array(24).fill({ wch: 7 })]
-  ws['!rows'] = ws_data.map((_, i) => ({ hpx: i === 0 ? 28 : i === 1 ? 30 : 18 }))
+  ws['!rows'] = ws_data.map((rowData, i) => {
+    if (i === 0) return { hpx: 28 }
+    if (i === 1) return { hpx: 30 }
+    const v = (rowData[0] as any)?.v
+    const text = v ? String(v) : ''
+    const lines = text.split('\n').reduce((n, s) => n + Math.max(1, Math.ceil((s.length || 1) / 27)), 0)
+    return { hpx: Math.max(20, lines * 16) }
+  })
   ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 25 } }]
   return ws
 }
@@ -350,6 +357,13 @@ function buildDepensesSheet(year: number) {
 
   const ws = XLSX.utils.aoa_to_sheet(rows)
   ws['!cols'] = [{ wch: 26 }, { wch: 14 }, { wch: 12 }, { wch: 22 }, ...Array(12).fill({ wch: 9 }), { wch: 12 }]
+  ws['!rows'] = rows.map((rowData, i) => {
+    if (i === 0 || i === 1) return { hpx: 30 }
+    const v = (rowData[0] as any)?.v
+    const text = v ? String(v) : ''
+    const lines = text.split('\n').reduce((n, s) => n + Math.max(1, Math.ceil((s.length || 1) / 25)), 0)
+    return { hpx: Math.max(20, lines * 16) }
+  })
 
   // AutoFilter sur les dépenses variables (header row)
   const varHdrRowIdx = rows.findIndex((r: any) => r[0]?.v === 'MOIS')
@@ -397,7 +411,12 @@ function buildFacturesSheet(year: number) {
       labelCell(dateStr, 0, false, bg),
       labelCell(inv.patient_last_name.toUpperCase(), 0, true, bg),
       labelCell(inv.patient_first_name, 0, false, bg),
-      labelCell(inv.description || '', 0, false, bg),
+      cell(inv.description || '', {
+        font: { sz: 9, color: { rgb: C.navy } },
+        fill: { fgColor: { rgb: bg }, patternType: 'solid' },
+        alignment: { horizontal: 'left', wrapText: true, vertical: 'top' },
+        border,
+      }),
       labelCell(sessStr, 0, false, bg),
       labelCell(inv.email || '', 0, false, bg),
       numCell(inv.montant, true, false, bg),
@@ -414,8 +433,15 @@ function buildFacturesSheet(year: number) {
   ])
 
   const ws = XLSX.utils.aoa_to_sheet(rows)
-  ws['!cols'] = [{ wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 14 }, { wch: 30 }, { wch: 12 }, { wch: 26 }, { wch: 12 }]
-  ws['!rows'] = [{ hpx: 28 }, { hpx: 30 }, ...Array(invoices.length + 1).fill({ hpx: 18 })]
+  ws['!cols'] = [{ wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 14 }, { wch: 38 }, { wch: 12 }, { wch: 26 }, { wch: 12 }]
+  ws['!rows'] = rows.map((rowData, i) => {
+    if (i === 0) return { hpx: 28 }
+    if (i === 1) return { hpx: 30 }
+    const v = (rowData[5] as any)?.v
+    const text = v ? String(v) : ''
+    const lines = text.split('\n').reduce((n, s) => n + Math.max(1, Math.ceil((s.length || 1) / 36)), 0)
+    return { hpx: Math.max(20, lines * 16) }
+  })
   ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }]
   // AutoFilter sur la ligne d'en-têtes (row index 1)
   ws['!autofilter'] = { ref: 'A2:I2' }
@@ -532,7 +558,7 @@ function buildCaParMoisSheet(year: number) {
 
   const ws = XLSX.utils.aoa_to_sheet(rows)
   ws['!cols'] = [{ wch: 14 }, { wch: 10 }, { wch: 14 }, { wch: 14 }, { wch: 13 }, { wch: 14 }, { wch: 10 }, { wch: 13 }, { wch: 14 }]
-  ws['!rows'] = [{ hpx: 28 }, { hpx: 32 }, ...Array(12).fill({ hpx: 22 }), { hpx: 8 }, { hpx: 24 }, { hpx: 8 }, { hpx: 16 }, { hpx: 16 }]
+  ws['!rows'] = [{ hpx: 28 }, { hpx: 36 }, ...Array(12).fill({ hpx: 22 }), { hpx: 8 }, { hpx: 24 }, { hpx: 8 }, { hpx: 16 }, { hpx: 16 }]
   ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }]
   return ws
 }

@@ -200,6 +200,10 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
     v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0)
   ))
 
+  // Sections MTC : uniquement si aucun plugin utilisé OU plugin MTC intégré (useBuiltinForm)
+  // pluginId vide = séance simple/ancienne ; pluginId renseigné = plugin tiers → pas de sections MTC
+  const showMtcSections = !pluginId || !!pluginDef?.useBuiltinForm
+
   const sessionNum: number        = fd.sessionNum   || 0
   const langueNote: string        = fd.langueNote   || ''
   const poulsNote: string         = fd.poulsNote    || ''
@@ -295,7 +299,9 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
       {/* ─── 1. MOTIF & ÉVOLUTION ────────────────────────────────── */}
       <SummaryBlock title="Motif de consultation & Évolution" icon="🎯" color="var(--amber)">
         <HtmlRow label="Motif" value={s.motif} />
-        <HtmlRow label="Prise de notes (interrogatoire)" value={fd.anamnese} />
+        {fd.anamnese && (!pluginId || pluginDef?.useBuiltinForm) && (
+          <HtmlRow label={pluginDef?.useBuiltinForm ? "Prise de notes (interrogatoire)" : "Anamnèse"} value={fd.anamnese} />
+        )}
         <Row label="Évolution (tag)" value={s.evolution_tags} />
         <HtmlRow label="Évolution (détail)" value={s.evolution} />
       </SummaryBlock>
@@ -306,7 +312,7 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
       ))}
 
       {/* ─── 2. OBSERVATION MTC ──────────────────────────────────── */}
-      {(s.langue || langueNote || s.pouls || hasPoulsPos || poulsNote ||
+      {showMtcSections && (s.langue || langueNote || s.pouls || hasPoulsPos || poulsNote ||
         s.constitution || s.type_corps || s.teint || s.observation) && (
         <div className="summary-section">
           <h3 style={{ color: 'var(--teal)' }}>👀 Observation MTC</h3>
@@ -316,7 +322,10 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
             <div className="obs-block">
               <div className="detail-label">Langue</div>
               {s.langue && <Chips values={s.langue.split(', ').filter(Boolean)} color="teal" />}
-              {langueNote && <div className="detail-note">{langueNote}</div>}
+              {langueNote && (/<[a-z][\s\S]*>/i.test(langueNote)
+                ? <div className="detail-note" dangerouslySetInnerHTML={{ __html: langueNote }} />
+                : <div className="detail-note">{langueNote}</div>
+              )}
             </div>
           )}
 
@@ -347,7 +356,10 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
                   </div>
                 </div>
               )}
-              {poulsNote && <div className="detail-note">{poulsNote}</div>}
+              {poulsNote && (/<[a-z][\s\S]*>/i.test(poulsNote)
+                ? <div className="detail-note" dangerouslySetInnerHTML={{ __html: poulsNote }} />
+                : <div className="detail-note">{poulsNote}</div>
+              )}
             </div>
           )}
 
@@ -362,7 +374,7 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
       )}
 
       {/* ─── 3. QUESTIONNAIRE PAR SYSTÈMES ──────────────────────── */}
-      {hasSysData && (
+      {showMtcSections && hasSysData && (
         <div className="summary-section">
           <h3 style={{ color: 'var(--blue)' }}>📋 Questionnaire par systèmes</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -472,16 +484,18 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
       )}
 
       {/* ─── 4. DIAGNOSTIC MTC ───────────────────────────────────── */}
-      <SummaryBlock title="Diagnostic MTC" icon="🔵" color="var(--purple)">
-        <Row label="Diagnostic MTC principal" value={s.diagnostic_mtc} />
-        <Row label="5 Éléments"               value={s.cinq_elements} />
-        <Row label="Causes"                   value={s.causes} />
-        <Row label="Mécanisme / terrain"       value={s.analyse} />
-        <Row label="Principes de traitement"   value={s.principes} />
-      </SummaryBlock>
+      {showMtcSections && (
+        <SummaryBlock title="Diagnostic MTC" icon="🔵" color="var(--purple)">
+          <Row label="Diagnostic MTC principal" value={s.diagnostic_mtc} />
+          <Row label="5 Éléments"               value={s.cinq_elements} />
+          <Row label="Causes"                   value={s.causes} />
+          <Row label="Mécanisme / terrain"       value={s.analyse} />
+          <Row label="Principes de traitement"   value={s.principes} />
+        </SummaryBlock>
+      )}
 
       {/* ─── 5. TESTS ÉNERGÉTIQUES ───────────────────────────────── */}
-      {hasEnergy && (
+      {showMtcSections && hasEnergy && (
         <div className="summary-section">
           <h3 style={{ color: 'var(--purple)' }}>⚡ Tests énergétiques — Protocole de l'entonnoir</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -597,44 +611,31 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
       )}
 
       {/* ─── 6. TRAITEMENT ───────────────────────────────────────── */}
-      <SummaryBlock title="Traitement du jour" icon="🌿" color="var(--accent)">
-        <Row label="Points d'acupuncture"          value={s.points} />
-        <Row label="Points d'oreille"              value={s.pts_oreille} />
-        <Row label="Techniques utilisées"          value={s.techniques} />
-        <Row label="Plantes / Formule"             value={s.plantes} />
-        <Row label="Réactions / observations"      value={s.reactions} />
-        <Row label="Notes traitement"              value={s.traitement_notes} />
-      </SummaryBlock>
+      {showMtcSections && (
+        <SummaryBlock title="Traitement du jour" icon="🌿" color="var(--accent)">
+          <Row label="Points d'acupuncture"     value={s.points} />
+          <Row label="Points d'oreille"         value={s.pts_oreille} />
+          <Row label="Techniques utilisées"     value={s.techniques} />
+          <Row label="Plantes / Formule"        value={s.plantes} />
+          <Row label="Réactions / observations" value={s.reactions} />
+          <Row label="Notes traitement"         value={s.traitement_notes} />
+        </SummaryBlock>
+      )}
 
       {/* ─── 7. BARRAGE HOMÉOPATHIQUE ────────────────────────────── */}
-      {hasBarrage && (
+      {showMtcSections && hasBarrage && (
         <div className="summary-section">
           <h3 style={{ color: 'var(--amber)' }}>💊 Barrage homéopathique</h3>
           <div className="barrage-summary-grid">
-            {barrageNiv1 && (
-              <div className="barrage-summary-block">
-                <div className="detail-label">Niveau 1</div>
-                <div className="detail-value">{barrageNiv1}</div>
+            {[['Niveau 1', barrageNiv1], ['Niveau 2', barrageNiv2], ['Niveau 3', barrageNiv3], ['Niveau 4', barrageNiv4]].map(([lbl, val]) => val ? (
+              <div key={lbl as string} className="barrage-summary-block">
+                <div className="detail-label">{lbl}</div>
+                {/<[a-z][\s\S]*>/i.test(val as string)
+                  ? <div className="detail-value" dangerouslySetInnerHTML={{ __html: val as string }} />
+                  : <div className="detail-value">{val}</div>
+                }
               </div>
-            )}
-            {barrageNiv2 && (
-              <div className="barrage-summary-block">
-                <div className="detail-label">Niveau 2</div>
-                <div className="detail-value">{barrageNiv2}</div>
-              </div>
-            )}
-            {barrageNiv3 && (
-              <div className="barrage-summary-block">
-                <div className="detail-label">Niveau 3</div>
-                <div className="detail-value">{barrageNiv3}</div>
-              </div>
-            )}
-            {barrageNiv4 && (
-              <div className="barrage-summary-block">
-                <div className="detail-label">Niveau 4</div>
-                <div className="detail-value">{barrageNiv4}</div>
-              </div>
-            )}
+            ) : null)}
           </div>
         </div>
       )}

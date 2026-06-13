@@ -309,7 +309,7 @@ export default function RgpdPage() {
               Modifiez-le dans <strong>⚙️ Paramètres → RGPD</strong>.
             </div>
             <div style={{
-              background: '#FAFAF8', border: '1px solid var(--border-soft)', borderRadius: 8,
+              background: 'var(--bg)', border: '1px solid var(--border-soft)', borderRadius: 8,
               padding: '18px 20px', fontFamily: 'inherit', fontSize: 13, lineHeight: 1.8,
               whiteSpace: 'pre-wrap', color: 'var(--text)',
             }}>

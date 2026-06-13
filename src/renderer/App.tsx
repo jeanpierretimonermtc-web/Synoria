@@ -20,6 +20,7 @@ import FacturesListPage  from './pages/FacturesListPage'
 import ProfilePage       from './pages/ProfilePage'
 import { useInactivityLock } from './hooks/useInactivityLock'
 import GlobalSearch from './components/common/GlobalSearch'
+import AdminPanel from './components/admin/AdminPanel'
 
 export const ToastContext = React.createContext<(msg: string, type?: 'success' | 'error') => void>(() => {})
 
@@ -29,12 +30,19 @@ export default function App() {
   const { toast, showToast } = useToast()
   const [authState, setAuthState] = useState<AuthState>('splash')
   const navigate = useNavigate()
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+
+  // Lecture synchrone depuis localStorage → pas de flash au premier rendu
+  const [theme, setTheme] = useState<'light' | 'dark'>(() =>
+    (localStorage.getItem('synoria-theme') as 'light' | 'dark') || 'light'
+  )
 
   // ── Chargement et application du thème ──
   useEffect(() => {
+    // Sync depuis les settings (source de vérité persistante côté Electron)
     window.mtcApi.getSettings().then(s => {
-      if (s.theme === 'dark') setTheme('dark')
+      const t = s.theme === 'dark' ? 'dark' : 'light'
+      setTheme(t)
+      localStorage.setItem('synoria-theme', t)
     }).catch(() => {})
   }, [])
   useEffect(() => {
@@ -44,10 +52,24 @@ export default function App() {
   const toggleTheme = () => {
     const next = theme === 'light' ? 'dark' : 'light'
     setTheme(next)
+    localStorage.setItem('synoria-theme', next)
     window.mtcApi.saveSettings({ theme: next }).catch(() => {})
   }
 
-  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchOpen, setSearchOpen]   = useState(false)
+  const [adminOpen, setAdminOpen]     = useState(false)
+
+  // ── Ctrl+Shift+Alt+A → panneau admin ──
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.altKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault()
+        setAdminOpen(v => !v)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   // ── Ctrl+K → recherche globale ──
   useEffect(() => {
@@ -100,7 +122,7 @@ export default function App() {
   }
 
   if (authState === 'splash') {
-    return <SplashScreen onDone={checkAuth} />
+    return <SplashScreen onDone={checkAuth} theme={theme} />
   }
 
   if (authState === 'checking') {
@@ -125,13 +147,14 @@ export default function App() {
       <FormattingPopup />
       <MenuBarHotspot />
       {searchOpen && <GlobalSearch onClose={() => setSearchOpen(false)} />}
+      {adminOpen && <AdminPanel onClose={() => setAdminOpen(false)} theme={theme} />}
       <div className="app-shell">
 
         {/* ── HEADER compact ── */}
         <header className="app-header">
           <div className="logo">
-            <img src={theme === 'dark' ? './Synoria fond noir.png' : './Synoria.png'} alt="Logo" className="logo-img" />
-            <img src={theme === 'dark' ? './Text Synoria fond noir.png' : './Text Synoria fond blanc.png'} alt="SYNORIA" className="logo-title-img" />
+            <img src="./Synoria.png" alt="Logo" className="logo-img" />
+            <img src="./Text Synoria fond blanc.png" alt="SYNORIA" className="logo-title-img" />
             <span title="Données chiffrées AES-256" className="logo-secure">🔒 chiffré</span>
           </div>
           <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

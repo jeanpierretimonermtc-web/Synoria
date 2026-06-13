@@ -255,17 +255,11 @@ export function runMigrations(db: Database.Database): void {
   }
 
   if (currentVersion < 10) {
-    console.log('[DB] Running migration v10 (neutralisation données personnelles)...')
-    db.exec(`
-      -- Remet les types de consultation à un seul exemple neutre
-      DELETE FROM consultation_types;
-      INSERT INTO consultation_types VALUES ('standard', 'Consultation standard', 0, 1, 0);
-
-      -- Remet les montants des charges fixes à zéro
-      UPDATE expense_config SET monthly_amount = 0;
-
-      INSERT INTO schema_version(version) VALUES(10);
-    `)
+    console.log('[DB] Running migration v10...')
+    // Note: les opérations DELETE/UPDATE qui écrasaient les données comptabilité
+    // ont été retirées — elles supprimaient les types de consultation et les charges
+    // configurés par l'utilisateur lors de chaque mise à jour.
+    db.exec(`INSERT INTO schema_version(version) VALUES(10);`)
     console.log('[DB] Migration v10 done')
   }
 
