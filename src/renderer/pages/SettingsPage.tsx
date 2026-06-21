@@ -187,8 +187,8 @@ export default function SettingsPage() {
         setBkpPwdInput(''); setBkpPwdError(''); setBkpPwdModal({ filePath: result.filePath })
         return
       }
-      showToast(`Import terminé ✓ — ${result.patientsUpserted} patient(s), ${result.sessionsUpserted} séance(s)${result.errors.length ? ` (${result.errors.length} ignoré(s))` : ''}`, 'success')
-      window.location.reload()
+      showToast(`Import terminé ✓ — ${result.patientsUpserted} patient(s), ${result.sessionsUpserted} séance(s)${result.errors.length ? ` (${result.errors.length} ignoré(s))` : ''} · Redémarrage…`, 'success')
+      setTimeout(() => window.mtcApi.relaunchApp(), 1500)
     } catch (e: any) { showToast(`Erreur import : ${e?.message || e}`, 'error') }
   }
 
@@ -198,7 +198,9 @@ export default function SettingsPage() {
     try {
       const result = await window.mtcApi.importBackupJsonWithPassword(bkpPwdModal.filePath, bkpPwdInput)
       showToast(`Import terminé ✓ — ${result.patientsUpserted} patient(s), ${result.sessionsUpserted} séance(s)`, 'success')
-      setBkpPwdModal(null); window.location.reload()
+      setBkpPwdModal(null)
+      showToast(`Import terminé ✓ · Redémarrage…`, 'success')
+      setTimeout(() => window.mtcApi.relaunchApp(), 1500)
     } catch (e: any) {
       setBkpPwdError((e?.message || String(e)).replace('WRONG_PASSWORD:', ''))
     }

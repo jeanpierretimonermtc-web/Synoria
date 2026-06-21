@@ -76,6 +76,7 @@ const api: IpcApi = {
   showOpenDialog: (opts)  => ipcRenderer.invoke('dialog:open', opts),
   openPath:       (path)  => ipcRenderer.invoke('shell:openPath', path),
   getAppVersion:  ()      => ipcRenderer.invoke('app:getVersion'),
+  relaunchApp:    ()      => ipcRenderer.invoke('app:relaunch'),
   launchInstaller:(path)  => ipcRenderer.invoke('app:launchInstaller', path),
   // Auth
   authStatus:          ()             => ipcRenderer.invoke('auth:status'),

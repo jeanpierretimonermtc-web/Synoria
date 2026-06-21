@@ -610,6 +610,7 @@ export function registerAllHandlers(): void {
     } catch { return null }
   })
   ipcMain.handle('app:getVersion',      ()            => app.getVersion())
+  ipcMain.handle('app:relaunch',        ()            => { app.relaunch(); app.quit() })
   ipcMain.handle('app:launchInstaller', async (_e, exePath: string) => {
     if (process.platform === 'darwin') {
       // Sur Mac : ouvrir le DMG avec Finder, ne pas quitter l'app

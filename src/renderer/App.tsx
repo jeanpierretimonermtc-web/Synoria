@@ -560,9 +560,9 @@ function BackupButton({ showToast }: { showToast: (msg: string, type?: 'success'
         showToast('Cette sauvegarde est protégée — utilisez Paramètres → Restaurer', 'error')
         return
       }
-      const msg = `Import terminé ✓ — ${result.patientsUpserted} patient(s), ${result.sessionsUpserted} séance(s)${result.errors.length ? ` (${result.errors.length} ignoré(s))` : ''}`
+      const msg = `Import terminé ✓ — ${result.patientsUpserted} patient(s), ${result.sessionsUpserted} séance(s)${result.errors.length ? ` (${result.errors.length} ignoré(s))` : ''} · Redémarrage…`
       showToast(msg, 'success')
-      window.location.reload()
+      setTimeout(() => window.mtcApi.relaunchApp(), 1500)
     } catch (e: any) {
       showToast(`Erreur import : ${e?.message || e}`, 'error')
     }

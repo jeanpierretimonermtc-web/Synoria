@@ -426,6 +426,7 @@ export interface IpcApi {
   showOpenDialog: (opts: { filters?: Array<{ name: string; extensions: string[] }> }) => Promise<string | null>
   openPath: (path: string) => Promise<void>
   getAppVersion: () => Promise<string>
+  relaunchApp:   () => Promise<void>
   launchInstaller: (exePath: string) => Promise<void>
   // ── Authentification & chiffrement BDD ──
   authStatus: () => Promise<{ hasPassword: boolean; isUnlocked: boolean }>
