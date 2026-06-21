@@ -31,7 +31,7 @@ export function getOrCreateKey(): Buffer {
   return key
 }
 
-/** Chiffre une chaîne et l'écrit dans un fichier */
+/** Chiffre une chaîne et l'écrit dans un fichier (format v2, clé machine) */
 export function encryptToFile(plaintext: string, outputPath: string): void {
   const key = getOrCreateKey()
   const iv  = randomBytes(16)
@@ -40,6 +40,50 @@ export function encryptToFile(plaintext: string, outputPath: string): void {
   const tag = cipher.getAuthTag()
   const payload = [iv.toString('hex'), tag.toString('hex'), enc.toString('hex')].join('\n')
   writeFileSync(outputPath, payload, 'utf-8')
+}
+
+/**
+ * Chiffre avec la clé de session (PBKDF2 du mot de passe utilisateur).
+ * Format v3 : "V3\n<auth_salt_hex>\n<iv_hex>\n<tag_hex>\n<data_hex>"
+ * Le sel PBKDF2 est embarqué → importable sur n'importe quelle machine
+ * en connaissant uniquement le mot de passe Synoria.
+ */
+export function encryptToFileV3(plaintext: string, outputPath: string, sessionKey: Buffer, authSaltHex: string): void {
+  const iv     = randomBytes(16)
+  const cipher = createCipheriv(ALGORITHM, sessionKey, iv)
+  const enc    = Buffer.concat([cipher.update(plaintext, 'utf-8'), cipher.final()])
+  const tag    = cipher.getAuthTag()
+  const payload = ['V3', authSaltHex, iv.toString('hex'), tag.toString('hex'), enc.toString('hex')].join('\n')
+  writeFileSync(outputPath, payload, 'utf-8')
+}
+
+/** Détecte si un fichier .enc est au format v3 (mot de passe) */
+export function isV3Format(inputPath: string): boolean {
+  try {
+    const firstLine = readFileSync(inputPath, 'utf-8').split('\n')[0].trim()
+    return firstLine === 'V3'
+  } catch { return false }
+}
+
+/** Retourne le sel embarqué dans un fichier v3 */
+export function getV3Salt(inputPath: string): string {
+  const parts = readFileSync(inputPath, 'utf-8').trim().split('\n')
+  if (parts[0] !== 'V3' || parts.length !== 5) throw new Error('Format v3 invalide')
+  return parts[1]
+}
+
+/** Déchiffre un fichier v3 avec une clé dérivée du mot de passe */
+export function decryptFromFileV3(inputPath: string, derivedKey: Buffer): string {
+  const parts = readFileSync(inputPath, 'utf-8').trim().split('\n')
+  if (parts[0] !== 'V3' || parts.length !== 5) throw new Error('Format v3 invalide')
+  const [, , ivHex, tagHex, encHex] = parts
+  const decipher = createDecipheriv(ALGORITHM, derivedKey, Buffer.from(ivHex, 'hex'))
+  decipher.setAuthTag(Buffer.from(tagHex, 'hex'))
+  try {
+    return decipher.update(Buffer.from(encHex, 'hex')).toString('utf-8') + decipher.final('utf-8')
+  } catch {
+    throw new Error('WRONG_PASSWORD:Mot de passe incorrect ou fichier corrompu.')
+  }
 }
 
 /** Lit et déchiffre un fichier .json.enc avec la clé locale ou une clé fournie */

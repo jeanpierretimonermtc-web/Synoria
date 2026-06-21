@@ -415,7 +415,9 @@ export interface IpcApi {
   getUpcomingSessions: () => Promise<UpcomingSession[]>
   // Exports & Backup
   exportBackupJson: () => Promise<string>
-  importBackupJson: (filePath: string) => Promise<{ patientsUpserted: number; sessionsUpserted: number; errors: string[] }>
+  importBackupJson:             (filePath: string)                   => Promise<{ patientsUpserted: number; sessionsUpserted: number; errors: string[] } | { __needsPassword: true; filePath: string }>
+  importBackupJsonWithPassword: (filePath: string, password: string) => Promise<{ patientsUpserted: number; sessionsUpserted: number; errors: string[] }>
+  exportEncryptionKey:          ()                                   => Promise<string | null>
   exportSessionJson: (sessionId: string) => Promise<string>
   exportSessionExcel: (sessionId: string) => Promise<string>
   exportSessionPdf: (sessionId: string) => Promise<string>

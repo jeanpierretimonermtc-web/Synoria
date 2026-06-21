@@ -1,15 +1,15 @@
-import React, { useEffect, useState, useContext } from 'react'
+﻿import React, { useEffect, useState, useContext } from 'react'
 import type { AppSettings, BackupInfo, GoogleCalendarInfo, GCalCalendar } from '../../shared/types'
 import type { PluginDefinition } from '../../shared/pluginTypes'
 import { ToastContext } from '../App'
 import { showConfirm } from '../components/common/ConfirmDialog'
 
-// ── Helpers ───────────────────────────────────────────────────────
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function fmtDate(iso: string | null): string {
-  if (!iso) return '—'
+  if (!iso) return 'â€”'
   const d = new Date(iso)
-  return `${d.toLocaleDateString('fr-FR')} à ${d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+  return `${d.toLocaleDateString('fr-FR')} Ã  ${d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
 }
 
 function StatusDot({ ok }: { ok: boolean }) {
@@ -21,35 +21,39 @@ function StatusDot({ ok }: { ok: boolean }) {
   )
 }
 
-// ── Onglets de la sidebar ─────────────────────────────────────────
+// â”€â”€ Onglets de la sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type Tab = 'sauvegardes' | 'facturation' | 'rgpd' | 'securite' | 'plugin' | 'gcal' | 'support'
 
 const TABS: { id: Tab; icon: string; label: string; desc: string }[] = [
-  { id: 'sauvegardes', icon: '💾', label: 'Sauvegardes',  desc: 'Chemins, automatisation'     },
-  { id: 'facturation', icon: '🧾', label: 'Facturation',  desc: 'Factures, numérotation'       },
-  { id: 'rgpd',        icon: '🔒', label: 'RGPD',         desc: 'Notice, consentements'        },
-  { id: 'securite',    icon: '🔐', label: 'Sécurité',     desc: 'Mot de passe, mise à jour'    },
-  { id: 'plugin',      icon: '🔌', label: 'Plugin',       desc: 'Formulaire de spécialité'     },
-  { id: 'gcal',        icon: '📅', label: 'Google Cal.',  desc: 'Sync calendrier téléphone'    },
-  { id: 'support',     icon: '🔧', label: 'Support',      desc: 'Diagnostic, assistance'       },
+  { id: 'sauvegardes', icon: 'ðŸ’¾', label: 'Sauvegardes',  desc: 'Chemins, automatisation'     },
+  { id: 'facturation', icon: 'ðŸ§¾', label: 'Facturation',  desc: 'Factures, numÃ©rotation'       },
+  { id: 'rgpd',        icon: 'ðŸ”’', label: 'RGPD',         desc: 'Notice, consentements'        },
+  { id: 'securite',    icon: 'ðŸ”', label: 'SÃ©curitÃ©',     desc: 'Mot de passe, mise Ã  jour'    },
+  { id: 'plugin',      icon: 'ðŸ”Œ', label: 'Plugin',       desc: 'Formulaire de spÃ©cialitÃ©'     },
+  { id: 'gcal',        icon: 'ðŸ“…', label: 'Google Cal.',  desc: 'Sync calendrier tÃ©lÃ©phone'    },
+  { id: 'support',     icon: 'ðŸ”§', label: 'Support',      desc: 'Diagnostic, assistance'       },
 ]
 
-// ── PAGE ──────────────────────────────────────────────────────────
+// â”€â”€ PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function SettingsPage() {
   const showToast = useContext(ToastContext)
 
-  // État général
+  // Ã‰tat gÃ©nÃ©ral
   const [settings, setSettings]   = useState<AppSettings | null>(null)
   const [info, setInfo]           = useState<BackupInfo | null>(null)
   const [loading, setLoading]     = useState(true)
-  const [saving, setSaving]       = useState(false)
-  const [backingUp, setBackingUp] = useState(false)
-  const [verifying, setVerifying] = useState(false)
+  const [saving, setSaving]             = useState(false)
+  const [backingUp, setBackingUp]       = useState(false)
+  const [verifying, setVerifying]       = useState(false)
+  const [bkpPwdModal,   setBkpPwdModal]   = useState<{ filePath: string } | null>(null)
+  const [bkpPwdInput,   setBkpPwdInput]   = useState('')
+  const [bkpPwdError,   setBkpPwdError]   = useState('')
+  const [bkpPwdLoading, setBkpPwdLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>('sauvegardes')
 
-  // Sécurité / MAJ
+  // SÃ©curitÃ© / MAJ
   const [appVersion, setAppVersion] = useState('')
   const [updatePath, setUpdatePath] = useState('')
   const [updating, setUpdating]     = useState(false)
@@ -80,7 +84,7 @@ export default function SettingsPage() {
     try {
       const [s, i] = await Promise.all([window.mtcApi.getSettings(), window.mtcApi.getBackupInfo()])
       setSettings(s); setInfo(i)
-    } catch { showToast('Erreur chargement paramètres', 'error') }
+    } catch { showToast('Erreur chargement paramÃ¨tres', 'error') }
     setLoading(false)
   }
 
@@ -97,21 +101,21 @@ export default function SettingsPage() {
       await window.mtcApi.gcalConnect(gcalClientId.trim(), gcalClientSec.trim())
       await loadGcalStatus()
       setGcalClientId(''); setGcalClientSec('')
-      showToast('Connecté à Google Calendar ✓', 'success')
+      showToast('ConnectÃ© Ã  Google Calendar âœ“', 'success')
       // Charge la liste des calendriers
       const cals = await window.mtcApi.gcalListCalendars()
       setGcalCalendars(cals)
     } catch (e: any) {
-      showToast(`Connexion échouée : ${e?.message || e}`, 'error')
+      showToast(`Connexion Ã©chouÃ©e : ${e?.message || e}`, 'error')
     }
     setGcalLoading(false)
   }
 
   const handleGcalDisconnect = async () => {
-    if (!await showConfirm({ message: 'Déconnecter Google Calendar ?\n\nLes futurs RDV ne seront plus synchronisés.', title: 'Déconnecter Google Calendar', confirmLabel: 'Déconnecter', danger: true })) return
+    if (!await showConfirm({ message: 'DÃ©connecter Google Calendar ?\n\nLes futurs RDV ne seront plus synchronisÃ©s.', title: 'DÃ©connecter Google Calendar', confirmLabel: 'DÃ©connecter', danger: true })) return
     await window.mtcApi.gcalDisconnect()
     setGcalInfo(null); setGcalCalendars([])
-    showToast('Déconnecté de Google Calendar', 'success')
+    showToast('DÃ©connectÃ© de Google Calendar', 'success')
   }
 
   const handleGcalLoadCalendars = async () => {
@@ -128,7 +132,7 @@ export default function SettingsPage() {
   const handleGcalSetCalendar = async (id: string, name: string) => {
     await window.mtcApi.gcalSetCalendar(id, name)
     await loadGcalStatus()
-    showToast(`Calendrier "${name}" sélectionné ✓`, 'success')
+    showToast(`Calendrier "${name}" sÃ©lectionnÃ© âœ“`, 'success')
   }
 
   const handleGcalToggleImportCalendar = async (cal: GCalCalendar) => {
@@ -168,7 +172,7 @@ export default function SettingsPage() {
   const handleGcalCleanupOldImports = async () => {
     const ok = await showConfirm({
       title: 'Nettoyer les anciens agendas Google',
-      message: 'Supprimer de Synoria les RDV importés depuis des calendriers Google qui ne sont plus cochés ?\n\nLes RDV du nouveau calendrier sélectionné seront conservés. Rien ne sera supprimé dans Google Calendar.',
+      message: 'Supprimer de Synoria les RDV importÃ©s depuis des calendriers Google qui ne sont plus cochÃ©s ?\n\nLes RDV du nouveau calendrier sÃ©lectionnÃ© seront conservÃ©s. Rien ne sera supprimÃ© dans Google Calendar.',
       confirmLabel: 'Nettoyer',
       danger: true,
     })
@@ -192,7 +196,7 @@ export default function SettingsPage() {
         }
         result = { deleted }
       }
-      showToast(`${result.deleted} RDV importé${result.deleted > 1 ? 's' : ''} supprimé${result.deleted > 1 ? 's' : ''}`, 'success')
+      showToast(`${result.deleted} RDV importÃ©${result.deleted > 1 ? 's' : ''} supprimÃ©${result.deleted > 1 ? 's' : ''}`, 'success')
     } catch (e: any) {
       showToast(`Nettoyage impossible : ${e?.message || e}`, 'error')
     }
@@ -205,14 +209,14 @@ export default function SettingsPage() {
     loadGcalStatus()
   }, [])
 
-  // ── Helpers save ────────────────────────────────────────────────
+  // â”€â”€ Helpers save â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const save = async (partial: Partial<AppSettings>) => {
     if (!settings) return
     setSaving(true)
     try {
       const updated = await window.mtcApi.saveSettings(partial)
       setSettings(updated)
-      showToast('Enregistré ✓', 'success')
+      showToast('EnregistrÃ© âœ“', 'success')
     } catch { showToast('Erreur sauvegarde', 'error') }
     setSaving(false)
   }
@@ -228,12 +232,12 @@ export default function SettingsPage() {
     if (path) set(key, path)
   }
 
-  // ── Handlers ────────────────────────────────────────────────────
+  // â”€â”€ Handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleGeneralBackup = async () => {
     setBackingUp(true)
     try {
       const path = await window.mtcApi.exportGeneralBackup()
-      showToast('Sauvegarde générale créée ✓', 'success')
+      showToast('Sauvegarde gÃ©nÃ©rale crÃ©Ã©e âœ“', 'success')
       const [newInfo, updated] = await Promise.all([window.mtcApi.getBackupInfo(), window.mtcApi.getSettings()])
       setInfo(newInfo); setSettings(updated)
       await window.mtcApi.openPath(path)
@@ -246,9 +250,35 @@ export default function SettingsPage() {
     if (!path) return
     try {
       const result = await window.mtcApi.importBackupJson(path)
+      if ('__needsPassword' in result) {
+        setBkpPwdInput(''); setBkpPwdError(''); setBkpPwdModal({ filePath: result.filePath })
+        return
+      }
       showToast(`Import terminé ✓ — ${result.patientsUpserted} patient(s), ${result.sessionsUpserted} séance(s)${result.errors.length ? ` (${result.errors.length} ignoré(s))` : ''}`, 'success')
       window.location.reload()
     } catch (e: any) { showToast(`Erreur import : ${e?.message || e}`, 'error') }
+  }
+
+  const handleImportWithPassword = async () => {
+    if (!bkpPwdModal || !bkpPwdInput.trim()) return
+    setBkpPwdLoading(true); setBkpPwdError('')
+    try {
+      const result = await window.mtcApi.importBackupJsonWithPassword(bkpPwdModal.filePath, bkpPwdInput)
+      showToast(`Import terminÃ© âœ“ â€” ${result.patientsUpserted} patient(s), ${result.sessionsUpserted} sÃ©ance(s)`, 'success')
+      setBkpPwdModal(null)
+      window.location.reload()
+    } catch (e: any) {
+      const msg = (e?.message || String(e)).replace('WRONG_PASSWORD:', '')
+      setBkpPwdError(msg)
+    }
+    setBkpPwdLoading(false)
+  }
+
+  const handleExportKey = async () => {
+    try {
+      const path = await window.mtcApi.exportEncryptionKey()
+      if (path) showToast(`ClÃ© sauvegardÃ©e âœ“ â€” ${path}`, 'success')
+    } catch (e: any) { showToast(`Erreur : ${e?.message || e}`, 'error') }
   }
 
   const handleVerifyBackup = async () => {
@@ -258,21 +288,21 @@ export default function SettingsPage() {
     try {
       const r = await window.mtcApi.verifyBackup(path)
       const date = r.exportedAt ? new Date(r.exportedAt).toLocaleString('fr-FR') : '?'
-      showToast(`✅ Sauvegarde valide — ${r.patients} patient(s), ${r.sessions} séance(s) — exportée le ${date}`, 'success')
-    } catch (e: any) { showToast(`❌ Sauvegarde corrompue ou illisible : ${e?.message || e}`, 'error') }
+      showToast(`âœ… Sauvegarde valide â€” ${r.patients} patient(s), ${r.sessions} sÃ©ance(s) â€” exportÃ©e le ${date}`, 'success')
+    } catch (e: any) { showToast(`âŒ Sauvegarde corrompue ou illisible : ${e?.message || e}`, 'error') }
     setVerifying(false)
   }
 
   const handleChangePassword = async () => {
     setPwdError(''); setPwdOk(false)
     if (!oldPwd || !newPwd)      { setPwdError('Tous les champs sont obligatoires.'); return }
-    if (newPwd.length < 6)       { setPwdError('Le nouveau mot de passe doit faire au moins 6 caractères.'); return }
+    if (newPwd.length < 6)       { setPwdError('Le nouveau mot de passe doit faire au moins 6 caractÃ¨res.'); return }
     if (newPwd !== confirmPwd)   { setPwdError('Les mots de passe ne correspondent pas.'); return }
     setPwdLoading(true)
     const result = await window.mtcApi.authChangePassword(oldPwd, newPwd)
     if (result.ok) { setPwdOk(true); setOldPwd(''); setNewPwd(''); setConfirmPwd('') }
     else { setPwdError(result.error || 'Erreur.') }
-    setPwdLoading(false)
+    setBkpPwdLoading(false)
   }
 
   const isMac = navigator.userAgent.includes('Macintosh')
@@ -287,7 +317,7 @@ export default function SettingsPage() {
 
   const handleLaunchUpdate = async () => {
     if (!updatePath) return
-    if (!await showConfirm({ message: 'L\'application va se fermer pour lancer l\'installation.\n\nVos données ne seront pas supprimées.\n\nContinuer ?', title: 'Lancer la mise à jour', confirmLabel: 'Mettre à jour' })) return
+    if (!await showConfirm({ message: 'L\'application va se fermer pour lancer l\'installation.\n\nVos donnÃ©es ne seront pas supprimÃ©es.\n\nContinuer ?', title: 'Lancer la mise Ã  jour', confirmLabel: 'Mettre Ã  jour' })) return
     setUpdating(true)
     try { await window.mtcApi.launchInstaller(updatePath) }
     catch (e: any) { showToast(`Erreur : ${e?.message || e}`, 'error'); setUpdating(false) }
@@ -302,23 +332,23 @@ export default function SettingsPage() {
       const plugin = await window.mtcApi.pluginImport(path)
       await window.mtcApi.pluginSet(plugin)
       setActivePlugin(plugin)
-      showToast(`Plugin "${plugin.name}" v${plugin.version} installé ✓`, 'success')
+      showToast(`Plugin "${plugin.name}" v${plugin.version} installÃ© âœ“`, 'success')
     } catch (e: any) { setPluginError(e?.message || 'Erreur import plugin.') }
     setPluginLoading(false)
   }
 
   const handleRemovePlugin = async () => {
-    if (!await showConfirm({ message: 'Supprimer le plugin et revenir au formulaire intégré ?', title: 'Supprimer le plugin', confirmLabel: 'Supprimer', danger: true })) return
+    if (!await showConfirm({ message: 'Supprimer le plugin et revenir au formulaire intÃ©grÃ© ?', title: 'Supprimer le plugin', confirmLabel: 'Supprimer', danger: true })) return
     await window.mtcApi.pluginRemove()
     setActivePlugin(null)
-    showToast('Plugin supprimé — formulaire MTC restauré', 'success')
+    showToast('Plugin supprimÃ© â€” formulaire MTC restaurÃ©', 'success')
   }
 
   const handleGenerateDiagnostic = async () => {
     setDiagGenerating(true)
     try {
       const path = await window.mtcApi.generateDiagnosticReport()
-      showToast('Rapport généré ✓', 'success')
+      showToast('Rapport gÃ©nÃ©rÃ© âœ“', 'success')
       await window.mtcApi.openPath(path)
     } catch (e: any) {
       showToast(`Erreur : ${e?.message || e}`, 'error')
@@ -339,20 +369,21 @@ export default function SettingsPage() {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '40vh', flexDirection: 'column', gap: 12 }}>
         <div className="loading-dots"><span /><span /><span /></div>
-        <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Chargement…</div>
+        <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Chargementâ€¦</div>
       </div>
     )
   }
 
-  // ── RENDU PRINCIPAL ──────────────────────────────────────────────
+  // â”€â”€ RENDU PRINCIPAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   return (
+    <>
     <div className="settings-layout">
 
-      {/* ── SIDEBAR ── */}
+      {/* â”€â”€ SIDEBAR â”€â”€ */}
       <aside className="settings-sidebar">
         <div className="settings-sidebar-header">
           <div style={{ fontFamily: 'var(--font-serif)', fontSize: 16, fontWeight: 700, color: 'var(--accent)' }}>
-            ⚙️ Paramètres
+            âš™ï¸ ParamÃ¨tres
           </div>
         </div>
 
@@ -371,22 +402,22 @@ export default function SettingsPage() {
         ))}
       </aside>
 
-      {/* ── CONTENU ── */}
+      {/* â”€â”€ CONTENU â”€â”€ */}
       <div className="settings-content">
 
-        {/* ════ SAUVEGARDES ════ */}
+        {/* â•â•â•â• SAUVEGARDES â•â•â•â• */}
         {activeTab === 'sauvegardes' && (
           <div>
             <div className="settings-tab-header">
-              <div className="settings-tab-title">💾 Sauvegardes</div>
-              <div className="settings-tab-desc">Chemins de destination et automatisation des sauvegardes chiffrées</div>
+              <div className="settings-tab-title">ðŸ’¾ Sauvegardes</div>
+              <div className="settings-tab-desc">Chemins de destination et automatisation des sauvegardes chiffrÃ©es</div>
             </div>
 
-            {/* Sauvegarde générale */}
+            {/* Sauvegarde gÃ©nÃ©rale */}
             <div className="settings-card">
               <div className="settings-card-title">
-                <span className="card-title-icon icon-green">💾</span>
-                Sauvegarde générale (base complète)
+                <span className="card-title-icon icon-green">ðŸ’¾</span>
+                Sauvegarde gÃ©nÃ©rale (base complÃ¨te)
               </div>
               <div className="settings-path-row">
                 <label className="settings-label">Dossier de destination</label>
@@ -395,7 +426,7 @@ export default function SettingsPage() {
                     onChange={e => setSettings({ ...settings, backupGeneralPath: e.target.value })}
                     onBlur={e => save({ backupGeneralPath: e.target.value })}
                     className="settings-path-input" />
-                  <button className="btn btn-secondary btn-sm" onClick={() => browsePath('backupGeneralPath')}>📁</button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => browsePath('backupGeneralPath')}>ðŸ“</button>
                 </div>
               </div>
               {info && (
@@ -407,7 +438,7 @@ export default function SettingsPage() {
                     </span>
                   </div>
                   <div className="settings-info-block">
-                    <span className="detail-label">Dernière sauvegarde</span>
+                    <span className="detail-label">DerniÃ¨re sauvegarde</span>
                     <span>{fmtDate(info.general.lastBackup)}</span>
                   </div>
                   <div className="settings-info-block">
@@ -420,27 +451,32 @@ export default function SettingsPage() {
               )}
               <div className="settings-actions">
                 <button className="btn btn-primary btn-sm" onClick={handleGeneralBackup} disabled={backingUp}>
-                  {backingUp ? '⏳ Sauvegarde…' : '💾 Sauvegarder maintenant'}
+                  {backingUp ? 'â³ Sauvegardeâ€¦' : 'ðŸ’¾ Sauvegarder maintenant'}
                 </button>
                 <button className="btn btn-secondary btn-sm" onClick={() => window.mtcApi.openBackupFolder('general')}>
-                  📂 Ouvrir le dossier
+                  ðŸ“‚ Ouvrir le dossier
                 </button>
                 <button className="btn btn-secondary btn-sm" onClick={handleImport}>
-                  📥 Importer une sauvegarde
+                  ðŸ“¥ Importer une sauvegarde
                 </button>
                 <button className="btn btn-secondary btn-sm" onClick={handleVerifyBackup} disabled={verifying}>
-                  {verifying ? '⏳ Vérification…' : '🔍 Vérifier une sauvegarde'}
+                  {verifying ? 'â³ VÃ©rificationâ€¦' : 'ðŸ” VÃ©rifier une sauvegarde'}
+                </button>
+                <button className="btn btn-secondary btn-sm" onClick={handleExportKey}
+                  title="Copie le fichier encryption.key dans un emplacement de votre choix. Ã€ conserver en lieu sÃ»r.">
+                  ðŸ”‘ Sauvegarder la clÃ©
                 </button>
               </div>
               <div className="settings-enc-note">
-                🔒 Sauvegardes chiffrées AES-256-GCM · Format : <code>backup-global-YYYY-MM-DD-HHhMM.json.enc</code>
+                ðŸ”’ Sauvegardes chiffrÃ©es AES-256-GCM Â· Format : <code>backup-global-YYYY-MM-DD-HHhMM.json.enc</code>
+                {' '}<span style={{ color: 'var(--amber)', fontSize: 11 }}>Â· Les nouvelles sauvegardes sont protÃ©gÃ©es par votre mot de passe Synoria</span>
               </div>
             </div>
 
             {/* Sauvegarde patients */}
             <div className="settings-card">
               <div className="settings-card-title">
-                <span className="card-title-icon icon-blue">👤</span>
+                <span className="card-title-icon icon-blue">ðŸ‘¤</span>
                 Sauvegarde individuelle patients
               </div>
               <div className="settings-path-row">
@@ -450,7 +486,7 @@ export default function SettingsPage() {
                     onChange={e => setSettings({ ...settings, backupPatientPath: e.target.value })}
                     onBlur={e => save({ backupPatientPath: e.target.value })}
                     className="settings-path-input" />
-                  <button className="btn btn-secondary btn-sm" onClick={() => browsePath('backupPatientPath')}>📁</button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => browsePath('backupPatientPath')}>ðŸ“</button>
                 </div>
               </div>
               {info && (
@@ -471,26 +507,26 @@ export default function SettingsPage() {
               )}
               <div className="settings-actions">
                 <button className="btn btn-secondary btn-sm" onClick={() => window.mtcApi.openBackupFolder('patient')}>
-                  📂 Ouvrir le dossier
+                  ðŸ“‚ Ouvrir le dossier
                 </button>
               </div>
               <div className="settings-enc-note">
-                📁 Structure : <code>DUPONT_Jean/DUPONT_Jean_2026-05-28.xlsx</code> + <code>.json.enc</code><br />
-                Les exports depuis les pages Séances sont sauvegardés ici automatiquement.
+                ðŸ“ Structure : <code>DUPONT_Jean/DUPONT_Jean_2026-05-28.xlsx</code> + <code>.json.enc</code><br />
+                Les exports depuis les pages SÃ©ances sont sauvegardÃ©s ici automatiquement.
               </div>
             </div>
 
             {/* Automatisation */}
             <div className="settings-card">
               <div className="settings-card-title">
-                <span className="card-title-icon icon-teal">🔄</span>
+                <span className="card-title-icon icon-teal">ðŸ”„</span>
                 Automatisation
               </div>
               <div className="settings-toggle-list">
                 <label className="settings-toggle-row">
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>Sauvegarde à la fermeture</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Sauvegarde générale chiffrée à chaque fermeture de l'appli</div>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>Sauvegarde Ã  la fermeture</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Sauvegarde gÃ©nÃ©rale chiffrÃ©e Ã  chaque fermeture de l'appli</div>
                   </div>
                   <div className={`settings-toggle ${settings.autoBackupOnClose ? 'on' : ''}`}
                     onClick={() => set('autoBackupOnClose', !settings.autoBackupOnClose)} />
@@ -498,7 +534,7 @@ export default function SettingsPage() {
                 <label className="settings-toggle-row">
                   <div>
                     <div style={{ fontWeight: 600, fontSize: 14 }}>Sauvegarde quotidienne automatique</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Une sauvegarde par jour au démarrage (si pas encore faite aujourd'hui)</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Une sauvegarde par jour au dÃ©marrage (si pas encore faite aujourd'hui)</div>
                   </div>
                   <div className={`settings-toggle ${settings.autoBackupDaily ? 'on' : ''}`}
                     onClick={() => set('autoBackupDaily', !settings.autoBackupDaily)} />
@@ -517,23 +553,23 @@ export default function SettingsPage() {
                   </span>
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                  Les fichiers plus anciens sont supprimés automatiquement
+                  Les fichiers plus anciens sont supprimÃ©s automatiquement
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* ════ FACTURATION ════ */}
+        {/* â•â•â•â• FACTURATION â•â•â•â• */}
         {activeTab === 'facturation' && (
           <div>
             <div className="settings-tab-header">
-              <div className="settings-tab-title">🧾 Facturation</div>
-              <div className="settings-tab-desc">Chemin de sauvegarde des factures et numérotation</div>
+              <div className="settings-tab-title">ðŸ§¾ Facturation</div>
+              <div className="settings-tab-desc">Chemin de sauvegarde des factures et numÃ©rotation</div>
             </div>
             <div className="settings-card">
               <div className="settings-card-title">
-                <span className="card-title-icon icon-amber">🧾</span>
+                <span className="card-title-icon icon-amber">ðŸ§¾</span>
                 Dossier de sauvegarde des factures
               </div>
               <div className="settings-path-row">
@@ -546,23 +582,23 @@ export default function SettingsPage() {
                   <button className="btn btn-secondary btn-sm" onClick={async () => {
                     const path = await window.mtcApi.showOpenDialog({ filters: [] })
                     if (path) save({ invoicePath: path })
-                  }}>📁</button>
+                  }}>ðŸ“</button>
                 </div>
               </div>
               <div className="settings-actions" style={{ marginTop: 14 }}>
                 <button className="btn btn-secondary btn-sm" onClick={() => window.mtcApi.openPath(settings.invoicePath || '')}>
-                  📂 Ouvrir le dossier factures
+                  ðŸ“‚ Ouvrir le dossier factures
                 </button>
               </div>
             </div>
 
             <div className="settings-card">
               <div className="settings-card-title">
-                <span className="card-title-icon icon-amber">🔢</span>
-                Numérotation des factures
+                <span className="card-title-icon icon-amber">ðŸ”¢</span>
+                NumÃ©rotation des factures
               </div>
               <div style={{ marginBottom: 6 }}>
-                <label className="settings-label">Prochain numéro de facture</label>
+                <label className="settings-label">Prochain numÃ©ro de facture</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
                   <span style={{ fontWeight: 700, color: 'var(--amber)', fontSize: 18 }}>
                     {new Date().getFullYear()}-
@@ -578,7 +614,7 @@ export default function SettingsPage() {
                       const v = parseInt(e.target.value, 10)
                       if (!isNaN(v) && v >= 1) {
                         save({ lastInvoiceNumber: v - 1 })
-                        showToast('Numérotation mise à jour ✓', 'success')
+                        showToast('NumÃ©rotation mise Ã  jour âœ“', 'success')
                       }
                     }}
                     style={{ width: 120, fontWeight: 700, fontSize: 18, color: 'var(--amber)', textAlign: 'center' }}
@@ -586,28 +622,28 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div className="settings-enc-note">
-                Modifiez ce numéro si vous avez déjà émis des factures avant ce logiciel.
-                La prochaine facture générée portera ce numéro.
-                La numérotation repart à 1 chaque année civile.
+                Modifiez ce numÃ©ro si vous avez dÃ©jÃ  Ã©mis des factures avant ce logiciel.
+                La prochaine facture gÃ©nÃ©rÃ©e portera ce numÃ©ro.
+                La numÃ©rotation repart Ã  1 chaque annÃ©e civile.
               </div>
             </div>
           </div>
         )}
 
-        {/* ════ RGPD ════ */}
+        {/* â•â•â•â• RGPD â•â•â•â• */}
         {activeTab === 'rgpd' && (
           <div>
             <div className="settings-tab-header">
-              <div className="settings-tab-title">🔒 RGPD</div>
-              <div className="settings-tab-desc">Coordonnées du praticien, notice patient, durée de conservation</div>
+              <div className="settings-tab-title">ðŸ”’ RGPD</div>
+              <div className="settings-tab-desc">CoordonnÃ©es du praticien, notice patient, durÃ©e de conservation</div>
             </div>
             <div className="settings-card">
               <div className="settings-card-title">
-                <span className="card-title-icon icon-teal">🔒</span>
+                <span className="card-title-icon icon-teal">ðŸ”’</span>
                 Informations du praticien
               </div>
               <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.6 }}>
-                Utilisées dans la notice remise aux patients et dans le registre des traitements (Art. 30 RGPD).
+                UtilisÃ©es dans la notice remise aux patients et dans le registre des traitements (Art. 30 RGPD).
               </p>
               <div className="grid2">
                 <div className="field" style={{ margin: 0 }}>
@@ -615,7 +651,7 @@ export default function SettingsPage() {
                   <input type="text" value={settings.rgpdPractitionerName || ''}
                     onChange={e => setSettings({ ...settings, rgpdPractitionerName: e.target.value })}
                     onBlur={e => save({ rgpdPractitionerName: e.target.value })}
-                    placeholder="Nom Prénom ou Cabinet" />
+                    placeholder="Nom PrÃ©nom ou Cabinet" />
                 </div>
                 <div className="field" style={{ margin: 0 }}>
                   <label>Email du praticien</label>
@@ -629,8 +665,8 @@ export default function SettingsPage() {
 
             <div className="settings-card">
               <div className="settings-card-title">
-                <span className="card-title-icon icon-teal">⏰</span>
-                Durée de conservation des données
+                <span className="card-title-icon icon-teal">â°</span>
+                DurÃ©e de conservation des donnÃ©es
               </div>
               <div className="settings-retention-row">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
@@ -644,18 +680,18 @@ export default function SettingsPage() {
                   </span>
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
-                  Une alerte s'affiche dans la page 🔒 RGPD pour les patients sans activité depuis cette durée.
+                  Une alerte s'affiche dans la page ðŸ”’ RGPD pour les patients sans activitÃ© depuis cette durÃ©e.
                 </div>
               </div>
             </div>
 
             <div className="settings-card">
               <div className="settings-card-title">
-                <span className="card-title-icon icon-teal">📄</span>
+                <span className="card-title-icon icon-teal">ðŸ“„</span>
                 Notice d'information patient (Art. 13)
               </div>
               <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 10, lineHeight: 1.6 }}>
-                Ce texte est remis à chaque nouveau patient pour l'informer du traitement de ses données.
+                Ce texte est remis Ã  chaque nouveau patient pour l'informer du traitement de ses donnÃ©es.
                 Modifiable librement, imprimable depuis la page RGPD.
               </p>
               <div className="field">
@@ -668,174 +704,174 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* ════ SÉCURITÉ ════ */}
+        {/* â•â•â•â• SÃ‰CURITÃ‰ â•â•â•â• */}
         {activeTab === 'securite' && (
           <div>
             <div className="settings-tab-header">
-              <div className="settings-tab-title">🔐 Sécurité</div>
-              <div className="settings-tab-desc">Mot de passe, chiffrement des données, mise à jour du logiciel</div>
+              <div className="settings-tab-title">ðŸ” SÃ©curitÃ©</div>
+              <div className="settings-tab-desc">Mot de passe, chiffrement des donnÃ©es, mise Ã  jour du logiciel</div>
             </div>
 
             {/* Mot de passe */}
             <div className="settings-card">
               <div className="settings-card-title">
-                <span className="card-title-icon" style={{ background: 'var(--teal-light)', color: 'var(--teal)' }}>🔐</span>
+                <span className="card-title-icon" style={{ background: 'var(--teal-light)', color: 'var(--teal)' }}>ðŸ”</span>
                 Changer le mot de passe
               </div>
               <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.6 }}>
-                Le mot de passe protège l'accès et chiffre la base de données en <strong>AES-256-GCM</strong>.
-                Demandé à chaque démarrage et après 20 min d'inactivité.
+                Le mot de passe protÃ¨ge l'accÃ¨s et chiffre la base de donnÃ©es en <strong>AES-256-GCM</strong>.
+                DemandÃ© Ã  chaque dÃ©marrage et aprÃ¨s 20 min d'inactivitÃ©.
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 12 }}>
                 <div className="field" style={{ margin: 0 }}>
                   <label style={{ fontSize: 12 }}>Mot de passe actuel</label>
                   <input type="password" value={oldPwd}
                     onChange={e => { setOldPwd(e.target.value); setPwdError(''); setPwdOk(false) }}
-                    placeholder="••••••••" autoComplete="current-password" />
+                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" autoComplete="current-password" />
                 </div>
                 <div className="field" style={{ margin: 0 }}>
                   <label style={{ fontSize: 12 }}>Nouveau mot de passe</label>
                   <input type="password" value={newPwd}
                     onChange={e => { setNewPwd(e.target.value); setPwdError(''); setPwdOk(false) }}
-                    placeholder="Min. 6 caractères" autoComplete="new-password" />
+                    placeholder="Min. 6 caractÃ¨res" autoComplete="new-password" />
                 </div>
                 <div className="field" style={{ margin: 0 }}>
                   <label style={{ fontSize: 12 }}>Confirmer le nouveau</label>
                   <input type="password" value={confirmPwd}
                     onChange={e => { setConfirmPwd(e.target.value); setPwdError(''); setPwdOk(false) }}
-                    placeholder="••••••••" autoComplete="new-password" />
+                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" autoComplete="new-password" />
                 </div>
               </div>
-              {pwdError && <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 10, padding: '8px 12px', background: '#FEF0F0', borderRadius: 8 }}>⚠️ {pwdError}</div>}
-              {pwdOk    && <div style={{ color: 'var(--teal)', fontSize: 13, marginBottom: 10, padding: '8px 12px', background: 'var(--teal-light)', borderRadius: 8 }}>✓ Mot de passe modifié — base re-chiffrée.</div>}
+              {pwdError && <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 10, padding: '8px 12px', background: '#FEF0F0', borderRadius: 8 }}>âš ï¸ {pwdError}</div>}
+              {pwdOk    && <div style={{ color: 'var(--teal)', fontSize: 13, marginBottom: 10, padding: '8px 12px', background: 'var(--teal-light)', borderRadius: 8 }}>âœ“ Mot de passe modifiÃ© â€” base re-chiffrÃ©e.</div>}
               <div className="settings-actions">
                 <button className="btn btn-primary btn-sm" onClick={handleChangePassword}
                   disabled={pwdLoading || !oldPwd || !newPwd || !confirmPwd}>
-                  {pwdLoading ? '⏳ Re-chiffrement…' : '🔐 Changer le mot de passe'}
+                  {pwdLoading ? 'â³ Re-chiffrementâ€¦' : 'ðŸ” Changer le mot de passe'}
                 </button>
               </div>
-              <div className="settings-enc-note">⚠️ Notez votre mot de passe. Sans lui, les données sont irrécupérables.</div>
+              <div className="settings-enc-note">âš ï¸ Notez votre mot de passe. Sans lui, les donnÃ©es sont irrÃ©cupÃ©rables.</div>
             </div>
 
             {/* Infos chiffrement */}
             <div className="settings-card settings-card-security">
               <div className="settings-card-title">
-                <span className="card-title-icon" style={{ background: 'var(--amber-light)', color: 'var(--amber)' }}>🛡️</span>
-                Informations de sécurité
+                <span className="card-title-icon" style={{ background: 'var(--amber-light)', color: 'var(--amber)' }}>ðŸ›¡ï¸</span>
+                Informations de sÃ©curitÃ©
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 24px' }}>
                 <div>
                   <div className="detail-label">Algorithme</div>
-                  <div className="detail-value">AES-256-GCM (authentifié)</div>
+                  <div className="detail-value">AES-256-GCM (authentifiÃ©)</div>
                 </div>
                 <div>
-                  <div className="detail-label">Clé de chiffrement</div>
-                  <div className="detail-value">Générée localement, stockée dans le dossier de données</div>
+                  <div className="detail-label">ClÃ© de chiffrement</div>
+                  <div className="detail-value">GÃ©nÃ©rÃ©e localement, stockÃ©e dans le dossier de donnÃ©es</div>
                 </div>
                 <div>
-                  <div className="detail-label">Données patient</div>
+                  <div className="detail-label">DonnÃ©es patient</div>
                   <div className="detail-value">Jamais dans les dossiers projet (src, dist, release)</div>
                 </div>
                 <div>
-                  <div className="detail-label">Base de données</div>
+                  <div className="detail-label">Base de donnÃ©es</div>
                   <div className="detail-value">
                     <button className="btn btn-secondary btn-sm" style={{ fontSize: 11 }}
                       onClick={async () => { const p = await window.mtcApi.getDataPath(); window.mtcApi.openPath(p) }}>
-                      📁 Ouvrir le dossier de données
+                      ðŸ“ Ouvrir le dossier de donnÃ©es
                     </button>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Mise à jour */}
+            {/* Mise Ã  jour */}
             <div className="settings-card">
               <div className="settings-card-title">
-                <span className="card-title-icon icon-blue">🔄</span>
-                Mise à jour de l'application
+                <span className="card-title-icon icon-blue">ðŸ”„</span>
+                Mise Ã  jour de l'application
               </div>
               {/* Badge version */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, padding: '10px 14px', borderRadius: 10, background: 'var(--accent-light)', border: '1px solid rgba(var(--accent-rgb, 42,122,106),.2)' }}>
-                <span style={{ fontSize: 28 }}>📦</span>
+                <span style={{ fontSize: 28 }}>ðŸ“¦</span>
                 <div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Version installée</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Version installÃ©e</div>
                   <div style={{ fontFamily: 'monospace', fontSize: 20, fontWeight: 700, color: 'var(--accent)', letterSpacing: 1 }}>
-                    v{appVersion || '…'}
+                    v{appVersion || 'â€¦'}
                   </div>
                 </div>
                 {!updatePath && (
                   <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--teal)', background: 'var(--teal-light)', borderRadius: 20, padding: '4px 12px', border: '1px solid rgba(42,122,106,.2)' }}>
                     <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--teal)', display: 'inline-block' }} />
-                    À jour
+                    Ã€ jour
                   </div>
                 )}
                 {updatePath && (
                   <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--amber)', background: 'var(--amber-light)', borderRadius: 20, padding: '4px 12px', border: '1px solid rgba(215,119,0,.2)' }}>
                     <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--amber)', display: 'inline-block' }} />
-                    Mise à jour prête
+                    Mise Ã  jour prÃªte
                   </div>
                 )}
               </div>
               <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.6 }}>
                 {isMac
-                  ? <>Sélectionnez le fichier <code>.dmg</code> de la nouvelle version. Il s'ouvrira dans le Finder — glissez l'app dans Applications pour remplacer l'ancienne version.</>
-                  : <>Sélectionnez le fichier <code>.exe</code> de la nouvelle version (clé USB ou téléchargements). L'application se fermera pour lancer l'installation — <strong>vos données ne sont pas supprimées</strong>.</>
+                  ? <>SÃ©lectionnez le fichier <code>.dmg</code> de la nouvelle version. Il s'ouvrira dans le Finder â€” glissez l'app dans Applications pour remplacer l'ancienne version.</>
+                  : <>SÃ©lectionnez le fichier <code>.exe</code> de la nouvelle version (clÃ© USB ou tÃ©lÃ©chargements). L'application se fermera pour lancer l'installation â€” <strong>vos donnÃ©es ne sont pas supprimÃ©es</strong>.</>
                 }
               </p>
               {updatePath && (
                 <div style={{ padding: '8px 12px', borderRadius: 8, marginBottom: 12, background: 'var(--teal-light)', border: '1px solid rgba(42,122,106,.2)', fontSize: 12, color: 'var(--teal)', wordBreak: 'break-all' }}>
-                  ✓ Fichier sélectionné : <strong>{updatePath}</strong>
+                  âœ“ Fichier sÃ©lectionnÃ© : <strong>{updatePath}</strong>
                 </div>
               )}
               <div className="settings-actions">
                 <button className="btn btn-secondary btn-sm" onClick={handleSelectUpdate} disabled={updating}>
-                  📥 Sélectionner le fichier de mise à jour ({isMac ? '.dmg' : '.exe'})
+                  ðŸ“¥ SÃ©lectionner le fichier de mise Ã  jour ({isMac ? '.dmg' : '.exe'})
                 </button>
                 {updatePath && (
                   <button className="btn btn-primary btn-sm" onClick={handleLaunchUpdate} disabled={updating}
                     style={{ background: 'var(--teal)', borderColor: 'var(--teal)' }}>
-                    {updating ? '⏳ Lancement…' : '🚀 Installer la mise à jour'}
+                    {updating ? 'â³ Lancementâ€¦' : 'ðŸš€ Installer la mise Ã  jour'}
                   </button>
                 )}
-                {updatePath && <button className="btn btn-secondary btn-sm" onClick={() => setUpdatePath('')} disabled={updating}>✕ Annuler</button>}
+                {updatePath && <button className="btn btn-secondary btn-sm" onClick={() => setUpdatePath('')} disabled={updating}>âœ• Annuler</button>}
               </div>
               <div className="settings-enc-note" style={{ color: 'var(--amber)', background: 'var(--amber-light)', borderRadius: 6, padding: '6px 10px', marginTop: 10 }}>
-                ⚠️ L'application se fermera. Enregistrez votre travail avant de procéder.
+                âš ï¸ L'application se fermera. Enregistrez votre travail avant de procÃ©der.
               </div>
             </div>
           </div>
         )}
 
-        {/* ════ GOOGLE CALENDAR ════ */}
+        {/* â•â•â•â• GOOGLE CALENDAR â•â•â•â• */}
         {activeTab === 'gcal' && (
           <div>
             <div className="settings-tab-header">
-              <div className="settings-tab-title">📅 Google Calendar</div>
+              <div className="settings-tab-title">ðŸ“… Google Calendar</div>
               <div className="settings-tab-desc">
-                Synchronise automatiquement les rendez-vous avec votre téléphone (Android / iPhone).
-                Les événements apparaissent uniquement avec le titre <strong>Consultation</strong>, sans aucune donnée patient.
+                Synchronise automatiquement les rendez-vous avec votre tÃ©lÃ©phone (Android / iPhone).
+                Les Ã©vÃ©nements apparaissent uniquement avec le titre <strong>Consultation</strong>, sans aucune donnÃ©e patient.
               </div>
             </div>
 
             <details className="settings-card" open={!gcalInfo?.connected} style={{ marginBottom: 18 }}>
               <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--accent)', listStyle: 'none' }}>
-                Guide de première synchronisation Google Calendar
+                Guide de premiÃ¨re synchronisation Google Calendar
               </summary>
               <div style={{ marginTop: 14, display: 'grid', gap: 12 }}>
                 <div style={{ background: 'var(--accent-light)', border: '1px solid var(--border-soft)', borderRadius: 8, padding: '10px 12px', fontSize: 13, lineHeight: 1.6 }}>
-                  <strong>Objectif :</strong> Synoria crée automatiquement un calendrier Google nommé <strong>Synoria</strong>.
-                  Les consultations et séances Synoria y sont envoyées avec le titre <strong>Consultation</strong>, sans nom de patient.
-                  Vous pouvez aussi importer vos calendriers personnels dans le planning Synoria pour voir vos indisponibilités.
+                  <strong>Objectif :</strong> Synoria crÃ©e automatiquement un calendrier Google nommÃ© <strong>Synoria</strong>.
+                  Les consultations et sÃ©ances Synoria y sont envoyÃ©es avec le titre <strong>Consultation</strong>, sans nom de patient.
+                  Vous pouvez aussi importer vos calendriers personnels dans le planning Synoria pour voir vos indisponibilitÃ©s.
                 </div>
 
                 <div className="grid2" style={{ gap: 12 }}>
                   <div style={{ border: '1px solid var(--border-soft)', borderRadius: 8, padding: '12px' }}>
-                    <div style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: 6 }}>1. Préparer Google Cloud</div>
+                    <div style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: 6 }}>1. PrÃ©parer Google Cloud</div>
                     <ol style={{ paddingLeft: 18, margin: 0, lineHeight: 1.7, fontSize: 13 }}>
                       <li>Aller sur <strong>console.cloud.google.com</strong>.</li>
-                      <li>Créer ou choisir un projet Google.</li>
+                      <li>CrÃ©er ou choisir un projet Google.</li>
                       <li>Activer <strong>Google Calendar API</strong>.</li>
-                      <li>Créer un <strong>ID client OAuth 2.0</strong> de type <strong>Application de bureau</strong>.</li>
+                      <li>CrÃ©er un <strong>ID client OAuth 2.0</strong> de type <strong>Application de bureau</strong>.</li>
                       <li>Copier le <strong>Client ID</strong> et le <strong>Client Secret</strong> dans Synoria.</li>
                     </ol>
                   </div>
@@ -845,9 +881,9 @@ export default function SettingsPage() {
                     <ol style={{ paddingLeft: 18, margin: 0, lineHeight: 1.7, fontSize: 13 }}>
                       <li>Cliquer sur <strong>Connecter Google Calendar</strong>.</li>
                       <li>Le navigateur Google s'ouvre automatiquement.</li>
-                      <li>Choisir le compte Google à utiliser.</li>
-                      <li>Accepter les autorisations demandées.</li>
-                      <li>Revenir dans Synoria quand le message de réussite s'affiche.</li>
+                      <li>Choisir le compte Google Ã  utiliser.</li>
+                      <li>Accepter les autorisations demandÃ©es.</li>
+                      <li>Revenir dans Synoria quand le message de rÃ©ussite s'affiche.</li>
                     </ol>
                   </div>
                 </div>
@@ -857,35 +893,35 @@ export default function SettingsPage() {
                     <div style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: 6 }}>3. Lancer la synchronisation</div>
                     <p style={{ margin: 0, fontSize: 13, lineHeight: 1.7, color: 'var(--text-muted)' }}>
                       Aller dans <strong>Agenda</strong>, puis cliquer sur <strong>Sync GCal</strong>.
-                      Synoria envoie les RDV et séances dans Google, puis importe les événements Google sélectionnés dans le planning Synoria.
+                      Synoria envoie les RDV et sÃ©ances dans Google, puis importe les Ã©vÃ©nements Google sÃ©lectionnÃ©s dans le planning Synoria.
                     </p>
                   </div>
 
                   <div style={{ border: '1px solid var(--border-soft)', borderRadius: 8, padding: '12px' }}>
                     <div style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: 6 }}>4. Calendriers personnels et couleurs</div>
                     <p style={{ margin: 0, fontSize: 13, lineHeight: 1.7, color: 'var(--text-muted)' }}>
-                      Après connexion, cliquez sur <strong>Afficher les calendriers Google</strong>, cochez les calendriers personnels à importer,
-                      puis choisissez une couleur locale pour mieux les repérer dans l'agenda Synoria.
+                      AprÃ¨s connexion, cliquez sur <strong>Afficher les calendriers Google</strong>, cochez les calendriers personnels Ã  importer,
+                      puis choisissez une couleur locale pour mieux les repÃ©rer dans l'agenda Synoria.
                     </p>
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gap: 6, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                  <div><strong>Synchronisé de Synoria vers Google :</strong> RDV, séances passées et séances à venir, dans le calendrier Google <strong>Synoria</strong>.</div>
-                  <div><strong>Synchronisé de Google vers Synoria :</strong> événements horaires des calendriers Google sélectionnés. Les événements toute la journée sont ignorés.</div>
-                  <div><strong>Confidentialité :</strong> les événements envoyés par Synoria vers Google sont nommés <strong>Consultation</strong>, sans nom de patient.</div>
-                  <div><strong>Couleur Google :</strong> Synoria ne force pas la couleur du calendrier Google. Les couleurs choisies dans Synoria servent seulement à l'affichage local.</div>
+                  <div><strong>SynchronisÃ© de Synoria vers Google :</strong> RDV, sÃ©ances passÃ©es et sÃ©ances Ã  venir, dans le calendrier Google <strong>Synoria</strong>.</div>
+                  <div><strong>SynchronisÃ© de Google vers Synoria :</strong> Ã©vÃ©nements horaires des calendriers Google sÃ©lectionnÃ©s. Les Ã©vÃ©nements toute la journÃ©e sont ignorÃ©s.</div>
+                  <div><strong>ConfidentialitÃ© :</strong> les Ã©vÃ©nements envoyÃ©s par Synoria vers Google sont nommÃ©s <strong>Consultation</strong>, sans nom de patient.</div>
+                  <div><strong>Couleur Google :</strong> Synoria ne force pas la couleur du calendrier Google. Les couleurs choisies dans Synoria servent seulement Ã  l'affichage local.</div>
                 </div>
               </div>
             </details>
 
-            {/* ── Non connecté ── */}
+            {/* â”€â”€ Non connectÃ© â”€â”€ */}
             {!gcalInfo?.connected && (
               <div>
                 <div className="settings-section-title">Configuration Google Cloud</div>
                 <div className="settings-enc-note" style={{ marginBottom: 16 }}>
-                  Renseignez ici le <strong>Client ID</strong> et le <strong>Client Secret</strong> créés dans Google Cloud.
-                  Le guide ci-dessus détaille toute la procédure pour une première configuration.
+                  Renseignez ici le <strong>Client ID</strong> et le <strong>Client Secret</strong> crÃ©Ã©s dans Google Cloud.
+                  Le guide ci-dessus dÃ©taille toute la procÃ©dure pour une premiÃ¨re configuration.
                 </div>
 
                 <div className="grid2" style={{ marginBottom: 14 }}>
@@ -914,12 +950,12 @@ export default function SettingsPage() {
                   onClick={handleGcalConnect}
                   disabled={gcalLoading || !gcalClientId.trim() || !gcalClientSec.trim()}
                 >
-                  {gcalLoading ? '⏳ Connexion…' : '🔗 Connecter Google Calendar'}
+                  {gcalLoading ? 'â³ Connexionâ€¦' : 'ðŸ”— Connecter Google Calendar'}
                 </button>
               </div>
             )}
 
-            {/* ── Connecté ── */}
+            {/* â”€â”€ ConnectÃ© â”€â”€ */}
             {gcalInfo?.connected && (
               <div>
                 <div style={{
@@ -928,9 +964,9 @@ export default function SettingsPage() {
                   borderRadius: 'var(--radius)', border: '1px solid var(--accent-mid)',
                   marginBottom: 20,
                 }}>
-                  <span style={{ fontSize: 24 }}>✅</span>
+                  <span style={{ fontSize: 24 }}>âœ…</span>
                   <div>
-                    <div style={{ fontWeight: 700, color: 'var(--accent)' }}>Connecté à Google Calendar</div>
+                    <div style={{ fontWeight: 700, color: 'var(--accent)' }}>ConnectÃ© Ã  Google Calendar</div>
                     {gcalInfo.email && <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{gcalInfo.email}</div>}
                   </div>
                   <button
@@ -938,11 +974,11 @@ export default function SettingsPage() {
                     style={{ marginLeft: 'auto', color: 'var(--red)' }}
                     onClick={handleGcalDisconnect}
                   >
-                    Déconnecter
+                    DÃ©connecter
                   </button>
                 </div>
 
-                <div className="settings-section-title">Calendrier utilisé</div>
+                <div className="settings-section-title">Calendrier utilisÃ©</div>
                 <div style={{ marginBottom: 12 }}>
                   <div style={{
                     display: 'flex', alignItems: 'center', gap: 10,
@@ -950,7 +986,7 @@ export default function SettingsPage() {
                     borderRadius: 'var(--radius)', border: '1px solid var(--border-soft)',
                     marginBottom: 10,
                   }}>
-                    <span>📅</span>
+                    <span>ðŸ“…</span>
                     <span style={{ fontWeight: 600 }}>
                       {gcalInfo.calendarName || 'Calendrier principal'}
                     </span>
@@ -964,7 +1000,7 @@ export default function SettingsPage() {
                     onClick={handleGcalLoadCalendars}
                     disabled={gcalLoading}
                   >
-                    {gcalLoading ? '⏳ Chargement…' : '🔄 Changer de calendrier'}
+                    {gcalLoading ? 'â³ Chargementâ€¦' : 'ðŸ”„ Changer de calendrier'}
                   </button>
                 </div>
 
@@ -986,7 +1022,7 @@ export default function SettingsPage() {
                           }}
                           onClick={() => handleGcalSetCalendar(cal.id, cal.summary)}
                         >
-                          <span>📅</span>
+                          <span>ðŸ“…</span>
                           <span style={{ flex: 1, fontWeight: 500 }}>{cal.summary}</span>
                           {cal.primary && (
                             <span style={{ fontSize: 10, background: 'var(--accent)', color: 'white', padding: '1px 6px', borderRadius: 8 }}>
@@ -994,7 +1030,7 @@ export default function SettingsPage() {
                             </span>
                           )}
                           {gcalInfo.calendarId === cal.id && (
-                            <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span>
+                            <span style={{ color: 'var(--accent)', fontWeight: 700 }}>âœ“</span>
                           )}
                         </div>
                       ))}
@@ -1062,44 +1098,44 @@ export default function SettingsPage() {
                       onClick={handleGcalCleanupOldImports}
                       style={{ marginTop: 8, alignSelf: 'flex-start', color: 'var(--red)', borderColor: 'var(--red)' }}
                     >
-                      Nettoyer les anciens RDV Google importés
+                      Nettoyer les anciens RDV Google importÃ©s
                     </button>
                   </div>
                 )}
 
                 <div className="settings-enc-note" style={{ marginTop: 20 }}>
-                  <strong>Comment ça fonctionne :</strong> Chaque RDV créé, modifié ou supprimé dans le calendrier de l'application
-                  est automatiquement synchronisé. Les événements Google n'affichent que <strong>Consultation</strong> — aucune donnée patient ne quitte l'application.
+                  <strong>Comment Ã§a fonctionne :</strong> Chaque RDV crÃ©Ã©, modifiÃ© ou supprimÃ© dans le calendrier de l'application
+                  est automatiquement synchronisÃ©. Les Ã©vÃ©nements Google n'affichent que <strong>Consultation</strong> â€” aucune donnÃ©e patient ne quitte l'application.
                 </div>
               </div>
             )}
           </div>
         )}
 
-        {/* ════ PLUGIN ════ */}
+        {/* â•â•â•â• PLUGIN â•â•â•â• */}
         {activeTab === 'plugin' && (
           <div>
             <div className="settings-tab-header">
-              <div className="settings-tab-title">🔌 Plugin de spécialité</div>
-              <div className="settings-tab-desc">Formulaire d'anamnèse selon votre spécialité thérapeutique</div>
+              <div className="settings-tab-title">ðŸ”Œ Plugin de spÃ©cialitÃ©</div>
+              <div className="settings-tab-desc">Formulaire d'anamnÃ¨se selon votre spÃ©cialitÃ© thÃ©rapeutique</div>
             </div>
             <div className="settings-card">
               <div className="settings-card-title">
-                <span className="card-title-icon icon-blue">🔌</span>
-                Spécialité active
+                <span className="card-title-icon icon-blue">ðŸ”Œ</span>
+                SpÃ©cialitÃ© active
               </div>
 
               {activePlugin ? (
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-                    <div style={{ fontSize: 36 }}>{activePlugin.icon || '🔌'}</div>
+                    <div style={{ fontSize: 36 }}>{activePlugin.icon || 'ðŸ”Œ'}</div>
                     <div>
                       <div style={{ fontSize: 16, fontWeight: 700, color: activePlugin.accentColor || 'var(--accent)' }}>
                         {activePlugin.name}
                       </div>
                       <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                        {activePlugin.specialty} · v{activePlugin.version}
-                        {activePlugin.author && ` · ${activePlugin.author}`}
+                        {activePlugin.specialty} Â· v{activePlugin.version}
+                        {activePlugin.author && ` Â· ${activePlugin.author}`}
                       </div>
                       {activePlugin.description && (
                         <div style={{ fontSize: 12, color: 'var(--text-hint)', marginTop: 2 }}>{activePlugin.description}</div>
@@ -1109,11 +1145,11 @@ export default function SettingsPage() {
 
                   {activePlugin.useBuiltinForm ? (
                     <div style={{ background: 'var(--accent-light)', border: '1px solid var(--border-soft)', borderRadius: 8, padding: '10px 14px', marginBottom: 12, fontSize: 12, color: 'var(--accent)' }}>
-                      ✅ <strong>Formulaire MTC intégré complet actif</strong> — interrogatoire, langue, pouls, observation, diagnostic, traitement, barrage homéopathique, systèmes, tests énergétiques.
+                      âœ… <strong>Formulaire MTC intÃ©grÃ© complet actif</strong> â€” interrogatoire, langue, pouls, observation, diagnostic, traitement, barrage homÃ©opathique, systÃ¨mes, tests Ã©nergÃ©tiques.
                     </div>
                   ) : (
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
-                      <strong>{activePlugin.sections.length} section{activePlugin.sections.length > 1 ? 's' : ''}</strong> ·{' '}
+                      <strong>{activePlugin.sections.length} section{activePlugin.sections.length > 1 ? 's' : ''}</strong> Â·{' '}
                       <strong>{activePlugin.sections.reduce((n, s) => n + s.fields.filter(f => f.type !== 'separator').length, 0)} champs</strong>
                       <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                         {activePlugin.sections.map(s => (
@@ -1126,26 +1162,26 @@ export default function SettingsPage() {
                   )}
 
                   <div className="settings-actions">
-                    <button className="btn btn-secondary btn-sm" onClick={handleImportPlugin} disabled={pluginLoading}>📥 Remplacer le plugin</button>
-                    <button className="btn btn-secondary btn-sm" style={{ color: 'var(--red)' }} onClick={handleRemovePlugin}>✕ Supprimer le plugin</button>
+                    <button className="btn btn-secondary btn-sm" onClick={handleImportPlugin} disabled={pluginLoading}>ðŸ“¥ Remplacer le plugin</button>
+                    <button className="btn btn-secondary btn-sm" style={{ color: 'var(--red)' }} onClick={handleRemovePlugin}>âœ• Supprimer le plugin</button>
                   </div>
                 </div>
               ) : (
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, padding: '10px 14px', background: 'var(--accent-light)', borderRadius: 8, border: '1px solid var(--border-soft)' }}>
-                    <span style={{ fontSize: 22 }}>🌿</span>
+                    <span style={{ fontSize: 22 }}>ðŸŒ¿</span>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--accent)' }}>Formulaire générique simple actif</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Anamnèse · Traitement effectué · Résultats &amp; Réactions</div>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--accent)' }}>Formulaire gÃ©nÃ©rique simple actif</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>AnamnÃ¨se Â· Traitement effectuÃ© Â· RÃ©sultats &amp; RÃ©actions</div>
                     </div>
                   </div>
                   <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.6 }}>
-                    Importez un fichier <code>.json</code> de plugin pour adapter le formulaire de séance
-                    à votre spécialité (MTC, Kinésiologie, Ostéopathie, Naturopathie…).
+                    Importez un fichier <code>.json</code> de plugin pour adapter le formulaire de sÃ©ance
+                    Ã  votre spÃ©cialitÃ© (MTC, KinÃ©siologie, OstÃ©opathie, Naturopathieâ€¦).
                   </p>
                   <div className="settings-actions">
                     <button className="btn btn-primary btn-sm" onClick={handleImportPlugin} disabled={pluginLoading}>
-                      {pluginLoading ? '⏳ Import…' : '📥 Importer un plugin (.json)'}
+                      {pluginLoading ? 'â³ Importâ€¦' : 'ðŸ“¥ Importer un plugin (.json)'}
                     </button>
                   </div>
                 </div>
@@ -1153,36 +1189,36 @@ export default function SettingsPage() {
 
               {pluginError && (
                 <div style={{ color: 'var(--red)', fontSize: 13, marginTop: 10, padding: '8px 12px', background: '#FEF0F0', borderRadius: 8 }}>
-                  ⚠️ {pluginError}
+                  âš ï¸ {pluginError}
                 </div>
               )}
               <div className="settings-enc-note">
-                Le plugin ne modifie pas la base de données. Les données restent accessibles même si le plugin change.
+                Le plugin ne modifie pas la base de donnÃ©es. Les donnÃ©es restent accessibles mÃªme si le plugin change.
               </div>
             </div>
           </div>
         )}
 
-        {/* ════ SUPPORT TECHNIQUE ════ */}
+        {/* â•â•â•â• SUPPORT TECHNIQUE â•â•â•â• */}
         {activeTab === 'support' && (
           <div>
             <div className="settings-tab-header">
-              <div className="settings-tab-title">🔧 Support technique</div>
+              <div className="settings-tab-title">ðŸ”§ Support technique</div>
               <div className="settings-tab-desc">Diagnostic et assistance</div>
             </div>
 
             <div className="settings-card">
               <div className="settings-card-title">
-                <span className="card-title-icon icon-blue">📋</span>
+                <span className="card-title-icon icon-blue">ðŸ“‹</span>
                 Rapport de diagnostic
               </div>
               <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.6 }}>
-                En cas de problème, générez un rapport de diagnostic et envoyez-le à&nbsp;
+                En cas de problÃ¨me, gÃ©nÃ©rez un rapport de diagnostic et envoyez-le Ã &nbsp;
                 <strong>support@synoria.fr</strong>.
-                Le rapport sera ouvert automatiquement dans votre éditeur de texte.
+                Le rapport sera ouvert automatiquement dans votre Ã©diteur de texte.
               </p>
               <div style={{ background: 'var(--accent-light)', border: '1px solid var(--border-soft)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                ✅ <strong>Ce rapport ne contient aucune donnée patient</strong> (ni nom, prénom, email, notes). Il inclut uniquement des informations techniques : version, OS, statistiques anonymes de la base de données, configuration et journal d'erreurs.
+                âœ… <strong>Ce rapport ne contient aucune donnÃ©e patient</strong> (ni nom, prÃ©nom, email, notes). Il inclut uniquement des informations techniques : version, OS, statistiques anonymes de la base de donnÃ©es, configuration et journal d'erreurs.
               </div>
               <div className="settings-actions">
                 <button
@@ -1190,40 +1226,40 @@ export default function SettingsPage() {
                   onClick={handleGenerateDiagnostic}
                   disabled={diagGenerating}
                 >
-                  {diagGenerating ? '⏳ Génération…' : '🔧 Générer le rapport de diagnostic'}
+                  {diagGenerating ? 'â³ GÃ©nÃ©rationâ€¦' : 'ðŸ”§ GÃ©nÃ©rer le rapport de diagnostic'}
                 </button>
                 <button
                   className="btn btn-secondary btn-sm"
                   onClick={handleOpenSupportDoc}
                 >
-                  📄 Guide de lecture du rapport
+                  ðŸ“„ Guide de lecture du rapport
                 </button>
               </div>
             </div>
 
             <div className="settings-card">
               <div className="settings-card-title">
-                <span className="card-title-icon" style={{ background: '#FEF3C722', color: '#92400E' }}>🔑</span>
-                Mot de passe oublié
+                <span className="card-title-icon" style={{ background: '#FEF3C722', color: '#92400E' }}>ðŸ”‘</span>
+                Mot de passe oubliÃ©
               </div>
 
               {/* Avertissement principal */}
               <div style={{ background: '#FEF3C7', border: '1.5px solid #F59E0B', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 12.5, color: '#92400E', lineHeight: 1.7 }}>
-                <strong>⚠️ Il n'existe pas de récupération directe.</strong><br />
-                Le mot de passe est la seule clé de la base de données — même le support Synoria ne peut pas la déchiffrer sans lui.
+                <strong>âš ï¸ Il n'existe pas de rÃ©cupÃ©ration directe.</strong><br />
+                Le mot de passe est la seule clÃ© de la base de donnÃ©es â€” mÃªme le support Synoria ne peut pas la dÃ©chiffrer sans lui.
               </div>
 
-              {/* Chemin de récupération via sauvegarde */}
+              {/* Chemin de rÃ©cupÃ©ration via sauvegarde */}
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)', marginBottom: 10 }}>
-                  ✅ Récupération possible si vous avez une sauvegarde
+                  âœ… RÃ©cupÃ©ration possible si vous avez une sauvegarde
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {([
-                    ['1', 'Localisez votre dernière sauvegarde', 'Fichier .json.enc dans votre dossier de sauvegardes (Paramètres → Sauvegardes → Ouvrir le dossier)'],
-                    ['2', 'Supprimez les fichiers de verrouillage', 'Dans le dossier de données de l\'app, supprimez auth.json et mtc.sqlite.enc — l\'app reviendra en mode "première utilisation"'],
-                    ['3', 'Créez un nouveau mot de passe', 'Au prochain démarrage, l\'app vous proposera de créer un nouveau mot de passe'],
-                    ['4', 'Importez votre sauvegarde', 'Paramètres → Sauvegardes → Importer une sauvegarde — la sauvegarde est chiffrée avec une clé indépendante du mot de passe'],
+                    ['1', 'Localisez votre derniÃ¨re sauvegarde', 'Fichier .json.enc dans votre dossier de sauvegardes (ParamÃ¨tres â†’ Sauvegardes â†’ Ouvrir le dossier)'],
+                    ['2', 'Supprimez les fichiers de verrouillage', 'Dans le dossier de donnÃ©es de l\'app, supprimez auth.json et mtc.sqlite.enc â€” l\'app reviendra en mode "premiÃ¨re utilisation"'],
+                    ['3', 'CrÃ©ez un nouveau mot de passe', 'Au prochain dÃ©marrage, l\'app vous proposera de crÃ©er un nouveau mot de passe'],
+                    ['4', 'Importez votre sauvegarde', 'ParamÃ¨tres â†’ Sauvegardes â†’ Importer une sauvegarde â€” la sauvegarde est chiffrÃ©e avec une clÃ© indÃ©pendante du mot de passe'],
                   ] as [string, string, string][]).map(([num, title, desc]) => (
                     <div key={num} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '8px 12px', background: 'var(--surface-alt, var(--bg))', borderRadius: 8, border: '1px solid var(--border-soft)' }}>
                       <span style={{ background: 'var(--accent)', color: '#fff', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{num}</span>
@@ -1238,27 +1274,64 @@ export default function SettingsPage() {
 
               {/* Si pas de sauvegarde */}
               <div style={{ background: 'var(--bg)', border: '1px solid var(--border-soft)', borderRadius: 8, padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 4 }}>
-                <strong style={{ color: 'var(--red)' }}>❌ Sans sauvegarde</strong>, les données sont définitivement inaccessibles.<br />
-                C'est pourquoi les sauvegardes automatiques doivent être activées dès la création du mot de passe.
+                <strong style={{ color: 'var(--red)' }}>âŒ Sans sauvegarde</strong>, les donnÃ©es sont dÃ©finitivement inaccessibles.<br />
+                C'est pourquoi les sauvegardes automatiques doivent Ãªtre activÃ©es dÃ¨s la crÃ©ation du mot de passe.
               </div>
             </div>
 
             <div className="settings-card">
               <div className="settings-card-title">
-                <span className="card-title-icon icon-green">✉️</span>
+                <span className="card-title-icon icon-green">âœ‰ï¸</span>
                 Contact support
               </div>
               <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.8 }}>
                 <div><strong>Email :</strong> support@synoria.fr</div>
                 <div style={{ marginTop: 8, fontSize: 12 }}>
-                  Joignez le rapport de diagnostic à votre message pour accélérer le traitement.
+                  Joignez le rapport de diagnostic Ã  votre message pour accÃ©lÃ©rer le traitement.
                 </div>
               </div>
             </div>
           </div>
         )}
-
       </div>
     </div>
+
+    {/* â”€â”€ Modal : sauvegarde protÃ©gÃ©e par mot de passe â”€â”€ */}
+    {bkpPwdModal && (
+      <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setBkpPwdModal(null)}>
+        <div className="modal" style={{ maxWidth: 420 }}>
+          <button className="modal-close" onClick={() => setBkpPwdModal(null)}>Ã—</button>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            ðŸ”‘ Sauvegarde protÃ©gÃ©e par mot de passe
+          </h2>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 18, lineHeight: 1.5 }}>
+            Cette sauvegarde a Ã©tÃ© crÃ©Ã©e avec le nouveau format sÃ©curisÃ©.
+            Saisissez le <strong>mot de passe Synoria</strong> utilisÃ© sur la machine d'origine.
+          </p>
+          <div className="field" style={{ marginBottom: 16 }}>
+            <label>Mot de passe Synoria</label>
+            <input
+              type="password"
+              value={bkpPwdInput}
+              onChange={e => { setBkpPwdInput(e.target.value); setPwdError('') }}
+              onKeyDown={e => e.key === 'Enter' && handleImportWithPassword()}
+              placeholder="Votre mot de passe Synoriaâ€¦"
+              autoFocus
+            />
+            {pwdError && (
+              <div style={{ fontSize: 12, color: 'var(--red)', marginTop: 6 }}>âš  {pwdError}</div>
+            )}
+          </div>
+          <div className="modal-footer">
+            <button className="btn btn-primary" onClick={handleImportWithPassword} disabled={!bkpPwdInput.trim() || pwdLoading}>
+              {pwdLoading ? 'â³ Restaurationâ€¦' : 'âœ“ Restaurer'}
+            </button>
+            <button className="btn btn-secondary" onClick={() => setBkpPwdModal(null)}>Annuler</button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }
+

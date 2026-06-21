@@ -15,7 +15,11 @@ import * as sessionRepo from '../database/repositories/sessionRepository'
 import { upsertPatient }  from '../database/repositories/patientRepository'
 import { upsertSession }  from '../database/repositories/sessionRepository'
 import { getDb }          from '../database/connection'
-import { encryptToFile, decryptFromFile } from './encryptionService'
+import {
+  encryptToFile, decryptFromFile,
+  encryptToFileV3, decryptFromFileV3, isV3Format, getV3Salt,
+} from './encryptionService'
+import { getSessionKey, getAuthSalt, deriveKeyFromPassword } from './authService'
 import { getSettings, saveSettings }      from './settingsService'
 import type { Patient } from '../../shared/types'
 
@@ -98,8 +102,16 @@ export function exportBackupEncrypted(): string {
     sessions: sessionRepo.getAllSessions(),
   }
 
-  const filePath = join(dir, `backup-global-${fileTimestamp()}.json.enc`)
-  encryptToFile(JSON.stringify(payload, null, 2), filePath)
+  const filePath   = join(dir, `backup-global-${fileTimestamp()}.json.enc`)
+  const sessionKey = getSessionKey()
+  const authSalt   = getAuthSalt()
+  if (sessionKey && authSalt) {
+    // Format v3 : chiffré avec le mot de passe utilisateur → portable entre machines
+    encryptToFileV3(JSON.stringify(payload, null, 2), filePath, sessionKey, authSalt)
+  } else {
+    // Fallback v2 : clé machine (session non disponible)
+    encryptToFile(JSON.stringify(payload, null, 2), filePath)
+  }
 
   const now = new Date().toISOString()
   saveSettings({ lastGeneralBackup: now, lastAutoBackup: now })
@@ -136,8 +148,15 @@ export function exportPatientBackup(patientId: string): string {
   }
 
   const date     = new Date().toISOString().slice(0, 10)
-  const fileName = `${slug}_${date}.json.enc`
-  encryptToFile(JSON.stringify(payload, null, 2), join(patientDir, fileName))
+  const fileName   = `${slug}_${date}.json.enc`
+  const filePath   = join(patientDir, fileName)
+  const sessionKey = getSessionKey()
+  const authSalt   = getAuthSalt()
+  if (sessionKey && authSalt) {
+    encryptToFileV3(JSON.stringify(payload, null, 2), filePath, sessionKey, authSalt)
+  } else {
+    encryptToFile(JSON.stringify(payload, null, 2), filePath)
+  }
 
   return patientDir
 }
@@ -150,11 +169,23 @@ export interface ImportResult {
   errors: string[]
 }
 
-export function importBackupJson(filePath: string, customKeyPath?: string): ImportResult {
-  // Déchiffrement si nécessaire
-  const raw = filePath.endsWith('.enc')
-    ? decryptFromFile(filePath, customKeyPath)
-    : readFileSync(filePath, 'utf-8')
+export function importBackupJson(
+  filePath: string,
+  opts?: { customKeyPath?: string; password?: string }
+): ImportResult {
+  let raw: string
+  if (!filePath.endsWith('.enc')) {
+    raw = readFileSync(filePath, 'utf-8')
+  } else if (isV3Format(filePath)) {
+    // Format v3 : déchiffrement par mot de passe
+    if (!opts?.password) throw new Error('V3_NEEDS_PASSWORD:Ce fichier est protégé par votre mot de passe Synoria.')
+    const saltHex    = getV3Salt(filePath)
+    const derivedKey = deriveKeyFromPassword(opts.password, saltHex)
+    raw = decryptFromFileV3(filePath, derivedKey)
+  } else {
+    // Format v2 : clé machine ou clé externe
+    raw = decryptFromFile(filePath, opts?.customKeyPath)
+  }
 
   const data = JSON.parse(raw)
 
@@ -207,8 +238,17 @@ export interface BackupVerifyResult {
   exportedAt: string
 }
 
-export function verifyBackup(filePath: string, customKeyPath?: string): BackupVerifyResult {
-  const raw  = filePath.endsWith('.enc') ? decryptFromFile(filePath, customKeyPath) : readFileSync(filePath, 'utf-8')
+export function verifyBackup(filePath: string, opts?: { customKeyPath?: string; password?: string }): BackupVerifyResult {
+  let raw: string
+  if (!filePath.endsWith('.enc')) {
+    raw = readFileSync(filePath, 'utf-8')
+  } else if (isV3Format(filePath)) {
+    if (!opts?.password) throw new Error('V3_NEEDS_PASSWORD:Ce fichier est protégé par votre mot de passe Synoria.')
+    const derivedKey = deriveKeyFromPassword(opts.password, getV3Salt(filePath))
+    raw = decryptFromFileV3(filePath, derivedKey)
+  } else {
+    raw = decryptFromFile(filePath, opts?.customKeyPath)
+  }
   const data = JSON.parse(raw)
   const patients = Array.isArray(data.patients) ? data.patients.length
     : data.patient ? 1 : 0

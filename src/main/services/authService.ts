@@ -67,6 +67,26 @@ export function hasPassword(): boolean {
   return existsSync(authFilePath())
 }
 
+/** Retourne la clé dérivée en mémoire (session active) ou null. */
+export function getSessionKey(): Buffer | null {
+  return _key
+}
+
+/** Retourne le sel PBKDF2 stocké dans auth.json (hex), ou null. */
+export function getAuthSalt(): string | null {
+  try {
+    const path = authFilePath()
+    if (!existsSync(path)) return null
+    const auth = JSON.parse(readFileSync(path, 'utf8'))
+    return typeof auth.salt === 'string' ? auth.salt : null
+  } catch { return null }
+}
+
+/** Dérive une clé depuis un mot de passe et un sel (hex). */
+export function deriveKeyFromPassword(password: string, saltHex: string): Buffer {
+  return pbkdf2Sync(password, Buffer.from(saltHex, 'hex'), PBKDF2_ITER, 32, 'sha256')
+}
+
 /** Retourne true si la clé dérivée est en mémoire (session active). */
 export function isKeyLoaded(): boolean {
   return _key !== null

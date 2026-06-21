@@ -556,6 +556,10 @@ function BackupButton({ showToast }: { showToast: (msg: string, type?: 'success'
     if (!path) return
     try {
       const result = await window.mtcApi.importBackupJson(path)
+      if ('__needsPassword' in result) {
+        showToast('Cette sauvegarde est protégée — utilisez Paramètres → Restaurer', 'error')
+        return
+      }
       const msg = `Import terminé ✓ — ${result.patientsUpserted} patient(s), ${result.sessionsUpserted} séance(s)${result.errors.length ? ` (${result.errors.length} ignoré(s))` : ''}`
       showToast(msg, 'success')
       window.location.reload()
