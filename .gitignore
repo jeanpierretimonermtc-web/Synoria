@@ -16,6 +16,13 @@ release/**/*.zip
 release/**/*.AppImage
 release/data/
 release/CleUSB_DossierPatientMTC/data/
+release/**/data/
+release/**/auth.json
+release/**/settings.json
+release/**/window-state.json
+release/**/Preferences
+release/**/Local\ State
+release/landing_synoria.html
 
 # Données & sauvegardes (ne pas versionner)
 backup*/
