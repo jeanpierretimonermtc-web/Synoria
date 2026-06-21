@@ -1,20 +1,50 @@
-import { createHash }                                    from 'crypto'
-import { existsSync, readFileSync, writeFileSync }       from 'fs'
-import { join }                                         from 'path'
-import { app }                                          from 'electron'
-import * as os                                          from 'os'
-import { getDb, isDatabaseOpen }                        from '../database/connection'
-import { getRecentLogs }                                from './logService'
-import { exportBackupEncrypted }                        from './backupService'
+import { randomBytes, pbkdf2Sync, timingSafeEqual } from 'crypto'
+import { existsSync, readFileSync, writeFileSync }   from 'fs'
+import { join }                                      from 'path'
+import { app }                                       from 'electron'
+import * as os                                       from 'os'
+import { getDb, isDatabaseOpen }                     from '../database/connection'
+import { getRecentLogs, logInfo }                    from './logService'
+import { exportBackupEncrypted }                     from './backupService'
 
-// ── Mot de passe maître ───────────────────────────────────────────────────────
-// Modifiez ADMIN_PASSWORD pour changer le mot de passe sans recalculer le hash.
-const ADMIN_PASSWORD = 'Synoria@Dev2026'
-const ADMIN_HASH = createHash('sha256').update(ADMIN_PASSWORD).digest('hex')
+// ── Credentials admin ─────────────────────────────────────────────────────────
+// Le mot de passe est généré aléatoirement au premier lancement et stocké sous
+// forme de hash PBKDF2 dans userData/admin.json. Le texte en clair est écrit
+// une seule fois dans synoria.log pour permettre la récupération par le support.
+
+const ITERATIONS = 100_000
+const KEYLEN     = 32
+const DIGEST     = 'sha256'
+
+interface AdminCredentials { salt: string; hash: string }
+
+function adminFilePath(): string {
+  return join(app.getPath('userData'), 'admin.json')
+}
+
+function getOrCreateAdminCredentials(): AdminCredentials {
+  const filePath = adminFilePath()
+  if (existsSync(filePath)) {
+    try {
+      return JSON.parse(readFileSync(filePath, 'utf-8')) as AdminCredentials
+    } catch { /* fichier corrompu → régénérer */ }
+  }
+  const password = randomBytes(16).toString('hex')   // 32 chars, entropie 128 bits
+  const salt     = randomBytes(32).toString('hex')
+  const hash     = pbkdf2Sync(password, salt, ITERATIONS, KEYLEN, DIGEST).toString('hex')
+  writeFileSync(filePath, JSON.stringify({ salt, hash }), 'utf-8')
+  logInfo('ADMIN_SETUP', `Mot de passe admin généré : ${password}`)
+  return { salt, hash }
+}
 
 export function adminVerify(password: string): boolean {
-  const hash = createHash('sha256').update(password).digest('hex')
-  return hash === ADMIN_HASH
+  try {
+    const { salt, hash } = getOrCreateAdminCredentials()
+    const derived = pbkdf2Sync(password, salt, ITERATIONS, KEYLEN, DIGEST)
+    return timingSafeEqual(derived, Buffer.from(hash, 'hex'))
+  } catch {
+    return false
+  }
 }
 
 // ── Logs ─────────────────────────────────────────────────────────────────────

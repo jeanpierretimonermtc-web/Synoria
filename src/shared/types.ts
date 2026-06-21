@@ -47,18 +47,32 @@ export interface Appointment {
   updated_at: string
 }
 
+// ─── CALENDAR BLOCK (créneau/journée bloqué) ─────────────────────────────────
+export interface CalendarBlock {
+  id: string
+  date: string         // YYYY-MM-DD
+  is_day: number       // 0 = créneau horaire, 1 = journée entière
+  heure_debut?: string // HH:MM — null si is_day = 1
+  heure_fin?: string   // HH:MM — optionnel
+  motif?: string
+  created_at: string
+  updated_at: string
+}
+
 // ─── GOOGLE CALENDAR ──────────────────────────────────────────────────────────
 export interface GoogleCalendarInfo {
   connected:    boolean
   email?:       string
   calendarId?:  string
   calendarName?: string
+  importCalendars?: GCalCalendar[]
 }
 
 export interface GCalCalendar {
   id:       string
   summary:  string
   primary?: boolean
+  color?:   string
 }
 
 // ─── SESSION ──────────────────────────────────────────────────────────────────
@@ -444,7 +458,8 @@ export interface IpcApi {
   sendInvoiceByEmail: (invoiceId: string) => Promise<{ pdfAttached: boolean }>
   // Comptabilité
   getComptaYearData: (year: number) => Promise<ComptaYearData>
-  setMonthlyRevenue: (year: number, month: number, typeId: string, nbSeances: number) => Promise<void>
+  setMonthlyRevenue:       (year: number, month: number, typeId: string, nbSeances: number) => Promise<void>
+  incrementMonthlyRevenue: (year: number, month: number, typeId: string) => Promise<void>
   setUrsafRate: (year: number, month: number, rate: number) => Promise<void>
   setMonthlyVarExpense: (year: number, month: number, category: string, label: string, amount: number) => Promise<void>
   getConsultationTypes: () => Promise<ConsultationType[]>
@@ -465,11 +480,21 @@ export interface IpcApi {
   gcalDisconnect:    () => Promise<void>
   gcalListCalendars: () => Promise<GCalCalendar[]>
   gcalSetCalendar:   (calendarId: string, calendarName: string) => Promise<void>
+  gcalSetImportCalendars: (calendars: GCalCalendar[]) => Promise<void>
+  gcalCleanupOldImportedAppointments: () => Promise<{ deleted: number }>
+  gcalSync:                         (startDate: string, endDate: string) => Promise<{ imported: number; updated: number; exported: number; sessionsExported: number; sessionsUpdated: number; total: number }>
+  appointmentsBackfillFromSessions: () => Promise<{ created: number }>
   // Diagnostic
   generateDiagnosticReport: () => Promise<string>
   generateSupportDoc: () => Promise<string>
   generateRecoveryDoc: () => Promise<string>
   // Admin
+  // ── Blocs calendrier ──
+  getCalendarBlocks:       ()                                                                          => Promise<CalendarBlock[]>
+  getCalendarBlocksByMonth:(year: number, month: number)                                              => Promise<CalendarBlock[]>
+  createCalendarBlock:     (data: Omit<CalendarBlock, 'id' | 'created_at' | 'updated_at'>)           => Promise<CalendarBlock>
+  updateCalendarBlock:     (id: string, data: Partial<Omit<CalendarBlock, 'id' | 'created_at' | 'updated_at'>>) => Promise<void>
+  deleteCalendarBlock:     (id: string)                                                               => Promise<void>
   adminVerify:        (password: string) => Promise<boolean>
   adminGetLogs:       (n?: number) => Promise<string[]>
   adminClearLogs:     () => Promise<void>

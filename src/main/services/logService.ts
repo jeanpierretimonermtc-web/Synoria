@@ -8,6 +8,17 @@ function logPath(): string {
   return join(app.getPath('userData'), 'synoria.log')
 }
 
+export function logInfo(context: string, message: string): void {
+  try {
+    const path = logPath()
+    if (existsSync(path) && statSync(path).size > MAX_SIZE) {
+      try { renameSync(path, path + '.old') } catch {}
+    }
+    const ts = new Date().toISOString()
+    appendFileSync(path, `[${ts}] [${context}] ${message}\n`, 'utf-8')
+  } catch {}
+}
+
 export function logError(context: string, error: unknown): void {
   try {
     const path = logPath()

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext, useCallback, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import type { Session, Patient, Appointment } from '../../shared/types'
+import { useNavigate, useLocation } from 'react-router-dom'
+import type { Session, Patient, Appointment, CalendarBlock, GCalCalendar } from '../../shared/types'
 import { ToastContext } from '../App'
 import { showConfirm } from '../components/common/ConfirmDialog'
 import { fmtDate, getInitials } from '../utils/format'
@@ -57,12 +57,34 @@ function durationPx(start: string, end?: string): number {
   if (!end) return Math.round(45 * HOUR_H / 60)
   return Math.max(22, (timeToMins(end) - timeToMins(start)) * (HOUR_H / 60))
 }
-function apptColor(appt: Appointment, today: string): { bg: string; border: string; text: string } {
+function mixWithWhite(hex: string, amount: number): string {
+  const clean = hex.replace('#', '')
+  if (!/^[0-9a-fA-F]{6}$/.test(clean)) return '#E8F0F8'
+  const n = parseInt(clean, 16)
+  const r = (n >> 16) & 255
+  const g = (n >> 8) & 255
+  const b = n & 255
+  const mix = (v: number) => Math.round(v + (255 - v) * amount)
+  return `#${[mix(r), mix(g), mix(b)].map(v => v.toString(16).padStart(2, '0')).join('')}`
+}
+
+function googleCalendarColor(appt: Appointment, calendars: GCalCalendar[]): string | null {
+  const prefix = 'gcalExternal:'
+  if (!appt.google_event_id?.startsWith(prefix)) return null
+  const encodedCalendarId = appt.google_event_id.slice(prefix.length).split(':')[0]
+  const cal = calendars.find(c => encodeURIComponent(c.id) === encodedCalendarId)
+  return cal?.color || null
+}
+
+function apptColor(appt: Appointment, today: string, calendarColor?: string | null): { bg: string; border: string; text: string } {
   if (appt.is_cancelled)  return { bg: '#FBEAEA', border: '#A83232', text: '#7A1E1E' }
+  if (calendarColor)      return { bg: mixWithWhite(calendarColor, .84), border: calendarColor, text: calendarColor }
   if (appt.is_done)       return { bg: '#EAF0E8', border: '#4A6741', text: '#2F5D34' }
   if (appt.date < today)  return { bg: '#FDF3E3', border: '#C17B2A', text: '#9A5B12' }
   return { bg: '#E8F0F8', border: '#2A5A8A', text: '#1A3A6B' }
 }
+const BLOCK_COLOR = { bg: '#F0EDF7', border: '#5A4A7A', text: '#3A2E5A' }
+
 function getWeekStart(d: Date): Date {
   const r = new Date(d)
   const dow = r.getDay()
@@ -454,6 +476,109 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
   )
 }
 
+/* ── MODAL BLOC ──────────────────────────────────────────────────── */
+
+interface BlockModalProps {
+  date: string
+  slotTime?: string
+  block?: CalendarBlock
+  onSave: (data: Omit<CalendarBlock, 'id' | 'created_at' | 'updated_at'>) => void
+  onDelete?: () => void
+  onClose: () => void
+}
+
+function BlockModal({ date, slotTime, block, onSave, onDelete, onClose }: BlockModalProps) {
+  const [localDate, setLocalDate] = useState(block?.date || date)
+  const [isDay,     setIsDay]     = useState(block ? block.is_day === 1 : false)
+  const [heureD,    setHeureD]    = useState(block?.heure_debut || slotTime || '09:00')
+  const [heureF,    setHeureF]    = useState(block?.heure_fin   || '')
+  const [motif,     setMotif]     = useState(block?.motif       || '')
+
+  const handleSave = () => {
+    if (!localDate) return
+    onSave({
+      date:        localDate,
+      is_day:      isDay ? 1 : 0,
+      heure_debut: isDay ? undefined : (heureD || undefined),
+      heure_fin:   isDay ? undefined : (heureF || undefined),
+      motif:       motif || undefined,
+    })
+  }
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 400 }}>
+        <button className="modal-close" onClick={onClose}>×</button>
+        <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+          <span style={{ color: BLOCK_COLOR.border }}>⊘</span>
+          <span>{block ? 'Modifier la plage perso' : 'Créneau perso / Indisponibilité'}</span>
+        </h2>
+
+        <div className="field" style={{ marginBottom: 14 }}>
+          <label style={{ fontWeight: 700, color: BLOCK_COLOR.border, fontSize: 12 }}>Date *</label>
+          <input type="date" value={localDate} onChange={e => setLocalDate(e.target.value)}
+            style={{ fontWeight: 600, fontSize: 14, color: BLOCK_COLOR.border }} required />
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          {[false, true].map(val => (
+            <button
+              key={String(val)}
+              type="button"
+              onClick={() => setIsDay(val)}
+              style={{
+                flex: 1, padding: '8px 0', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                border: `2px solid ${isDay === val ? BLOCK_COLOR.border : 'var(--border)'}`,
+                background: isDay === val ? BLOCK_COLOR.bg : 'transparent',
+                color: isDay === val ? BLOCK_COLOR.text : 'var(--text-muted)',
+              }}
+            >
+              {val ? '📅 Journée entière' : '🕐 Créneau horaire'}
+            </button>
+          ))}
+        </div>
+
+        {!isDay && (
+          <div className="grid2" style={{ marginBottom: 14 }}>
+            <div className="field">
+              <label>Heure début</label>
+              <select value={heureD} onChange={e => setHeureD(e.target.value)}>
+                {FINE_TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label>Heure fin</label>
+              <select value={heureF} onChange={e => setHeureF(e.target.value)}>
+                <option value="">—</option>
+                {FINE_TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+          </div>
+        )}
+
+        <div className="field" style={{ marginBottom: 20 }}>
+          <label>Motif (optionnel)</label>
+          <input type="text" value={motif} onChange={e => setMotif(e.target.value)}
+            placeholder="Formation, congé, rendez-vous perso…" />
+        </div>
+
+        <div className="modal-footer">
+          <button className="btn btn-primary" onClick={handleSave}
+            style={{ background: BLOCK_COLOR.border, borderColor: BLOCK_COLOR.border }}>
+            {block ? '💾 Mettre à jour' : '⊘ Enregistrer'}
+          </button>
+          {block && onDelete && (
+            <button className="btn btn-secondary" style={{ color: 'var(--red)' }} onClick={onDelete}>
+              Supprimer
+            </button>
+          )}
+          <button className="btn btn-secondary" onClick={onClose}>Annuler</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ── GRILLE HORAIRE — partagée entre vue Semaine et vue Jour ──────── */
 
 interface GridProps {
@@ -461,14 +586,17 @@ interface GridProps {
   todayStr: string
   sessionsByDate: Record<string, Session[]>
   apptByDate: Record<string, Appointment[]>
+  blocksByDate: Record<string, CalendarBlock[]>
   patients: Patient[]
   onSlotClick: (date: string, time: string) => void
   onApptClick: (appt: Appointment) => void
+  onBlockClick: (block: CalendarBlock) => void
   onSessClick: (sessId: string) => void
   onDayHeaderClick: (d: Date) => void
+  googleImportCalendars: GCalCalendar[]
 }
 
-function TimeGridView({ days, todayStr, sessionsByDate, apptByDate, patients, onSlotClick, onApptClick, onSessClick, onDayHeaderClick }: GridProps) {
+function TimeGridView({ days, todayStr, sessionsByDate, apptByDate, blocksByDate, patients, onSlotClick, onApptClick, onBlockClick, onSessClick, onDayHeaderClick, googleImportCalendars }: GridProps) {
   const [nowY, setNowY] = useState<number | null>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
 
@@ -530,6 +658,21 @@ function TimeGridView({ days, todayStr, sessionsByDate, apptByDate, patients, on
                   {MONTH_NAMES[day.getMonth()].slice(0, 4)}.
                 </div>
               )}
+              {(() => {
+                const dayBlock = (blocksByDate[ds] || []).find(b => b.is_day === 1)
+                return dayBlock ? (
+                  <div style={{
+                    fontSize: 9, fontWeight: 700, color: BLOCK_COLOR.border,
+                    marginTop: 3, padding: '1px 5px',
+                    background: BLOCK_COLOR.bg,
+                    border: `1px dashed ${BLOCK_COLOR.border}`,
+                    borderRadius: 4, lineHeight: 1.4,
+                    maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    ⊘ {dayBlock.motif || 'Indispo'}
+                  </div>
+                ) : null
+              })()}
             </div>
           )
         })}
@@ -580,8 +723,22 @@ function TimeGridView({ days, todayStr, sessionsByDate, apptByDate, patients, on
             const appts = (apptByDate[ds] || []).sort((a, b) => a.heure_debut.localeCompare(b.heure_debut))
             const isT   = ds === todayStr
 
+            const dayBlocks  = (blocksByDate[ds] || [])
+            const dayIsBlocked = dayBlocks.some(b => b.is_day === 1)
+            const slotBlocks = dayBlocks.filter(b => b.is_day === 0)
+
             return (
               <div key={ci} className="cal-day-col" style={{ height: TOTAL_H }}>
+
+                {/* Journée entière bloquée : overlay violet hacheté */}
+                {dayIsBlocked && (
+                  <div style={{
+                    position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none',
+                    background: 'repeating-linear-gradient(-45deg, rgba(90,74,122,.09) 0px, rgba(90,74,122,.09) 5px, transparent 5px, transparent 14px)',
+                    borderLeft: `3px solid ${BLOCK_COLOR.border}`,
+                    borderRight: `1px solid rgba(90,74,122,.15)`,
+                  }} />
+                )}
 
                 {/* Lignes de fond par heure */}
                 {GRID_HOURS.map(h => (
@@ -604,11 +761,32 @@ function TimeGridView({ days, todayStr, sessionsByDate, apptByDate, patients, on
                   />
                 )))}
 
+                {/* Blocs personnels / indisponibilités */}
+                {slotBlocks.map(blk => {
+                  const y = blk.heure_debut ? timeToY(blk.heure_debut) : 0
+                  const h = durationPx(blk.heure_debut || '00:00', blk.heure_fin)
+                  return (
+                    <div
+                      key={blk.id}
+                      className="cal-block-personal"
+                      style={{ top: y, height: h, zIndex: 3 }}
+                      onClick={e => { e.stopPropagation(); onBlockClick(blk) }}
+                    >
+                      <div className="cal-appt-name">⊘ {blk.motif || 'Perso / Indispo'}</div>
+                      {h >= 32 && blk.heure_debut && (
+                        <div className="cal-appt-time">
+                          {blk.heure_debut}{blk.heure_fin ? ` – ${blk.heure_fin}` : ''}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+
                 {/* Blocs RDV */}
                 {appts.map(appt => {
                   const y   = timeToY(appt.heure_debut)
                   const h   = durationPx(appt.heure_debut, appt.heure_fin)
-                  const c   = apptColor(appt, todayStr)
+                  const c   = apptColor(appt, todayStr, googleCalendarColor(appt, googleImportCalendars))
                   const lbl = getApptLabel(appt)
                   return (
                     <div
@@ -657,26 +835,71 @@ export default function CalendarPage() {
   const [sessions,     setSessions]     = useState<Session[]>([])
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [patients,     setPatients]     = useState<Patient[]>([])
+  const [blocks,       setBlocks]       = useState<CalendarBlock[]>([])
   const [modalOpen,    setModalOpen]    = useState(false)
   const [modalAppt,    setModalAppt]    = useState<Appointment | undefined>()
   const [modalDate,    setModalDate]    = useState<string>(todayStr)
   const [modalSlot,    setModalSlot]    = useState<string | undefined>()
+  const [blockModalOpen, setBlockModalOpen] = useState(false)
+  const [editBlock,      setEditBlock]      = useState<CalendarBlock | undefined>()
+  const [blockModalDate, setBlockModalDate] = useState<string>(todayStr)
+  const [blockModalSlot, setBlockModalSlot] = useState<string | undefined>()
+  const [gcalConnected,  setGcalConnected]  = useState(false)
+  const [gcalImportCalendars, setGcalImportCalendars] = useState<GCalCalendar[]>([])
+  const [syncing,        setSyncing]        = useState(false)
 
   const showToast = useContext(ToastContext)
   const navigate  = useNavigate()
+  const location  = useLocation()
 
-  const load = useCallback(async () => {
-    try {
-      const [s, p, a] = await Promise.all([
-        window.mtcApi.getSessions(),
-        window.mtcApi.getPatients(),
-        window.mtcApi.getAppointments(),
-      ])
-      setSessions(s); setPatients(p); setAppointments(a)
-    } catch { showToast('Erreur chargement', 'error') }
-  }, [showToast])
+  const load = useCallback(async (skipBackfill = false) => {
+    // Rattrapage silencieux : crée les RDV manquants depuis les séances existantes
+    if (!skipBackfill && window.mtcApi.appointmentsBackfillFromSessions) {
+      try {
+        const r = await window.mtcApi.appointmentsBackfillFromSessions()
+        if (r.created > 0) {
+          // Des RDV ont été créés, on continue — les getAppointments ci-dessous les incluront
+        }
+      } catch { /* non bloquant */ }
+    }
+
+    const [s, p, a] = await Promise.all([
+      window.mtcApi.getSessions().catch((): Session[]      => []),
+      window.mtcApi.getPatients().catch((): Patient[]      => []),
+      window.mtcApi.getAppointments().catch((): Appointment[] => []),
+    ])
+    setSessions(s); setPatients(p); setAppointments(a)
+
+    if (window.mtcApi.getCalendarBlocks) {
+      window.mtcApi.getCalendarBlocks().then(setBlocks).catch(() => {})
+    }
+    window.mtcApi.gcalStatus()
+      .then(g => {
+        setGcalConnected(g.connected)
+        setGcalImportCalendars(g.importCalendars ?? [])
+      })
+      .catch(() => {
+        setGcalConnected(false)
+        setGcalImportCalendars([])
+      })
+  }, [])   // stable — ne dépend d'aucun state
 
   useEffect(() => { load() }, [load])
+
+  // Quand on arrive depuis une séance avec un prochain RDV, aller sur cette date
+  useEffect(() => {
+    const focusDate = (location.state as any)?.focusDate as string | undefined
+    if (!focusDate) return
+    const d = new Date(focusDate + 'T12:00:00')
+    if (isNaN(d.getTime())) return
+    setSelectedDay(focusDate)
+    setYear(d.getFullYear())
+    setMonth(d.getMonth())
+    setWeekStart(getWeekStart(d))
+    setView('month')
+    // Effacer le state pour ne pas re-naviguer au prochain montage
+    window.history.replaceState({}, '')
+  }, [location.state])
 
   /* ── Index par date ── */
   const sessionsByDate: Record<string, Session[]> = {}
@@ -684,6 +907,9 @@ export default function CalendarPage() {
 
   const apptByDate: Record<string, Appointment[]> = {}
   appointments.forEach(a => { (apptByDate[a.date] ??= []).push(a) })
+
+  const blocksByDate: Record<string, CalendarBlock[]> = {}
+  blocks.forEach(b => { (blocksByDate[b.date] ??= []).push(b) })
 
   /* ── Helpers patient ── */
   const getPatient = (id?: string) => id ? patients.find(p => p.id === id) : undefined
@@ -754,15 +980,43 @@ export default function CalendarPage() {
         await window.mtcApi.createAppointment(data)
         showToast('RDV créé ✓')
       }
-      setModalOpen(false); load()
+      setModalOpen(false); load(true)
     } catch { showToast('Erreur enregistrement RDV', 'error') }
   }
   const handleDeleteAppt = async () => {
     if (!modalAppt || !await showConfirm({ message: 'Supprimer ce rendez-vous ?', title: 'Supprimer le RDV', confirmLabel: 'Supprimer', danger: true })) return
     try {
       await window.mtcApi.deleteAppointment(modalAppt.id)
-      showToast('RDV supprimé'); setModalOpen(false); load()
+      showToast('RDV supprimé'); setModalOpen(false); load(true)
+
     } catch { showToast('Erreur suppression RDV', 'error') }
+  }
+
+  /* ── Blocs calendrier ── */
+  const openNewBlock = (date: string, slot?: string) => {
+    setEditBlock(undefined); setBlockModalDate(date); setBlockModalSlot(slot); setBlockModalOpen(true)
+  }
+  const openEditBlock = (blk: CalendarBlock) => {
+    setEditBlock(blk); setBlockModalDate(blk.date); setBlockModalSlot(undefined); setBlockModalOpen(true)
+  }
+  const handleSaveBlock = async (data: Omit<CalendarBlock, 'id' | 'created_at' | 'updated_at'>) => {
+    try {
+      if (editBlock) {
+        await window.mtcApi.updateCalendarBlock(editBlock.id, data)
+        showToast('Bloc mis à jour ✓')
+      } else {
+        await window.mtcApi.createCalendarBlock(data)
+        showToast('Créneau bloqué ✓')
+      }
+      setBlockModalOpen(false); load(true)
+    } catch { showToast('Erreur enregistrement bloc', 'error') }
+  }
+  const handleDeleteBlock = async () => {
+    if (!editBlock || !await showConfirm({ message: 'Supprimer ce bloc ?', title: 'Supprimer le bloc', confirmLabel: 'Supprimer', danger: true })) return
+    try {
+      await window.mtcApi.deleteCalendarBlock(editBlock.id)
+      showToast('Bloc supprimé'); setBlockModalOpen(false); load(true)
+    } catch { showToast('Erreur suppression bloc', 'error') }
   }
 
   /* ── Libellés navigation ── */
@@ -795,6 +1049,46 @@ export default function CalendarPage() {
       ? (sessionsByDate[selectedDay] || []).length
       : monthSess.length
   const periodLabel = view === 'month' ? MONTH_NAMES[month] : view === 'week' ? 'cette semaine' : 'ce jour'
+
+  /* ── Sync Google Calendar ── */
+  const handleGcalSync = async () => {
+    if (syncing) return
+    setSyncing(true)
+    try {
+      // Calcule la plage de dates visible selon la vue
+      let startDate: string
+      let endDate:   string
+      if (view === 'week') {
+        startDate = toDateStr(weekDays[0])
+        endDate   = toDateStr(weekDays[6])
+      } else if (view === 'day') {
+        startDate = selectedDay
+        endDate   = selectedDay
+      } else {
+        // Vue mois : mois entier + tampon 7j de chaque côté
+        const first = new Date(year, month, 1)
+        const last  = new Date(year, month + 1, 0)
+        first.setDate(first.getDate() - 7)
+        last.setDate(last.getDate() + 7)
+        startDate = toDateStr(first)
+        endDate   = toDateStr(last)
+      }
+      const result = await window.mtcApi.gcalSync(startDate, endDate)
+      const parts: string[] = []
+      if (result.imported > 0) parts.push(`${result.imported} importé${result.imported > 1 ? 's' : ''}`)
+      if (result.updated  > 0) parts.push(`${result.updated} mis à jour`)
+      if (result.exported > 0) parts.push(`${result.exported} envoyé${result.exported > 1 ? 's' : ''} vers Google`)
+      if (result.sessionsExported > 0) parts.push(`${result.sessionsExported} séance${result.sessionsExported > 1 ? 's' : ''} envoyée${result.sessionsExported > 1 ? 's' : ''}`)
+      if (result.sessionsUpdated > 0) parts.push(`${result.sessionsUpdated} séance${result.sessionsUpdated > 1 ? 's' : ''} mise${result.sessionsUpdated > 1 ? 's' : ''} à jour`)
+      if (parts.length === 0)  parts.push('Tout est à jour')
+      showToast(`Google Calendar — ${parts.join(', ')} ✓`)
+      load(true)
+    } catch (e: any) {
+      showToast(`Erreur sync Google Calendar : ${e?.message || e}`, 'error')
+    } finally {
+      setSyncing(false)
+    }
+  }
 
   /* ── Données vue mois ── */
   const daySessions     = selectedDay ? (sessionsByDate[selectedDay] || []) : []
@@ -833,7 +1127,7 @@ export default function CalendarPage() {
         </div>
 
         {/* Actions */}
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <button className="btn btn-secondary btn-sm" onClick={goToToday}>Aujourd'hui</button>
           <button
             className="btn btn-primary btn-sm"
@@ -844,6 +1138,32 @@ export default function CalendarPage() {
           >
             + Nouveau RDV
           </button>
+          <button
+            className="btn btn-secondary btn-sm"
+            style={{ color: BLOCK_COLOR.border, borderColor: BLOCK_COLOR.border }}
+            onClick={() => openNewBlock(
+              view === 'week' ? toDateStr(weekDays[0]) :
+              view === 'day'  ? selectedDay : selectedDay || todayStr
+            )}
+          >
+            ⊘ Perso / Indispo
+          </button>
+          {gcalConnected && (
+            <button
+              className="btn btn-secondary btn-sm"
+              style={{ color: '#1a73e8', borderColor: '#1a73e8', opacity: syncing ? .6 : 1, display: 'flex', alignItems: 'center', gap: 5 }}
+              onClick={handleGcalSync}
+              disabled={syncing}
+              title="Importer / mettre à jour les événements Google Calendar sur la période visible"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+                style={{ animation: syncing ? 'spin 1s linear infinite' : 'none' }}>
+                <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
+              {syncing ? 'Sync…' : 'Sync GCal'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -891,11 +1211,12 @@ export default function CalendarPage() {
                 {cells.map((day, idx) => {
                   if (day === null) return <div key={`e-${idx}`} />
                   const ds    = dateStr(year, month, day)
-                  const sess  = sessionsByDate[ds] || []
-                  const appts = apptByDate[ds] || []
-                  const isT   = ds === todayStr
-                  const isSel = ds === selectedDay
-                  const dots  = sess.length > 0 || appts.length > 0
+                  const sess    = sessionsByDate[ds] || []
+                  const appts   = apptByDate[ds] || []
+                  const blkDay  = (blocksByDate[ds] || [])
+                  const isT     = ds === todayStr
+                  const isSel   = ds === selectedDay
+                  const dots    = sess.length > 0 || appts.length > 0 || blkDay.length > 0
 
                   return (
                     <div
@@ -922,12 +1243,25 @@ export default function CalendarPage() {
                         {sess.slice(0, 2).map((_, i) => (
                           <div key={`s${i}`} style={{ width: 6, height: 6, borderRadius: '50%', background: isSel ? 'rgba(255,255,255,.9)' : 'var(--accent)' }} />
                         ))}
-                        {appts.filter(a => !a.is_done && a.date >= todayStr).slice(0, 2).map((_, i) => (
-                          <div key={`ap${i}`} style={{ width: 6, height: 6, borderRadius: '50%', background: isSel ? 'rgba(255,255,255,.9)' : 'var(--blue)' }} />
-                        ))}
-                        {appts.filter(a => !a.is_done && a.date < todayStr).slice(0, 1).map((_, i) => (
-                          <div key={`am${i}`} style={{ width: 6, height: 6, borderRadius: '50%', background: isSel ? 'rgba(255,255,255,.9)' : 'var(--amber)' }} />
-                        ))}
+                        {appts.filter(a => !a.is_done).slice(0, 3).map((appt, i) => {
+                          const gColor = googleCalendarColor(appt, gcalImportCalendars)
+                          const dotColor = gColor || (appt.date < todayStr ? 'var(--amber)' : 'var(--blue)')
+                          return (
+                            <div
+                              key={`ap${i}`}
+                              style={{
+                                width: 6,
+                                height: 6,
+                                borderRadius: '50%',
+                                background: dotColor,
+                                boxShadow: isSel ? '0 0 0 1px rgba(255,255,255,.85)' : undefined,
+                              }}
+                            />
+                          )
+                        })}
+                        {blkDay.length > 0 && (
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: isSel ? 'rgba(255,255,255,.9)' : BLOCK_COLOR.border }} />
+                        )}
                       </div>
                     </div>
                   )
@@ -947,10 +1281,44 @@ export default function CalendarPage() {
                         → Vue jour complète
                       </div>
                     </div>
-                    <button className="btn btn-primary btn-sm" onClick={() => openNewAppt(selectedDay)}>
-                      + Nouveau RDV
-                    </button>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button className="btn btn-primary btn-sm" onClick={() => openNewAppt(selectedDay)}>
+                        + Nouveau RDV
+                      </button>
+                      <button className="btn btn-secondary btn-sm"
+                        style={{ color: BLOCK_COLOR.border, borderColor: BLOCK_COLOR.border }}
+                        onClick={() => openNewBlock(selectedDay)}
+                        title="Ajouter un créneau perso / indisponibilité">
+                        ⊘
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Blocs du jour */}
+                  {(blocksByDate[selectedDay] || []).length > 0 && (
+                    <div style={{ marginBottom: 10 }}>
+                      {(blocksByDate[selectedDay] || []).map(blk => (
+                        <div key={blk.id}
+                          onClick={() => openEditBlock(blk)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px',
+                            borderRadius: 8, marginBottom: 4, cursor: 'pointer',
+                            border: `1.5px dashed ${BLOCK_COLOR.border}`,
+                            background: 'repeating-linear-gradient(-45deg, rgba(90,74,122,.05) 0px, rgba(90,74,122,.05) 3px, rgba(240,237,247,.9) 3px, rgba(240,237,247,.9) 10px)',
+                          }}
+                        >
+                          <span style={{ fontSize: 13, color: BLOCK_COLOR.border }}>⊘</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 600, fontSize: 12, color: BLOCK_COLOR.text, fontStyle: 'italic' }}>
+                              {blk.is_day === 1 ? 'Journée entière' : `${blk.heure_debut}${blk.heure_fin ? ` – ${blk.heure_fin}` : ''}`}
+                            </div>
+                            {blk.motif && <div style={{ fontSize: 11, color: BLOCK_COLOR.text, opacity: .75 }}>{blk.motif}</div>}
+                          </div>
+                          <span style={{ fontSize: 9, color: BLOCK_COLOR.border, opacity: .6 }}>Perso</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {daySessions.length > 0 && (
                     <div style={{ marginBottom: 12 }}>
@@ -1005,7 +1373,7 @@ export default function CalendarPage() {
                               </div>
                             )}
                             {startAppts.map(appt => {
-                              const cols  = apptColor(appt, todayStr)
+                              const cols  = apptColor(appt, todayStr, googleCalendarColor(appt, gcalImportCalendars))
                               const label = appt.is_done ? 'Réalisé' : appt.date < todayStr ? 'En attente' : 'Planifié'
                               const name  = getApptLabel(appt)
                               const isGuest = !appt.patient_id && (appt.guest_first_name || appt.guest_last_name)
@@ -1034,7 +1402,7 @@ export default function CalendarPage() {
                               )
                             })}
                             {contAppts.map(appt => {
-                              const cols = apptColor(appt, todayStr)
+                              const cols = apptColor(appt, todayStr, googleCalendarColor(appt, gcalImportCalendars))
                               return (
                                 <div key={`cont-${appt.id}`}
                                   style={{ height: '100%', borderLeft: `3px solid ${cols.border}`, background: `${cols.bg}88`, borderRadius: 4, cursor: 'pointer', minHeight: 28 }}
@@ -1089,7 +1457,7 @@ export default function CalendarPage() {
                             RDV du mois ({monthAppt.length})
                           </div>
                           {monthAppt.sort((a,b) => a.date.localeCompare(b.date) || a.heure_debut.localeCompare(b.heure_debut)).map(appt => {
-                            const cols = apptColor(appt, todayStr)
+                            const cols = apptColor(appt, todayStr, googleCalendarColor(appt, gcalImportCalendars))
                             return (
                               <div key={appt.id}
                                 onClick={() => { setSelectedDay(appt.date); openEditAppt(appt) }}
@@ -1121,11 +1489,14 @@ export default function CalendarPage() {
           todayStr={todayStr}
           sessionsByDate={sessionsByDate}
           apptByDate={apptByDate}
+          blocksByDate={blocksByDate}
           patients={patients}
           onSlotClick={(ds, time) => openNewAppt(ds, time)}
           onApptClick={openEditAppt}
+          onBlockClick={openEditBlock}
           onSessClick={id => navigate(`/seances/${id}`)}
           onDayHeaderClick={handleDayHeaderClick}
+          googleImportCalendars={gcalImportCalendars}
         />
       )}
 
@@ -1136,11 +1507,14 @@ export default function CalendarPage() {
           todayStr={todayStr}
           sessionsByDate={sessionsByDate}
           apptByDate={apptByDate}
+          blocksByDate={blocksByDate}
           patients={patients}
           onSlotClick={(ds, time) => openNewAppt(ds, time)}
           onApptClick={openEditAppt}
+          onBlockClick={openEditBlock}
           onSessClick={id => navigate(`/seances/${id}`)}
           onDayHeaderClick={() => {}}
+          googleImportCalendars={gcalImportCalendars}
         />
       )}
 
@@ -1154,7 +1528,20 @@ export default function CalendarPage() {
           onSave={handleSaveAppt}
           onDelete={modalAppt ? handleDeleteAppt : undefined}
           onClose={() => setModalOpen(false)}
-          onPatientCreated={() => { setModalOpen(false); load() }}
+          onPatientCreated={() => { setModalOpen(false); load(true) }}
+
+        />
+      )}
+
+      {/* ── Modal Bloc ── */}
+      {blockModalOpen && (
+        <BlockModal
+          date={blockModalDate}
+          slotTime={blockModalSlot}
+          block={editBlock}
+          onSave={handleSaveBlock}
+          onDelete={editBlock ? handleDeleteBlock : undefined}
+          onClose={() => setBlockModalOpen(false)}
         />
       )}
     </div>

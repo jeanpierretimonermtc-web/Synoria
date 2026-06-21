@@ -260,7 +260,7 @@ export default function FacturesListPage() {
       if (pdfAttached) {
         showToast('Email préparé dans Outlook avec la facture en pièce jointe. Vérifiez et envoyez.')
       } else {
-        showToast("Email préparé dans votre client mail. La facture PDF a été mise en évidence dans l'Explorateur — glissez-la dans l'email si nécessaire.", 'warning')
+        showToast("Email préparé dans votre client mail. La facture PDF a été mise en évidence dans l'Explorateur — glissez-la dans l'email si nécessaire.", 'success')
       }
     } catch (e: any) {
       showToast(`Impossible d'ouvrir le client mail : ${e?.message || e}`, 'error')

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import type { Session, Patient } from '../../shared/types'
+import type { Session, Patient, ConsultationType } from '../../shared/types'
 import type { PluginDefinition } from '../../shared/pluginTypes'
 import { ToastContext } from '../App'
 import { showConfirm } from '../components/common/ConfirmDialog'
@@ -11,6 +11,86 @@ import { ClipboardIcon, SearchIcon } from '../components/common/Icon'
 
 const MONTH_NAMES = ['Janvier','Février','Mars','Avril','Mai','Juin',
                      'Juillet','Août','Septembre','Octobre','Novembre','Décembre']
+
+/* ── MODAL COMPTABILITÉ ─────────────────────────────────────────── */
+
+function ComptaModal({ session, patient, onClose }: {
+  session: Session; patient: Patient | null; onClose: () => void
+}) {
+  const showToast   = useContext(ToastContext)
+  const [types,     setTypes]     = useState<ConsultationType[]>([])
+  const [selectedId,setSelectedId]= useState('')
+  const [saving,    setSaving]    = useState(false)
+
+  useEffect(() => {
+    window.mtcApi.getConsultationTypes().then(all => {
+      const active = all.filter(t => t.is_active)
+      setTypes(active)
+      if (active.length === 1) setSelectedId(active[0].id)
+    }).catch(() => {})
+  }, [])
+
+  const handleConfirm = async () => {
+    if (!selectedId) return
+    setSaving(true)
+    try {
+      const [y, m] = session.date.split('-').map(Number)
+      await window.mtcApi.incrementMonthlyRevenue(y, m, selectedId)
+      const label = types.find(t => t.id === selectedId)?.name || ''
+      showToast(`Comptabilisé ✓ — +1 "${label}" en ${session.date.slice(0, 7)}`)
+      onClose()
+    } catch (e: any) {
+      showToast(`Erreur : ${e?.message || e}`, 'error')
+    } finally { setSaving(false) }
+  }
+
+  const selected = types.find(t => t.id === selectedId)
+  const [yStr, mStr] = session.date.split('-')
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 420 }}>
+        <button className="modal-close" onClick={onClose}>×</button>
+        <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+          <span>📊</span> Enregistrer en comptabilité
+        </h2>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
+          Séance du <strong>{fmtDate(session.date)}</strong>
+          {patient && <> — <strong>{patient.first_name} {patient.last_name}</strong></>}
+        </div>
+        {types.length === 0 ? (
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>Chargement…</div>
+        ) : (
+          <div className="field" style={{ marginBottom: 16 }}>
+            <label>Type de consultation</label>
+            <select value={selectedId} onChange={e => setSelectedId(e.target.value)} style={{ fontSize: 14 }}>
+              <option value="">— Choisir —</option>
+              {types.map(t => (
+                <option key={t.id} value={t.id}>
+                  {t.name}{t.price > 0 ? ` — ${t.price.toFixed(2)} €` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {selected && (
+          <div style={{ background: 'var(--amber-light)', border: '1px solid rgba(193,123,42,.25)', borderRadius: 8, padding: '10px 14px', marginBottom: 20, fontSize: 13 }}>
+            <div style={{ fontWeight: 700, color: 'var(--amber)', marginBottom: 4 }}>Résumé</div>
+            <div>+1 <strong>"{selected.name}"</strong>{selected.price > 0 && <> — <strong>{selected.price.toFixed(2)} €</strong></>}</div>
+            <div style={{ color: 'var(--text-muted)', marginTop: 3, fontSize: 12 }}>Mois comptable : {mStr}/{yStr}</div>
+          </div>
+        )}
+        <div className="modal-footer">
+          <button className="btn btn-primary" onClick={handleConfirm} disabled={!selectedId || saving}
+            style={{ background: 'var(--amber)', borderColor: 'var(--amber)' }}>
+            {saving ? '⏳…' : '✓ Enregistrer'}
+          </button>
+          <button className="btn btn-secondary" onClick={onClose}>Annuler</button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function SeancesPage() {
   const { sessionId }  = useParams<{ sessionId?: string }>()
@@ -30,6 +110,7 @@ export default function SeancesPage() {
   const [filterPatient,  setFilterPatient]  = useState(presetPatient)
   const [filterYear,     setFilterYear]     = useState('')
   const [filterMonth,    setFilterMonth]    = useState('')
+  const [comptaOpen,     setComptaOpen]     = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -255,6 +336,12 @@ export default function SeancesPage() {
               <button className="btn btn-secondary btn-sm" onClick={() => window.print()}>🖨 Imprimer</button>
               <div style={{ flex: 1 }} />
               <button
+                className="btn btn-secondary btn-sm"
+                style={{ color: 'var(--amber)', borderColor: 'var(--amber)' }}
+                title="Enregistrer cette séance en comptabilité"
+                onClick={() => setComptaOpen(true)}
+              >📊 Compta</button>
+              <button
                 className="btn btn-amber btn-sm"
                 onClick={() => navigate(`/modifier/${selectedSession.id}`)}
               >✏️ Modifier</button>
@@ -277,6 +364,14 @@ export default function SeancesPage() {
           </>
         )}
       </div>
+
+      {comptaOpen && selectedSession && (
+        <ComptaModal
+          session={selectedSession}
+          patient={selectedPatient}
+          onClose={() => setComptaOpen(false)}
+        />
+      )}
     </div>
   )
 }

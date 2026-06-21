@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext, useRef, useCallback } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import type { Patient, SystemesQuestionnaire, EnergyTests, Appointment } from '../../shared/types'
+import type { Patient, Session, SystemesQuestionnaire, EnergyTests, Appointment } from '../../shared/types'
 import type { PluginDefinition } from '../../shared/pluginTypes'
 import PluginFormRenderer from '../components/plugin/PluginFormRenderer'
 import { showConfirm } from '../components/common/ConfirmDialog'
@@ -24,6 +24,209 @@ function ScoreButtons({ value, onChange }: { value: number; onChange: (v: number
 function TagBtn({ label, active, colorClass, onClick }: { label: string; active: boolean; colorClass?: string; onClick: () => void }) {
   return (
     <span className={`tag${active ? ' active' : ''}${colorClass ? ' ' + colorClass : ''}`} onClick={onClick}>{label}</span>
+  )
+}
+
+/* ─── ACCORDÉON SÉANCE PRÉCÉDENTE ───────────────────────────── */
+
+function PrevField({ label, value }: { label: string; value?: string | null }) {
+  if (!value?.trim()) return null
+  const hasHtml = /<[a-z][\s\S]*>/i.test(value)
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-muted)', marginBottom: 3 }}>{label}</div>
+      {hasHtml
+        ? <div className="detail-value" style={{ fontSize: 13 }} dangerouslySetInnerHTML={{ __html: value }} />
+        : <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>{value}</div>
+      }
+    </div>
+  )
+}
+
+function PrevSessionAccordion({ session: s, open, onToggle }: {
+  session: Session
+  open: boolean
+  onToggle: () => void
+}) {
+  let fd: Record<string, unknown> = {}
+  try { if (s.full_data_json) fd = JSON.parse(s.full_data_json) } catch {}
+
+  const anamnese    = (fd.anamnese    as string) || ''
+  const barrageNiv1 = (fd.barrageNiv1 as string) || ''
+  const barrageNiv2 = (fd.barrageNiv2 as string) || ''
+  const barrageNiv3 = (fd.barrageNiv3 as string) || ''
+  const barrageNiv4 = (fd.barrageNiv4 as string) || ''
+  const nextNote    = (fd.nextSessionNote as string) || ''
+  const pluginId    = (fd.pluginId as string) || ''
+  const pluginData  = (fd.pluginData as Record<string, unknown>) || {}
+  const pluginSchema = fd.pluginSchema as { name?: string; sections?: Array<{ id: string; title: string; icon?: string; fields: Array<{ id: string; label: string; type: string; max?: number }> }> } | null
+  const isMtcBuiltin = !!(fd.pluginIsBuiltin) || pluginId === 'mtc_jp'
+  const hasPlugin    = !!pluginId && !isMtcBuiltin && !!pluginSchema
+
+  // Aperçu tronqué du motif pour le header
+  const motifPreview = s.motif
+    ? s.motif.replace(/<[^>]+>/g, '').slice(0, 60) + (s.motif.replace(/<[^>]+>/g, '').length > 60 ? '…' : '')
+    : ''
+
+  // Helper pour afficher une valeur de champ plugin
+  const renderPluginVal = (type: string, val: unknown, max?: number): string | null => {
+    if (val === null || val === undefined || val === '') return null
+    if (Array.isArray(val)) return val.length ? (val as string[]).join(', ') : null
+    if (type === 'checkbox') return val ? '✓' : null
+    if (type === 'rating') return `${val} / ${max ?? 10}`
+    const str = String(val).replace(/<[^>]+>/g, '').trim()
+    return str || null
+  }
+
+  return (
+    <div style={{
+      borderRadius: 'var(--radius)',
+      border: '1.5px solid var(--border-soft)',
+      background: 'var(--surface)',
+      marginBottom: 0,
+      overflow: 'hidden',
+    }}>
+      {/* ── Header cliquable ── */}
+      <button
+        type="button"
+        onClick={onToggle}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+          padding: '10px 14px', background: 'none', border: 'none',
+          cursor: 'pointer', textAlign: 'left',
+          borderBottom: open ? '1px solid var(--border-soft)' : 'none',
+        }}
+      >
+        <span style={{ fontSize: 16 }}>📋</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>Séance précédente — </span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>{s.date}</span>
+          {motifPreview && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 8 }}>· {motifPreview}</span>}
+          {pluginId && <span style={{ fontSize: 10, marginLeft: 8, padding: '1px 6px', borderRadius: 10, background: 'var(--blue-light)', color: 'var(--blue)', fontWeight: 700 }}>{pluginId}</span>}
+        </div>
+        <span style={{ fontSize: 14, color: 'var(--text-muted)', flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>▼</span>
+      </button>
+
+      {/* ── Contenu déplié ── */}
+      {open && (
+        <div style={{ padding: '14px 16px', maxHeight: 480, overflowY: 'auto' }}>
+
+          {/* ── Champs communs à tous les modes ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 20px', marginBottom: 8 }}>
+            <div>
+              <PrevField label="Motif" value={s.motif} />
+              <PrevField label="Problématiques / Terrain" value={s.problematiques} />
+              <PrevField label="Évolution" value={s.evolution} />
+              {s.evolution_tags && (
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-muted)', marginBottom: 4 }}>Évolution (tag)</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    {s.evolution_tags.split(', ').filter(Boolean).map(t => (
+                      <span key={t} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, background: 'var(--accent-light)', color: 'var(--accent)', fontWeight: 600 }}>{t}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div>
+              <PrevField label="Conseils donnés" value={s.conseils} />
+              <PrevField label="À surveiller" value={s.surveiller} />
+              {nextNote && <PrevField label="Note pour cette séance" value={nextNote} />}
+            </div>
+          </div>
+
+          {/* ── MODE MTC INTÉGRÉ ── */}
+          {(isMtcBuiltin || !pluginId) && (
+            <>
+              {(anamnese || s.problematiques) && (
+                <div style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 10, marginBottom: 8 }}>
+                  <PrevField label="Prise de notes / Anamnèse" value={anamnese} />
+                </div>
+              )}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 20px', borderTop: '1px solid var(--border-soft)', paddingTop: 10 }}>
+                <div>
+                  <PrevField label="Diagnostic MTC" value={s.diagnostic_mtc} />
+                  <PrevField label="5 Éléments"     value={s.cinq_elements} />
+                  <PrevField label="Causes"          value={s.causes} />
+                  <PrevField label="Analyse / Mécanisme" value={s.analyse} />
+                  <PrevField label="Principes"       value={s.principes} />
+                </div>
+                <div>
+                  <PrevField label="Points d'acupuncture" value={s.points} />
+                  <PrevField label="Points d'oreille"     value={s.pts_oreille} />
+                  <PrevField label="Techniques"           value={s.techniques} />
+                  <PrevField label="Plantes / Formule"    value={s.plantes} />
+                  <PrevField label="Réactions"            value={s.reactions} />
+                  <PrevField label="Notes traitement"     value={s.traitement_notes} />
+                  {(barrageNiv1 || barrageNiv2 || barrageNiv3 || barrageNiv4) && (
+                    <div style={{ marginBottom: 10 }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-muted)', marginBottom: 4 }}>Barrage</div>
+                      {[barrageNiv1, barrageNiv2, barrageNiv3, barrageNiv4].filter(Boolean).map((v, i) => (
+                        <div key={i} style={{ fontSize: 12, color: 'var(--text)', marginBottom: 2 }}>N{i + 1} : {v}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ── MODE SIMPLE (aucun plugin) ── */}
+          {!pluginId && (s.traitement_notes || s.reactions) && (
+            <div style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 20px' }}>
+              <PrevField label="Traitement effectué" value={s.traitement_notes} />
+              <PrevField label="Réactions"           value={s.reactions} />
+            </div>
+          )}
+
+          {/* ── MODE PLUGIN TIERS ── */}
+          {hasPlugin && pluginSchema && (
+            <div style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 10 }}>
+              {pluginSchema.sections?.map(section => {
+                const sectionFields = section.fields.filter(f => f.type !== 'separator')
+                const hasData = sectionFields.some(f => {
+                  const v = pluginData[f.id]
+                  const rendered = renderPluginVal(f.type, v, f.max)
+                  return rendered !== null
+                })
+                if (!hasData) return null
+                return (
+                  <div key={section.id} style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', marginBottom: 6 }}>
+                      {section.icon && <span style={{ marginRight: 4 }}>{section.icon}</span>}{section.title}
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 20px' }}>
+                      {sectionFields.map(f => {
+                        const val = pluginData[f.id]
+                        if (f.type === 'checkbox') {
+                          return val ? (
+                            <div key={f.id} style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600, marginBottom: 4 }}>✓ {f.label}</div>
+                          ) : null
+                        }
+                        if (f.type === 'checkboxgroup' || f.type === 'tags') {
+                          const arr = Array.isArray(val) ? val as string[] : []
+                          if (!arr.length) return null
+                          return (
+                            <div key={f.id} style={{ marginBottom: 6 }}>
+                              <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-muted)', marginBottom: 3 }}>{f.label}</div>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                                {arr.map(t => <span key={t} style={{ fontSize: 11, padding: '1px 6px', borderRadius: 10, background: 'var(--blue-light)', color: 'var(--blue)' }}>{t}</span>)}
+                              </div>
+                            </div>
+                          )
+                        }
+                        const str = renderPluginVal(f.type, val, f.max)
+                        return str ? <PrevField key={f.id} label={f.label} value={str} /> : null
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -90,6 +293,9 @@ export default function NewSessionPage() {
   const [nextSessionNote,   setNextSessionNote]   = useState('')
   const [nextSessionApptId, setNextSessionApptId] = useState('') // ID du RDV lié dans le calendrier
   const [patientAppts,      setPatientAppts]      = useState<Appointment[]>([])
+  // Séance précédente (accordéon de référence)
+  const [prevSession,      setPrevSession]      = useState<Session | null>(null)
+  const [prevSessionOpen,  setPrevSessionOpen]  = useState(false)
   // Prise de notes libre (interrogatoire / anamnèse)
   const [anamnese, setAnamnese] = useState('')
   // Brouillon auto-sauvegardé
@@ -130,6 +336,7 @@ export default function NewSessionPage() {
     window.mtcApi.pluginGet().then(p => setActivePlugin(p || null)).catch(() => {})
   }, [])
 
+
   useEffect(() => {
     if (routePatientId) setPatientId(routePatientId)
   }, [routePatientId])
@@ -143,16 +350,20 @@ export default function NewSessionPage() {
     })
   }, [patientId])
 
-  // Calcul du numéro de séance
+  // Calcul du numéro de séance + chargement de la séance précédente
   useEffect(() => {
-    if (!patientId) return
+    if (!patientId) { setPrevSession(null); return }
     window.mtcApi.getSessions(patientId).then(sessions => {
       const sorted = [...sessions].sort((a, b) => a.date.localeCompare(b.date))
       if (isEditing && editSessionId) {
         const idx = sorted.findIndex(s => s.id === editSessionId)
         setSessionNum(idx >= 0 ? idx + 1 : sorted.length)
+        // séance précédente = celle juste avant dans la liste
+        setPrevSession(idx > 0 ? sorted[idx - 1] : null)
       } else {
         setSessionNum(sorted.length + 1)
+        // séance précédente = la plus récente
+        setPrevSession(sorted.length > 0 ? sorted[sorted.length - 1] : null)
       }
     })
   }, [patientId, isEditing, editSessionId])
@@ -323,6 +534,52 @@ export default function NewSessionPage() {
     if (!patientId) { showToast('Sélectionnez un patient', 'error'); return }
     if (!date) { showToast('Indiquez la date', 'error'); return }
     try {
+      // ── 1. Synchronisation calendrier EN PREMIER ─────────────────
+      // On résout l'ID du RDV avant de construire le payload pour que
+      // full_data_json contienne toujours le bon nextSessionApptId en DB.
+      let resolvedApptId = nextSessionApptId
+      if (nextSession && patientId) {
+        try {
+          if (resolvedApptId) {
+            await window.mtcApi.updateAppointment(resolvedApptId, {
+              patient_id:  patientId,
+              date:        nextSession,
+              heure_debut: nextSessionHeure || '09:00',
+              heure_fin:   nextSessionFin   || undefined,
+              note:        nextSessionNote  || undefined,
+              is_done:     0,
+            })
+          } else {
+            const existing = patientAppts.find(a => a.date === nextSession && !a.is_done)
+            if (existing) {
+              await window.mtcApi.updateAppointment(existing.id, {
+                patient_id:  patientId,
+                date:        nextSession,
+                heure_debut: nextSessionHeure || existing.heure_debut,
+                heure_fin:   nextSessionFin   || existing.heure_fin,
+                note:        nextSessionNote  || existing.note,
+                is_done:     0,
+              })
+              resolvedApptId = existing.id
+            } else {
+              const newAppt = await window.mtcApi.createAppointment({
+                patient_id:  patientId,
+                date:        nextSession,
+                heure_debut: nextSessionHeure || '09:00',
+                heure_fin:   nextSessionFin   || undefined,
+                note:        nextSessionNote  || undefined,
+                is_done:     0,
+              })
+              resolvedApptId = newAppt.id
+            }
+          }
+          setNextSessionApptId(resolvedApptId)
+        } catch {
+          showToast('Le prochain RDV n\'a pas pu être synchronisé dans le calendrier', 'error')
+        }
+      }
+
+      // ── 2. Sauvegarde de la séance avec l'ID résolu ──────────────
       const payload = {
         patient_id: patientId, date, practitioner,
         motif, evolution_tags: evolutionTags.join(', '), evolution, problematiques,
@@ -330,7 +587,7 @@ export default function NewSessionPage() {
         diagnostic_mtc: diagnostic, cinq_elements: cinqElements, causes, analyse, principes,
         points, pts_oreille: ptsOreille, techniques: techniques.join(', '), plantes, reactions, traitement_notes: traitementNotes,
         conseils, plan, surveiller,
-        next_session_date: nextSession || null,
+        next_session_date: nextSession || undefined,
         energy_tests_json: JSON.stringify(energy),
         systemes_json: JSON.stringify(systemes),
         full_data_json: JSON.stringify({
@@ -339,13 +596,13 @@ export default function NewSessionPage() {
           constitution, typeCorps, teint, observation, diagnostic, cinqElements, causes,
           analyse, principes, points, ptsOreille, techniques, plantes, reactions,
           traitementNotes, conseils, plan, surveiller, nextSession, nextSessionHeure,
-          nextSessionFin, nextSessionNote, nextSessionApptId,
+          nextSessionFin, nextSessionNote,
+          nextSessionApptId: resolvedApptId,   // ID résolu, pas le state (qui est async)
           barrageNiv1, barrageNiv2, barrageNiv3, barrageNiv4, systemes, energy,
           pluginData,
-          pluginId:     activePlugin?.id,
-          // Schéma complet du plugin sauvegardé avec la séance (permet de relire
-          // les données même si le plugin change ou est désinstallé ultérieurement)
-          pluginSchema: (activePlugin && !activePlugin.useBuiltinForm) ? activePlugin : undefined,
+          pluginId:        activePlugin?.id,
+          pluginIsBuiltin: !!(activePlugin?.useBuiltinForm),
+          pluginSchema:    (activePlugin && !activePlugin.useBuiltinForm) ? activePlugin : undefined,
         }),
       }
       if (isEditing && editSessionId) {
@@ -356,53 +613,15 @@ export default function NewSessionPage() {
         showToast('Séance enregistrée ✓')
       }
 
-      // ── Synchronisation avec le calendrier ──────────────────────
-      if (nextSession && patientId) {
-        try {
-          if (nextSessionApptId) {
-            // Mettre à jour le RDV existant lié
-            await window.mtcApi.updateAppointment(nextSessionApptId, {
-              patient_id:  patientId,
-              date:        nextSession,
-              heure_debut: nextSessionHeure || '09:00',
-              heure_fin:   nextSessionFin   || undefined,
-              note:        nextSessionNote  || undefined,
-              is_done:     0,
-            })
-          } else {
-            // Vérifier si un RDV existe déjà pour ce patient à cette date
-            const existing = patientAppts.find(a => a.date === nextSession)
-            if (existing) {
-              // Lier le RDV existant et le mettre à jour
-              await window.mtcApi.updateAppointment(existing.id, {
-                patient_id:  patientId,
-                date:        nextSession,
-                heure_debut: nextSessionHeure || existing.heure_debut,
-                heure_fin:   nextSessionFin   || existing.heure_fin,
-                note:        nextSessionNote  || existing.note,
-                is_done:     0,
-              })
-              setNextSessionApptId(existing.id)
-            } else {
-              // Créer un nouveau RDV dans le calendrier
-              const newAppt = await window.mtcApi.createAppointment({
-                patient_id:  patientId,
-                date:        nextSession,
-                heure_debut: nextSessionHeure || '09:00',
-                heure_fin:   nextSessionFin   || undefined,
-                note:        nextSessionNote  || undefined,
-                is_done:     0,
-              })
-              setNextSessionApptId(newAppt.id)
-            }
-          }
-        } catch { /* sync silencieuse — la séance est déjà enregistrée */ }
-      }
-      // ────────────────────────────────────────────────────────────
-
       try { localStorage.removeItem(DRAFT_KEY) } catch {}
       setDraftInfo(null)
-      navigate('/seances')
+
+      // Si un prochain RDV a été créé/lié, ouvrir le calendrier sur cette date
+      if (resolvedApptId && nextSession) {
+        navigate('/calendrier', { state: { focusDate: nextSession } })
+      } else {
+        navigate('/seances')
+      }
     } catch (e) { showToast('Erreur lors de l\'enregistrement', 'error') }
   }
 
@@ -571,6 +790,7 @@ export default function NewSessionPage() {
             </button>
             {!isEditing && <button className="btn btn-secondary" onClick={handleClear}>↺ Vider le formulaire</button>}
             {isEditing && <button className="btn btn-secondary" onClick={() => navigate('/seances')}>✕ Annuler</button>}
+
           </div>
         </div>
 
@@ -678,6 +898,15 @@ export default function NewSessionPage() {
               )
             })()}
           </div>
+        )}
+
+        {/* ── SÉANCE PRÉCÉDENTE (accordéon de référence) ──────────── */}
+        {prevSession && !isEditing && (
+          <PrevSessionAccordion
+            session={prevSession}
+            open={prevSessionOpen}
+            onToggle={() => setPrevSessionOpen(o => !o)}
+          />
         )}
 
         {/* 1. MOTIF */}

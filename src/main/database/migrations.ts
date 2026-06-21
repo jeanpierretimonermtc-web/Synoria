@@ -305,4 +305,23 @@ export function runMigrations(db: Database.Database): void {
     `)
     console.log('[DB] Migration v14 done')
   }
+
+  if (currentVersion < 15) {
+    console.log('[DB] Running migration v15 (calendar_blocks)...')
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS calendar_blocks (
+        id          TEXT PRIMARY KEY,
+        date        TEXT NOT NULL,
+        is_day      INTEGER NOT NULL DEFAULT 0,
+        heure_debut TEXT,
+        heure_fin   TEXT,
+        motif       TEXT,
+        created_at  TEXT NOT NULL,
+        updated_at  TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_calendar_blocks_date ON calendar_blocks(date);
+      INSERT INTO schema_version(version) VALUES(15);
+    `)
+    console.log('[DB] Migration v15 done')
+  }
 }

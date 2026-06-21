@@ -131,6 +131,73 @@ export default function SettingsPage() {
     showToast(`Calendrier "${name}" sélectionné ✓`, 'success')
   }
 
+  const handleGcalToggleImportCalendar = async (cal: GCalCalendar) => {
+    const current = gcalInfo?.importCalendars ?? []
+    if (gcalInfo?.calendarId === cal.id) {
+      showToast('Ce calendrier est deja importe automatiquement', 'success')
+      return
+    }
+    const exists = current.some(c => c.id === cal.id)
+    const next = exists
+      ? current.filter(c => c.id !== cal.id)
+      : [...current, { id: cal.id, summary: cal.summary, primary: cal.primary }]
+    try {
+      await window.mtcApi.gcalSetImportCalendars(next)
+      setGcalInfo(info => info ? { ...info, importCalendars: next } : info)
+      showToast('Calendriers a importer enregistres', 'success')
+    } catch (e: any) {
+      showToast(`Erreur enregistrement calendriers : ${e?.message || e}`, 'error')
+    }
+  }
+
+  const handleGcalImportColor = async (cal: GCalCalendar, color: string) => {
+    const current = gcalInfo?.importCalendars ?? []
+    const exists = current.some(c => c.id === cal.id)
+    const next = exists
+      ? current.map(c => c.id === cal.id ? { ...c, color } : c)
+      : [...current, { id: cal.id, summary: cal.summary, primary: cal.primary, color }]
+    try {
+      await window.mtcApi.gcalSetImportCalendars(next)
+      setGcalInfo(info => info ? { ...info, importCalendars: next } : info)
+      showToast('Couleur calendrier enregistree', 'success')
+    } catch (e: any) {
+      showToast(`Erreur enregistrement couleur : ${e?.message || e}`, 'error')
+    }
+  }
+
+  const handleGcalCleanupOldImports = async () => {
+    const ok = await showConfirm({
+      title: 'Nettoyer les anciens agendas Google',
+      message: 'Supprimer de Synoria les RDV importés depuis des calendriers Google qui ne sont plus cochés ?\n\nLes RDV du nouveau calendrier sélectionné seront conservés. Rien ne sera supprimé dans Google Calendar.',
+      confirmLabel: 'Nettoyer',
+      danger: true,
+    })
+    if (!ok) return
+    try {
+      let result: { deleted: number }
+      try {
+        result = await window.mtcApi.gcalCleanupOldImportedAppointments()
+      } catch (e: any) {
+        if (!String(e?.message || e).includes('No handler registered')) throw e
+        const selected = new Set((gcalInfo?.importCalendars ?? []).map(cal => encodeURIComponent(cal.id)))
+        const appointments = await window.mtcApi.getAppointments()
+        let deleted = 0
+        for (const appt of appointments) {
+          const id = appt.google_event_id || ''
+          if (!id.startsWith('gcalExternal:')) continue
+          const encodedCalendarId = id.slice('gcalExternal:'.length).split(':')[0]
+          if (selected.has(encodedCalendarId)) continue
+          await window.mtcApi.deleteAppointment(appt.id)
+          deleted++
+        }
+        result = { deleted }
+      }
+      showToast(`${result.deleted} RDV importé${result.deleted > 1 ? 's' : ''} supprimé${result.deleted > 1 ? 's' : ''}`, 'success')
+    } catch (e: any) {
+      showToast(`Nettoyage impossible : ${e?.message || e}`, 'error')
+    }
+  }
+
   useEffect(() => {
     load()
     window.mtcApi.getAppVersion().then(setAppVersion).catch(() => {})
@@ -750,19 +817,75 @@ export default function SettingsPage() {
               </div>
             </div>
 
+            <details className="settings-card" open={!gcalInfo?.connected} style={{ marginBottom: 18 }}>
+              <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--accent)', listStyle: 'none' }}>
+                Guide de première synchronisation Google Calendar
+              </summary>
+              <div style={{ marginTop: 14, display: 'grid', gap: 12 }}>
+                <div style={{ background: 'var(--accent-light)', border: '1px solid var(--border-soft)', borderRadius: 8, padding: '10px 12px', fontSize: 13, lineHeight: 1.6 }}>
+                  <strong>Objectif :</strong> Synoria crée automatiquement un calendrier Google nommé <strong>Synoria</strong>.
+                  Les consultations et séances Synoria y sont envoyées avec le titre <strong>Consultation</strong>, sans nom de patient.
+                  Vous pouvez aussi importer vos calendriers personnels dans le planning Synoria pour voir vos indisponibilités.
+                </div>
+
+                <div className="grid2" style={{ gap: 12 }}>
+                  <div style={{ border: '1px solid var(--border-soft)', borderRadius: 8, padding: '12px' }}>
+                    <div style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: 6 }}>1. Préparer Google Cloud</div>
+                    <ol style={{ paddingLeft: 18, margin: 0, lineHeight: 1.7, fontSize: 13 }}>
+                      <li>Aller sur <strong>console.cloud.google.com</strong>.</li>
+                      <li>Créer ou choisir un projet Google.</li>
+                      <li>Activer <strong>Google Calendar API</strong>.</li>
+                      <li>Créer un <strong>ID client OAuth 2.0</strong> de type <strong>Application de bureau</strong>.</li>
+                      <li>Copier le <strong>Client ID</strong> et le <strong>Client Secret</strong> dans Synoria.</li>
+                    </ol>
+                  </div>
+
+                  <div style={{ border: '1px solid var(--border-soft)', borderRadius: 8, padding: '12px' }}>
+                    <div style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: 6 }}>2. Connecter Synoria</div>
+                    <ol style={{ paddingLeft: 18, margin: 0, lineHeight: 1.7, fontSize: 13 }}>
+                      <li>Cliquer sur <strong>Connecter Google Calendar</strong>.</li>
+                      <li>Le navigateur Google s'ouvre automatiquement.</li>
+                      <li>Choisir le compte Google à utiliser.</li>
+                      <li>Accepter les autorisations demandées.</li>
+                      <li>Revenir dans Synoria quand le message de réussite s'affiche.</li>
+                    </ol>
+                  </div>
+                </div>
+
+                <div className="grid2" style={{ gap: 12 }}>
+                  <div style={{ border: '1px solid var(--border-soft)', borderRadius: 8, padding: '12px' }}>
+                    <div style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: 6 }}>3. Lancer la synchronisation</div>
+                    <p style={{ margin: 0, fontSize: 13, lineHeight: 1.7, color: 'var(--text-muted)' }}>
+                      Aller dans <strong>Agenda</strong>, puis cliquer sur <strong>Sync GCal</strong>.
+                      Synoria envoie les RDV et séances dans Google, puis importe les événements Google sélectionnés dans le planning Synoria.
+                    </p>
+                  </div>
+
+                  <div style={{ border: '1px solid var(--border-soft)', borderRadius: 8, padding: '12px' }}>
+                    <div style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: 6 }}>4. Calendriers personnels et couleurs</div>
+                    <p style={{ margin: 0, fontSize: 13, lineHeight: 1.7, color: 'var(--text-muted)' }}>
+                      Après connexion, cliquez sur <strong>Afficher les calendriers Google</strong>, cochez les calendriers personnels à importer,
+                      puis choisissez une couleur locale pour mieux les repérer dans l'agenda Synoria.
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gap: 6, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                  <div><strong>Synchronisé de Synoria vers Google :</strong> RDV, séances passées et séances à venir, dans le calendrier Google <strong>Synoria</strong>.</div>
+                  <div><strong>Synchronisé de Google vers Synoria :</strong> événements horaires des calendriers Google sélectionnés. Les événements toute la journée sont ignorés.</div>
+                  <div><strong>Confidentialité :</strong> les événements envoyés par Synoria vers Google sont nommés <strong>Consultation</strong>, sans nom de patient.</div>
+                  <div><strong>Couleur Google :</strong> Synoria ne force pas la couleur du calendrier Google. Les couleurs choisies dans Synoria servent seulement à l'affichage local.</div>
+                </div>
+              </div>
+            </details>
+
             {/* ── Non connecté ── */}
             {!gcalInfo?.connected && (
               <div>
                 <div className="settings-section-title">Configuration Google Cloud</div>
                 <div className="settings-enc-note" style={{ marginBottom: 16 }}>
-                  <strong>Étapes préalables (une seule fois) :</strong>
-                  <ol style={{ paddingLeft: 18, marginTop: 8, lineHeight: 1.8 }}>
-                    <li>Aller sur <strong>console.cloud.google.com</strong> → Créer un projet</li>
-                    <li>Activer l'API <strong>Google Calendar API</strong></li>
-                    <li>Identifiants → Créer → <strong>ID client OAuth 2.0</strong> → Application de bureau</li>
-                    <li>Ajouter l'URI de redirection : <code style={{ background: 'var(--bg)', padding: '1px 6px', borderRadius: 4 }}>http://127.0.0.1:42813/oauth2callback</code></li>
-                    <li>Copier le <strong>Client ID</strong> et <strong>Client Secret</strong> ci-dessous</li>
-                  </ol>
+                  Renseignez ici le <strong>Client ID</strong> et le <strong>Client Secret</strong> créés dans Google Cloud.
+                  Le guide ci-dessus détaille toute la procédure pour une première configuration.
                 </div>
 
                 <div className="grid2" style={{ marginBottom: 14 }}>
@@ -876,6 +999,71 @@ export default function SettingsPage() {
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                <div className="settings-section-title" style={{ marginTop: 20 }}>Calendriers Google a importer</div>
+                <div className="settings-enc-note" style={{ marginBottom: 10 }}>
+                  Cochez les agendas personnels dont les evenements doivent apparaitre dans le planning Synoria.
+                  Le calendrier <strong>Synoria</strong> reste utilise pour envoyer les consultations vers Google.
+                </div>
+                {gcalCalendars.length === 0 ? (
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={handleGcalLoadCalendars}
+                    disabled={gcalLoading}
+                  >
+                    {gcalLoading ? 'Chargement...' : 'Afficher les calendriers Google'}
+                  </button>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {gcalCalendars.map(cal => {
+                      const isExportCalendar = gcalInfo.calendarId === cal.id
+                      const checked = isExportCalendar || (gcalInfo.importCalendars ?? []).some(c => c.id === cal.id)
+                      return (
+                        <div
+                          key={`import-${cal.id}`}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            padding: '10px 14px',
+                            background: checked ? 'var(--accent-light)' : 'var(--bg)',
+                            borderRadius: 'var(--radius)',
+                            border: `1px solid ${checked ? 'var(--accent-mid)' : 'var(--border-soft)'}`,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => handleGcalToggleImportCalendar(cal)}
+                          />
+                          <input
+                            type="color"
+                            value={(gcalInfo.importCalendars ?? []).find(c => c.id === cal.id)?.color || cal.color || '#2A5A8A'}
+                            disabled={isExportCalendar}
+                            title="Couleur dans Synoria"
+                            onChange={e => handleGcalImportColor(cal, e.target.value)}
+                            style={{ width: 34, height: 28, padding: 0, border: 'none', background: 'transparent', cursor: isExportCalendar ? 'default' : 'pointer' }}
+                          />
+                          <span style={{ flex: 1, fontWeight: 500 }}>{cal.summary}</span>
+                          {cal.primary && (
+                            <span style={{ fontSize: 10, background: 'var(--accent)', color: 'white', padding: '1px 6px', borderRadius: 8 }}>
+                              Principal
+                            </span>
+                          )}
+                          {isExportCalendar && (
+                            <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Importe automatiquement</span>
+                          )}
+                        </div>
+                      )
+                    })}
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={handleGcalCleanupOldImports}
+                      style={{ marginTop: 8, alignSelf: 'flex-start', color: 'var(--red)', borderColor: 'var(--red)' }}
+                    >
+                      Nettoyer les anciens RDV Google importés
+                    </button>
                   </div>
                 )}
 

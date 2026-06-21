@@ -65,7 +65,7 @@ function HtmlRow({ label, value }: { label: string; value?: string | null }) {
 }
 
 function SummaryBlock({ title, icon, color, children }: { title: string; icon?: string; color?: string; children: React.ReactNode }) {
-  const hasContent = React.Children.toArray(children).some(c => c !== null && c !== undefined && c !== false)
+  const hasContent = React.Children.count(children) > 0
   if (!hasContent) return null
   return (
     <div className="summary-section">
@@ -192,17 +192,28 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
   const pluginData: AnyRec      = (fd.pluginData  as AnyRec)          || {}
   const pluginId:   string      = (fd.pluginId    as string)           || ''
   const pluginSchema             = (fd.pluginSchema as PluginDefinition) || null
-  // Définition à utiliser : schéma sauvegardé (priorité) ou plugin actif si ID correspond
+
+  // Définition à utiliser pour rendre les sections plugin (plugins tiers seulement)
   const pluginDef: PluginDefinition | null =
     pluginSchema
     ?? (activePlugin && !activePlugin.useBuiltinForm && activePlugin.id === pluginId ? activePlugin : null)
+
   const hasPluginData = !!(pluginDef && Object.values(pluginData).some(v =>
     v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0)
   ))
 
-  // Sections MTC : uniquement si aucun plugin utilisé OU plugin MTC intégré (useBuiltinForm)
-  // pluginId vide = séance simple/ancienne ; pluginId renseigné = plugin tiers → pas de sections MTC
-  const showMtcSections = !pluginId || !!pluginDef?.useBuiltinForm
+  // Le plugin MTC JP utilise useBuiltinForm — pluginSchema n'est pas sauvegardé.
+  // On détecte ce cas via :
+  //  1. fd.pluginIsBuiltin (sauvegardé depuis la v1.4.4+)
+  //  2. le plugin actif correspond et est useBuiltinForm (session ouverte avec le bon plugin)
+  //  3. fallback : pluginId === 'mtc_jp' (rétrocompatibilité séances anciennes)
+  const pluginIsBuiltin =
+    !!(fd.pluginIsBuiltin)
+    || (!!activePlugin && activePlugin.id === pluginId && !!activePlugin.useBuiltinForm)
+    || pluginId === 'mtc_jp'
+
+  // showMtcSections : vrai si aucun plugin (mode simple) OU plugin MTC intégré
+  const showMtcSections = !pluginId || pluginIsBuiltin
 
   const sessionNum: number        = fd.sessionNum   || 0
   const langueNote: string        = fd.langueNote   || ''
@@ -299,9 +310,10 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
       {/* ─── 1. MOTIF & ÉVOLUTION ────────────────────────────────── */}
       <SummaryBlock title="Motif de consultation & Évolution" icon="🎯" color="var(--amber)">
         <HtmlRow label="Motif" value={s.motif} />
-        {fd.anamnese && (!pluginId || pluginDef?.useBuiltinForm) && (
-          <HtmlRow label={pluginDef?.useBuiltinForm ? "Prise de notes (interrogatoire)" : "Anamnèse"} value={fd.anamnese} />
+        {fd.anamnese && (!pluginId || pluginIsBuiltin) && (
+          <HtmlRow label={pluginIsBuiltin ? "Prise de notes (interrogatoire)" : "Anamnèse"} value={fd.anamnese} />
         )}
+        <HtmlRow label="Problématiques / Terrain" value={s.problematiques} />
         <Row label="Évolution (tag)" value={s.evolution_tags} />
         <HtmlRow label="Évolution (détail)" value={s.evolution} />
       </SummaryBlock>

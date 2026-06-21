@@ -19,6 +19,8 @@ export interface InvoiceData {
   patientFirstName: string
   patientLastName:  string
   patientAddress?:  string
+  email?:           string
+  phone?:           string
   sessionDate:      string   // YYYY-MM-DD
   description:      string
   invoiceDate:      string   // YYYY-MM-DD

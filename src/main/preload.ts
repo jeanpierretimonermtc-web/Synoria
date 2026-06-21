@@ -54,6 +54,7 @@ const api: IpcApi = {
   // ─── COMPTABILITÉ ─────────────────────────────────────────────────────────────
   getComptaYearData:     (year)                       => ipcRenderer.invoke('compta:yearData', year),
   setMonthlyRevenue:     (y, m, tid, nb)              => ipcRenderer.invoke('compta:setMonthlyRevenue', y, m, tid, nb),
+  incrementMonthlyRevenue: (y, m, tid)               => ipcRenderer.invoke('compta:incrementRevenue', y, m, tid),
   setUrsafRate:          (y, m, rate)                 => ipcRenderer.invoke('compta:setUrsafRate', y, m, rate),
   setMonthlyVarExpense:  (y, m, cat, lbl, amt)        => ipcRenderer.invoke('compta:setMonthlyVarExpense', y, m, cat, lbl, amt),
   getConsultationTypes:  ()                           => ipcRenderer.invoke('compta:getConsultTypes'),
@@ -103,10 +104,20 @@ const api: IpcApi = {
   gcalDisconnect:    ()              => ipcRenderer.invoke('gcal:disconnect'),
   gcalListCalendars: ()              => ipcRenderer.invoke('gcal:listCalendars'),
   gcalSetCalendar:   (id, name)      => ipcRenderer.invoke('gcal:setCalendar', id, name),
+  gcalSetImportCalendars: (calendars) => ipcRenderer.invoke('gcal:setImportCalendars', calendars),
+  gcalCleanupOldImportedAppointments: () => ipcRenderer.invoke('gcal:cleanupOldImportedAppointments'),
+  gcalSync:                    (start, end) => ipcRenderer.invoke('gcal:sync', start, end),
+  appointmentsBackfillFromSessions: ()         => ipcRenderer.invoke('appointments:backfillFromSessions'),
   // Diagnostic
   generateDiagnosticReport: () => ipcRenderer.invoke('diagnostic:generate'),
   generateSupportDoc:       () => ipcRenderer.invoke('diagnostic:supportDoc'),
   generateRecoveryDoc:      () => ipcRenderer.invoke('diagnostic:recoveryDoc'),
+  // Blocs calendrier
+  getCalendarBlocks:        ()          => ipcRenderer.invoke('blocks:getAll'),
+  getCalendarBlocksByMonth: (y, m)      => ipcRenderer.invoke('blocks:byMonth', y, m),
+  createCalendarBlock:      (data)      => ipcRenderer.invoke('blocks:create', data),
+  updateCalendarBlock:      (id, data)  => ipcRenderer.invoke('blocks:update', id, data),
+  deleteCalendarBlock:      (id)        => ipcRenderer.invoke('blocks:delete', id),
   // Admin
   adminVerify:        (password: string) => ipcRenderer.invoke('admin:verify', password),
   adminGetLogs:       (n?: number)       => ipcRenderer.invoke('admin:getLogs', n),

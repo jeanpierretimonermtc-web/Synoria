@@ -26,6 +26,7 @@ import * as accessLogRepo             from '../database/repositories/accessLogRe
 import * as rgpdSvc                   from '../services/rgpdService'
 import * as gcalSvc                   from '../services/googleCalendarService'
 import { logError }                             from '../services/logService'
+import { getAllBlocks, getBlocksByMonth, createBlock, updateBlock, deleteBlock } from '../database/repositories/calendarBlockRepository'
 import { generateDiagnosticReport, generateSupportDoc, generateRecoveryDoc } from '../services/diagnosticService'
 import { adminVerify, adminGetLogs, adminClearLogs, adminGetSystemInfo, adminDbIntegrity, adminWalCheckpoint, adminDbStats, adminGetSettings, adminForceBackup } from '../services/adminService'
 
@@ -47,17 +48,37 @@ export function registerAllHandlers(): void {
 
   ipcMain.handle('appointments:create', async (_e, data) => {
     const appt = appointmentRepo.createAppointment(data)
+    if (gcalSvc.isExternalGCalEventId(appt.google_event_id)) return appt
     // Sync Google Calendar en arrière-plan (erreurs silencieuses)
-    gcalSvc.createGCalEvent(appt).then(eventId => {
-      if (eventId) appointmentRepo.updateAppointment(appt.id, { google_event_id: eventId })
-    }).catch(e => console.error('[GCal] create sync:', e))
+    try {
+      const eventId = await gcalSvc.createGCalEvent(appt)
+      if (eventId) return appointmentRepo.updateAppointment(appt.id, { google_event_id: eventId })
+    } catch (e) {
+      console.error('[GCal] create sync:', e)
+    }
     return appt
   })
 
   ipcMain.handle('appointments:update', async (_e, id, d) => {
     const appt = appointmentRepo.updateAppointment(id, d)
+    if (gcalSvc.isExternalGCalEventId(appt.google_event_id)) return appt
     if (appt.google_event_id) {
-      gcalSvc.updateGCalEvent(appt.google_event_id, appt).catch(e => console.error('[GCal] update sync:', e))
+      try {
+        const ok = await gcalSvc.updateGCalEvent(appt.google_event_id, appt)
+        if (!ok) {
+          const eventId = await gcalSvc.createGCalEvent(appt)
+          if (eventId) return appointmentRepo.updateAppointment(appt.id, { google_event_id: eventId })
+        }
+      } catch (e) {
+        console.error('[GCal] update sync:', e)
+      }
+    } else {
+      try {
+        const eventId = await gcalSvc.createGCalEvent(appt)
+        if (eventId) return appointmentRepo.updateAppointment(appt.id, { google_event_id: eventId })
+      } catch (e) {
+        console.error('[GCal] update sync:', e)
+      }
     }
     return appt
   })
@@ -65,7 +86,7 @@ export function registerAllHandlers(): void {
   ipcMain.handle('appointments:delete', async (_e, id) => {
     const existing = appointmentRepo.getAppointmentById(id)
     appointmentRepo.deleteAppointment(id)
-    if (existing?.google_event_id) {
+    if (existing?.google_event_id && !gcalSvc.isExternalGCalEventId(existing.google_event_id)) {
       gcalSvc.deleteGCalEvent(existing.google_event_id).catch(e => console.error('[GCal] delete sync:', e))
     }
   })
@@ -122,7 +143,10 @@ export function registerAllHandlers(): void {
         id: session.id, date: session.date,
         numeroSeance: (fd.sessionNum as number) || null,
         praticien: session.practitioner,
-        motif: session.motif, evolutionTags: session.evolution_tags, evolution: session.evolution,
+        motif: session.motif,
+        priseDeNotes: (fd.anamnese as string) || null,
+        problematiques: session.problematiques || null,
+        evolutionTags: session.evolution_tags, evolution: session.evolution,
         langue: { qualites: session.langue, notes: (fd.langueNote as string) || null },
         pouls: { qualitesGlobales: session.pouls, positions: fd.poulsPos || null, notes: (fd.poulsNote as string) || null },
         constitution: session.constitution, typeCorps: session.type_corps,
@@ -138,7 +162,12 @@ export function registerAllHandlers(): void {
           niveau3: (fd.barrageNiv3 as string) || null, niveau4: (fd.barrageNiv4 as string) || null,
         },
         conseils: session.conseils, planSuivi: session.plan, surveiller: session.surveiller,
-        prochainRdv: session.next_session_date,
+        prochainRdv: {
+          date:  session.next_session_date || null,
+          heure: (fd.nextSessionHeure as string) || null,
+          fin:   (fd.nextSessionFin   as string) || null,
+          note:  (fd.nextSessionNote  as string) || null,
+        },
       },
     }
 
@@ -418,6 +447,7 @@ export function registerAllHandlers(): void {
     return { consultationTypes, monthlyRevenue, ursafRates, expenseConfig, monthlyVarExpenses, years }
   })
   ipcMain.handle('compta:setMonthlyRevenue',    (_e, y, m, tid, nb)       => comptaRepo.setMonthlyRevenue(y, m, tid, nb))
+  ipcMain.handle('compta:incrementRevenue',     (_e, y, m, tid)           => comptaRepo.incrementMonthlyRevenue(y, m, tid))
   ipcMain.handle('compta:setUrsafRate',         (_e, y, m, rate)          => comptaRepo.setUrsafRate(y, m, rate))
   ipcMain.handle('compta:setMonthlyVarExpense', (_e, y, m, cat, lbl, amt) => comptaRepo.setMonthlyVarExpense(y, m, cat, lbl, amt))
   ipcMain.handle('compta:getConsultTypes',      ()                        => comptaRepo.getConsultationTypes())
@@ -550,6 +580,153 @@ export function registerAllHandlers(): void {
   ipcMain.handle('gcal:disconnect',    ()              => gcalSvc.disconnect())
   ipcMain.handle('gcal:listCalendars', async ()        => gcalSvc.listCalendars())
   ipcMain.handle('gcal:setCalendar',   (_e, id, name) => gcalSvc.setCalendar(id, name))
+  ipcMain.handle('gcal:setImportCalendars', (_e, calendars) => gcalSvc.setImportCalendars(calendars))
+  ipcMain.handle('gcal:cleanupOldImportedAppointments', () => {
+    const appointments = appointmentRepo.getAllAppointments()
+    let deleted = 0
+    for (const appt of appointments) {
+      if (
+        gcalSvc.isExternalGCalEventId(appt.google_event_id) &&
+        !gcalSvc.isSelectedImportGCalEventId(appt.google_event_id)
+      ) {
+        appointmentRepo.deleteAppointment(appt.id)
+        deleted++
+      }
+    }
+    return { deleted }
+  })
+
+  // ── Rattrapage : créer les RDV manquants depuis next_session_date ──
+  ipcMain.handle('appointments:backfillFromSessions', () => {
+    const today    = new Date().toISOString().slice(0, 10)
+    const sessions = sessionRepo.getAllSessions()
+    let created    = 0
+    for (const sess of sessions) {
+      if (!sess.next_session_date || sess.next_session_date < today) continue
+      // Vérifier si un RDV existe déjà pour ce patient à cette date
+      const existing = appointmentRepo.getAppointmentsByDate(sess.next_session_date)
+        .find(a => a.patient_id === sess.patient_id && !a.is_done)
+      if (existing) continue
+      // Extraire les détails depuis full_data_json si disponible
+      let heureD = '09:00', heureF: string | undefined, note: string | undefined
+      try {
+        const d = sess.full_data_json ? JSON.parse(sess.full_data_json) : {}
+        if (d.nextSessionHeure) heureD = d.nextSessionHeure
+        if (d.nextSessionFin)   heureF = d.nextSessionFin
+        if (d.nextSessionNote)  note   = d.nextSessionNote
+      } catch { /* ignore */ }
+      appointmentRepo.createAppointment({
+        patient_id:  sess.patient_id,
+        date:        sess.next_session_date,
+        heure_debut: heureD,
+        heure_fin:   heureF,
+        note:        note,
+        is_done:     0,
+      })
+      created++
+    }
+    return { created }
+  })
+
+  // ── Sync bidirectionnel GCal ↔ Synoria ───────────────────────────
+  ipcMain.handle('gcal:sync', async (_e, startDate: string, endDate: string) => {
+    const timeMin = `${startDate}T00:00:00+00:00`
+    const timeMax = `${endDate}T23:59:59+00:00`
+    const events  = await gcalSvc.listSelectedImportEvents(timeMin, timeMax)
+
+    let imported = 0
+    let updated  = 0
+    let exported = 0
+    let sessionsExported = 0
+    let sessionsUpdated = 0
+
+    for (const ev of events) {
+      // On ignore les événements toute la journée (pas d'heure précise)
+      const startDT = ev.start?.dateTime
+      const endDT   = ev.end?.dateTime
+      if (!startDT) continue
+
+      const evDate   = startDT.slice(0, 10)
+      const evHeureD = startDT.slice(11, 16)
+      const evHeureF = endDT ? endDT.slice(11, 16) : undefined
+      const fromExternalCalendar = !!ev.storageId && ev.storageId !== ev.id
+      const evNote   = fromExternalCalendar && ev.calendarSummary
+        ? `${ev.summary || 'Evenement Google'} (${ev.calendarSummary})`
+        : ev.summary || ''
+
+      const googleEventId = ev.storageId || ev.id
+      const existing = appointmentRepo.getAppointmentByGoogleEventId(googleEventId)
+
+      if (existing) {
+        // Mettre à jour si l'événement GCal a changé
+        const changed =
+          existing.date        !== evDate   ||
+          existing.heure_debut !== evHeureD ||
+          (existing.heure_fin ?? '') !== (evHeureF ?? '') ||
+          (existing.note ?? '')       !== evNote
+        if (changed) {
+          appointmentRepo.updateAppointment(existing.id, {
+            date:        evDate,
+            heure_debut: evHeureD,
+            heure_fin:   evHeureF,
+            note:        evNote || existing.note,
+          })
+          updated++
+        }
+      } else {
+        // Créer un nouveau RDV Synoria depuis l'événement GCal
+        appointmentRepo.createAppointment({
+          date:            evDate,
+          heure_debut:     evHeureD,
+          heure_fin:       evHeureF,
+          note:            evNote || undefined,
+          is_done:         0,
+          is_cancelled:    0,
+          google_event_id: googleEventId,
+        })
+        imported++
+      }
+    }
+
+    const localAppointments = appointmentRepo.getAllAppointments()
+      .filter(a => !a.is_cancelled)
+
+    for (const appt of localAppointments) {
+      if (gcalSvc.isExternalGCalEventId(appt.google_event_id)) continue
+
+      if (appt.google_event_id) {
+        const updatedInGoogle = await gcalSvc.updateGCalEvent(appt.google_event_id, appt)
+        if (updatedInGoogle) {
+          updated++
+          continue
+        }
+      }
+
+      const eventId = await gcalSvc.createGCalEvent(appt)
+      if (eventId) {
+        appointmentRepo.updateAppointment(appt.id, { google_event_id: eventId })
+        exported++
+      }
+    }
+
+    const localSessions = sessionRepo.getAllSessions()
+      .filter(s => !!s.date)
+
+    for (const session of localSessions) {
+      const result = await gcalSvc.syncSessionToGCal(session)
+      if (result === 'created') sessionsExported++
+      else if (result === 'updated') sessionsUpdated++
+    }
+
+    return {
+      imported,
+      updated,
+      exported,
+      sessionsExported,
+      sessionsUpdated,
+      total: events.length + exported + sessionsExported + sessionsUpdated,
+    }
+  })
 
   // ── Recherche globale (patients + séances) ───────────────────────
   ipcMain.handle('search:global', (_e, query: string) => {
@@ -593,6 +770,13 @@ export function registerAllHandlers(): void {
   ipcMain.handle('backup:verify', (_e, filePath: string) => {
     return verifyBackup(filePath)
   })
+
+  // ── Blocs calendrier ─────────────────────────────────────────────
+  ipcMain.handle('blocks:getAll',     ()              => getAllBlocks())
+  ipcMain.handle('blocks:byMonth',    (_e, y, m)      => getBlocksByMonth(y, m))
+  ipcMain.handle('blocks:create',     (_e, data)      => createBlock(data))
+  ipcMain.handle('blocks:update',     (_e, id, data)  => updateBlock(id, data))
+  ipcMain.handle('blocks:delete',     (_e, id)        => deleteBlock(id))
 
   // ── Rapport de diagnostic ─────────────────────────────────────────
   ipcMain.handle('diagnostic:generate',    () => generateDiagnosticReport())

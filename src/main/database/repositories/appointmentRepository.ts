@@ -23,6 +23,10 @@ export function getAppointmentById(id: string): Appointment | undefined {
   return getDb().prepare('SELECT * FROM appointments WHERE id = ?').get(id) as Appointment | undefined
 }
 
+export function getAppointmentByGoogleEventId(googleEventId: string): Appointment | undefined {
+  return getDb().prepare('SELECT * FROM appointments WHERE google_event_id = ?').get(googleEventId) as Appointment | undefined
+}
+
 export function createAppointment(data: Omit<Appointment, 'id' | 'created_at' | 'updated_at'>): Appointment {
   const id  = uuidv4()
   const now = new Date().toISOString()
@@ -36,7 +40,22 @@ export function createAppointment(data: Omit<Appointment, 'id' | 'created_at' | 
       (@id, @patient_id, @date, @heure_debut, @heure_fin, @note, @is_done, @is_cancelled,
        @guest_last_name, @guest_first_name, @guest_phone,
        @google_event_id, @created_at, @updated_at)
-  `).run({ ...appt, google_event_id: appt.google_event_id ?? null, is_cancelled: appt.is_cancelled ?? 0 })
+  `).run({
+    id,
+    patient_id:       appt.patient_id       ?? null,
+    date:             appt.date,
+    heure_debut:      appt.heure_debut,
+    heure_fin:        appt.heure_fin        ?? null,
+    note:             appt.note             ?? null,
+    is_done:          appt.is_done          ?? 0,
+    is_cancelled:     appt.is_cancelled     ?? 0,
+    guest_last_name:  appt.guest_last_name  ?? null,
+    guest_first_name: appt.guest_first_name ?? null,
+    guest_phone:      appt.guest_phone      ?? null,
+    google_event_id:  appt.google_event_id  ?? null,
+    created_at:       appt.created_at,
+    updated_at:       appt.updated_at,
+  })
   return appt
 }
 

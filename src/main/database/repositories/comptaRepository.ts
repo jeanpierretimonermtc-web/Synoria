@@ -55,6 +55,14 @@ export function setMonthlyRevenue(
   `).run(year, month, typeId, nbSeances)
 }
 
+export function incrementMonthlyRevenue(year: number, month: number, typeId: string): void {
+  getDb().prepare(`
+    INSERT INTO monthly_revenue (year, month, type_id, nb_seances)
+    VALUES (?, ?, ?, 1)
+    ON CONFLICT(year, month, type_id) DO UPDATE SET nb_seances = nb_seances + 1
+  `).run(year, month, typeId)
+}
+
 // ── URSAF rates ────────────────────────────────────────────────────
 
 export function getUrsafRates(year: number): UrsafRate[] {

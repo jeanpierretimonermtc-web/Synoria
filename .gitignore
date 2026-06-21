@@ -4,6 +4,7 @@ node_modules/
 # Build output
 dist/
 dist-electron/
+*.tsbuildinfo
 
 # Electron-builder output (exécutables + données)
 release/win-unpacked/
@@ -27,6 +28,9 @@ backup*/
 .env
 .env.*
 .claude/
+google calendar API.json
+client_secret*.json
+*oauth*.json
 
 # Documents sensibles & temporaires (ne pas versionner)
 ADMIN_CREDENTIALS.html

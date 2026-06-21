@@ -162,12 +162,15 @@ export function exportSessionExcel(sessionId: string, outputDir?: string): strin
   }
 
   // ── CONSULTATION ─────────────────────────────────────────────────
-  const hasConsult = session.motif || session.evolution_tags || session.evolution
+  const anamnese: string = (fd.anamnese as string) || ''
+  const hasConsult = session.motif || anamnese || session.problematiques || session.evolution_tags || session.evolution
   if (hasConsult) {
     ws_data.push(sectionHeader('CONSULTATION', C.amber)); ri++
-    push(ws_data, row('Motif de consultation', session.motif,          C.amberLight)); if (session.motif)          ri++
-    push(ws_data, row('Évolution (tag)',        session.evolution_tags, C.amberLight)); if (session.evolution_tags) ri++
-    push(ws_data, row('Évolution (détail)',     session.evolution,      C.amberLight)); if (session.evolution)      ri++
+    push(ws_data, row('Motif de consultation',     session.motif,            C.amberLight)); if (session.motif)            ri++
+    push(ws_data, row('Prise de notes / Anamnèse', anamnese,                 C.amberLight)); if (anamnese)                 ri++
+    push(ws_data, row('Problématiques / Terrain',  session.problematiques,   C.amberLight)); if (session.problematiques)   ri++
+    push(ws_data, row('Évolution (tag)',            session.evolution_tags,   C.amberLight)); if (session.evolution_tags)   ri++
+    push(ws_data, row('Évolution (détail)',         session.evolution,        C.amberLight)); if (session.evolution)        ri++
     ws_data.push(gap()); ri++
   }
 
