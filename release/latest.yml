@@ -1,8 +1,8 @@
-version: 1.4.3
+version: 1.4.4
 files:
-  - url: Synoria-Setup-1.4.3.exe
-    sha512: +5Aw/mpNa4ubsUTvvJWnstADN6F5e1hRy2aIlfRz/yRJWzKEaYuMdt8LBMCbvvedQ3jcTQyqdq/h/8fLHjpo3w==
-    size: 90043642
-path: Synoria-Setup-1.4.3.exe
-sha512: +5Aw/mpNa4ubsUTvvJWnstADN6F5e1hRy2aIlfRz/yRJWzKEaYuMdt8LBMCbvvedQ3jcTQyqdq/h/8fLHjpo3w==
-releaseDate: '2026-06-13T15:21:06.085Z'
+  - url: Synoria-Setup-1.4.4.exe
+    sha512: QamQcDb7eXFseSynweb3DzWUPnj13PTyMUUU+nBMfatspiSwi+UC4EC6wyU7LgVs2ynctM+cRD2oWqK6ME/FTg==
+    size: 91511019
+path: Synoria-Setup-1.4.4.exe
+sha512: QamQcDb7eXFseSynweb3DzWUPnj13PTyMUUU+nBMfatspiSwi+UC4EC6wyU7LgVs2ynctM+cRD2oWqK6ME/FTg==
+releaseDate: '2026-06-21T19:48:05.540Z'
