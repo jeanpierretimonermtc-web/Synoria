@@ -42,14 +42,31 @@ export function encryptToFile(plaintext: string, outputPath: string): void {
   writeFileSync(outputPath, payload, 'utf-8')
 }
 
-/** Lit et déchiffre un fichier .json.enc */
-export function decryptFromFile(inputPath: string): string {
-  const key = getOrCreateKey()
+/** Lit et déchiffre un fichier .json.enc avec la clé locale ou une clé fournie */
+export function decryptFromFile(inputPath: string, customKeyPath?: string): string {
+  let key: Buffer
+  if (customKeyPath) {
+    const hex = readFileSync(customKeyPath, 'utf-8').trim()
+    if (hex.length !== 64) throw new Error('Fichier encryption.key invalide (doit contenir 64 caractères hexadécimaux)')
+    key = Buffer.from(hex, 'hex')
+  } else {
+    key = getOrCreateKey()
+  }
   const payload = readFileSync(inputPath, 'utf-8').trim()
-  const parts = payload.split('\n')
+  const parts   = payload.split('\n')
   if (parts.length !== 3) throw new Error('Fichier chiffré corrompu ou format invalide')
   const [ivHex, tagHex, encHex] = parts
   const decipher = createDecipheriv(ALGORITHM, key, Buffer.from(ivHex, 'hex'))
   decipher.setAuthTag(Buffer.from(tagHex, 'hex'))
-  return decipher.update(Buffer.from(encHex, 'hex')).toString('utf-8') + decipher.final('utf-8')
+  try {
+    return decipher.update(Buffer.from(encHex, 'hex')).toString('utf-8') + decipher.final('utf-8')
+  } catch (e: any) {
+    if (e.message?.includes('Unsupported state') || e.message?.includes('unable to authenticate')) {
+      throw new Error(
+        'WRONG_KEY:La clé de chiffrement ne correspond pas à cette sauvegarde. ' +
+        'Si la sauvegarde a été créée sur une autre machine, vous devez fournir le fichier encryption.key de cette machine.'
+      )
+    }
+    throw e
+  }
 }

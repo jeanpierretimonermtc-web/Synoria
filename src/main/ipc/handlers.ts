@@ -222,7 +222,29 @@ export function registerAllHandlers(): void {
 
   // ─── BACKUP GÉNÉRAL ────────────────────────────────────────────────────────
   ipcMain.handle('exports:backupJson',   ()             => exportBackupEncrypted())
-  ipcMain.handle('exports:importJson',   (_e, filePath) => importBackupJson(filePath))
+  ipcMain.handle('exports:importJson', async (_e, filePath) => {
+    try {
+      return importBackupJson(filePath)
+    } catch (e: any) {
+      // Mauvaise clé → proposer de sélectionner le fichier encryption.key de la machine d'origine
+      if (e.message?.startsWith('WRONG_KEY:')) {
+        const result = await dialog.showOpenDialog({
+          title:   'Sélectionner la clé de chiffrement (encryption.key)',
+          message: 'Cette sauvegarde a été créée sur une autre installation.\nSélectionnez le fichier encryption.key de la machine d\'origine.\n(userData/encryption.key)',
+          filters: [
+            { name: 'Clé de chiffrement', extensions: ['key'] },
+            { name: 'Tous les fichiers',  extensions: ['*']   },
+          ],
+          properties: ['openFile'],
+        })
+        if (result.canceled || !result.filePaths.length) {
+          throw new Error(e.message.replace('WRONG_KEY:', ''))
+        }
+        return importBackupJson(filePath, result.filePaths[0])
+      }
+      throw e
+    }
+  })
   ipcMain.handle('backup:exportGeneral', ()             => exportBackupEncrypted())
   ipcMain.handle('backup:exportPatient', (_e, patientId)=> exportPatientBackup(patientId))
   ipcMain.handle('backup:info',          ()             => getBackupInfo())
@@ -767,8 +789,21 @@ export function registerAllHandlers(): void {
   })
 
   // ── Vérification d'intégrité d'une sauvegarde ────────────────────
-  ipcMain.handle('backup:verify', (_e, filePath: string) => {
-    return verifyBackup(filePath)
+  ipcMain.handle('backup:verify', async (_e, filePath: string) => {
+    try {
+      return verifyBackup(filePath)
+    } catch (e: any) {
+      if (e.message?.startsWith('WRONG_KEY:')) {
+        const result = await dialog.showOpenDialog({
+          title:   'Sélectionner la clé de chiffrement',
+          filters: [{ name: 'Clé', extensions: ['key', '*'] }],
+          properties: ['openFile'],
+        })
+        if (result.canceled || !result.filePaths.length) throw new Error(e.message.replace('WRONG_KEY:', ''))
+        return verifyBackup(filePath, result.filePaths[0])
+      }
+      throw e
+    }
   })
 
   // ── Blocs calendrier ─────────────────────────────────────────────

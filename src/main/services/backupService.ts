@@ -150,10 +150,10 @@ export interface ImportResult {
   errors: string[]
 }
 
-export function importBackupJson(filePath: string): ImportResult {
+export function importBackupJson(filePath: string, customKeyPath?: string): ImportResult {
   // Déchiffrement si nécessaire
   const raw = filePath.endsWith('.enc')
-    ? decryptFromFile(filePath)
+    ? decryptFromFile(filePath, customKeyPath)
     : readFileSync(filePath, 'utf-8')
 
   const data = JSON.parse(raw)
@@ -207,8 +207,8 @@ export interface BackupVerifyResult {
   exportedAt: string
 }
 
-export function verifyBackup(filePath: string): BackupVerifyResult {
-  const raw  = filePath.endsWith('.enc') ? decryptFromFile(filePath) : readFileSync(filePath, 'utf-8')
+export function verifyBackup(filePath: string, customKeyPath?: string): BackupVerifyResult {
+  const raw  = filePath.endsWith('.enc') ? decryptFromFile(filePath, customKeyPath) : readFileSync(filePath, 'utf-8')
   const data = JSON.parse(raw)
   const patients = Array.isArray(data.patients) ? data.patients.length
     : data.patient ? 1 : 0
