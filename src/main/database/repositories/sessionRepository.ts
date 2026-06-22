@@ -113,7 +113,9 @@ export function upsertSession(session: Session): void {
 }
 
 export function getUpcomingSessions(): UpcomingSession[] {
-  const today = new Date().toISOString().slice(0, 10)
+  // Date locale (pas UTC) pour éviter le décalage de fuseau horaire
+  const now   = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
   return getDb().prepare(`
     SELECT s.id AS session_id, s.patient_id, s.next_session_date, s.motif,
            p.first_name, p.last_name

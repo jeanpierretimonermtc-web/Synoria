@@ -54,7 +54,8 @@ export function deletePatient(id: string): void {
 export function getPatientsToFollowUp(daysSince: number): FollowUpPatient[] {
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - daysSince)
-  const cutoffStr = cutoff.toISOString().slice(0, 10)
+  const c = cutoff
+  const cutoffStr = `${c.getFullYear()}-${String(c.getMonth()+1).padStart(2,'0')}-${String(c.getDate()).padStart(2,'0')}`
 
   type Row = Patient & { last_session_date: string | null }
   const rows = getDb().prepare(`

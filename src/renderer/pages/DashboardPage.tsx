@@ -583,9 +583,11 @@ export default function DashboardPage() {
           </div>
           <div className="recent-sessions-list">
             {upcoming.map((u, idx) => {
-              const rdvDate = new Date(u.next_session_date)
-              const today   = new Date(); today.setHours(0,0,0,0)
-              const diffDays = Math.ceil((rdvDate.getTime() - today.getTime()) / 86400000)
+              // Parser la date locale (YYYY-MM-DD) sans passer par UTC
+              const [ry, rm, rd] = u.next_session_date.split('-').map(Number)
+              const rdvDate  = new Date(ry, rm - 1, rd)   // heure locale, pas UTC
+              const today    = new Date(); today.setHours(0, 0, 0, 0)
+              const diffDays = Math.round((rdvDate.getTime() - today.getTime()) / 86400000)
               const isToday  = diffDays === 0
               const isSoon   = diffDays <= 3
               return (
