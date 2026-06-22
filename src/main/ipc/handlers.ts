@@ -646,18 +646,32 @@ export function registerAllHandlers(): void {
     let created    = 0
     for (const sess of sessions) {
       if (!sess.next_session_date || sess.next_session_date < today) continue
-      // Vérifier si un RDV existe déjà pour ce patient à cette date
+
+      // Lire les données du prochain RDV depuis full_data_json
+      let heureD = '09:00', heureF: string | undefined, note: string | undefined
+      let linkedApptId: string | undefined
+      try {
+        const d = sess.full_data_json ? JSON.parse(sess.full_data_json) : {}
+        if (d.nextSessionHeure)   heureD       = d.nextSessionHeure
+        if (d.nextSessionFin)     heureF       = d.nextSessionFin
+        if (d.nextSessionNote)    note         = d.nextSessionNote
+        if (d.nextSessionApptId)  linkedApptId = d.nextSessionApptId
+      } catch { /* ignore */ }
+
+      // Si la séance avait un RDV lié (même supprimé), ne pas recréer automatiquement.
+      // L'utilisateur a peut-être supprimé ce RDV intentionnellement.
+      if (linkedApptId) {
+        const linkedExists = appointmentRepo.getAppointmentById(linkedApptId)
+        if (!linkedExists) continue  // RDV supprimé volontairement → on ne recrée pas
+        continue  // RDV existe encore → rien à faire
+      }
+
+      // Aucun RDV n'a jamais été lié → vérifier si un RDV existe déjà pour ce patient/date
       const existing = appointmentRepo.getAppointmentsByDate(sess.next_session_date)
         .find(a => a.patient_id === sess.patient_id && !a.is_done)
       if (existing) continue
-      // Extraire les détails depuis full_data_json si disponible
-      let heureD = '09:00', heureF: string | undefined, note: string | undefined
-      try {
-        const d = sess.full_data_json ? JSON.parse(sess.full_data_json) : {}
-        if (d.nextSessionHeure) heureD = d.nextSessionHeure
-        if (d.nextSessionFin)   heureF = d.nextSessionFin
-        if (d.nextSessionNote)  note   = d.nextSessionNote
-      } catch { /* ignore */ }
+
+      // Créer le RDV manquant (séances V1.4.3 sans nextSessionApptId)
       appointmentRepo.createAppointment({
         patient_id:  sess.patient_id,
         date:        sess.next_session_date,

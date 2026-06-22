@@ -1243,16 +1243,21 @@ export default function CalendarPage() {
                         {sess.slice(0, 2).map((_, i) => (
                           <div key={`s${i}`} style={{ width: 6, height: 6, borderRadius: '50%', background: isSel ? 'rgba(255,255,255,.9)' : 'var(--accent)' }} />
                         ))}
-                        {appts.filter(a => !a.is_done).slice(0, 3).map((appt, i) => {
+                        {appts.filter(a => !a.is_cancelled).slice(0, 3).map((appt, i) => {
+                          // Couleur du point : réalisé=vert · GCal=couleur GCal · passé=ambre · futur=bleu
                           const gColor = googleCalendarColor(appt, gcalImportCalendars)
-                          const dotColor = gColor || (appt.date < todayStr ? 'var(--amber)' : 'var(--blue)')
+                          const dotColor = isSel ? 'rgba(255,255,255,.9)'
+                            : gColor        ? gColor
+                            : appt.is_done  ? 'var(--accent)'
+                            : appt.date < todayStr ? 'var(--amber)'
+                            : 'var(--blue)'
                           return (
                             <div
                               key={`ap${i}`}
                               style={{
                                 width: 6,
                                 height: 6,
-                                borderRadius: '50%',
+                                borderRadius: appt.is_done ? 3 : '50%',  // carré = réalisé, rond = planifié
                                 background: dotColor,
                                 boxShadow: isSel ? '0 0 0 1px rgba(255,255,255,.85)' : undefined,
                               }}
