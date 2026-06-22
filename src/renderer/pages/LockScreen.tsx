@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 
 interface Props {
   mode: 'setup' | 'locked'
@@ -16,10 +16,12 @@ export default function LockScreen({ mode, onUnlock, theme = 'light' }: Props) {
   const [loading,   setLoading]   = useState(false)
   const [attempts,  setAttempts]  = useState(0)
   const [acknowledged, setAcknowledged] = useState(false)
+  const [appVersion,   setAppVersion]   = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 100)
+    window.mtcApi.getAppVersion().then(setAppVersion).catch(() => {})
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -121,9 +123,9 @@ export default function LockScreen({ mode, onUnlock, theme = 'light' }: Props) {
           pointerEvents: 'none',
         }} />
 
-        {/* Logo */}
+        {/* Logo — version adaptée au thème */}
         <img
-          src="./Synoria.png"
+          src={dark ? './Synoria fond noir.png' : './Synoria.png'}
           alt="Logo Synoria"
           style={{ width: 150, height: 150, objectFit: 'contain', marginBottom: 28 }}
         />
@@ -162,12 +164,14 @@ export default function LockScreen({ mode, onUnlock, theme = 'light' }: Props) {
         </div>
 
         {/* Version */}
-        <div style={{
-          position: 'absolute', bottom: 20,
-          fontSize: 11, color: hintColor,
-        }}>
-          v1.4.2
-        </div>
+        {appVersion && (
+          <div style={{
+            position: 'absolute', bottom: 20,
+            fontSize: 11, color: hintColor,
+          }}>
+            v{appVersion}
+          </div>
+        )}
       </div>
 
       {/* ── PANNEAU DROIT — Formulaire ── */}
