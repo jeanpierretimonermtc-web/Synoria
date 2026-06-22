@@ -35,6 +35,7 @@ const api: IpcApi = {
   exportBackupJson:     ()           => ipcRenderer.invoke('exports:backupJson'),
   importBackupJson:           (filePath)            => ipcRenderer.invoke('exports:importJson', filePath),
   importBackupJsonWithPassword: (filePath, password) => ipcRenderer.invoke('exports:importJsonWithPassword', filePath, password),
+  importBackupJsonWithKey:      (filePath)            => ipcRenderer.invoke('exports:importJsonWithKey', filePath),
   exportEncryptionKey:        ()                    => ipcRenderer.invoke('exports:exportEncryptionKey'),
   exportSessionJson:    (sessionId)  => ipcRenderer.invoke('exports:sessionJson', sessionId),
   exportSessionExcel:   (sessionId)  => ipcRenderer.invoke('exports:sessionExcel', sessionId),

@@ -47,7 +47,8 @@ export default function SettingsPage() {
   const [saving, setSaving]             = useState(false)
   const [backingUp, setBackingUp]       = useState(false)
   const [verifying, setVerifying]       = useState(false)
-  const [bkpPwdModal,   setBkpPwdModal]   = useState<{ filePath: string } | null>(null)
+  // Modal aide import backup (mot de passe ou fichier clé)
+  const [bkpModal,   setBkpModal]   = useState<{ filePath: string; mode: 'password' | 'key' } | null>(null)
   const [bkpPwdInput,   setBkpPwdInput]   = useState('')
   const [bkpPwdError,   setBkpPwdError]   = useState('')
   const [bkpPwdLoading, setBkpPwdLoading] = useState(false)
@@ -178,31 +179,50 @@ export default function SettingsPage() {
     setBackingUp(false)
   }
 
+  const finishImport = (result: { patientsUpserted: number; sessionsUpserted: number; errors: string[] }) => {
+    showToast(`Import terminé ✓ — ${result.patientsUpserted} patient(s), ${result.sessionsUpserted} séance(s) · Redémarrage…`, 'success')
+    setTimeout(() => window.mtcApi.relaunchApp(), 1500)
+  }
+
   const handleImport = async () => {
     const path = await window.mtcApi.showOpenDialog({ filters: [{ name: 'Sauvegarde Synoria', extensions: ['enc', 'json'] }] })
     if (!path) return
     try {
       const result = await window.mtcApi.importBackupJson(path)
       if ('__needsPassword' in result) {
-        setBkpPwdInput(''); setBkpPwdError(''); setBkpPwdModal({ filePath: result.filePath })
+        setBkpPwdInput(''); setBkpPwdError(''); setBkpModal({ filePath: result.filePath, mode: 'password' })
         return
       }
-      showToast(`Import terminé ✓ — ${result.patientsUpserted} patient(s), ${result.sessionsUpserted} séance(s)${result.errors.length ? ` (${result.errors.length} ignoré(s))` : ''} · Redémarrage…`, 'success')
-      setTimeout(() => window.mtcApi.relaunchApp(), 1500)
+      if ('__needsKey' in result) {
+        setBkpPwdInput(''); setBkpPwdError(''); setBkpModal({ filePath: result.filePath, mode: 'key' })
+        return
+      }
+      finishImport(result)
     } catch (e: any) { showToast(`Erreur import : ${e?.message || e}`, 'error') }
   }
 
   const handleImportWithPassword = async () => {
-    if (!bkpPwdModal || !bkpPwdInput.trim()) return
+    if (!bkpModal || !bkpPwdInput.trim()) return
     setBkpPwdLoading(true); setBkpPwdError('')
     try {
-      const result = await window.mtcApi.importBackupJsonWithPassword(bkpPwdModal.filePath, bkpPwdInput)
-      showToast(`Import terminé ✓ — ${result.patientsUpserted} patient(s), ${result.sessionsUpserted} séance(s)`, 'success')
-      setBkpPwdModal(null)
-      showToast(`Import terminé ✓ · Redémarrage…`, 'success')
-      setTimeout(() => window.mtcApi.relaunchApp(), 1500)
+      const result = await window.mtcApi.importBackupJsonWithPassword(bkpModal.filePath, bkpPwdInput)
+      setBkpModal(null); finishImport(result)
     } catch (e: any) {
       setBkpPwdError((e?.message || String(e)).replace('WRONG_PASSWORD:', ''))
+    }
+    setBkpPwdLoading(false)
+  }
+
+  const handleImportWithKey = async () => {
+    if (!bkpModal) return
+    setBkpPwdLoading(true); setBkpPwdError('')
+    try {
+      const result = await window.mtcApi.importBackupJsonWithKey(bkpModal.filePath)
+      setBkpModal(null); finishImport(result)
+    } catch (e: any) {
+      const msg = e?.message || String(e)
+      if (msg === 'Sélection annulée') { setBkpPwdLoading(false); return }
+      setBkpPwdError(msg.replace('WRONG_KEY:', ''))
     }
     setBkpPwdLoading(false)
   }
@@ -1105,38 +1125,71 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* Modal mot de passe backup v3 */}
-        {bkpPwdModal && (
-          <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setBkpPwdModal(null)}>
-            <div className="modal" style={{ maxWidth: 420 }}>
-              <button className="modal-close" onClick={() => setBkpPwdModal(null)}>×</button>
-              <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                🔑 Sauvegarde protégée par mot de passe
+        {/* Modal unifiée : déverrouiller backup (mot de passe OU fichier clé) */}
+        {bkpModal && (
+          <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setBkpModal(null)}>
+            <div className="modal" style={{ maxWidth: 460 }}>
+              <button className="modal-close" onClick={() => setBkpModal(null)}>×</button>
+              <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                🔓 Déverrouiller la sauvegarde
               </h2>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 18, lineHeight: 1.5 }}>
-                Cette sauvegarde est protégée par le mot de passe Synoria de la machine d'origine.<br />
-                Saisissez ce mot de passe pour restaurer vos données.
-              </p>
-              <div className="field" style={{ marginBottom: 16 }}>
-                <label>Mot de passe Synoria</label>
-                <input
-                  type="password"
-                  value={bkpPwdInput}
-                  onChange={e => { setBkpPwdInput(e.target.value); setBkpPwdError('') }}
-                  onKeyDown={e => e.key === 'Enter' && handleImportWithPassword()}
-                  placeholder="Votre mot de passe Synoria…"
-                  autoFocus
-                />
-                {bkpPwdError && (
-                  <div style={{ fontSize: 12, color: 'var(--red)', marginTop: 6 }}>⚠ {bkpPwdError}</div>
-                )}
+
+              {/* Sélecteur de méthode */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
+                {([['password', '🔑 Mot de passe'], ['key', '📄 Fichier clé']] as const).map(([m, label]) => (
+                  <button key={m} type="button"
+                    onClick={() => { setBkpModal(prev => prev ? { ...prev, mode: m } : prev); setBkpPwdError('') }}
+                    style={{
+                      flex: 1, padding: '9px 0', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                      border: `2px solid ${bkpModal.mode === m ? 'var(--accent)' : 'var(--border)'}`,
+                      background: bkpModal.mode === m ? 'var(--accent-light)' : 'transparent',
+                      color: bkpModal.mode === m ? 'var(--accent)' : 'var(--text-muted)',
+                    }}>
+                    {label}
+                  </button>
+                ))}
               </div>
-              <div className="modal-footer">
-                <button className="btn btn-primary" onClick={handleImportWithPassword} disabled={!bkpPwdInput.trim() || bkpPwdLoading}>
-                  {bkpPwdLoading ? '⏳ Restauration…' : '✓ Restaurer'}
-                </button>
-                <button className="btn btn-secondary" onClick={() => setBkpPwdModal(null)}>Annuler</button>
-              </div>
+
+              {bkpModal.mode === 'password' ? (
+                <>
+                  <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.5 }}>
+                    Pour les sauvegardes créées avec <strong>Synoria V1.4.4+</strong>.<br />
+                    Saisissez le mot de passe Synoria utilisé sur la machine d'origine.
+                  </p>
+                  <div className="field" style={{ marginBottom: 12 }}>
+                    <label>Mot de passe Synoria</label>
+                    <input type="password" value={bkpPwdInput} autoFocus
+                      onChange={e => { setBkpPwdInput(e.target.value); setBkpPwdError('') }}
+                      onKeyDown={e => e.key === 'Enter' && handleImportWithPassword()}
+                      placeholder="Votre mot de passe Synoria…" />
+                  </div>
+                  {bkpPwdError && <div style={{ fontSize: 12, color: 'var(--red)', marginBottom: 12 }}>⚠ {bkpPwdError}</div>}
+                  <div className="modal-footer">
+                    <button className="btn btn-primary" onClick={handleImportWithPassword} disabled={!bkpPwdInput.trim() || bkpPwdLoading}>
+                      {bkpPwdLoading ? '⏳…' : '✓ Restaurer'}
+                    </button>
+                    <button className="btn btn-secondary" onClick={() => setBkpModal(null)}>Annuler</button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12, lineHeight: 1.5 }}>
+                    Pour les sauvegardes créées avec <strong>Synoria V1.4.3 et antérieures</strong>.<br />
+                    Sélectionnez le fichier <code>encryption.key</code> de la machine d'origine.
+                  </p>
+                  <div style={{ background: 'var(--amber-light)', border: '1px solid rgba(193,123,42,.25)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 12, lineHeight: 1.6 }}>
+                    <strong>📍 Où trouver ce fichier sur la machine d'origine :</strong><br />
+                    <code style={{ fontSize: 11 }}>C:\Users\[votre nom]\AppData\Roaming\Synoria\encryption.key</code>
+                  </div>
+                  {bkpPwdError && <div style={{ fontSize: 12, color: 'var(--red)', marginBottom: 12 }}>⚠ {bkpPwdError}</div>}
+                  <div className="modal-footer">
+                    <button className="btn btn-primary" onClick={handleImportWithKey} disabled={bkpPwdLoading}>
+                      {bkpPwdLoading ? '⏳…' : '📂 Sélectionner le fichier clé'}
+                    </button>
+                    <button className="btn btn-secondary" onClick={() => setBkpModal(null)}>Annuler</button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}

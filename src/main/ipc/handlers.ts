@@ -222,40 +222,34 @@ export function registerAllHandlers(): void {
 
   // ─── BACKUP GÉNÉRAL ────────────────────────────────────────────────────────
   ipcMain.handle('exports:backupJson',   ()             => exportBackupEncrypted())
+  // Import backup — signale au renderer quel type d'aide est nécessaire
   ipcMain.handle('exports:importJson', async (_e, filePath) => {
     try {
       return importBackupJson(filePath)
     } catch (e: any) {
-      // Format v3 → signaler au renderer qu'il faut un mot de passe
-      if (e.message?.startsWith('V3_NEEDS_PASSWORD:')) {
-        return { __needsPassword: true, filePath }
-      }
-      // Format v2, mauvaise clé machine → proposer la clé de la machine d'origine
-      if (e.message?.startsWith('WRONG_KEY:')) {
-        const userData = app.getPath('userData')
-        const result   = await dialog.showOpenDialog({
-          title:       'Sélectionner la clé de chiffrement (encryption.key)',
-          message:     'La sauvegarde a été créée sur une autre installation.\n' +
-                       'Recherchez le fichier encryption.key de la machine d\'origine :\n' +
-                       'AppData\\Roaming\\Synoria\\encryption.key',
-          defaultPath: userData,
-          filters: [
-            { name: 'Clé de chiffrement Synoria', extensions: ['key'] },
-            { name: 'Tous les fichiers',           extensions: ['*']   },
-          ],
-          properties: ['openFile'],
-        })
-        if (result.canceled || !result.filePaths.length) {
-          throw new Error(e.message.replace('WRONG_KEY:', ''))
-        }
-        return importBackupJson(filePath, { customKeyPath: result.filePaths[0] })
-      }
+      if (e.message?.startsWith('V3_NEEDS_PASSWORD:')) return { __needsPassword: true, filePath }
+      if (e.message?.startsWith('WRONG_KEY:'))         return { __needsKey: true,      filePath }
       throw e
     }
   })
 
   ipcMain.handle('exports:importJsonWithPassword', (_e, filePath: string, password: string) => {
     return importBackupJson(filePath, { password })
+  })
+
+  // Import avec fichier clé sélectionné par le renderer
+  ipcMain.handle('exports:importJsonWithKey', async (_e, filePath: string) => {
+    const result = await dialog.showOpenDialog({
+      title:       'Sélectionner votre fichier encryption.key',
+      defaultPath: app.getPath('userData'),
+      filters: [
+        { name: 'Clé Synoria', extensions: ['key'] },
+        { name: 'Tous',        extensions: ['*']   },
+      ],
+      properties: ['openFile'],
+    })
+    if (result.canceled || !result.filePaths.length) throw new Error('Sélection annulée')
+    return importBackupJson(filePath, { customKeyPath: result.filePaths[0] })
   })
 
   ipcMain.handle('exports:exportEncryptionKey', async () => {
