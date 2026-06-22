@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { AppSettings, BackupInfo, GoogleCalendarInfo, GCalCalendar } from '../../shared/types'
 import type { PluginDefinition } from '../../shared/pluginTypes'
 import { ToastContext } from '../App'
@@ -39,6 +40,7 @@ const TABS: { id: Tab; icon: string; label: string; desc: string }[] = [
 
 export default function SettingsPage() {
   const showToast = useContext(ToastContext)
+  const navigate  = useNavigate()
 
   // État général
   const [settings, setSettings]   = useState<AppSettings | null>(null)
@@ -180,8 +182,11 @@ export default function SettingsPage() {
   }
 
   const finishImport = (result: { patientsUpserted: number; sessionsUpserted: number; errors: string[] }) => {
-    showToast(`Import terminé ✓ — ${result.patientsUpserted} patient(s), ${result.sessionsUpserted} séance(s) · Redémarrage…`, 'success')
-    setTimeout(() => window.mtcApi.relaunchApp(), 1500)
+    showToast(`Import terminé ✓ — ${result.patientsUpserted} patient(s), ${result.sessionsUpserted} séance(s)`, 'success')
+    setBkpModal(null)
+    // Naviguer vers le tableau de bord — les données sont déjà dans la BDD ouverte,
+    // pas besoin de redémarrer l'app (ce qui causait un écran blanc).
+    setTimeout(() => navigate('/'), 800)
   }
 
   const handleImport = async () => {
