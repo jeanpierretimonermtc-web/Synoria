@@ -55,6 +55,17 @@
     "asarUnpack": [
       "node_modules/better-sqlite3/**/*"
     ],
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "deleteAppDataOnUninstall": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Synoria",
+      "uninstallDisplayName": "Synoria",
+      "guid": "9F4A2B1C-8E3D-4F6A-B5C7-D2E8F0A1B3C5"
+    },
     "win": {
       "target": [
         {
