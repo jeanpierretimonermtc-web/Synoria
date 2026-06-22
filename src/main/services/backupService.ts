@@ -10,11 +10,14 @@ import {
   writeFileSync, readFileSync, mkdirSync,
   readdirSync, statSync, unlinkSync, existsSync,
 } from 'fs'
-import * as patientRepo from '../database/repositories/patientRepository'
-import * as sessionRepo from '../database/repositories/sessionRepository'
-import { upsertPatient }  from '../database/repositories/patientRepository'
-import { upsertSession }  from '../database/repositories/sessionRepository'
-import { getDb }          from '../database/connection'
+import * as patientRepo     from '../database/repositories/patientRepository'
+import * as sessionRepo     from '../database/repositories/sessionRepository'
+import * as appointmentRepo from '../database/repositories/appointmentRepository'
+import * as comptaRepo      from '../database/repositories/comptaRepository'
+import { getAllBlocks }      from '../database/repositories/calendarBlockRepository'
+import { upsertPatient }    from '../database/repositories/patientRepository'
+import { upsertSession }    from '../database/repositories/sessionRepository'
+import { getDb }            from '../database/connection'
 import {
   encryptToFile, decryptFromFile,
   encryptToFileV3, decryptFromFileV3, isV3Format, getV3Salt,
@@ -94,12 +97,32 @@ export function exportBackupEncrypted(): string {
   ensureDir(dir)
   rotateFiles(dir, settings.backupRetentionDays)
 
+  const db = getDb()
+  // Récupère les données compta sur toutes les années disponibles
+  const allYears = (db.prepare("SELECT DISTINCT year FROM monthly_revenue").all() as {year:number}[]).map(r => r.year)
+  const allUrsaf = (db.prepare("SELECT DISTINCT year FROM ursaf_rates").all() as {year:number}[]).map(r => r.year)
+  const allVar   = (db.prepare("SELECT DISTINCT year FROM monthly_var_expenses").all() as {year:number}[]).map(r => r.year)
+  const yearsCompta = [...new Set([...allYears, ...allUrsaf, ...allVar])]
+
   const payload = {
-    version: 2,
+    version: 3,
     encrypted: true,
     exportedAt: new Date().toISOString(),
-    patients: patientRepo.getAllPatients(),
-    sessions: sessionRepo.getAllSessions(),
+    // Données cliniques
+    patients:         patientRepo.getAllPatients(),
+    sessions:         sessionRepo.getAllSessions(),
+    // Calendrier
+    appointments:     appointmentRepo.getAllAppointments(),
+    calendarBlocks:   getAllBlocks(),
+    // Comptabilité (toutes les années)
+    consultationTypes: comptaRepo.getConsultationTypes(),
+    monthlyRevenue:   yearsCompta.flatMap(y => comptaRepo.getMonthlyRevenue(y)),
+    ursafRates:       yearsCompta.flatMap(y => comptaRepo.getUrsafRates(y)),
+    expenseConfig:    comptaRepo.getExpenseConfig(),
+    monthlyVarExpenses: yearsCompta.flatMap(y => (db.prepare("SELECT * FROM monthly_var_expenses WHERE year=?").all(y) as any[])),
+    invoicesLog:      (db.prepare("SELECT * FROM invoices_log ORDER BY invoice_date").all() as any[]),
+    // Modèles
+    sessionTemplates: (db.prepare("SELECT * FROM session_templates").all() as any[]),
   }
 
   const filePath   = join(dir, `backup-global-${fileTimestamp()}.json.enc`)
@@ -192,7 +215,7 @@ export function importBackupJson(
 
   const data = JSON.parse(raw)
 
-  // Compatibilité v1 (array à la racine) + v2 (clé patients/sessions)
+  // Rétrocompatibilité : v1 (array racine) · v2 (patients+sessions) · v3 (tout)
   const patients = Array.isArray(data.patients)
     ? data.patients
     : data.patient ? [data.patient] : []
@@ -202,30 +225,133 @@ export function importBackupJson(
     throw new Error('Format de sauvegarde invalide')
   }
 
+  const db     = getDb()
+  const now    = new Date().toISOString()
   const errors: string[] = []
   let patientsUpserted = 0
   let sessionsUpserted = 0
 
-  const importAll = getDb().transaction(() => {
+  // Helper : INSERT OR REPLACE générique sur n'importe quelle table
+  const upsertRow = (table: string, row: Record<string, unknown>) => {
+    const keys = Object.keys(row)
+    if (!keys.length) return
+    const placeholders = keys.map(k => `@${k}`).join(', ')
+    db.prepare(`INSERT OR REPLACE INTO ${table} (${keys.join(', ')}) VALUES (${placeholders})`).run(row)
+  }
+
+  const importAll = db.transaction(() => {
+    // ── Patients ──────────────────────────────────────────────────
     for (const p of patients) {
       if (!p.id || !p.first_name || !p.last_name) {
-        errors.push(`Patient ignoré (données incomplètes) : ${JSON.stringify(p).slice(0, 80)}`)
-        continue
+        errors.push(`Patient ignoré : ${JSON.stringify(p).slice(0, 80)}`); continue
       }
-      p.created_at = p.created_at || new Date().toISOString()
-      p.updated_at = p.updated_at || new Date().toISOString()
-      upsertPatient(p)
-      patientsUpserted++
+      p.created_at = p.created_at || now
+      p.updated_at = p.updated_at || now
+      upsertPatient(p); patientsUpserted++
     }
+
+    // ── Séances ───────────────────────────────────────────────────
     for (const s of sessions) {
       if (!s.id || !s.patient_id || !s.date) {
-        errors.push(`Séance ignorée (données incomplètes) : ${JSON.stringify(s).slice(0, 80)}`)
-        continue
+        errors.push(`Séance ignorée : ${JSON.stringify(s).slice(0, 80)}`); continue
       }
-      s.created_at = s.created_at || new Date().toISOString()
-      s.updated_at = s.updated_at || new Date().toISOString()
-      upsertSession(s)
-      sessionsUpserted++
+      s.created_at = s.created_at || now
+      s.updated_at = s.updated_at || now
+      upsertSession(s); sessionsUpserted++
+    }
+
+    // ── RDV Calendrier ────────────────────────────────────────────
+    for (const a of (data.appointments ?? [])) {
+      if (!a.id || !a.date || !a.heure_debut) continue
+      a.created_at = a.created_at || now; a.updated_at = a.updated_at || now
+      upsertRow('appointments', {
+        id: a.id, patient_id: a.patient_id ?? null, date: a.date,
+        heure_debut: a.heure_debut, heure_fin: a.heure_fin ?? null,
+        note: a.note ?? null, is_done: a.is_done ?? 0, is_cancelled: a.is_cancelled ?? 0,
+        guest_last_name: a.guest_last_name ?? null, guest_first_name: a.guest_first_name ?? null,
+        guest_phone: a.guest_phone ?? null, google_event_id: a.google_event_id ?? null,
+        created_at: a.created_at, updated_at: a.updated_at,
+      })
+    }
+
+    // ── Blocs calendrier perso ────────────────────────────────────
+    for (const b of (data.calendarBlocks ?? [])) {
+      if (!b.id || !b.date) continue
+      b.created_at = b.created_at || now; b.updated_at = b.updated_at || now
+      upsertRow('calendar_blocks', {
+        id: b.id, date: b.date, is_day: b.is_day ?? 0,
+        heure_debut: b.heure_debut ?? null, heure_fin: b.heure_fin ?? null,
+        motif: b.motif ?? null, created_at: b.created_at, updated_at: b.updated_at,
+      })
+    }
+
+    // ── Types de consultation ─────────────────────────────────────
+    for (const t of (data.consultationTypes ?? [])) {
+      if (!t.id || !t.name) continue
+      upsertRow('consultation_types', {
+        id: t.id, name: t.name, price: t.price ?? 0,
+        is_active: t.is_active ?? 1, sort_order: t.sort_order ?? 0,
+      })
+    }
+
+    // ── Chiffre d'affaires mensuel ────────────────────────────────
+    for (const r of (data.monthlyRevenue ?? [])) {
+      if (!r.year || !r.month || !r.type_id) continue
+      upsertRow('monthly_revenue', {
+        year: r.year, month: r.month, type_id: r.type_id, nb_seances: r.nb_seances ?? 0,
+      })
+    }
+
+    // ── Taux URSAF ────────────────────────────────────────────────
+    for (const u of (data.ursafRates ?? [])) {
+      if (!u.year || !u.month) continue
+      upsertRow('ursaf_rates', { year: u.year, month: u.month, rate: u.rate ?? 0.256 })
+    }
+
+    // ── Configuration des charges ─────────────────────────────────
+    for (const e of (data.expenseConfig ?? [])) {
+      if (!e.id) continue
+      upsertRow('expense_config', {
+        id: e.id, category: e.category ?? '', label: e.label ?? '',
+        monthly_amount: e.monthly_amount ?? 0, is_shared: e.is_shared ?? 0,
+        sort_order: e.sort_order ?? 0, months: e.months ?? null,
+      })
+    }
+
+    // ── Dépenses variables ────────────────────────────────────────
+    for (const v of (data.monthlyVarExpenses ?? [])) {
+      if (!v.year || !v.month || !v.category) continue
+      upsertRow('monthly_var_expenses', {
+        year: v.year, month: v.month, category: v.category,
+        label: v.label ?? '', amount: v.amount ?? 0,
+      })
+    }
+
+    // ── Journal des factures ──────────────────────────────────────
+    for (const inv of (data.invoicesLog ?? [])) {
+      if (!inv.id || !inv.invoice_number) continue
+      upsertRow('invoices_log', {
+        id: inv.id, invoice_number: inv.invoice_number,
+        invoice_date: inv.invoice_date || now.slice(0, 10),
+        patient_first_name: inv.patient_first_name ?? '',
+        patient_last_name: inv.patient_last_name ?? '',
+        patient_address: inv.patient_address ?? null,
+        email: inv.email ?? null, phone: inv.phone ?? null,
+        session_date: inv.session_date ?? null,
+        description: inv.description ?? null,
+        montant: inv.montant ?? 0, file_path: inv.file_path ?? null,
+        created_at: inv.created_at || now,
+      })
+    }
+
+    // ── Modèles de séance ─────────────────────────────────────────
+    for (const t of (data.sessionTemplates ?? [])) {
+      if (!t.id || !t.name) continue
+      t.created_at = t.created_at || now; t.updated_at = t.updated_at || now
+      upsertRow('session_templates', {
+        id: t.id, name: t.name, description: t.description ?? '',
+        data_json: t.data_json ?? '{}', created_at: t.created_at, updated_at: t.updated_at,
+      })
     }
   })
 
