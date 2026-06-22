@@ -208,7 +208,15 @@ export default function SettingsPage() {
       const result = await window.mtcApi.importBackupJsonWithPassword(bkpModal.filePath, bkpPwdInput)
       setBkpModal(null); finishImport(result)
     } catch (e: any) {
-      setBkpPwdError((e?.message || String(e)).replace('WRONG_PASSWORD:', ''))
+      const raw = e?.message || String(e)
+      if (raw.includes('OLD_FORMAT:')) {
+        // Sauvegarde V1.4.3 — basculer automatiquement vers "Fichier clé"
+        setBkpModal(prev => prev ? { ...prev, mode: 'key' } : prev)
+        setBkpPwdError('Sauvegarde format ancien (V1.4.3) — utilisez l\'onglet "Fichier clé" avec votre fichier encryption.key')
+      } else {
+        const clean = raw.replace(/Error invoking remote method '[^']+': Error: /, '').replace('WRONG_PASSWORD:', '').trim()
+        setBkpPwdError(clean)
+      }
     }
     setBkpPwdLoading(false)
   }
@@ -220,9 +228,9 @@ export default function SettingsPage() {
       const result = await window.mtcApi.importBackupJsonWithKey(bkpModal.filePath)
       setBkpModal(null); finishImport(result)
     } catch (e: any) {
-      const msg = e?.message || String(e)
-      if (msg === 'Sélection annulée') { setBkpPwdLoading(false); return }
-      setBkpPwdError(msg.replace('WRONG_KEY:', ''))
+      const msg = (e?.message || String(e)).replace(/Error invoking remote method '[^']+': Error: /, '').replace('WRONG_KEY:', '')
+      if (msg.trim() === 'Sélection annulée') { setBkpPwdLoading(false); return }
+      setBkpPwdError(msg.trim())
     }
     setBkpPwdLoading(false)
   }

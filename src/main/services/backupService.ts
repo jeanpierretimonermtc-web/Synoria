@@ -183,7 +183,10 @@ export function importBackupJson(
     const derivedKey = deriveKeyFromPassword(opts.password, saltHex)
     raw = decryptFromFileV3(filePath, derivedKey)
   } else {
-    // Format v2 : clé machine ou clé externe
+    // Format v2 : clé machine uniquement (pas de déchiffrement par mot de passe possible)
+    if (opts?.password && !opts?.customKeyPath) {
+      throw new Error('OLD_FORMAT:Cette sauvegarde a été créée avec Synoria V1.4.3 ou antérieur. Elle ne peut pas être restaurée avec un mot de passe — utilisez le fichier "encryption.key" de la machine d\'origine.')
+    }
     raw = decryptFromFile(filePath, opts?.customKeyPath)
   }
 
