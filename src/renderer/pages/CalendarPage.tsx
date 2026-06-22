@@ -420,13 +420,17 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
           </div>
         </div>
 
-        {patientId && (
-          <div className="field" style={{ marginBottom: 12 }}>
-            <label>Motif de visite / Note</label>
-            <textarea value={note} onChange={e => setNote(e.target.value)}
-              placeholder="Motif de la consultation…" style={{ minHeight: 60, resize: 'vertical' }} />
-          </div>
-        )}
+        <div className="field" style={{ marginBottom: 12 }}>
+          <label style={{ fontWeight: 700, color: 'var(--accent)', fontSize: 12 }}>
+            Motif de visite / Objet du RDV
+          </label>
+          <textarea
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            placeholder="Douleurs lombaires, bilan mensuel, suivi acupuncture, première consultation…"
+            style={{ minHeight: 110, resize: 'vertical', fontSize: 13, lineHeight: 1.5 }}
+          />
+        </div>
 
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, marginBottom: 16, cursor: 'pointer' }}>
           <input type="checkbox" checked={isDone} onChange={e => setIsDone(e.target.checked)}
@@ -796,10 +800,19 @@ function TimeGridView({ days, todayStr, sessionsByDate, apptByDate, blocksByDate
                       onClick={e => { e.stopPropagation(); onApptClick(appt) }}
                     >
                       <div className="cal-appt-name">{lbl}</div>
-                      {h >= 32 && (
+                      {h >= 22 && (
                         <div className="cal-appt-time">
                           {appt.heure_debut}{appt.heure_fin ? ` – ${appt.heure_fin}` : ''}
-                          {appt.note ? ` · ${appt.note}` : ''}
+                        </div>
+                      )}
+                      {h >= 40 && appt.note && (
+                        <div style={{
+                          fontSize: 10, lineHeight: 1.3, marginTop: 2,
+                          overflow: 'hidden', display: '-webkit-box',
+                          WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const,
+                          opacity: .85,
+                        }}>
+                          {appt.note}
                         </div>
                       )}
                     </div>
