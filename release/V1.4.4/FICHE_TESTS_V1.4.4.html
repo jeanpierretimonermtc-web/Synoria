@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<title>Synoria V1.4.4 — Fiche de tests avant déploiement</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; font-size: 13px; color: #1C1A17; background: #F5F2ED; padding: 32px 20px; }
+.page { max-width: 860px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,.1); }
+.header { background: linear-gradient(135deg, #4A6741, #2F5D34); color: white; padding: 28px 36px; }
+.header h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+.header .sub { font-size: 13px; opacity: .8; }
+.header .meta { margin-top: 14px; display: flex; gap: 20px; font-size: 12px; opacity: .75; }
+.body { padding: 28px 36px; }
+.section { margin-bottom: 28px; }
+.section-title { font-size: 14px; font-weight: 800; color: white; padding: 8px 14px; border-radius: 7px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.green  { background: #4A6741; }
+.blue   { background: #2A5A8A; }
+.teal   { background: #2A7A6A; }
+.amber  { background: #C17B2A; }
+.purple { background: #5A4A7A; }
+.red    { background: #A83232; }
+.slate  { background: #4A5568; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { background: #F5F2ED; padding: 7px 10px; text-align: left; font-weight: 700; color: #4A5568; border-bottom: 2px solid #EAE6DF; }
+td { padding: 8px 10px; border-bottom: 1px solid #EAE6DF; vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+.check { width: 24px; text-align: center; font-size: 16px; }
+.test { color: #1C1A17; line-height: 1.4; }
+.expected { color: #4A6741; font-size: 11px; font-style: italic; }
+.critical { background: #FEF0F0; }
+.critical td { color: #7A1E1E; }
+.badge { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 4px; }
+.crit-badge { background: #FBEAEA; color: #A83232; }
+.new-badge  { background: #EAF0E8; color: #4A6741; }
+.footer { background: #F5F2ED; border-top: 1px solid #EAE6DF; padding: 16px 36px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #7A7468; }
+.result-box { display: inline-block; width: 70px; border-bottom: 1px solid #CCC; }
+@media print { body { background: white; padding: 0; } .page { box-shadow: none; border-radius: 0; } }
+</style>
+</head>
+<body>
+<div class="page">
+<div class="header">
+  <h1>🌿 Synoria V1.4.4 — Fiche de tests avant déploiement</h1>
+  <div class="sub">À compléter manuellement avant toute mise en vente ou distribution</div>
+  <div class="meta">
+    <span>📅 Date de test : <span class="result-box">&nbsp;</span></span>
+    <span>👤 Testeur : <span class="result-box">&nbsp;</span></span>
+    <span>💻 Machine : <span class="result-box">&nbsp;</span></span>
+  </div>
+</div>
+
+<div class="body">
+
+<!-- 1. INSTALLATION -->
+<div class="section">
+  <div class="section-title green">📦 1. Installation & Démarrage</div>
+  <table>
+    <tr><th class="check">✓</th><th style="width:45%">Test</th><th>Résultat attendu</th><th style="width:80px">Résultat</th></tr>
+    <tr><td>☐</td><td class="test">Installer via <strong>Synoria Setup 1.4.4.exe</strong> sur Windows 10/11 vierge</td><td class="expected">Installation sans erreur, raccourci créé</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Lancer l'application installée</td><td class="expected">Splash screen puis écran mot de passe</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Lancer la <strong>version portable</strong> Synoria 1.4.4.exe</td><td class="expected">Démarre, crée dossier data/ à côté de l'exe</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Vérifier la version affichée sur l'écran mot de passe</td><td class="expected">Affiche "v1.4.4" (pas v1.4.2)</td><td></td></tr>
+    <tr><td>☐</td><td class="test"><strong>MAJ depuis V1.4.3</strong> : installer 1.4.4 par-dessus</td><td class="expected">Données patients/séances toujours là, pas de demande de nouveau mot de passe</td><td></td></tr>
+  </table>
+</div>
+
+<!-- 2. AUTHENTIFICATION -->
+<div class="section">
+  <div class="section-title teal">🔐 2. Authentification & Thème</div>
+  <table>
+    <tr><th class="check">✓</th><th style="width:45%">Test</th><th>Résultat attendu</th><th style="width:80px">Résultat</th></tr>
+    <tr><td>☐</td><td class="test">Créer un mot de passe (premier lancement)</td><td class="expected">Avertissement affiché, checkbox obligatoire, base chiffrée</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Se connecter avec le bon mot de passe</td><td class="expected">Accès au tableau de bord</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Entrer un mauvais mot de passe 3 fois</td><td class="expected">Message de récupération affiché</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Activer le <strong>mode sombre</strong> (Paramètres ou bouton 🌙)</td><td class="expected">Thème sombre appliqué partout</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Verrouiller et relancer → écran mot de passe en <strong>mode sombre</strong></td><td class="expected">Logo <strong>Synoria fond noir</strong> visible, texte lisible, pas de fond blanc</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Changer le mot de passe (Paramètres → Sécurité)</td><td class="expected">Ancien et nouveau acceptés, rechiffrement OK</td><td></td></tr>
+  </table>
+</div>
+
+<!-- 3. PATIENTS -->
+<div class="section">
+  <div class="section-title green">👤 3. Gestion des patients</div>
+  <table>
+    <tr><th class="check">✓</th><th style="width:45%">Test</th><th>Résultat attendu</th><th style="width:80px">Résultat</th></tr>
+    <tr><td>☐</td><td class="test">Créer un nouveau patient avec tous les champs</td><td class="expected">Patient visible dans la liste</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Modifier le patient créé</td><td class="expected">Modifications sauvegardées</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Archiver un patient</td><td class="expected">N'apparaît plus dans la liste principale</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Supprimer un patient (et ses séances)</td><td class="expected">Confirmation demandée, suppression en cascade</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Rechercher un patient par nom</td><td class="expected">Résultats filtrés en temps réel</td><td></td></tr>
+  </table>
+</div>
+
+<!-- 4. SÉANCES -->
+<div class="section">
+  <div class="section-title green">📋 4. Nouvelles séances</div>
+  <table>
+    <tr><th class="check">✓</th><th style="width:45%">Test</th><th>Résultat attendu</th><th style="width:80px">Résultat</th></tr>
+    <tr><td>☐</td><td class="test">Créer une séance (plugin MTC JP)</td><td class="expected">Tous les champs MTC disponibles (langue, pouls, diagnostic, points…)</td><td></td></tr>
+    <tr><td>☐</td><td class="test"><span class="badge new-badge">V1.4.4</span> Vérifier l'<strong>accordéon séance précédente</strong> lors d'une 2e séance</td><td class="expected">Résumé de la séance précédente visible et lisible</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Remplir "Prochain RDV" et enregistrer</td><td class="expected">Retour au calendrier sur la bonne date, RDV visible dans le planning</td><td></td></tr>
+    <tr><td>☐</td><td class="test"><span class="badge new-badge">V1.4.4</span> Vérifier le <strong>sélecteur type compta</strong> (badge doré en haut)</td><td class="expected">Badge "📊 Consultation standard" pré-sélectionné si 1 type</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Enregistrer et vérifier dans le <strong>résumé</strong></td><td class="expected">Motif, anamnèse, problématiques, diagnostic, traitement, barrage affichés</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Export <strong>Excel</strong> d'une séance</td><td class="expected">Fichier .xlsx créé avec toutes les sections</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Export <strong>JSON</strong> d'une séance</td><td class="expected">Fichier .json.enc créé, contient priseDeNotes et problematiques</td><td></td></tr>
+  </table>
+</div>
+
+<!-- 5. CALENDRIER -->
+<div class="section">
+  <div class="section-title blue">📅 5. Calendrier & Planning</div>
+  <table>
+    <tr><th class="check">✓</th><th style="width:45%">Test</th><th>Résultat attendu</th><th style="width:80px">Résultat</th></tr>
+    <tr><td>☐</td><td class="test">Créer un RDV via le calendrier (vue Mois)</td><td class="expected">RDV visible avec point bleu sur la date</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Créer un RDV via la vue Semaine (clic sur créneau)</td><td class="expected">Modal pré-remplie avec l'heure cliquée</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Marquer un RDV comme "Réalisé"</td><td class="expected">RDV passe en vert</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Annuler un RDV</td><td class="expected">RDV passe en rouge/barré</td><td></td></tr>
+    <tr><td>☐</td><td class="test"><span class="badge new-badge">V1.4.4</span> Créer un <strong>bloc perso / indispo</strong> (⊘ Perso/Indispo)</td><td class="expected">Bloc violet hacheté visible dans la grille</td><td></td></tr>
+    <tr><td>☐</td><td class="test"><span class="badge new-badge">V1.4.4</span> Bloquer une <strong>journée entière</strong></td><td class="expected">Badge ⊘ dans l'en-tête de colonne, overlay hacheté</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Modifier et supprimer un bloc perso</td><td class="expected">Modification et suppression OK</td><td></td></tr>
+    <tr><td>☐</td><td class="test">RDV créé depuis "Prochain RDV" d'une séance → visible calendrier</td><td class="expected">RDV présent sur la bonne date après enregistrement</td><td></td></tr>
+  </table>
+</div>
+
+<!-- 6. COMPTABILITÉ -->
+<div class="section">
+  <div class="section-title amber">💰 6. Comptabilité</div>
+  <table>
+    <tr><th class="check">✓</th><th style="width:45%">Test</th><th>Résultat attendu</th><th style="width:80px">Résultat</th></tr>
+    <tr><td>☐</td><td class="test">Créer un type de consultation avec prix</td><td class="expected">Type visible dans la liste</td><td></td></tr>
+    <tr><td>☐</td><td class="test"><span class="badge new-badge">V1.4.4</span> Cliquer <strong>📊 Compta</strong> sur une séance (page Séances)</td><td class="expected">Modal s'ouvre avec les types et prix</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Enregistrer la comptabilisation</td><td class="expected">Toast de confirmation, nb séances incrémenté dans la page Comptabilité</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Vérifier la page Comptabilité</td><td class="expected">Tableau mensuel mis à jour</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Générer une facture</td><td class="expected">PDF créé, numéro incrémenté</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Exporter comptabilité Excel</td><td class="expected">Fichier .xlsx créé avec tous les mois</td><td></td></tr>
+  </table>
+</div>
+
+<!-- 7. SAUVEGARDES -->
+<div class="section">
+  <div class="section-title teal">💾 7. Sauvegardes & Import <span class="badge new-badge" style="font-size:11px">Majeurs V1.4.4</span></div>
+  <table>
+    <tr><th class="check">✓</th><th style="width:45%">Test</th><th>Résultat attendu</th><th style="width:80px">Résultat</th></tr>
+    <tr class="critical"><td>☐</td><td class="test"><span class="badge crit-badge">Critique</span> Faire une <strong>sauvegarde générale</strong></td><td class="expected">Fichier .json.enc créé, taille > 0</td><td></td></tr>
+    <tr class="critical"><td>☐</td><td class="test"><span class="badge crit-badge">Critique</span> <strong>Vérifier la sauvegarde</strong> (bouton 🔍)</td><td class="expected">Nombre de patients et séances affiché</td><td></td></tr>
+    <tr class="critical"><td>☐</td><td class="test"><span class="badge crit-badge">Critique</span> Importer la sauvegarde sur la <strong>même machine</strong></td><td class="expected">Retour au tableau de bord avec les données, pas d'écran blanc</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Vérifier que RDV, compta, blocs perso sont restaurés</td><td class="expected">Toutes les données présentes (pas seulement patients/séances)</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Importer une sauvegarde <strong>V1.4.3</strong> avec encryption.key</td><td class="expected">Modal "Fichier clé" ouvre le bon dossier, import OK</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Essayer mot de passe sur backup V1.4.3 → auto-switch onglet</td><td class="expected">Message clair + bascule vers "Fichier clé"</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Bouton <strong>🔑 Sauvegarder la clé</strong></td><td class="expected">Fichier encryption.key copié à l'emplacement choisi</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Sauvegarde individuelle patient</td><td class="expected">Dossier patient créé avec fichier .json.enc</td><td></td></tr>
+  </table>
+</div>
+
+<!-- 8. PLUGINS -->
+<div class="section">
+  <div class="section-title purple">🔌 8. Plugins & Résumé</div>
+  <table>
+    <tr><th class="check">✓</th><th style="width:45%">Test</th><th>Résultat attendu</th><th style="width:80px">Résultat</th></tr>
+    <tr><td>☐</td><td class="test">Tester avec plugin <strong>MTC JP</strong> (useBuiltinForm)</td><td class="expected">Formulaire complet MTC affiché</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Résumé avec plugin MTC JP — sections MTC visibles</td><td class="expected">Observation, Diagnostic, Traitement, Barrage, Tests énergétiques <strong>tous affichés</strong></td><td></td></tr>
+    <tr><td>☐</td><td class="test">Tester avec plugin <strong>Kinésiologie</strong></td><td class="expected">Formulaire kinésio affiché, sections correctes</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Résumé séance kinésio — sections plugin visibles</td><td class="expected">Toutes les sections kinésio affichées avec données</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Accordéon "Séance précédente" avec plugin kinésio</td><td class="expected">Données kinésio de la séance précédente affichées</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Mode <strong>sans plugin</strong> (formulaire simple)</td><td class="expected">Sections anamnèse, traitement, réactions affichées</td><td></td></tr>
+  </table>
+</div>
+
+<!-- 9. GOOGLE CALENDAR -->
+<div class="section">
+  <div class="section-title blue">📱 9. Google Calendar (si connecté)</div>
+  <table>
+    <tr><th class="check">✓</th><th style="width:45%">Test</th><th>Résultat attendu</th><th style="width:80px">Résultat</th></tr>
+    <tr><td>☐</td><td class="test">Connexion Google Calendar (Paramètres → Google Cal.)</td><td class="expected">Connexion OAuth réussie, email affiché</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Créer un RDV Synoria → vérifier dans Google Calendar</td><td class="expected">Événement créé dans Google Calendar</td><td></td></tr>
+    <tr><td>☐</td><td class="test"><span class="badge new-badge">V1.4.4</span> Bouton <strong>⟳ Sync GCal</strong> dans le calendrier</td><td class="expected">Événements GCal importés dans Synoria, toast résultat</td><td></td></tr>
+  </table>
+</div>
+
+<!-- 10. INTERFACE & DIVERS -->
+<div class="section">
+  <div class="section-title slate">🎨 10. Interface & Divers</div>
+  <table>
+    <tr><th class="check">✓</th><th style="width:45%">Test</th><th>Résultat attendu</th><th style="width:80px">Résultat</th></tr>
+    <tr><td>☐</td><td class="test">Navigation entre toutes les pages (nav gauche)</td><td class="expected">Pas d'écran blanc, chargement correct</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Mode sombre complet (toutes les pages)</td><td class="expected">Textes lisibles, pas de fond blanc visible</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Zoom Ctrl+/- dans l'interface</td><td class="expected">Zoom appliqué</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Impression (Ctrl+P)</td><td class="expected">Fenêtre d'impression Windows ouverte</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Recherche globale (loupe dans la nav)</td><td class="expected">Résultats patients et séances</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Barre de mise en forme (dans zone notes)</td><td class="expected">Gras, italique, couleurs fonctionnels</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Page RGPD — consentements patients</td><td class="expected">Liste avec taux de consentement</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Export registre Art.30 (RGPD)</td><td class="expected">Fichier HTML créé</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Rapport de diagnostic (Paramètres → Support)</td><td class="expected">Fichier HTML créé avec infos système</td><td></td></tr>
+    <tr><td>☐</td><td class="test">Vérifier la <strong>version dans les paramètres</strong></td><td class="expected">Affiche "1.4.4"</td><td></td></tr>
+  </table>
+</div>
+
+<!-- RÉCAPITULATIF -->
+<div class="section">
+  <div class="section-title red">📊 Récapitulatif</div>
+  <table>
+    <tr><th>Catégorie</th><th>Total tests</th><th>Réussis</th><th>Échoués</th><th>Bloquants</th></tr>
+    <tr><td>Installation & Démarrage</td><td>5</td><td></td><td></td><td></td></tr>
+    <tr><td>Authentification & Thème</td><td>6</td><td></td><td></td><td></td></tr>
+    <tr><td>Patients</td><td>5</td><td></td><td></td><td></td></tr>
+    <tr><td>Séances</td><td>7</td><td></td><td></td><td></td></tr>
+    <tr><td>Calendrier</td><td>8</td><td></td><td></td><td></td></tr>
+    <tr><td>Comptabilité</td><td>6</td><td></td><td></td><td></td></tr>
+    <tr><td>Sauvegardes</td><td>8</td><td></td><td></td><td></td></tr>
+    <tr><td>Plugins & Résumé</td><td>6</td><td></td><td></td><td></td></tr>
+    <tr><td>Google Calendar</td><td>3</td><td></td><td></td><td></td></tr>
+    <tr><td>Interface & Divers</td><td>10</td><td></td><td></td><td></td></tr>
+    <tr style="font-weight:700; background:#EAF0E8;"><td>TOTAL</td><td>64</td><td></td><td></td><td></td></tr>
+  </table>
+
+  <div style="margin-top:16px; padding:12px 16px; background:#EAF0E8; border:1px solid #4A6741; border-radius:8px; font-size:12px;">
+    <strong style="color:#4A6741;">✅ Critères de validation pour mise en déploiement :</strong><br>
+    • Tous les tests <span style="background:#FBEAEA;color:#A83232;padding:1px 5px;border-radius:4px;">Critique</span> réussis<br>
+    • Moins de 3 tests échoués non-critiques<br>
+    • Aucun écran blanc ou crash au démarrage<br>
+    • Sauvegarde + restauration validées sur machine de test
+  </div>
+
+  <div style="margin-top:12px; padding:10px 16px; background:#F5F2ED; border-radius:8px; font-size:12px; color:#7A7468;">
+    <strong>Signature testeur :</strong> <span style="border-bottom:1px solid #CCC; display:inline-block; width:200px;">&nbsp;</span>
+    &nbsp;&nbsp;<strong>Date :</strong> <span style="border-bottom:1px solid #CCC; display:inline-block; width:100px;">&nbsp;</span>
+    &nbsp;&nbsp;<strong>Décision :</strong>
+    ☐ Approuvé pour déploiement &nbsp; ☐ Corrections requises
+  </div>
+</div>
+
+</div><!-- /body -->
+
+<div class="footer">
+  <span><strong>Synoria V1.4.4</strong> — Jean-Pierre Timoner · jeanpierre.timoner.mtc@gmail.com</span>
+  <span>Pour imprimer en PDF : Fichier → Imprimer → Enregistrer en PDF</span>
+</div>
+</div>
+</body>
+</html>
