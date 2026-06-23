@@ -424,7 +424,7 @@ export interface IpcApi {
   exportSessionPdf: (sessionId: string) => Promise<string>
   // File dialogs
   showSaveDialog: (opts: { defaultPath?: string; filters?: Array<{ name: string; extensions: string[] }> }) => Promise<string | null>
-  showOpenDialog: (opts: { filters?: Array<{ name: string; extensions: string[] }> }) => Promise<string | null>
+  showOpenDialog: (opts: { filters?: Array<{ name: string; extensions: string[] }>; properties?: string[]; defaultPath?: string; title?: string }) => Promise<string | null>
   openPath: (path: string) => Promise<void>
   getAppVersion: () => Promise<string>
   relaunchApp:   () => Promise<void>

@@ -164,7 +164,10 @@ export default function SettingsPage() {
   }
 
   const browsePath = async (key: 'backupPatientPath' | 'backupGeneralPath') => {
-    const path = await window.mtcApi.showOpenDialog({ filters: [] })
+    const path = await window.mtcApi.showOpenDialog({
+      filters: [],
+      properties: ['openDirectory', 'createDirectory'],
+    })
     if (path) set(key, path)
   }
 
@@ -545,7 +548,10 @@ export default function SettingsPage() {
                     onBlur={e => save({ invoicePath: e.target.value })}
                     className="settings-path-input" />
                   <button className="btn btn-secondary btn-sm" onClick={async () => {
-                    const path = await window.mtcApi.showOpenDialog({ filters: [] })
+                    const path = await window.mtcApi.showOpenDialog({
+                      filters: [],
+                      properties: ['openDirectory', 'createDirectory'],
+                    })
                     if (path) save({ invoicePath: path })
                   }}>📁</button>
                 </div>
