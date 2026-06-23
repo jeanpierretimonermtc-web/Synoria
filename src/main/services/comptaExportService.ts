@@ -517,6 +517,40 @@ function buildCaParMoisSheet(year: number) {
     ])
   }
 
+  // ── Totaux trimestriels ──
+  rows.push(emptyRow(9))
+  const quarters = [
+    { label: 'Q1 — Jan/Fév/Mar', months: [1,2,3] },
+    { label: 'Q2 — Avr/Mai/Jun', months: [4,5,6] },
+    { label: 'Q3 — Jul/Aoû/Sep', months: [7,8,9] },
+    { label: 'Q4 — Oct/Nov/Déc', months: [10,11,12] },
+  ]
+  rows.push([hdr('SYNTHÈSE TRIMESTRIELLE', C.navy), ...Array(8).fill(hdr('', C.navy))])
+  rows.push([
+    hdr('TRIMESTRE', C.teal), hdr('NB SÉ.', C.teal), hdr('CA BRUT', C.teal),
+    hdr('CHARGES', C.amber), hdr('DÉP. VAR.', C.amber), hdr('TOT. DEP.', C.amber),
+    hdr('URSAF', C.teal), hdr('COTIS.', C.teal), hdr('CA NET', C.green),
+  ])
+  for (const q of quarters) {
+    const qNb  = q.months.reduce((s, m) => s + nbForMonth(m), 0)
+    const qCA  = q.months.reduce((s, m) => s + caForMonth(m), 0)
+    const qFix = q.months.reduce((s, m) => s + fixedForMonth(m), 0)
+    const qVar = q.months.reduce((s, m) => s + getVarTotal(m), 0)
+    const qUrs = q.months.reduce((s, m) => s + caForMonth(m) * getRate(m), 0)
+    const qNet = qCA - qFix - qVar - qUrs
+    rows.push([
+      cell(q.label, { font: { bold: true, sz: 10, color: { rgb: C.white } }, fill: { fgColor: { rgb: C.teal }, patternType: 'solid' }, alignment: { horizontal: 'left' }, border }),
+      { v: qNb, t: 'n', z: '0', s: { font: { bold: true, sz: 9, color: { rgb: C.white } }, fill: { fgColor: { rgb: C.teal }, patternType: 'solid' }, alignment: { horizontal: 'center' }, border } },
+      totalCell(qCA, C.teal),
+      totalCell(qFix, C.amber),
+      totalCell(qVar, C.amber),
+      totalCell(qFix + qVar, C.amber),
+      rateCell(q.months.reduce((s, m) => s + getRate(m), 0) / q.months.length, C.rowEven),
+      totalCell(qUrs, C.teal),
+      totalCell(qNet, qNet >= 0 ? C.green : C.red),
+    ])
+  }
+
   rows.push(emptyRow(9))
 
   // Totaux annuels
@@ -563,16 +597,228 @@ function buildCaParMoisSheet(year: number) {
   return ws
 }
 
+// ── Feuille 5 : PAGE DE GARDE (IDENTITÉ) ─────────────────────────
+
+function buildIdentiteSheet(year: number, settings: Record<string, unknown>) {
+  const praticien = (settings.rgpdPractitionerName as string) || ''
+  const email     = (settings.rgpdPractitionerEmail as string) || ''
+  const now       = new Date()
+  const dateExport = now.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+
+  const W = 2  // 2 colonnes
+  const title  = (v: string) => [cell(v, {
+    font: { bold: true, sz: 18, color: { rgb: C.white } },
+    fill: { fgColor: { rgb: C.navy }, patternType: 'solid' },
+    alignment: { horizontal: 'center', vertical: 'center' },
+  }), cell('', { fill: { fgColor: { rgb: C.navy }, patternType: 'solid' } })]
+  const sub    = (v: string) => [cell(v, {
+    font: { bold: true, sz: 12, color: { rgb: C.white } },
+    fill: { fgColor: { rgb: C.teal }, patternType: 'solid' },
+    alignment: { horizontal: 'center', vertical: 'center' },
+  }), cell('', { fill: { fgColor: { rgb: C.teal }, patternType: 'solid' } })]
+  const spacer = () => [cell('', { fill: { fgColor: { rgb: C.bg }, patternType: 'solid' } }), cell('', { fill: { fgColor: { rgb: C.bg }, patternType: 'solid' } })]
+  const kv     = (k: string, v: string, bold = false) => [
+    cell(k, { font: { bold: true, sz: 10, color: { rgb: C.navy } }, fill: { fgColor: { rgb: C.bg }, patternType: 'solid' }, alignment: { horizontal: 'right' }, border }),
+    cell(v, { font: { sz: 10, bold, color: { rgb: C.navy } }, fill: { fgColor: { rgb: C.white }, patternType: 'solid' }, alignment: { horizontal: 'left' }, border }),
+  ]
+  const note   = (v: string) => [cell(v, {
+    font: { sz: 9, italic: true, color: { rgb: C.muted } },
+    fill: { fgColor: { rgb: C.bg }, patternType: 'solid' },
+    alignment: { horizontal: 'left', wrapText: true },
+  }), cell('', { fill: { fgColor: { rgb: C.bg }, patternType: 'solid' } })]
+
+  const rows: unknown[][] = [
+    title(`COMPTABILITÉ ANNUELLE ${year}`),
+    title('DOSSIER FINANCIER'),
+    spacer(),
+    sub('IDENTIFICATION DU PRATICIEN'),
+    spacer(),
+    kv('Nom du praticien :', praticien || '________________', !!praticien),
+    kv('Email professionnel :', email || '________________', !!email),
+    kv('N° SIRET :', '________________'),
+    kv('Adresse professionnelle :', '________________'),
+    kv('Code APE / NAF :', '________________'),
+    kv('Régime fiscal :', 'Micro-BNC / BNC réel (à compléter)'),
+    spacer(),
+    sub('PÉRIODE & CONTENU'),
+    spacer(),
+    kv('Exercice fiscal :', `${year}`),
+    kv('Date d\'export :', dateExport),
+    kv('Généré par :', 'Synoria — Logiciel de gestion patients'),
+    spacer(),
+    sub('CONTENU DU DOCUMENT'),
+    spacer(),
+    kv('Feuille 1 — IDENTITÉ :', 'Cette page de garde'),
+    kv('Feuille 2 — COMPTABILITÉ :', 'Revenus, dépenses, URSAF et résultats mensuels'),
+    kv('Feuille 3 — DÉPENSES :', 'Détail charges fixes et dépenses variables'),
+    kv('Feuille 4 — FACTURES :', 'Journal des factures émises avec AutoFilter'),
+    kv('Feuille 5 — CA PAR MOIS :', 'Synthèse mensuelle avec totaux trimestriels'),
+    kv('Feuille 6 — URSSAF :', 'Déclaration trimestrielle et récapitulatif annuel'),
+    spacer(),
+    sub('DÉCLARATION'),
+    spacer(),
+    note('Je soussigné(e)  ' + (praticien || '__________________________') + '  atteste que les informations'),
+    note('contenues dans ce document sont exactes et établies à partir de mes données de gestion.'),
+    spacer(),
+    kv('Fait à :', '________________________'),
+    kv('Le :', '________________________'),
+    kv('Signature :', ''),
+  ]
+
+  const ws = XLSX.utils.aoa_to_sheet(rows)
+  ws['!cols'] = [{ wch: 30 }, { wch: 46 }]
+  ws['!rows'] = rows.map((_, i) => i < 2 ? { hpx: 36 } : i === 2 ? { hpx: 12 } : { hpx: 24 })
+  ws['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 1 } },
+    { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } },
+    { s: { r: 3, c: 0 }, e: { r: 3, c: 1 } },
+    { s: { r: 12, c: 0 }, e: { r: 12, c: 1 } },
+    { s: { r: 17, c: 0 }, e: { r: 17, c: 1 } },
+    { s: { r: 24, c: 0 }, e: { r: 24, c: 1 } },
+    { s: { r: 28, c: 0 }, e: { r: 28, c: 1 } },
+    { s: { r: 29, c: 0 }, e: { r: 29, c: 1 } },
+  ]
+  return ws
+}
+
+// ── Feuille 6 : DÉCLARATION URSSAF ───────────────────────────────
+
+function buildUrssafSheet(year: number) {
+  const d = buildComptaData(year)
+  const { types, getNb, getRate, caForMonth } = d
+  const rows: unknown[][] = []
+
+  const Q = [
+    { label: '1er Trimestre', months: [1, 2, 3], color: C.teal },
+    { label: '2e Trimestre',  months: [4, 5, 6], color: C.teal },
+    { label: '3e Trimestre',  months: [7, 8, 9], color: C.teal },
+    { label: '4e Trimestre',  months: [10,11,12],color: C.teal },
+  ]
+
+  // Titre
+  rows.push([hdr(`DÉCLARATION URSSAF — EXERCICE ${year}`, C.navy), ...Array(5).fill(hdr('', C.navy))])
+  rows.push([
+    hdr('PÉRIODE',          C.teal), hdr('MOIS',          C.teal),
+    hdr('CA BRUT DU MOIS',  C.teal), hdr('TAUX URSSAF',   C.teal),
+    hdr('COTISATION DU MOIS', C.teal), hdr('CUMUL TRIMESTRIEL', C.teal),
+  ])
+
+  let grandTotalCA = 0, grandTotalCot = 0
+
+  for (const q of Q) {
+    let qCA = 0, qCot = 0
+    let firstRow = true
+
+    for (const m of q.months) {
+      const ca   = caForMonth(m)
+      const rate = getRate(m)
+      const cot  = ca * rate
+      qCA  += ca; qCot += cot
+
+      rows.push([
+        firstRow ? cell(q.label, {
+          font: { bold: true, sz: 10, color: { rgb: C.white } },
+          fill: { fgColor: { rgb: q.color }, patternType: 'solid' },
+          alignment: { horizontal: 'center', vertical: 'center' },
+          border,
+        }) : cell('', { fill: { fgColor: { rgb: C.rowEven }, patternType: 'solid' }, border }),
+        cell(MONTHS[m - 1], {
+          font: { sz: 9, color: { rgb: C.navy } },
+          fill: { fgColor: { rgb: firstRow ? C.white : C.rowEven }, patternType: 'solid' },
+          alignment: { horizontal: 'left' }, border,
+        }),
+        numCell(ca,  true, false, firstRow ? C.white : C.rowEven),
+        rateCell(rate, firstRow ? C.white : C.rowEven),
+        numCell(cot, true, false, firstRow ? C.white : C.rowEven),
+        m === q.months[q.months.length - 1]
+          ? numCell(qCot, true, true, 'E8F5E9')
+          : cell('', { fill: { fgColor: { rgb: firstRow ? C.white : C.rowEven }, patternType: 'solid' }, border }),
+      ])
+      firstRow = false
+    }
+
+    // Sous-total trimestriel
+    rows.push([
+      hdr(`TOTAL ${q.label.toUpperCase()}`, q.color),
+      cell('', { fill: { fgColor: { rgb: q.color }, patternType: 'solid' }, border }),
+      totalCell(qCA,  q.color),
+      cell('', { fill: { fgColor: { rgb: q.color }, patternType: 'solid' }, border }),
+      totalCell(qCot, q.color),
+      cell('', { fill: { fgColor: { rgb: q.color }, patternType: 'solid' }, border }),
+    ])
+
+    grandTotalCA += qCA; grandTotalCot += qCot
+    rows.push(emptyRow(6))
+  }
+
+  // Total annuel
+  rows.push([hdr('TOTAL ANNUEL', C.navy), ...Array(5).fill(hdr('', C.navy))])
+  rows.push([
+    labelCell('CA BRUT ANNUEL', 0, true, C.bg), cell(''),
+    totalCell(grandTotalCA, C.green), cell(''), cell(''), cell(''),
+  ])
+  rows.push([
+    labelCell('COTISATIONS URSSAF ANNUELLES', 0, true, C.bg), cell(''),
+    totalCell(grandTotalCot, C.navy), cell(''), cell(''), cell(''),
+  ])
+  rows.push([
+    labelCell('CA NET APRÈS URSSAF', 0, true, C.bg), cell(''),
+    totalCell(grandTotalCA - grandTotalCot, grandTotalCA - grandTotalCot >= 0 ? C.green : C.red),
+    cell(''), cell(''), cell(''),
+  ])
+
+  rows.push(emptyRow(6))
+
+  // Note légale
+  rows.push([cell(
+    'IMPORTANT : Ce document est un récapitulatif généré par Synoria. ' +
+    'Les montants de cotisations URSSAF présentés ici sont des estimations basées sur les taux saisis. ' +
+    'Seule la déclaration officielle effectuée sur urssaf.fr fait foi.',
+    {
+      font: { sz: 8, italic: true, color: { rgb: C.muted } },
+      fill: { fgColor: { rgb: C.bg }, patternType: 'solid' },
+      alignment: { horizontal: 'left', wrapText: true, vertical: 'top' },
+    }
+  ), ...Array(5).fill(cell('', { fill: { fgColor: { rgb: C.bg }, patternType: 'solid' } }))])
+
+  // Types de consultation utilisés
+  if (types.length > 0) {
+    rows.push(emptyRow(6))
+    rows.push([hdr('TARIFS DE CONSULTATION', C.navy), ...Array(5).fill(hdr('', C.navy))])
+    for (const t of types) {
+      rows.push([
+        labelCell(t.name, 0, true),
+        { v: t.price, t: 'n', z: '#,##0.00 "€"',
+          s: { font: { sz: 9, bold: true, color: { rgb: C.green } }, fill: { fgColor: { rgb: C.white }, patternType: 'solid' }, alignment: { horizontal: 'right' }, border } },
+        ...Array(4).fill(cell('')),
+      ])
+    }
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(rows)
+  ws['!cols'] = [{ wch: 20 }, { wch: 14 }, { wch: 16 }, { wch: 14 }, { wch: 18 }, { wch: 18 }]
+  ws['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } },
+  ]
+  // Figer la première ligne
+  ws['!freeze'] = { xSplit: 0, ySplit: 2, topLeftCell: 'A3', activePane: 'bottomLeft' } as any
+  return ws
+}
+
 // ── Export principal ──────────────────────────────────────────────
 
 export function exportComptaExcel(year: number): string {
+  const settings = getSettings() as Record<string, unknown>
   const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, buildComptaSheet(year),      'COMPTABILITÉ')
-  XLSX.utils.book_append_sheet(wb, buildDepensesSheet(year),    'DÉPENSES')
-  XLSX.utils.book_append_sheet(wb, buildFacturesSheet(year),    'FACTURES')
-  XLSX.utils.book_append_sheet(wb, buildCaParMoisSheet(year),   'CA PAR MOIS')
 
-  const settings = getSettings() as any
+  // Ordre professionnel : identité en premier, URSSAF en dernier
+  XLSX.utils.book_append_sheet(wb, buildIdentiteSheet(year, settings),  'IDENTITÉ')
+  XLSX.utils.book_append_sheet(wb, buildComptaSheet(year),              'COMPTABILITÉ')
+  XLSX.utils.book_append_sheet(wb, buildDepensesSheet(year),            'DÉPENSES')
+  XLSX.utils.book_append_sheet(wb, buildFacturesSheet(year),            'FACTURES')
+  XLSX.utils.book_append_sheet(wb, buildCaParMoisSheet(year),           'CA PAR MOIS')
+  XLSX.utils.book_append_sheet(wb, buildUrssafSheet(year),              'URSSAF')
+
   const dir = (settings.invoicePath as string) || ''
   if (!dir) throw new Error('Aucun dossier de destination configuré. Définissez-le dans Paramètres > Facturation.')
   mkdirSync(dir, { recursive: true })
