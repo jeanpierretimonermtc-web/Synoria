@@ -458,10 +458,16 @@ export default function DashboardPage() {
     window.mtcApi.getPatients().then(setPatients).catch(() => {})
     window.mtcApi.getAppointmentsByDate(todayStr).then(setTodayAppts).catch(() => {})
 
-    // Prochains RDV depuis la table appointments (source de vérité du calendrier)
+    // Prochains RDV depuis la table appointments — uniquement ceux de Synoria
+    // (les RDV importés de Google Calendar ont google_event_id commençant par 'gcalExternal:')
     window.mtcApi.getAppointments().then(all => {
       const future = all
-        .filter(a => !a.is_done && !a.is_cancelled && a.date >= todayStr)
+        .filter(a =>
+          !a.is_done &&
+          !a.is_cancelled &&
+          a.date >= todayStr &&
+          !a.google_event_id?.startsWith('gcalExternal:')
+        )
         .sort((a, b) => a.date.localeCompare(b.date) || a.heure_debut.localeCompare(b.heure_debut))
         .slice(0, 15)
       setUpcomingAppts(future)
