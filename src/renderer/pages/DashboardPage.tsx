@@ -715,25 +715,38 @@ function StatCard({ num, label, sub, icon, iconBg, barRatio, barColor, trend, cl
     <div
       className="stat-card"
       onClick={onClick}
-      style={{ cursor: clickable ? 'pointer' : undefined, position: 'relative' }}
+      style={{
+        cursor: clickable ? 'pointer' : undefined,
+        position: 'relative',
+        borderTop: `3px solid ${iconBg}`,
+        background: `linear-gradient(145deg, var(--surface) 60%, ${iconBg}08 100%)`,
+      }}
     >
       {clickable && (
-        <div style={{ position: 'absolute', top: 10, right: 10, fontSize: 10, color: 'var(--text-hint)', fontWeight: 600, letterSpacing: '.04em' }}>
+        <div style={{ position: 'absolute', top: 12, right: 12, fontSize: 10, color: 'var(--text-hint)', fontWeight: 600, letterSpacing: '.04em' }}>
           voir tout →
         </div>
       )}
-      <div className="stat-card-icon" style={{ background: iconBg }}>{icon}</div>
-      <div className="stat-num">{num}</div>
+
+      {/* Icône + tendance sur la même ligne */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div className="stat-card-icon" style={{ background: iconBg }}>{icon}</div>
+        {trend !== null && trend !== undefined && (
+          <div style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: '.02em',
+            color: trend > 0 ? '#10B981' : trend < 0 ? 'var(--red)' : 'var(--text-muted)',
+            background: trend > 0 ? '#ECFDF5' : trend < 0 ? 'var(--red-light)' : 'var(--border-soft)',
+            borderRadius: 20, padding: '2px 7px',
+          }}>
+            {trend > 0 ? `↑ +${trend}` : trend < 0 ? `↓ ${trend}` : '→ ='}
+          </div>
+        )}
+      </div>
+
+      <div className="stat-num" style={{ color: iconBg }}>{num}</div>
       <div className="stat-lbl">{label}</div>
       <div className="stat-sub">{sub}</div>
-      {trend !== null && trend !== undefined && (
-        <div
-          className="stat-trend"
-          style={{ color: trend > 0 ? 'var(--green)' : trend < 0 ? 'var(--red)' : 'var(--text-muted)' }}
-        >
-          {trend > 0 ? `+${trend}` : trend === 0 ? '=' : `${trend}`} vs mois dernier
-        </div>
-      )}
+
       {barRatio !== undefined && barColor && (
         <div className="stat-bar-track">
           <div className="stat-bar-fill" style={{ width: `${barRatio}%`, background: barColor }} />
