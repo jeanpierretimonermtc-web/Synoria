@@ -162,7 +162,11 @@ export function exportSessionExcel(sessionId: string, outputDir?: string): strin
   }
 
   // ── CONSULTATION ─────────────────────────────────────────────────
-  const anamnese: string = (fd.anamnese as string) || ''
+  const anamnese:              string = (fd.anamnese              as string) || ''
+  const simpleContextVie:      string = (fd.simpleContextVie      as string) || ''
+  const simpleTraitemEnCours:  string = (fd.simpleTraitementsEnCours as string) || ''
+  const simpleObjectifs:       string = (fd.simpleObjectifs       as string) || ''
+  const simpleNotesEntretien:  string = (fd.simpleNotesEntretien  as string) || ''
   const hasConsult = session.motif || anamnese || session.problematiques || session.evolution_tags || session.evolution
   if (hasConsult) {
     ws_data.push(sectionHeader('CONSULTATION', C.amber)); ri++
@@ -171,6 +175,24 @@ export function exportSessionExcel(sessionId: string, outputDir?: string): strin
     push(ws_data, row('Problématiques / Terrain',  session.problematiques,   C.amberLight)); if (session.problematiques)   ri++
     push(ws_data, row('Évolution (tag)',            session.evolution_tags,   C.amberLight)); if (session.evolution_tags)   ri++
     push(ws_data, row('Évolution (détail)',         session.evolution,        C.amberLight)); if (session.evolution)        ri++
+    ws_data.push(gap()); ri++
+  }
+
+  // ── INTERROGATOIRE & BILAN (mode simple uniquement) ──────────────
+  const hasSimple = simpleContextVie || simpleTraitemEnCours || simpleObjectifs || session.observation
+  if (hasSimple) {
+    ws_data.push(sectionHeader('INTERROGATOIRE & BILAN', C.teal)); ri++
+    push(ws_data, row('Contexte & habitudes de vie',               simpleContextVie,     C.tealLight)); if (simpleContextVie)    ri++
+    push(ws_data, row('Traitements en cours / autres thérapeutes', simpleTraitemEnCours, C.tealLight)); if (simpleTraitemEnCours) ri++
+    push(ws_data, row('Objectifs & attentes du patient',           simpleObjectifs,      C.tealLight)); if (simpleObjectifs)     ri++
+    push(ws_data, row('Observations cliniques',                    session.observation,  C.tealLight)); if (session.observation) ri++
+    ws_data.push(gap()); ri++
+  }
+
+  // ── NOTES D'ENTRETIEN LIBRES ──────────────────────────────────────
+  if (simpleNotesEntretien) {
+    ws_data.push(sectionHeader('NOTES D\'ENTRETIEN LIBRES', C.purple)); ri++
+    push(ws_data, row('Notes', simpleNotesEntretien, C.purpleLight)); ri++
     ws_data.push(gap()); ri++
   }
 

@@ -147,6 +147,12 @@ export function registerAllHandlers(): void {
         priseDeNotes: (fd.anamnese as string) || null,
         problematiques: session.problematiques || null,
         evolutionTags: session.evolution_tags, evolution: session.evolution,
+        // Mode simple enrichi
+        simpleContextVie:         (fd.simpleContextVie         as string) || null,
+        simpleTraitementsEnCours: (fd.simpleTraitementsEnCours as string) || null,
+        simpleObjectifs:          (fd.simpleObjectifs          as string) || null,
+        simpleNotesEntretien:     (fd.simpleNotesEntretien     as string) || null,
+        observationsCliniques:    session.observation || null,
         langue: { qualites: session.langue, notes: (fd.langueNote as string) || null },
         pouls: { qualitesGlobales: session.pouls, positions: fd.poulsPos || null, notes: (fd.poulsNote as string) || null },
         constitution: session.constitution, typeCorps: session.type_corps,

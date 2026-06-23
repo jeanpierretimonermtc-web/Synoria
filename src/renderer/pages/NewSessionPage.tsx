@@ -56,8 +56,12 @@ function PrevSessionAccordion({ session: s, open, onToggle }: {
   const barrageNiv2 = (fd.barrageNiv2 as string) || ''
   const barrageNiv3 = (fd.barrageNiv3 as string) || ''
   const barrageNiv4 = (fd.barrageNiv4 as string) || ''
-  const nextNote    = (fd.nextSessionNote as string) || ''
-  const pluginId    = (fd.pluginId as string) || ''
+  const nextNote              = (fd.nextSessionNote          as string) || ''
+  const prevSimpleContextVie  = (fd.simpleContextVie         as string) || ''
+  const prevSimpleTraitements = (fd.simpleTraitementsEnCours as string) || ''
+  const prevSimpleObjectifs   = (fd.simpleObjectifs          as string) || ''
+  const prevSimpleNotes       = (fd.simpleNotesEntretien     as string) || ''
+  const pluginId              = (fd.pluginId as string) || ''
   const pluginData  = (fd.pluginData as Record<string, unknown>) || {}
   const pluginSchema = fd.pluginSchema as { name?: string; sections?: Array<{ id: string; title: string; icon?: string; fields: Array<{ id: string; label: string; type: string; max?: number }> }> } | null
   const isMtcBuiltin = !!(fd.pluginIsBuiltin) || pluginId === 'mtc_jp'
@@ -181,6 +185,23 @@ function PrevSessionAccordion({ session: s, open, onToggle }: {
           )}
 
           {/* ── MODE SIMPLE (aucun plugin) ── */}
+          {!pluginId && (prevSimpleContextVie || prevSimpleTraitements || prevSimpleObjectifs || s.observation) && (
+            <div style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 10, marginBottom: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>Interrogatoire & Bilan</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 20px' }}>
+                <PrevField label="Contexte & vie"          value={prevSimpleContextVie} />
+                <PrevField label="Objectifs"               value={prevSimpleObjectifs} />
+                <PrevField label="Traitements en cours"    value={prevSimpleTraitements} />
+                <PrevField label="Observations cliniques"  value={s.observation} />
+              </div>
+            </div>
+          )}
+          {!pluginId && prevSimpleNotes && (
+            <div style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 10, marginBottom: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--purple)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>Notes d'entretien</div>
+              <PrevField label="" value={prevSimpleNotes} />
+            </div>
+          )}
           {!pluginId && (s.traitement_notes || s.reactions) && (
             <div style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 20px' }}>
               <PrevField label="Traitement effectué" value={s.traitement_notes} />
@@ -311,6 +332,7 @@ export default function NewSessionPage() {
   const [simpleContextVie,         setSimpleContextVie]         = useState('')
   const [simpleTraitementsEnCours, setSimpleTraitementsEnCours] = useState('')
   const [simpleObjectifs,          setSimpleObjectifs]          = useState('')
+  const [simpleNotesEntretien,     setSimpleNotesEntretien]     = useState('')
   // Brouillon auto-sauvegardé
   const [draftInfo, setDraftInfo] = useState<{ patientName: string; date: string } | null>(null)
   // Systèmes
@@ -476,6 +498,7 @@ export default function NewSessionPage() {
           setSimpleContextVie(d.simpleContextVie || '')
           setSimpleTraitementsEnCours(d.simpleTraitementsEnCours || '')
           setSimpleObjectifs(d.simpleObjectifs || '')
+          setSimpleNotesEntretien(d.simpleNotesEntretien || '')
           if (d.systemes) setSystemes(migrateSystemes(d.systemes))
           if (d.energy) {
             // Migration rétrocompatible : les anciens enregistrements ont penetrationEmp/Comp en string
@@ -614,7 +637,7 @@ export default function NewSessionPage() {
           traitementNotes, conseils, plan, surveiller, nextSession, nextSessionHeure,
           nextSessionFin, nextSessionNote,
           nextSessionApptId: resolvedApptId,
-          simpleContextVie, simpleTraitementsEnCours, simpleObjectifs,
+          simpleContextVie, simpleTraitementsEnCours, simpleObjectifs, simpleNotesEntretien,
           barrageNiv1, barrageNiv2, barrageNiv3, barrageNiv4, systemes, energy,
           pluginData,
           pluginId:        activePlugin?.id,
@@ -646,7 +669,7 @@ export default function NewSessionPage() {
     if (!await showConfirm({ message: 'Vider tous les champs du formulaire ?', title: 'Réinitialiser', confirmLabel: 'Vider' })) return
     setPatientId(''); setDate(new Date().toISOString().slice(0, 10)); setPractitioner('')
     setMotif(''); setEvolutionTags([]); setEvolution(''); setProblematiques(''); setAnamnese('')
-    setSimpleContextVie(''); setSimpleTraitementsEnCours(''); setSimpleObjectifs('')
+    setSimpleContextVie(''); setSimpleTraitementsEnCours(''); setSimpleObjectifs(''); setSimpleNotesEntretien('')
     setLangue([]); setLangueNote(''); setPouls([]); setPoulsNote('')
     setPoulsPos({ droitAvant: '', droitMilieu: '', droitArriere: '', gaucheAvant: '', gaucheMilieu: '', gaucheArriere: '' })
     setConstitution(''); setTypeCorps(''); setTeint(''); setObservation('')
@@ -761,8 +784,9 @@ export default function NewSessionPage() {
               ['sec-evolution',       '2. Évolution'],
               ['sec-histoire-simple',  '3. Histoire & interrogatoire'],
               ['sec-examen-simple',    '4. Bilan & observations'],
-              ['sec-traitement-simple','5. Traitement'],
-              ['sec-reactions-simple', '6. Résultats'],
+              ['sec-notes-simple',     '5. Notes d\'entretien'],
+              ['sec-traitement-simple','6. Traitement'],
+              ['sec-reactions-simple', '7. Résultats'],
               ['sec-suivi',           '6. Suivi'],
             ]
         ).map(([id, label]) => (
@@ -962,6 +986,7 @@ export default function NewSessionPage() {
             simpleContextVie={simpleContextVie}     setSimpleContextVie={setSimpleContextVie}
             simpleTraitementsEnCours={simpleTraitementsEnCours} setSimpleTraitementsEnCours={setSimpleTraitementsEnCours}
             simpleObjectifs={simpleObjectifs}       setSimpleObjectifs={setSimpleObjectifs}
+            simpleNotesEntretien={simpleNotesEntretien} setSimpleNotesEntretien={setSimpleNotesEntretien}
           />
         )}
 
@@ -1188,6 +1213,7 @@ interface SimpleProps {
   simpleContextVie: string;           setSimpleContextVie: (v: string) => void
   simpleTraitementsEnCours: string;   setSimpleTraitementsEnCours: (v: string) => void
   simpleObjectifs: string;            setSimpleObjectifs: (v: string) => void
+  simpleNotesEntretien: string;       setSimpleNotesEntretien: (v: string) => void
 }
 
 function SimpleAnamneseSection({
@@ -1199,6 +1225,7 @@ function SimpleAnamneseSection({
   simpleContextVie, setSimpleContextVie,
   simpleTraitementsEnCours, setSimpleTraitementsEnCours,
   simpleObjectifs, setSimpleObjectifs,
+  simpleNotesEntretien, setSimpleNotesEntretien,
 }: SimpleProps) {
 
   const [techInput, setTechInput] = React.useState('')
@@ -1304,10 +1331,28 @@ function SimpleAnamneseSection({
         </div>
       </div>
 
-      {/* 5. TRAITEMENT */}
+      {/* 5. NOTES D'ENTRETIEN LIBRES */}
+      <div className="card" id="sec-notes-simple" style={{ borderLeft: '4px solid var(--purple)' }}>
+        <div className="card-title">
+          <span className="card-title-icon" style={{ background: 'var(--purple-light)', color: 'var(--purple)' }}>✏️</span>
+          5. Notes d'entretien libres
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>
+          Espace libre pour noter tout ce que vous souhaitez en rapport à vos questions,
+          observations, ressentis, hypothèses…
+        </div>
+        <RichTextArea
+          value={simpleNotesEntretien}
+          onChange={setSimpleNotesEntretien}
+          placeholder="Ex : Patient semble anxieux quand on aborde son travail. Tension dans les épaules droites très marquée. Lien possible avec la prise de poids récente ? À explorer la prochaine fois : son rapport à l'alimentation lors du stress…"
+          minHeight={160}
+        />
+      </div>
+
+      {/* 6. TRAITEMENT */}
       <div className="card" id="sec-traitement-simple" style={{ borderLeft: '4px solid var(--accent)' }}>
         <div className="card-title">
-          <span className="card-title-icon icon-green">🌿</span>5. Traitement effectué
+          <span className="card-title-icon icon-green">🌿</span>6. Traitement effectué
         </div>
         <div className="field">
           <label>Description du traitement</label>
@@ -1348,10 +1393,10 @@ function SimpleAnamneseSection({
         </div>
       </div>
 
-      {/* 6. RÉSULTATS */}
+      {/* 7. RÉSULTATS */}
       <div className="card" id="sec-reactions-simple" style={{ borderLeft: '4px solid var(--teal-mid)' }}>
         <div className="card-title">
-          <span className="card-title-icon icon-teal">💬</span>6. Résultats &amp; Réactions
+          <span className="card-title-icon icon-teal">💬</span>7. Résultats &amp; Réactions
         </div>
         <div className="field">
           <RichTextArea

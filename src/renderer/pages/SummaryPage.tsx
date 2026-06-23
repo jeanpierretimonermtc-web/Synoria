@@ -321,10 +321,15 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
       {/* ─── MODE SIMPLE — sections enrichies ───────────────────────── */}
       {!pluginId && (fd.simpleContextVie || fd.simpleTraitementsEnCours || fd.simpleObjectifs || s.observation) && (
         <SummaryBlock title="Interrogatoire & Bilan" icon="🔍" color="var(--teal)">
-          <HtmlRow label="Contexte & habitudes de vie"           value={fd.simpleContextVie as string} />
+          <HtmlRow label="Contexte & habitudes de vie"               value={fd.simpleContextVie as string} />
           <HtmlRow label="Traitements en cours / autres thérapeutes" value={fd.simpleTraitementsEnCours as string} />
-          <HtmlRow label="Objectifs & attentes du patient"       value={fd.simpleObjectifs as string} />
-          <HtmlRow label="Observations cliniques"                value={s.observation} />
+          <HtmlRow label="Objectifs & attentes du patient"           value={fd.simpleObjectifs as string} />
+          <HtmlRow label="Observations cliniques"                    value={s.observation} />
+        </SummaryBlock>
+      )}
+      {!pluginId && fd.simpleNotesEntretien && (
+        <SummaryBlock title="Notes d'entretien libres" icon="✏️" color="var(--purple)">
+          <HtmlRow label="Notes" value={fd.simpleNotesEntretien as string} />
         </SummaryBlock>
       )}
 
