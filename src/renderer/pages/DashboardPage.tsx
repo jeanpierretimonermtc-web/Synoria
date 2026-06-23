@@ -439,6 +439,7 @@ function RdvDrawer({ initialYear, initialMonth, patients, onClose }: {
 export default function DashboardPage() {
   const [stats,           setStats]           = useState<DashboardStats | null>(null)
   const [upcoming,        setUpcoming]        = useState<UpcomingSession[]>([])
+  const [upcomingAppts,   setUpcomingAppts]   = useState<Appointment[]>([])
   const [monthlyActivity, setMonthlyActivity] = useState<{ label: string; count: number }[]>([])
   const [monthApptCount,  setMonthApptCount]  = useState(0)
   const [drawerOpen,      setDrawerOpen]      = useState(false)
@@ -456,6 +457,15 @@ export default function DashboardPage() {
     window.mtcApi.getUpcomingSessions().then(setUpcoming).catch(() => {})
     window.mtcApi.getPatients().then(setPatients).catch(() => {})
     window.mtcApi.getAppointmentsByDate(todayStr).then(setTodayAppts).catch(() => {})
+
+    // Prochains RDV depuis la table appointments (source de vérité du calendrier)
+    window.mtcApi.getAppointments().then(all => {
+      const future = all
+        .filter(a => !a.is_done && !a.is_cancelled && a.date >= todayStr)
+        .sort((a, b) => a.date.localeCompare(b.date) || a.heure_debut.localeCompare(b.heure_debut))
+        .slice(0, 15)
+      setUpcomingAppts(future)
+    }).catch(() => {})
     window.mtcApi.getPatientsToFollowUp(90).then(setFollowUpPatients).catch(() => {})
 
     window.mtcApi.getAppointmentsByMonth(now.getFullYear(), now.getMonth() + 1)
@@ -573,33 +583,43 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ── Prochains rendez-vous ── */}
-      {upcoming.length > 0 && (
+      {/* ── Prochains rendez-vous (source : table appointments = calendrier) ── */}
+      {upcomingAppts.length > 0 && (
         <div className="card">
           <div className="card-title">
             <span className="card-title-icon icon-teal">📅</span>
             Prochains rendez-vous
-            <span className="page-header-count" style={{ background: 'var(--teal-light)', color: 'var(--teal)', marginLeft: 6 }}>{upcoming.length}</span>
+            <span className="page-header-count" style={{ background: 'var(--teal-light)', color: 'var(--teal)', marginLeft: 6 }}>{upcomingAppts.length}</span>
           </div>
           <div className="recent-sessions-list">
-            {upcoming.map((u, idx) => {
-              // Parser la date locale (YYYY-MM-DD) sans passer par UTC
-              const [ry, rm, rd] = u.next_session_date.split('-').map(Number)
-              const rdvDate  = new Date(ry, rm - 1, rd)   // heure locale, pas UTC
-              const today    = new Date(); today.setHours(0, 0, 0, 0)
-              const diffDays = Math.round((rdvDate.getTime() - today.getTime()) / 86400000)
+            {upcomingAppts.map((appt, idx) => {
+              const pat = patients.find(p => p.id === appt.patient_id)
+              const name = pat
+                ? `${pat.first_name} ${pat.last_name}`
+                : [appt.guest_first_name, appt.guest_last_name].filter(Boolean).join(' ') || '—'
+              const initials = pat
+                ? getInitials(pat.first_name, pat.last_name)
+                : ((appt.guest_first_name?.[0] || '') + (appt.guest_last_name?.[0] || '')).toUpperCase() || '?'
+              const [ry, rm, rd] = appt.date.split('-').map(Number)
+              const apptDate = new Date(ry, rm - 1, rd)
+              const tod      = new Date(); tod.setHours(0, 0, 0, 0)
+              const diffDays = Math.round((apptDate.getTime() - tod.getTime()) / 86400000)
               const isToday  = diffDays === 0
               const isSoon   = diffDays <= 3
               return (
-                <div key={u.session_id + u.next_session_date} className="recent-session-row" onClick={() => navigate(`/nouvelle/${u.patient_id}`)} style={{ animationDelay: `${idx * 30}ms`, cursor: 'pointer' }}>
+                <div key={appt.id} className="recent-session-row"
+                  onClick={() => navigate('/calendrier', { state: { focusDate: appt.date } })}
+                  style={{ animationDelay: `${idx * 30}ms`, cursor: 'pointer' }}>
                   <div className="initials" style={{ width: 36, height: 36, fontSize: 12, flexShrink: 0, background: isToday ? 'var(--teal)' : 'var(--accent)', color: '#fff' }}>
-                    {getInitials(u.first_name, u.last_name)}
+                    {initials}
                   </div>
                   <div className="recent-session-info">
-                    <div className="recent-session-name">{u.first_name} {u.last_name}</div>
+                    <div className="recent-session-name">{name}</div>
                     <div className="recent-session-meta">
-                      <span className="recent-session-date">{fmtDate(u.next_session_date)}</span>
-                      {u.motif && <span className="recent-session-motif">· {u.motif.slice(0, 50)}{u.motif.length > 50 ? '…' : ''}</span>}
+                      <span className="recent-session-date">
+                        {fmtDate(appt.date)}{appt.heure_debut ? ` · ${appt.heure_debut}` : ''}{appt.heure_fin ? `–${appt.heure_fin}` : ''}
+                      </span>
+                      {appt.note && <span className="recent-session-motif">· {appt.note.slice(0, 50)}{appt.note.length > 50 ? '…' : ''}</span>}
                     </div>
                   </div>
                   <div>
