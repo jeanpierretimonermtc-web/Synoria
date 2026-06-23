@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, Component } from 'react'
-import { Routes, Route, NavLink, useNavigate } from 'react-router-dom'
+import { Routes, Route, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { ConfirmDialog } from './components/common/ConfirmDialog'
 import { SaveIcon, FolderIcon, LockIcon as LockIco, DashboardIcon, UsersIcon, PlusCircle, ClipboardIcon, CalendarIcon, BarChartIcon, TrendDownIcon, FileTextIcon, ShieldIcon, SettingsIcon, UserIcon } from './components/common/Icon'
 import DashboardPage from './pages/DashboardPage'
@@ -145,7 +145,6 @@ export default function App() {
   return (
     <ToastContext.Provider value={showToast}>
       <FormattingPopup />
-      <MenuBarHotspot />
       {searchOpen && <GlobalSearch onClose={() => setSearchOpen(false)} />}
       {adminOpen && <AdminPanel onClose={() => setAdminOpen(false)} theme={theme} />}
       <div className="app-shell">
@@ -413,40 +412,14 @@ function FormattingPopup() {
   )
 }
 
-// ── Zone de survol pour afficher la barre de menu native ──────────────────────
-function MenuBarHotspot() {
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const show = () => {
-    if (hideTimer.current) clearTimeout(hideTimer.current)
-    window.mtcApi.setMenuBarVisible(true).catch(() => {})
-  }
-
-  const hide = () => {
-    if (hideTimer.current) clearTimeout(hideTimer.current)
-    hideTimer.current = setTimeout(() => {
-      window.mtcApi.setMenuBarVisible(false).catch(() => {})
-    }, 2000)
-  }
-
-  return (
-    <div
-      onMouseEnter={show}
-      onMouseLeave={hide}
-      style={{
-        position: 'fixed',
-        top: 0, left: 0, right: 0,
-        height: 4,
-        zIndex: 9999,
-        cursor: 'default',
-      }}
-    />
-  )
-}
-
 function FormattingToolbar() {
+  const location = useLocation()
   const [active, setActive] = useState(false)
   const mod = navigator.userAgent.includes('Macintosh') ? '⌘' : 'Ctrl+'
+
+  // Barre visible uniquement sur les pages de saisie de séance
+  const isSessionPage = location.pathname.startsWith('/nouvelle') ||
+                        location.pathname.startsWith('/modifier')
 
   useEffect(() => {
     const onFocusIn = (e: FocusEvent) => {
@@ -468,6 +441,8 @@ function FormattingToolbar() {
   const exec = (cmd: string, val?: string) => {
     document.execCommand(cmd, false, val)
   }
+
+  if (!isSessionPage) return null
 
   return (
     <div className={`global-fmt-toolbar${active ? ' fmt-toolbar-active' : ' fmt-toolbar-inactive'}`}>
