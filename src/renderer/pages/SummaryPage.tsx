@@ -311,12 +311,22 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
       <SummaryBlock title="Motif de consultation & Évolution" icon="🎯" color="var(--amber)">
         <HtmlRow label="Motif" value={s.motif} />
         {fd.anamnese && (!pluginId || pluginIsBuiltin) && (
-          <HtmlRow label={pluginIsBuiltin ? "Prise de notes (interrogatoire)" : "Anamnèse"} value={fd.anamnese} />
+          <HtmlRow label={pluginIsBuiltin ? "Prise de notes (interrogatoire)" : "Histoire de la plainte"} value={fd.anamnese} />
         )}
         <HtmlRow label="Problématiques / Terrain" value={s.problematiques} />
         <Row label="Évolution (tag)" value={s.evolution_tags} />
         <HtmlRow label="Évolution (détail)" value={s.evolution} />
       </SummaryBlock>
+
+      {/* ─── MODE SIMPLE — sections enrichies ───────────────────────── */}
+      {!pluginId && (fd.simpleContextVie || fd.simpleTraitementsEnCours || fd.simpleObjectifs || s.observation) && (
+        <SummaryBlock title="Interrogatoire & Bilan" icon="🔍" color="var(--teal)">
+          <HtmlRow label="Contexte & habitudes de vie"           value={fd.simpleContextVie as string} />
+          <HtmlRow label="Traitements en cours / autres thérapeutes" value={fd.simpleTraitementsEnCours as string} />
+          <HtmlRow label="Objectifs & attentes du patient"       value={fd.simpleObjectifs as string} />
+          <HtmlRow label="Observations cliniques"                value={s.observation} />
+        </SummaryBlock>
+      )}
 
       {/* ─── SECTIONS PLUGIN ─────────────────────────────────────── */}
       {hasPluginData && pluginDef && pluginDef.sections.map(section => (
