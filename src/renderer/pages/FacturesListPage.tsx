@@ -282,9 +282,10 @@ export default function FacturesListPage() {
           <option value={0}>Tous les mois</option>
           {MONTHS_FR.map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
         </select>
-        <span style={{ marginLeft: 'auto', fontWeight: 700, color: 'var(--accent)', fontSize: 14 }}>
-          {filtered.length} facture{filtered.length > 1 ? 's' : ''} · {euro(total)}
-        </span>
+        <div className="factures-kpi">
+          <span className="factures-kpi-count">{filtered.length} facture{filtered.length > 1 ? 's' : ''}</span>
+          <span className="factures-kpi-total">{euro(total)}</span>
+        </div>
       </div>
 
       {/* ── Contenu ── */}
@@ -295,69 +296,52 @@ export default function FacturesListPage() {
       ) : filtered.length === 0 ? (
         <div className="empty">Aucune facture pour cette période.</div>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+        <div className="factures-table-wrap">
+          <table className="factures-table">
             <thead>
-              <tr style={{ background: 'var(--blue)', color: '#fff' }}>
-                {['N° Facture','Date émission','Nom','Prénom','Adresse','Email','Téléphone','Montant','Fichier','Actions'].map(h => (
-                  <th key={h} style={{ padding: '9px 12px', textAlign: h === 'Montant' ? 'right' : 'left', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.06em', whiteSpace: 'nowrap' }}>
-                    {h}
-                  </th>
+              <tr className="factures-thead-row">
+                {['N° Facture','Date','Patient','Description','Montant','PDF','Actions'].map(h => (
+                  <th key={h} className={`factures-th${h === 'Montant' ? ' factures-th-right' : ''}`}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.map((inv, idx) => (
-                <tr key={inv.id} style={{ background: idx % 2 === 0 ? 'var(--surface)' : 'var(--bg)', borderBottom: '1px solid var(--border-soft)' }}>
-                  <td style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--blue)', whiteSpace: 'nowrap' }}>
+                <tr key={inv.id} className={`factures-row${idx % 2 === 0 ? '' : ' factures-row-alt'}`}>
+                  <td className="factures-td factures-num">
                     {inv.invoice_number}
                   </td>
                   <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>{fmtDate(inv.invoice_date)}</td>
-                  <td style={{ padding: '8px 12px', fontWeight: 600 }}>{inv.patient_last_name.toUpperCase()}</td>
-                  <td style={{ padding: '8px 12px' }}>{inv.patient_first_name}</td>
-                  <td style={{ padding: '8px 12px', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-muted)' }}>
-                    {inv.patient_address || '—'}
+                  <td className="factures-td">
+                    <div style={{ fontWeight: 700 }}>{inv.patient_last_name.toUpperCase()}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{inv.patient_first_name}</div>
                   </td>
-                  <td style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>{inv.email || '—'}</td>
-                  <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', color: 'var(--text-muted)' }}>{inv.phone || '—'}</td>
-                  <td style={{ padding: '8px 12px', fontWeight: 700, textAlign: 'right', color: 'var(--accent)', whiteSpace: 'nowrap' }}>
-                    {euro(inv.montant)}
+                  <td className="factures-td factures-desc">
+                    {inv.description || <span style={{ color: 'var(--text-hint)' }}>—</span>}
                   </td>
-                  <td style={{ padding: '8px 12px' }}>
+                  <td className="factures-td factures-montant">{euro(inv.montant)}</td>
+                  <td className="factures-td">
                     {inv.file_path
-                      ? <button className="btn btn-secondary btn-sm" style={{ fontSize: 11 }} onClick={() => window.mtcApi.openPath(inv.file_path!)}>📄 Ouvrir</button>
+                      ? <button className="btn btn-secondary btn-sm" style={{ fontSize: 11 }} onClick={() => window.mtcApi.openPath(inv.file_path!)}>📄 PDF</button>
                       : <span style={{ color: 'var(--text-hint)' }}>—</span>
                     }
                   </td>
-                  <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
-                    <div style={{ display: 'flex', gap: 6 }}>
+                  <td className="factures-td-actions">
+                    <div style={{ display: 'flex', gap: 5 }}>
                       {inv.email && (
-                        <button
-                          className="btn btn-secondary btn-sm"
-                          title={`Envoyer par email à ${inv.email}`}
-                          onClick={() => handleSendEmail(inv)}
-                          style={{ padding: '4px 8px', color: 'var(--teal)' }}
-                        >
+                        <button className="btn btn-secondary btn-sm factures-action-btn factures-action-teal"
+                          title={`Email à ${inv.email}`} onClick={() => handleSendEmail(inv)}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="2" y="4" width="20" height="16" rx="2" />
-                            <path d="M2 7l10 7 10-7" />
+                            <rect x="2" y="4" width="20" height="16" rx="2" /><path d="M2 7l10 7 10-7" />
                           </svg>
                         </button>
                       )}
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        title="Modifier"
-                        onClick={() => setEditInv(inv)}
-                        style={{ padding: '4px 8px', color: 'var(--blue)' }}
-                      >
+                      <button className="btn btn-secondary btn-sm factures-action-btn factures-action-blue"
+                        title="Modifier" onClick={() => setEditInv(inv)}>
                         <EditIcon size={12} />
                       </button>
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        title="Supprimer"
-                        onClick={() => setDeleteInv(inv)}
-                        style={{ padding: '4px 8px', color: 'var(--red)' }}
-                      >
+                      <button className="btn btn-secondary btn-sm factures-action-btn factures-action-red"
+                        title="Supprimer" onClick={() => setDeleteInv(inv)}>
                         <TrashIcon size={12} />
                       </button>
                     </div>
@@ -366,9 +350,9 @@ export default function FacturesListPage() {
               ))}
             </tbody>
             <tfoot>
-              <tr style={{ background: 'var(--blue)', color: '#fff' }}>
-                <td colSpan={7} style={{ padding: '9px 12px', fontWeight: 700 }}>TOTAL</td>
-                <td style={{ padding: '9px 12px', fontWeight: 700, textAlign: 'right' }}>{euro(total)}</td>
+              <tr className="factures-tfoot">
+                <td colSpan={4} className="factures-td" style={{ fontWeight: 700, color: 'var(--blue)' }}>TOTAL {filtered.length} facture{filtered.length > 1 ? 's' : ''}</td>
+                <td className="factures-montant-total">{euro(total)}</td>
                 <td colSpan={2} />
               </tr>
             </tfoot>

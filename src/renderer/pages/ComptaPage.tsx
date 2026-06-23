@@ -155,6 +155,40 @@ export default function ComptaPage() {
   return (
     <div className="compta-page">
 
+      {/* ── KPI annuels ── */}
+      <div className="compta-kpi-bar">
+        <div className="compta-kpi compta-kpi-green">
+          <div className="compta-kpi-icon">💰</div>
+          <div>
+            <div className="compta-kpi-label">CA Annuel Brut</div>
+            <div className="compta-kpi-value">{euro(annualRev)}</div>
+          </div>
+        </div>
+        <div className="compta-kpi compta-kpi-amber">
+          <div className="compta-kpi-icon">📉</div>
+          <div>
+            <div className="compta-kpi-label">Total Charges</div>
+            <div className="compta-kpi-value">{euro(annualDep + annualUrs)}</div>
+          </div>
+        </div>
+        <div className="compta-kpi compta-kpi-teal">
+          <div className="compta-kpi-icon">🏛</div>
+          <div>
+            <div className="compta-kpi-label">URSAF annuel</div>
+            <div className="compta-kpi-value">{euro(annualUrs)}</div>
+          </div>
+        </div>
+        <div className={`compta-kpi ${annualNet2 >= 0 ? 'compta-kpi-blue' : 'compta-kpi-red'}`}>
+          <div className="compta-kpi-icon">📊</div>
+          <div>
+            <div className="compta-kpi-label">Net après URSAF</div>
+            <div className="compta-kpi-value" style={{ color: annualNet2 < 0 ? 'var(--red)' : undefined }}>
+              {euro(annualNet2)}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Barre de navigation année */}
       <div className="compta-topbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

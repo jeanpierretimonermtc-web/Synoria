@@ -1492,12 +1492,33 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
 /* ─── COMPTA PAGE ─────────────────────────────────────────── */
 .compta-page { display: flex; flex-direction: column; gap: 0; }
 
+/* KPI bar */
+.compta-kpi-bar {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  margin-bottom: 14px;
+}
+.compta-kpi {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px; border-radius: var(--radius-lg);
+  border: 1px solid; box-shadow: var(--shadow-sm);
+  transition: transform .15s, box-shadow .15s;
+}
+.compta-kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.compta-kpi-icon { font-size: 22px; flex-shrink: 0; }
+.compta-kpi-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; opacity: .75; margin-bottom: 3px; }
+.compta-kpi-value { font-family: 'DM Serif Display', serif; font-size: 20px; font-weight: 700; letter-spacing: -.02em; }
+.compta-kpi-green { background: var(--accent-light); border-color: var(--accent-mid); color: var(--accent); }
+.compta-kpi-amber { background: var(--amber-light); border-color: var(--amber); color: var(--amber); }
+.compta-kpi-teal  { background: var(--teal-light);  border-color: var(--teal);  color: var(--teal); }
+.compta-kpi-blue  { background: var(--blue-light);  border-color: var(--blue-mid);  color: var(--blue); }
+.compta-kpi-red   { background: var(--red-light);   border-color: var(--red);   color: var(--red); }
+
 .compta-topbar {
   display: flex; justify-content: space-between; align-items: center;
   margin-bottom: 14px; flex-wrap: wrap; gap: 10px;
 }
 
-.compta-table-wrap { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--border); }
+.compta-table-wrap { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
 
 .compta-table {
   width: 100%; border-collapse: collapse; font-size: 12px;
@@ -1516,18 +1537,18 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
 
 /* Sections */
 .compta-section-hdr {
-  font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em;
-  padding: 5px 10px; color: #fff;
+  font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .10em;
+  padding: 8px 12px; color: #fff;
 }
-.compta-section-green { background: var(--accent); }
-.compta-section-amber { background: var(--amber); }
-.compta-section-teal  { background: var(--teal); }
-.compta-section-blue  { background: var(--blue); }
+.compta-section-green { background: linear-gradient(90deg, #3d5a35, var(--accent)); }
+.compta-section-amber { background: linear-gradient(90deg, #9a5f1a, var(--amber)); }
+.compta-section-teal  { background: linear-gradient(90deg, #1a5a4a, var(--teal)); }
+.compta-section-blue  { background: linear-gradient(90deg, #1a3a6a, var(--blue)); }
 
 /* Lignes données */
-.compta-row { border-bottom: 1px solid var(--border-soft); }
-.compta-row:hover { background: var(--surface-hover); }
-.compta-row:nth-child(even) { background: rgba(0,0,0,.015); }
+.compta-row { border-bottom: 1px solid var(--border-soft); transition: background .1s; }
+.compta-row:hover { background: rgba(74,103,65,.05); }
+.compta-row:nth-child(even) { background: rgba(0,0,0,.018); }
 
 /* Colonnes label et tarif */
 .compta-td-label {
@@ -1569,11 +1590,89 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
 .compta-sub-rev   { font-size: 10px; color: var(--accent); margin-top: 1px; }
 
 /* Lignes totaux */
-.compta-row-total { border-top: 2px solid var(--border); }
-.compta-total-green .compta-td-total-val { color: var(--accent); font-weight: 700; font-size: 11px; }
-.compta-total-amber .compta-td-total-val { color: var(--amber); font-weight: 700; font-size: 11px; }
-.compta-total-blue .compta-td-result     { color: var(--blue); font-weight: 700; font-size: 11px; }
-.compta-result-final .compta-td-result   { font-size: 12px; color: var(--accent) !important; }
+.compta-row-total {
+  border-top: 2px solid var(--border);
+}
+.compta-total-green {
+  background: rgba(74,103,65,.06) !important;
+}
+.compta-total-green .compta-td-label { color: var(--accent); }
+.compta-total-green .compta-td-total-val { color: var(--accent); font-weight: 800; font-size: 11.5px; }
+
+.compta-total-amber {
+  background: rgba(193,123,42,.06) !important;
+}
+.compta-total-amber .compta-td-label { color: var(--amber); }
+.compta-total-amber .compta-td-total-val { color: var(--amber); font-weight: 800; font-size: 11.5px; }
+
+.compta-total-blue {
+  background: rgba(42,90,138,.05) !important;
+}
+.compta-total-blue .compta-td-label { color: var(--blue); }
+.compta-total-blue .compta-td-result { color: var(--blue); font-weight: 800; font-size: 11.5px; }
+
+.compta-result-final { background: rgba(74,103,65,.1) !important; }
+.compta-result-final .compta-td-result { font-size: 13px; color: var(--accent) !important; font-weight: 800; }
+.compta-result-final .compta-td-label  { color: var(--accent); font-size: 13px; }
+
+/* Colonne annuelle */
+.compta-td-annual {
+  padding: 6px 10px; font-size: 11.5px; font-weight: 800;
+  text-align: right; background: rgba(42,90,138,.06); color: var(--blue);
+  border-left: 2px solid var(--blue-mid) !important;
+}
+
+/* ─── FACTURES PAGE ──────────────────────────────────────── */
+.factures-kpi {
+  display: flex; align-items: center; gap: 12px; margin-left: auto;
+  background: var(--accent-light); border: 1px solid var(--accent-mid);
+  border-radius: 20px; padding: 6px 16px;
+}
+.factures-kpi-count { font-size: 12px; color: var(--accent); font-weight: 600; }
+.factures-kpi-total { font-family: 'DM Serif Display', serif; font-size: 17px; color: var(--accent); font-weight: 700; }
+
+.factures-table-wrap {
+  overflow-x: auto; border-radius: var(--radius-lg);
+  border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+}
+.factures-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+
+.factures-thead-row { background: linear-gradient(90deg, #1a3a6a, var(--blue)); color: #fff; }
+.factures-th {
+  padding: 10px 12px; font-size: 10.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .07em; white-space: nowrap; text-align: left;
+}
+.factures-th-right { text-align: right; }
+
+.factures-row { border-bottom: 1px solid var(--border-soft); transition: background .1s; }
+.factures-row:hover { background: rgba(42,90,138,.04); }
+.factures-row-alt { background: rgba(0,0,0,.018); }
+
+.factures-td { padding: 9px 12px; vertical-align: middle; }
+.factures-num {
+  font-weight: 800; color: var(--blue); white-space: nowrap;
+  font-size: 12.5px; letter-spacing: .01em;
+}
+.factures-desc {
+  max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--text-muted);
+}
+.factures-montant {
+  padding: 9px 12px; font-weight: 800; text-align: right; white-space: nowrap;
+  color: var(--accent); font-size: 13px; vertical-align: middle;
+}
+.factures-td-actions { padding: 6px 10px; white-space: nowrap; vertical-align: middle; }
+.factures-action-btn { padding: 4px 8px !important; }
+.factures-action-teal { color: var(--teal) !important; }
+.factures-action-blue { color: var(--blue) !important; }
+.factures-action-red  { color: var(--red)  !important; }
+
+.factures-tfoot td { padding: 10px 12px; font-size: 12px; vertical-align: middle; }
+.factures-montant-total {
+  padding: 10px 12px; font-family: 'DM Serif Display', serif;
+  font-size: 18px; font-weight: 700; text-align: right; color: var(--accent);
+  background: var(--accent-light); vertical-align: middle;
+}
 
 /* ─── SETTINGS — layout sidebar ──────────────────────────── */
 .settings-layout {
