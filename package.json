@@ -40,8 +40,8 @@
     "wait-on": "^7.2.0"
   },
   "build": {
-    "appId": "com.synoria.app",
-    "productName": "Synoria",
+    "appId": "com.synoria.dev",
+    "productName": "Synoria Dev",
     "icon": "build/icons/icon",
     "directories": {
       "output": "release"
