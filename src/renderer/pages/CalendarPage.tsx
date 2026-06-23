@@ -77,13 +77,13 @@ function googleCalendarColor(appt: Appointment, calendars: GCalCalendar[]): stri
 }
 
 function apptColor(appt: Appointment, today: string, calendarColor?: string | null): { bg: string; border: string; text: string } {
-  if (appt.is_cancelled)  return { bg: '#FBEAEA', border: '#A83232', text: '#7A1E1E' }
-  if (calendarColor)      return { bg: mixWithWhite(calendarColor, .84), border: calendarColor, text: calendarColor }
-  if (appt.is_done)       return { bg: '#EAF0E8', border: '#4A6741', text: '#2F5D34' }
-  if (appt.date < today)  return { bg: '#FDF3E3', border: '#C17B2A', text: '#9A5B12' }
-  return { bg: '#E8F0F8', border: '#2A5A8A', text: '#1A3A6B' }
+  if (appt.is_cancelled)  return { bg: '#FFF1F2', border: '#F43F5E', text: '#9F1239' }
+  if (calendarColor)      return { bg: mixWithWhite(calendarColor, .88), border: calendarColor, text: calendarColor }
+  if (appt.is_done)       return { bg: '#ECFDF5', border: '#10B981', text: '#047857' }
+  if (appt.date < today)  return { bg: '#FFFBEB', border: '#F59E0B', text: '#92400E' }
+  return { bg: '#EFF6FF', border: '#3B82F6', text: '#1D4ED8' }
 }
-const BLOCK_COLOR = { bg: '#F0EDF7', border: '#5A4A7A', text: '#3A2E5A' }
+const BLOCK_COLOR = { bg: '#F5F3FF', border: '#8B5CF6', text: '#5B21B6' }
 
 function getWeekStart(d: Date): Date {
   const r = new Date(d)
@@ -1088,6 +1088,7 @@ export default function CalendarPage() {
       }
       const result = await window.mtcApi.gcalSync(startDate, endDate)
       const parts: string[] = []
+      if ((result as any).cleaned  > 0) parts.push(`${(result as any).cleaned} supprimé${(result as any).cleaned > 1 ? 's' : ''}`)
       if (result.imported > 0) parts.push(`${result.imported} importé${result.imported > 1 ? 's' : ''}`)
       if (result.updated  > 0) parts.push(`${result.updated} mis à jour`)
       if (result.exported > 0) parts.push(`${result.exported} envoyé${result.exported > 1 ? 's' : ''} vers Google`)

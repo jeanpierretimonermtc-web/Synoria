@@ -626,10 +626,34 @@ export function registerAllHandlers(): void {
   // ─── GOOGLE CALENDAR ──────────────────────────────────────────────────────
   ipcMain.handle('gcal:status',        ()              => gcalSvc.getStatus())
   ipcMain.handle('gcal:connect',       async (_e, cid, csec) => gcalSvc.connect(cid, csec))
-  ipcMain.handle('gcal:disconnect',    ()              => gcalSvc.disconnect())
+  ipcMain.handle('gcal:disconnect', () => {
+    // Supprimer tous les RDV importés depuis les calendriers Google
+    const allAppts = appointmentRepo.getAllAppointments()
+    for (const appt of allAppts) {
+      if (gcalSvc.isExternalGCalEventId(appt.google_event_id)) {
+        appointmentRepo.deleteAppointment(appt.id)
+      }
+    }
+    gcalSvc.disconnect()
+  })
   ipcMain.handle('gcal:listCalendars', async ()        => gcalSvc.listCalendars())
   ipcMain.handle('gcal:setCalendar',   (_e, id, name) => gcalSvc.setCalendar(id, name))
-  ipcMain.handle('gcal:setImportCalendars', (_e, calendars) => gcalSvc.setImportCalendars(calendars))
+  ipcMain.handle('gcal:setImportCalendars', (_e, calendars) => {
+    gcalSvc.setImportCalendars(calendars)
+    // Supprimer immédiatement les RDV des calendriers qui viennent d'être désélectionnés
+    const allAppts = appointmentRepo.getAllAppointments()
+    let cleaned = 0
+    for (const appt of allAppts) {
+      if (
+        gcalSvc.isExternalGCalEventId(appt.google_event_id) &&
+        !gcalSvc.isSelectedImportGCalEventId(appt.google_event_id)
+      ) {
+        appointmentRepo.deleteAppointment(appt.id)
+        cleaned++
+      }
+    }
+    return { cleaned }
+  })
   ipcMain.handle('gcal:cleanupOldImportedAppointments', () => {
     const appointments = appointmentRepo.getAllAppointments()
     let deleted = 0
@@ -693,6 +717,23 @@ export function registerAllHandlers(): void {
 
   // ── Sync bidirectionnel GCal ↔ Synoria ───────────────────────────
   ipcMain.handle('gcal:sync', async (_e, startDate: string, endDate: string) => {
+    // ── 1. Nettoyer les RDV des calendriers qui ne sont plus sélectionnés ──
+    // (exécuté avant d'importer pour éviter les conflits)
+    let cleaned = 0
+    {
+      const allAppts = appointmentRepo.getAllAppointments()
+      for (const appt of allAppts) {
+        if (
+          gcalSvc.isExternalGCalEventId(appt.google_event_id) &&
+          !gcalSvc.isSelectedImportGCalEventId(appt.google_event_id)
+        ) {
+          appointmentRepo.deleteAppointment(appt.id)
+          cleaned++
+        }
+      }
+    }
+
+    // ── 2. Importer / mettre à jour depuis les calendriers sélectionnés ──
     const timeMin = `${startDate}T00:00:00+00:00`
     const timeMax = `${endDate}T23:59:59+00:00`
     const events  = await gcalSvc.listSelectedImportEvents(timeMin, timeMax)
@@ -784,6 +825,7 @@ export function registerAllHandlers(): void {
     return {
       imported,
       updated,
+      cleaned,
       exported,
       sessionsExported,
       sessionsUpdated,
