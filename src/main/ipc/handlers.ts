@@ -819,7 +819,15 @@ export function registerAllHandlers(): void {
         : ev.summary || ''
 
       const googleEventId = ev.storageId || ev.id
-      const existing = appointmentRepo.getAppointmentByGoogleEventId(googleEventId)
+
+      // Anti-doublon : si l'événement a un préfixe gcalExternal (calendrier importé),
+      // vérifier aussi si un RDV Synoria existe déjà avec l'ID brut (sans préfixe).
+      // Cela évite de dupliquer les RDV créés par Synoria et poussés vers GCal.
+      let existing = appointmentRepo.getAppointmentByGoogleEventId(googleEventId)
+      if (!existing && gcalSvc.isExternalGCalEventId(googleEventId)) {
+        const rawEventId = googleEventId.split(':').slice(2).join(':')
+        existing = appointmentRepo.getAppointmentByGoogleEventId(rawEventId) ?? undefined
+      }
 
       if (existing) {
         // Mettre à jour si l'événement GCal a changé

@@ -73,11 +73,14 @@ export default function SettingsPage() {
   const [pluginError,   setPluginError]   = useState('')
 
   // Google Calendar
-  const [gcalInfo,      setGcalInfo]      = useState<GoogleCalendarInfo | null>(null)
-  const [gcalClientId,  setGcalClientId]  = useState('')
-  const [gcalClientSec, setGcalClientSec] = useState('')
-  const [gcalCalendars, setGcalCalendars] = useState<GCalCalendar[]>([])
-  const [gcalLoading,   setGcalLoading]   = useState(false)
+  const [gcalInfo,        setGcalInfo]        = useState<GoogleCalendarInfo | null>(null)
+  const [gcalClientId,    setGcalClientId]    = useState('')
+  const [gcalClientSec,   setGcalClientSec]   = useState('')
+  const [gcalCalendars,   setGcalCalendars]   = useState<GCalCalendar[]>([])
+  const [gcalLoading,     setGcalLoading]     = useState(false)
+  // Calendriers à importer — état local (id → { selected, color })
+  const [gcalImportState, setGcalImportState] = useState<Record<string, { selected: boolean; color: string }>>({})
+  const [gcalImportSaving, setGcalImportSaving] = useState(false)
 
   // Support
   const [diagGenerating, setDiagGenerating] = useState(false)
@@ -136,6 +139,39 @@ export default function SettingsPage() {
     await window.mtcApi.gcalSetCalendar(id, name)
     await loadGcalStatus()
     showToast(`Calendrier "${name}" sélectionné ✓`, 'success')
+  }
+
+  const loadGcalImportCalendars = async () => {
+    setGcalLoading(true)
+    try {
+      const cals = await window.mtcApi.gcalListCalendars()
+      setGcalCalendars(cals)
+      // Initialiser l'état depuis les calendriers déjà importés
+      const importMap: Record<string, { selected: boolean; color: string }> = {}
+      const already = gcalInfo?.importCalendars || []
+      for (const cal of cals) {
+        const existing = already.find(c => c.id === cal.id)
+        importMap[cal.id] = {
+          selected: !!existing,
+          color:    existing?.color || cal.color || '#1a73e8',
+        }
+      }
+      setGcalImportState(importMap)
+    } catch { showToast('Erreur chargement calendriers', 'error') }
+    setGcalLoading(false)
+  }
+
+  const handleSaveImportCalendars = async () => {
+    setGcalImportSaving(true)
+    try {
+      const selected = gcalCalendars
+        .filter(cal => gcalImportState[cal.id]?.selected)
+        .map(cal => ({ id: cal.id, summary: cal.summary, color: gcalImportState[cal.id]?.color || '#1a73e8' }))
+      await window.mtcApi.gcalSetImportCalendars(selected)
+      await loadGcalStatus()
+      showToast(`${selected.length} calendrier(s) à importer enregistrés ✓`, 'success')
+    } catch { showToast('Erreur sauvegarde', 'error') }
+    setGcalImportSaving(false)
   }
 
   useEffect(() => {
@@ -980,6 +1016,95 @@ export default function SettingsPage() {
                 <div className="settings-enc-note" style={{ marginTop: 20 }}>
                   <strong>Comment ça fonctionne :</strong> Chaque RDV créé, modifié ou supprimé dans le calendrier de l'application
                   est automatiquement synchronisé. Les événements Google n'affichent que <strong>Consultation</strong> — aucune donnée patient ne quitte l'application.
+                </div>
+
+                {/* ── Calendriers à importer avec couleurs ── */}
+                <div style={{ marginTop: 24 }}>
+                  <div className="settings-section-title">Calendriers à importer</div>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
+                    Les événements de ces calendriers apparaîtront dans Synoria à titre d'information (non modifiables).
+                    Choisissez une couleur distincte pour chaque calendrier.
+                  </p>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={loadGcalImportCalendars}
+                    disabled={gcalLoading}
+                    style={{ marginBottom: 14 }}
+                  >
+                    {gcalLoading ? '⏳ Chargement…' : '🔄 Charger mes calendriers Google'}
+                  </button>
+
+                  {gcalCalendars.length > 0 && (
+                    <div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
+                        {gcalCalendars.map(cal => {
+                          const state = gcalImportState[cal.id] || { selected: false, color: '#1a73e8' }
+                          return (
+                            <div key={cal.id} style={{
+                              display: 'flex', alignItems: 'center', gap: 10,
+                              padding: '8px 12px', borderRadius: 'var(--radius)',
+                              border: `1.5px solid ${state.selected ? state.color : 'var(--border-soft)'}`,
+                              background: state.selected ? `${state.color}10` : 'var(--bg)',
+                              opacity: gcalInfo?.calendarId === cal.id ? .55 : 1,
+                              transition: 'border-color .15s, background .15s',
+                            }}>
+                              {/* Couleur */}
+                              <input
+                                type="color"
+                                value={state.color}
+                                disabled={!state.selected || gcalInfo?.calendarId === cal.id}
+                                title="Couleur des RDV importés"
+                                style={{ width: 28, height: 28, border: 'none', borderRadius: 6, cursor: state.selected ? 'pointer' : 'not-allowed', padding: 2 }}
+                                onChange={e => setGcalImportState(prev => ({
+                                  ...prev,
+                                  [cal.id]: { ...prev[cal.id], color: e.target.value }
+                                }))}
+                              />
+                              {/* Nom */}
+                              <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>
+                                {cal.summary}
+                                {cal.primary && <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 6 }}>· Principal</span>}
+                                {gcalInfo?.calendarId === cal.id && <span style={{ fontSize: 10, color: 'var(--accent)', marginLeft: 6 }}>· Utilisé pour export</span>}
+                              </span>
+                              {/* Toggle */}
+                              {gcalInfo?.calendarId !== cal.id && (
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12 }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={state.selected}
+                                    onChange={e => setGcalImportState(prev => ({
+                                      ...prev,
+                                      [cal.id]: { ...prev[cal.id], selected: e.target.checked }
+                                    }))}
+                                  />
+                                  Importer
+                                </label>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={handleSaveImportCalendars}
+                        disabled={gcalImportSaving}
+                      >
+                        {gcalImportSaving ? '⏳ Enregistrement…' : '💾 Enregistrer la sélection'}
+                      </button>
+                    </div>
+                  )}
+
+                  {gcalInfo?.importCalendars && gcalInfo.importCalendars.length > 0 && gcalCalendars.length === 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Calendriers importés actuellement :</div>
+                      {gcalInfo.importCalendars.map(cal => (
+                        <div key={cal.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 10px', background: 'var(--bg)', borderRadius: 6, border: '1px solid var(--border-soft)' }}>
+                          <span style={{ width: 12, height: 12, borderRadius: '50%', background: cal.color || '#1a73e8', flexShrink: 0, display: 'inline-block' }} />
+                          <span style={{ fontSize: 12 }}>{cal.summary}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

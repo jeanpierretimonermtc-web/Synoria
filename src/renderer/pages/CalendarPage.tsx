@@ -1207,15 +1207,12 @@ export default function CalendarPage() {
             </select>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 420px) 1fr', gap: 16, alignItems: 'start' }}>
             {/* Calendrier mensuel */}
             <div className="card" style={{ padding: '10px' }}>
               <div style={{ display: 'flex', gap: 12, fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, flexWrap: 'wrap' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block' }} /> Séance
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--blue)', display: 'inline-block' }} /> RDV planifié
+                  <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--blue)', display: 'inline-block' }} /> RDV planifié
                 </span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                   <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--amber)', display: 'inline-block' }} /> En attente
@@ -1265,10 +1262,7 @@ export default function CalendarPage() {
                         {day}
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 2 }}>
-                        {sess.slice(0, 2).map((_, i) => (
-                          <div key={`s${i}`} style={{ width: 6, height: 6, borderRadius: '50%', background: isSel ? 'rgba(255,255,255,.9)' : 'var(--accent)' }} />
-                        ))}
-                        {appts.filter(a => !a.is_cancelled).slice(0, 3).map((appt, i) => {
+                        {appts.filter(a => !a.is_cancelled).slice(0, 4).map((appt, i) => {
                           // Couleur du point : réalisé=vert · GCal=couleur GCal · passé=ambre · futur=bleu
                           const gColor = googleCalendarColor(appt, gcalImportCalendars)
                           const dotColor = isSel ? 'rgba(255,255,255,.9)'
@@ -1279,12 +1273,16 @@ export default function CalendarPage() {
                           return (
                             <div
                               key={`ap${i}`}
+                              title={appt.is_done ? 'Réalisé' : appt.date < todayStr ? 'En attente' : 'Planifié'}
                               style={{
-                                width: 6,
-                                height: 6,
-                                borderRadius: appt.is_done ? 3 : '50%',  // carré = réalisé, rond = planifié
+                                width: 8,
+                                height: 8,
+                                borderRadius: appt.is_done ? 2 : '50%',
                                 background: dotColor,
-                                boxShadow: isSel ? '0 0 0 1px rgba(255,255,255,.85)' : undefined,
+                                boxShadow: isSel
+                                  ? '0 0 0 1.5px rgba(255,255,255,.9)'
+                                  : `0 0 0 1px ${dotColor}44`,
+                                flexShrink: 0,
                               }}
                             />
                           )
@@ -1388,10 +1386,14 @@ export default function CalendarPage() {
                   </div>
                   <div className="time-grid">
                     {TIME_SLOTS.map((slot, slotIdx) => {
-                      const nextSlot  = TIME_SLOTS[slotIdx + 1] ?? '20:00'
+                      const nextSlot   = TIME_SLOTS[slotIdx + 1] ?? '20:00'
                       const startAppts = dayAppointments.filter(a => a.heure_debut >= slot && a.heure_debut < nextSlot)
                       const contAppts  = dayAppointments.filter(a => a.heure_debut < slot && a.heure_fin && a.heure_fin > slot)
-                      const isEmpty    = startAppts.length === 0 && contAppts.length === 0
+                      // Blocs perso horaires dans la grille
+                      const dayBlks    = (blocksByDate[selectedDay] || []).filter(b => b.is_day === 0)
+                      const startBlks  = dayBlks.filter(b => b.heure_debut && b.heure_debut >= slot && b.heure_debut < nextSlot)
+                      const contBlks   = dayBlks.filter(b => b.heure_debut && b.heure_debut < slot && b.heure_fin && b.heure_fin > slot)
+                      const isEmpty    = startAppts.length === 0 && contAppts.length === 0 && startBlks.length === 0 && contBlks.length === 0
 
                       return (
                         <div key={slot} className="time-slot">
@@ -1439,6 +1441,24 @@ export default function CalendarPage() {
                                   onClick={() => openEditAppt(appt)} />
                               )
                             })}
+                            {/* Blocs perso dans la grille horaire */}
+                            {startBlks.map(blk => (
+                              <div key={blk.id}
+                                style={{
+                                  background: 'repeating-linear-gradient(-45deg,rgba(90,74,122,.06) 0,rgba(90,74,122,.06) 4px,rgba(240,237,247,.92) 4px,rgba(240,237,247,.92) 12px)',
+                                  border: `1.5px dashed ${BLOCK_COLOR.border}`,
+                                  borderRadius: 6, padding: '3px 6px', fontSize: 10,
+                                  color: BLOCK_COLOR.text, fontStyle: 'italic', cursor: 'pointer',
+                                }}
+                                onClick={() => openEditBlock(blk)}>
+                                ⊘ {blk.motif || 'Perso / Indispo'}{blk.heure_debut ? ` ${blk.heure_debut}${blk.heure_fin ? `–${blk.heure_fin}` : ''}` : ''}
+                              </div>
+                            ))}
+                            {contBlks.map(blk => (
+                              <div key={`cb-${blk.id}`}
+                                style={{ height: '100%', borderLeft: `3px solid ${BLOCK_COLOR.border}`, background: `${BLOCK_COLOR.bg}88`, borderRadius: 4, cursor: 'pointer', minHeight: 20 }}
+                                onClick={() => openEditBlock(blk)} />
+                            ))}
                           </div>
                         </div>
                       )
