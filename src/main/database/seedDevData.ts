@@ -151,6 +151,12 @@ export async function seedDevDataIfEmpty(): Promise<void> {
     note: 'Séance 3 — réévaluation mobilité lombaire',
     is_done: 0,
   })
+  // RDV DEMAIN pour tester la section rappels du dashboard
+  appointmentRepo.createAppointment({
+    patient_id: p1.id, date: D(1), heure_debut: '09:00', heure_fin: '10:00',
+    note: 'Séance urgente — recrudescence douleurs',
+    is_done: 0,
+  })
 
   // Compta
   const mois1 = TODAY.getMonth() + 1

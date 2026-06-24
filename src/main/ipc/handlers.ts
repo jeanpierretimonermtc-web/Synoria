@@ -226,6 +226,11 @@ export function registerAllHandlers(): void {
     return 'PDF export: utilisez Imprimer (Ctrl+P) depuis le résumé de séance'
   })
 
+  ipcMain.handle('exports:patientReport', async (_e, patientId: string) => {
+    const { exportPatientReport } = await import('../services/patientReportService')
+    return exportPatientReport(patientId)
+  })
+
   // ─── BACKUP GÉNÉRAL ────────────────────────────────────────────────────────
   ipcMain.handle('exports:backupJson',   ()             => exportBackupEncrypted())
   // Import backup — signale au renderer quel type d'aide est nécessaire

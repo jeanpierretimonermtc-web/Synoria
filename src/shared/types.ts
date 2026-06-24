@@ -43,6 +43,7 @@ export interface Appointment {
   guest_first_name?: string  // prénom
   guest_phone?: string       // téléphone
   google_event_id?: string | null  // ID événement Google Calendar (v9)
+  reminder_sent?: number            // 0 = pas encore envoyé, 1 = rappel envoyé (v16)
   created_at: string
   updated_at: string
 }
@@ -496,7 +497,8 @@ export interface IpcApi {
   getBackupInfo: () => Promise<BackupInfo>
   exportGeneralBackup: () => Promise<string>
   exportPatientBackup: (patientId: string) => Promise<string>
-  exportPatientExcel: (patientId: string, sessionId: string) => Promise<string>
+  exportPatientExcel:  (patientId: string, sessionId: string) => Promise<string>
+  exportPatientReport: (patientId: string)                    => Promise<string>
   openBackupFolder: (type: 'general' | 'patient') => Promise<void>
   // ── Google Calendar ──
   gcalStatus:        () => Promise<GoogleCalendarInfo>

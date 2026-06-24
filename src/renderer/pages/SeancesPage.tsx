@@ -192,6 +192,15 @@ export default function SeancesPage() {
     catch { showToast('Erreur export JSON', 'error') }
   }
 
+  const handleExportPatientReport = async () => {
+    if (!selectedSession) return
+    try {
+      const f = await window.mtcApi.exportPatientReport(selectedSession.patient_id)
+      await window.mtcApi.openPath(f)
+      showToast('Dossier patient PDF créé ✓ — Ouvrez et imprimez en PDF depuis votre navigateur')
+    } catch (e: any) { showToast(`Erreur : ${e?.message || e}`, 'error') }
+  }
+
   if (loading) return <div className="empty">Chargement…</div>
 
   return (
@@ -334,6 +343,12 @@ export default function SeancesPage() {
               <button className="btn btn-secondary btn-sm" onClick={handleExportJson}>⬇ JSON</button>
               <button className="btn btn-secondary btn-sm" onClick={handleExportExcel}>⬇ Excel</button>
               <button className="btn btn-secondary btn-sm" onClick={() => window.print()}>🖨 Imprimer</button>
+              <button className="btn btn-secondary btn-sm"
+                onClick={handleExportPatientReport}
+                title="Exporter tout le dossier patient (toutes séances) en PDF médical"
+                style={{ color: 'var(--purple)', borderColor: 'var(--purple-mid)' }}>
+                📄 Dossier PDF
+              </button>
               <div style={{ flex: 1 }} />
               <button
                 className="btn btn-secondary btn-sm"
