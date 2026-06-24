@@ -1,29 +1,20 @@
-name: Build macOS — Synoria
+name: Build Mac
 
 on:
   push:
     tags:
       - 'v*'
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version à builder (ex: 1.4.3)'
-        required: false
-        default: '1.4.3'
 
 jobs:
   build-mac:
     runs-on: macos-latest
 
-    # Requis depuis le 16 juin 2026 : runtime Node.js 24 pour les actions GitHub
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20 LTS
+      - name: Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -32,23 +23,32 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Vite (renderer + electron)
-        run: npx vite build
+      - name: Rebuild native modules for Electron
+        run: npx electron-rebuild -f -w better-sqlite3
 
-      - name: Build Electron app — DMG universel (Intel + Apple Silicon)
-        run: npx electron-builder --mac --x64 --arm64
+      - name: Build Mac (DMG + ZIP)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx vite build && npx electron-builder --mac
 
-      - name: List build output
-        run: ls -lh release/ | grep -E "\.(dmg|zip)$" || echo "Aucun DMG/ZIP trouvé"
-
-      - name: Upload DMG universel
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Synoria-macOS-${{ github.event.inputs.version || github.ref_name }}
+          name: synoria-mac-${{ github.ref_name }}
           path: |
             release/*.dmg
             release/*.zip
+            release/latest-mac.yml
           retention-days: 30
-          if-no-files-found: warn
+
+      - name: Create GitHub Release (si tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*.dmg
+            release/*.zip
+            release/latest-mac.yml
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
