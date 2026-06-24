@@ -1389,11 +1389,15 @@ export default function CalendarPage() {
                       const nextSlot   = TIME_SLOTS[slotIdx + 1] ?? '20:00'
                       const startAppts = dayAppointments.filter(a => a.heure_debut >= slot && a.heure_debut < nextSlot)
                       const contAppts  = dayAppointments.filter(a => a.heure_debut < slot && a.heure_fin && a.heure_fin > slot)
-                      // Blocs perso horaires dans la grille
-                      const dayBlks    = (blocksByDate[selectedDay] || []).filter(b => b.is_day === 0)
-                      const startBlks  = dayBlks.filter(b => b.heure_debut && b.heure_debut >= slot && b.heure_debut < nextSlot)
-                      const contBlks   = dayBlks.filter(b => b.heure_debut && b.heure_debut < slot && b.heure_fin && b.heure_fin > slot)
-                      const isEmpty    = startAppts.length === 0 && contAppts.length === 0 && startBlks.length === 0 && contBlks.length === 0
+                      // Blocs perso dans la grille
+                      const allDayBlks = (blocksByDate[selectedDay] || []).filter(b => b.is_day === 1)
+                      const timedBlks  = (blocksByDate[selectedDay] || []).filter(b => b.is_day === 0)
+                      const startBlks  = timedBlks.filter(b => b.heure_debut && b.heure_debut >= slot && b.heure_debut < nextSlot)
+                      const contBlks   = timedBlks.filter(b => b.heure_debut && b.heure_debut < slot && b.heure_fin && b.heure_fin > slot)
+                      // Blocs journée entière : apparaissent dans tous les créneaux sauf le 1er (affiché en banner)
+                      const allDayHere = slotIdx > 0 ? allDayBlks : []
+                      const isFirstSlot = slotIdx === 0
+                      const isEmpty    = startAppts.length === 0 && contAppts.length === 0 && startBlks.length === 0 && contBlks.length === 0 && allDayBlks.length === 0
 
                       return (
                         <div key={slot} className="time-slot">
@@ -1441,7 +1445,7 @@ export default function CalendarPage() {
                                   onClick={() => openEditAppt(appt)} />
                               )
                             })}
-                            {/* Blocs perso dans la grille horaire */}
+                            {/* Blocs perso horaires (timed) */}
                             {startBlks.map(blk => (
                               <div key={blk.id}
                                 style={{
@@ -1458,6 +1462,28 @@ export default function CalendarPage() {
                               <div key={`cb-${blk.id}`}
                                 style={{ height: '100%', borderLeft: `3px solid ${BLOCK_COLOR.border}`, background: `${BLOCK_COLOR.bg}88`, borderRadius: 4, cursor: 'pointer', minHeight: 20 }}
                                 onClick={() => openEditBlock(blk)} />
+                            ))}
+                            {/* Blocs journée entière : banner dans le 1er créneau, barre dans les suivants */}
+                            {isFirstSlot && allDayBlks.map(blk => (
+                              <div key={blk.id}
+                                style={{
+                                  background: 'repeating-linear-gradient(-45deg,rgba(90,74,122,.08) 0,rgba(90,74,122,.08) 4px,rgba(240,237,247,.95) 4px,rgba(240,237,247,.95) 12px)',
+                                  border: `1.5px dashed ${BLOCK_COLOR.border}`,
+                                  borderRadius: 6, padding: '4px 8px', fontSize: 10,
+                                  color: BLOCK_COLOR.text, fontStyle: 'italic', cursor: 'pointer',
+                                  display: 'flex', alignItems: 'center', gap: 5,
+                                }}
+                                onClick={() => openEditBlock(blk)}>
+                                <span style={{ fontSize: 13 }}>⊘</span>
+                                <span><strong>{blk.motif || 'Perso / Indispo'}</strong> — Journée entière</span>
+                              </div>
+                            ))}
+                            {!isFirstSlot && allDayBlks.map(blk => (
+                              <div key={`ad-${blk.id}`}
+                                style={{ height: '100%', borderLeft: `3px solid ${BLOCK_COLOR.border}`, background: `${BLOCK_COLOR.bg}55`, borderRadius: 4, cursor: 'pointer', minHeight: 20, display: 'flex', alignItems: 'center', paddingLeft: 6, fontSize: 10, color: BLOCK_COLOR.text, fontStyle: 'italic' }}
+                                onClick={() => openEditBlock(blk)}>
+                                {slotIdx === 1 ? '' : ''}
+                              </div>
                             ))}
                           </div>
                         </div>
