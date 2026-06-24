@@ -6,10 +6,13 @@ on:
       - 'v*'
   workflow_dispatch:
 
-jobs:
-  build-mac:
-    runs-on: macos-latest
+permissions:
+  contents: write   # obligatoire pour créer une GitHub Release
 
+jobs:
+  # ── Build Intel x64 (macos-13 = derniers runners Intel) ────────────
+  build-x64:
+    runs-on: macos-13
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -18,37 +21,97 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+
+      - name: Python (node-gyp / better-sqlite3)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
+        # npm install plutôt que npm ci : évite les conflits de lock file cross-platform
+        # postinstall rebuild better-sqlite3 automatiquement pour Electron (x64)
 
-      - name: Rebuild native modules for Electron
-        run: npx electron-rebuild -f -w better-sqlite3
+      - name: Build renderer + electron main (Vite)
+        run: npx vite build
 
-      - name: Build Mac (DMG + ZIP)
+      - name: Package Mac x64 (DMG)
+        run: npx electron-builder --mac --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx vite build && npx electron-builder --mac
 
-      - name: Upload artifacts
+      - name: Upload DMG x64
         uses: actions/upload-artifact@v4
         with:
-          name: synoria-mac-${{ github.ref_name }}
-          path: |
-            release/*.dmg
-            release/*.zip
-            release/latest-mac.yml
+          name: Synoria-Mac-x64
+          path: release/*.dmg
+          if-no-files-found: error
           retention-days: 30
 
-      - name: Create GitHub Release (si tag)
-        if: startsWith(github.ref, 'refs/tags/')
+  # ── Build Apple Silicon arm64 (macos-latest = M1/M2 runners) ───────
+  build-arm64:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Python (node-gyp / better-sqlite3)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build renderer + electron main (Vite)
+        run: npx vite build
+
+      - name: Package Mac arm64 (DMG)
+        run: npx electron-builder --mac --arm64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload DMG arm64
+        uses: actions/upload-artifact@v4
+        with:
+          name: Synoria-Mac-arm64
+          path: release/*.dmg
+          if-no-files-found: error
+          retention-days: 30
+
+  # ── Créer la GitHub Release quand les deux builds sont OK ──────────
+  release:
+    needs: [build-x64, build-arm64]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Télécharger tous les DMG
+        uses: actions/download-artifact@v4
+        with:
+          pattern: Synoria-Mac-*
+          merge-multiple: true
+          path: release
+
+      - name: Créer GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            release/*.dmg
-            release/*.zip
-            release/latest-mac.yml
-          generate_release_notes: true
+          name: Synoria ${{ github.ref_name }}
+          body: |
+            ## Synoria ${{ github.ref_name }} — macOS
+
+            | Fichier | Processeur |
+            |---------|-----------|
+            | `*-x64.dmg` | Intel (2019 et avant) |
+            | `*-arm64.dmg` | Apple Silicon M1/M2/M3 |
+
+            > **Comment savoir quel fichier télécharger ?**
+            > Pomme → À propos de ce Mac → si "Apple M..." → arm64, sinon → x64
+          files: release/*.dmg
+          generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
