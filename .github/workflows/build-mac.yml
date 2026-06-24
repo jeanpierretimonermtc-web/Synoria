@@ -7,111 +7,63 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # obligatoire pour créer une GitHub Release
+  contents: write
 
 jobs:
-  # ── Build Intel x64 (macos-13 = derniers runners Intel) ────────────
   build-x64:
     runs-on: macos-13
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Node.js 20
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
-      - name: Python (node-gyp / better-sqlite3)
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
       - name: Install dependencies
         run: npm install
-        # npm install plutôt que npm ci : évite les conflits de lock file cross-platform
-        # postinstall rebuild better-sqlite3 automatiquement pour Electron (x64)
 
-      - name: Build renderer + electron main (Vite)
-        run: npx vite build
-
-      - name: Package Mac x64 (DMG)
-        run: npx electron-builder --mac --x64
+      - name: Build (Vite + electron-builder x64)
+        run: npx vite build && npx electron-builder --mac --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload DMG x64
-        uses: actions/upload-artifact@v4
+      - name: Upload vers GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
         with:
-          name: Synoria-Mac-x64
-          path: release/*.dmg
-          if-no-files-found: error
-          retention-days: 30
+          files: release/*.dmg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # ── Build Apple Silicon arm64 (macos-latest = M1/M2 runners) ───────
   build-arm64:
     runs-on: macos-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Node.js 20
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
-      - name: Python (node-gyp / better-sqlite3)
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
       - name: Install dependencies
         run: npm install
 
-      - name: Build renderer + electron main (Vite)
-        run: npx vite build
-
-      - name: Package Mac arm64 (DMG)
-        run: npx electron-builder --mac --arm64
+      - name: Build (Vite + electron-builder arm64)
+        run: npx vite build && npx electron-builder --mac --arm64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload DMG arm64
-        uses: actions/upload-artifact@v4
-        with:
-          name: Synoria-Mac-arm64
-          path: release/*.dmg
-          if-no-files-found: error
-          retention-days: 30
-
-  # ── Créer la GitHub Release quand les deux builds sont OK ──────────
-  release:
-    needs: [build-x64, build-arm64]
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-    steps:
-      - name: Télécharger tous les DMG
-        uses: actions/download-artifact@v4
-        with:
-          pattern: Synoria-Mac-*
-          merge-multiple: true
-          path: release
-
-      - name: Créer GitHub Release
+      - name: Upload vers GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          name: Synoria ${{ github.ref_name }}
-          body: |
-            ## Synoria ${{ github.ref_name }} — macOS
-
-            | Fichier | Processeur |
-            |---------|-----------|
-            | `*-x64.dmg` | Intel (2019 et avant) |
-            | `*-arm64.dmg` | Apple Silicon M1/M2/M3 |
-
-            > **Comment savoir quel fichier télécharger ?**
-            > Pomme → À propos de ce Mac → si "Apple M..." → arm64, sinon → x64
           files: release/*.dmg
-          generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
