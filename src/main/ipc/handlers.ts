@@ -698,12 +698,43 @@ export function registerAllHandlers(): void {
     return { deleted }
   })
 
-  // Nettoyer les doublons GCal (events en trop pour le même RDV Synoria)
+  // Nettoyage complet des doublons (Synoria + GCal)
   ipcMain.handle('gcal:cleanupDuplicates', async () => {
-    const appts = appointmentRepo.getAllAppointments()
+    let deletedSynoria = 0
+
+    const all = appointmentRepo.getAllAppointments()
+    const native   = all.filter(a => !gcalSvc.isExternalGCalEventId(a.google_event_id))
+    const external = all.filter(a =>  gcalSvc.isExternalGCalEventId(a.google_event_id))
+
+    // 1. Supprimer les RDV importés de GCal qui doublonnent un RDV Synoria natif
+    //    (même date + même heure de début → le natif est la source de vérité)
+    for (const ext of external) {
+      const isDuplicate = native.some(n =>
+        n.date === ext.date && n.heure_debut === ext.heure_debut
+      )
+      if (isDuplicate) {
+        appointmentRepo.deleteAppointment(ext.id)
+        deletedSynoria++
+      }
+    }
+
+    // 2. Supprimer les RDV importés depuis des calendriers plus sélectionnés
+    for (const appt of appointmentRepo.getAllAppointments()) {
+      if (
+        gcalSvc.isExternalGCalEventId(appt.google_event_id) &&
+        !gcalSvc.isSelectedImportGCalEventId(appt.google_event_id)
+      ) {
+        appointmentRepo.deleteAppointment(appt.id)
+        deletedSynoria++
+      }
+    }
+
+    // 3. Supprimer les doublons côté Google Calendar (même syneriaApptId → plusieurs events)
+    const nativeAfter = appointmentRepo.getAllAppointments()
       .filter(a => !gcalSvc.isExternalGCalEventId(a.google_event_id))
-    const deleted = await gcalSvc.cleanupGCalDuplicates(appts)
-    return { deleted }
+    const deletedGCal = await gcalSvc.cleanupGCalDuplicates(nativeAfter).catch(() => 0)
+
+    return { deletedSynoria, deletedGCal }
   })
 
   // ── Rappels RDV (J-1) ────────────────────────────────────────────

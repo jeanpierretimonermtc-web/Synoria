@@ -508,7 +508,7 @@ export interface IpcApi {
   gcalSetCalendar:   (calendarId: string, calendarName: string) => Promise<void>
   gcalSetImportCalendars: (calendars: GCalCalendar[]) => Promise<void>
   gcalCleanupOldImportedAppointments: () => Promise<{ deleted: number }>
-  gcalCleanupDuplicates:              () => Promise<{ deleted: number }>
+  gcalCleanupDuplicates:              () => Promise<{ deletedSynoria: number; deletedGCal: number }>
   gcalSync:                         (startDate: string, endDate: string) => Promise<{ imported: number; updated: number; exported: number; sessionsExported: number; sessionsUpdated: number; total: number }>
   appointmentsBackfillFromSessions: () => Promise<{ created: number }>
   // Diagnostic

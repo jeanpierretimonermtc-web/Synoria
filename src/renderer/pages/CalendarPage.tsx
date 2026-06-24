@@ -1204,8 +1204,16 @@ export default function CalendarPage() {
               title="Supprimer les événements en double dans Google Calendar (même RDV créé plusieurs fois)"
               onClick={async () => {
                 try {
-                  const { deleted } = await window.mtcApi.gcalCleanupDuplicates()
-                  showToast(deleted > 0 ? `${deleted} doublon(s) supprimé(s) dans Google Calendar ✓` : 'Aucun doublon trouvé dans Google Calendar ✓', 'success')
+                  const { deletedSynoria, deletedGCal } = await window.mtcApi.gcalCleanupDuplicates()
+                  const total = deletedSynoria + deletedGCal
+                  if (total > 0) {
+                    const parts = []
+                    if (deletedSynoria > 0) parts.push(`${deletedSynoria} dans Synoria`)
+                    if (deletedGCal > 0)    parts.push(`${deletedGCal} dans Google Calendar`)
+                    showToast(`✓ ${total} doublon(s) supprimé(s) : ${parts.join(', ')}`, 'success')
+                  } else {
+                    showToast('Aucun doublon trouvé ✓', 'success')
+                  }
                 } catch (e: any) { showToast(`Erreur nettoyage : ${e?.message || e}`, 'error') }
               }}
             >
