@@ -15,6 +15,12 @@ export default defineConfig({
             outDir: 'dist-electron/main',
             rollupOptions: {
               external: ['electron', 'better-sqlite3', 'xlsx-js-style'],
+              output: {
+                // Un seul fichier bundle pour le process principal.
+                // Evite les chunks séparés dont les require() relatifs échouent
+                // dans l'app packagée (ex: patientReportService ne trouve pas settingsService).
+                inlineDynamicImports: true,
+              },
             },
           },
         },
