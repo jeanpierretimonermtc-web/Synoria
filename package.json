@@ -84,14 +84,7 @@
       "icon": "build/icons/icon.ico"
     },
     "mac": {
-      "target": [
-        {
-          "target": "dmg",
-          "arch": [
-            "universal"
-          ]
-        }
-      ],
+      "target": "dmg",
       "icon": "build/icons/icon.png",
       "category": "public.app-category.medical",
       "darkModeSupport": true
