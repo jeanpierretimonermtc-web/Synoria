@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext, useRef, useCallback } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import type { Patient, Session, SystemesQuestionnaire, EnergyTests, Appointment } from '../../shared/types'
+import type { Patient, Session, ConsultationType, SystemesQuestionnaire, EnergyTests, Appointment } from '../../shared/types'
 import type { PluginDefinition } from '../../shared/pluginTypes'
 import PluginFormRenderer from '../components/plugin/PluginFormRenderer'
 import { showConfirm } from '../components/common/ConfirmDialog'
@@ -333,6 +333,10 @@ export default function NewSessionPage() {
   const [simpleTraitementsEnCours, setSimpleTraitementsEnCours] = useState('')
   const [simpleObjectifs,          setSimpleObjectifs]          = useState('')
   const [simpleNotesEntretien,     setSimpleNotesEntretien]     = useState('')
+  // Clôture séance : marquer RDV réalisé + comptabilité
+  const [markRdvDone,    setMarkRdvDone]    = useState(false)
+  const [clotureTypeId,  setClotureTypeId]  = useState('')
+  const [clotureTypes,   setClotureTypes]   = useState<ConsultationType[]>([])
   // Brouillon auto-sauvegardé
   const [draftInfo, setDraftInfo] = useState<{ patientName: string; date: string } | null>(null)
   // Systèmes
@@ -369,6 +373,11 @@ export default function NewSessionPage() {
 
   useEffect(() => {
     window.mtcApi.pluginGet().then(p => setActivePlugin(p || null)).catch(() => {})
+    window.mtcApi.getConsultationTypes().then(all => {
+      const active = all.filter(t => t.is_active)
+      setClotureTypes(active)
+      if (active.length === 1) setClotureTypeId(active[0].id)
+    }).catch(() => {})
   }, [])
 
 
@@ -652,6 +661,25 @@ export default function NewSessionPage() {
         await window.mtcApi.createSession(payload)
         showToast('Séance enregistrée ✓')
       }
+
+      // ── Clôture séance : marquer RDV réalisé + comptabilité ───────
+      if (markRdvDone) {
+        // Cherche le RDV lié ou un RDV de ce patient à la date de la séance
+        const rdvToClose =
+          patientAppts.find(a => a.id === resolvedApptId) ??
+          patientAppts.find(a => a.date === date && !a.is_done)
+        if (rdvToClose) {
+          try { await window.mtcApi.updateAppointment(rdvToClose.id, { is_done: 1 }) }
+          catch { /* silencieux */ }
+        }
+      }
+      if (clotureTypeId && !isEditing) {
+        try {
+          const [y, m] = date.split('-').map(Number)
+          await window.mtcApi.incrementMonthlyRevenue(y, m, clotureTypeId)
+        } catch { /* silencieux */ }
+      }
+      // ────────────────────────────────────────────────────────────────
 
       try { localStorage.removeItem(DRAFT_KEY) } catch {}
       setDraftInfo(null)
@@ -1185,6 +1213,66 @@ export default function NewSessionPage() {
             patientAppts={patientAppts}
             onApptDeleted={id => setPatientAppts(prev => prev.filter(a => a.id !== id))}
           />
+
+          {/* ── Clôture séance : RDV réalisé + Comptabilité ─── */}
+          {patientId && !isEditing && (
+            <div style={{ marginTop: 14, background: 'var(--purple-light)', padding: '14px 16px', borderRadius: 'var(--radius)', border: '1.5px solid var(--purple-mid)' }}>
+
+              <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--purple)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>✅</span> Clôture de séance
+              </div>
+
+              {/* RDV réalisé */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer', marginBottom: clotureTypes.length > 0 ? 12 : 0 }}>
+                <input
+                  type="checkbox"
+                  checked={markRdvDone}
+                  onChange={e => setMarkRdvDone(e.target.checked)}
+                  style={{ width: 16, height: 16, accentColor: 'var(--purple)', cursor: 'pointer', flexShrink: 0 }}
+                />
+                <span>
+                  <strong>Marquer le RDV comme réalisé</strong>
+                  <span style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
+                    Met à jour le calendrier et le tableau de bord
+                  </span>
+                </span>
+              </label>
+
+              {/* Comptabilité */}
+              {clotureTypes.length > 0 && (
+                <div>
+                  <div style={{ height: 1, background: 'var(--purple-mid)', opacity: .3, marginBottom: 12 }} />
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--purple)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    📊 Enregistrer en comptabilité
+                  </div>
+                  <div className="field" style={{ margin: 0 }}>
+                    <select
+                      value={clotureTypeId}
+                      onChange={e => setClotureTypeId(e.target.value)}
+                      style={{ fontSize: 13, borderColor: 'var(--purple-mid)', background: '#fff' }}
+                    >
+                      <option value="">— Ne pas comptabiliser —</option>
+                      {clotureTypes.map(t => (
+                        <option key={t.id} value={t.id}>
+                          {t.name}{t.price > 0 ? ` — ${t.price.toFixed(2)} €` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {clotureTypeId && (() => {
+                    const type = clotureTypes.find(t => t.id === clotureTypeId)
+                    const [y, m] = date.split('-')
+                    return (
+                      <div style={{ fontSize: 11, color: 'var(--purple)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span>→</span>
+                        <span>+1 <strong>"{type?.name}"</strong>{type?.price ? ` (${type.price.toFixed(2)} €)` : ''} enregistré en {m}/{y}</span>
+                      </div>
+                    )
+                  })()}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* BOUTONS BAS */}
