@@ -36,6 +36,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: release/*.dmg
+          overwrite: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -65,5 +66,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: release/*.dmg
+          overwrite: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
