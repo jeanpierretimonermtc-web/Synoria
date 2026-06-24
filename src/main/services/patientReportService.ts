@@ -9,6 +9,7 @@ import { join }        from 'path'
 import { mkdirSync, writeFileSync } from 'fs'
 import { getPatientById }           from '../database/repositories/patientRepository'
 import { getAllSessions }            from '../database/repositories/sessionRepository'
+import { getSettings }              from './settingsService'
 
 const MONTHS_FR = ['janvier','février','mars','avril','mai','juin',
                    'juillet','août','septembre','octobre','novembre','décembre']
@@ -358,12 +359,12 @@ ${sessionHtml}
 </body>
 </html>`
 
-  const settings = require('./settingsService').getSettings() as any
-  const dir = (settings.backupPatientPath as string) || require('./settingsService').getSettings().backupGeneralPath
+  const settings = getSettings()
+  const dir = settings.backupPatientPath || settings.backupGeneralPath || app.getPath('documents')
   const slug = `${patient.last_name.toUpperCase()}_${patient.first_name}`.replace(/[^a-zA-Z0-9_]/g, '_')
-  const exportDir = require('path').join(dir, slug)
+  const exportDir = join(dir, slug)
   mkdirSync(exportDir, { recursive: true })
-  const filePath = require('path').join(exportDir, `Dossier_${slug}_${new Date().toISOString().slice(0,10)}.html`)
+  const filePath = join(exportDir, `Dossier_${slug}_${new Date().toISOString().slice(0,10)}.html`)
   writeFileSync(filePath, html, 'utf-8')
   return filePath
 }

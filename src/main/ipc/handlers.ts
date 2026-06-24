@@ -28,6 +28,7 @@ import * as gcalSvc                   from '../services/googleCalendarService'
 import { logError }                             from '../services/logService'
 import { getAllBlocks, getBlocksByMonth, createBlock, updateBlock, deleteBlock } from '../database/repositories/calendarBlockRepository'
 import { generateDiagnosticReport, generateSupportDoc, generateRecoveryDoc } from '../services/diagnosticService'
+import { exportPatientReport } from '../services/patientReportService'
 import { adminVerify, adminGetLogs, adminClearLogs, adminGetSystemInfo, adminDbIntegrity, adminWalCheckpoint, adminDbStats, adminGetSettings, adminForceBackup } from '../services/adminService'
 
 // ── Slug patient (même logique que backupService) ─────────────────
@@ -228,8 +229,7 @@ export function registerAllHandlers(): void {
     return 'PDF export: utilisez Imprimer (Ctrl+P) depuis le résumé de séance'
   })
 
-  ipcMain.handle('exports:patientReport', async (_e, patientId: string) => {
-    const { exportPatientReport } = await import('../services/patientReportService')
+  ipcMain.handle('exports:patientReport', (_e, patientId: string) => {
     return exportPatientReport(patientId)
   })
 
