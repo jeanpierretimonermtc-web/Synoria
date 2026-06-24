@@ -763,18 +763,26 @@ function TimeGridView({ days, todayStr, sessionsByDate, apptByDate, blocksByDate
                   </React.Fragment>
                 ))}
 
-                {/* Zones cliquables (créneaux 30 min) */}
-                {GRID_HOURS.flatMap(h => [0, 30].map(m => (
-                  <div
-                    key={`${h}:${m}`}
-                    className="cal-slot-click"
-                    style={{
-                      top:    (h - GRID_START) * HOUR_H + m * (HOUR_H / 60),
-                      height: HOUR_H / 2,
-                    }}
-                    onClick={() => onSlotClick(ds, `${pad(h)}:${pad(m)}`)}
-                  />
-                )))}
+                {/* Zones cliquables (créneaux 30 min) — désactivées si créneau bloqué */}
+                {!dayIsBlocked && GRID_HOURS.flatMap(h => [0, 30].map(m => {
+                  const slotStart = `${pad(h)}:${pad(m)}`
+                  const slotEnd   = m === 30 ? `${pad(h + 1)}:00` : `${pad(h)}:30`
+                  const blocked   = slotBlocks.some(blk =>
+                    (blk.heure_debut || '00:00') < slotEnd && (blk.heure_fin || '23:59') > slotStart
+                  )
+                  if (blocked) return null
+                  return (
+                    <div
+                      key={`${h}:${m}`}
+                      className="cal-slot-click"
+                      style={{
+                        top:    (h - GRID_START) * HOUR_H + m * (HOUR_H / 60),
+                        height: HOUR_H / 2,
+                      }}
+                      onClick={() => onSlotClick(ds, slotStart)}
+                    />
+                  )
+                }))}
 
                 {/* Blocs personnels / indisponibilités */}
                 {slotBlocks.map(blk => {
