@@ -805,10 +805,12 @@ export function registerAllHandlers(): void {
     let sessionsUpdated = 0
 
     for (const ev of events) {
-      // On ignore les événements toute la journée (pas d'heure précise)
+      // Ignorer les événements toute la journée (pas d'heure précise)
       const startDT = ev.start?.dateTime
       const endDT   = ev.end?.dateTime
       if (!startDT) continue
+      // Ignorer les événements créés par Synoria (évite le cycle d'import)
+      if (gcalSvc.isSynoriaOwnedEvent(ev)) continue
 
       const evDate   = startDT.slice(0, 10)
       const evHeureD = startDT.slice(11, 16)
@@ -820,17 +822,37 @@ export function registerAllHandlers(): void {
 
       const googleEventId = ev.storageId || ev.id
 
-      // Anti-doublon : si l'événement a un préfixe gcalExternal (calendrier importé),
-      // vérifier aussi si un RDV Synoria existe déjà avec l'ID brut (sans préfixe).
-      // Cela évite de dupliquer les RDV créés par Synoria et poussés vers GCal.
+      // ── Recherche robuste anti-doublon ─────────────────────────────
+      // 1. Recherche exacte par google_event_id
       let existing = appointmentRepo.getAppointmentByGoogleEventId(googleEventId)
+
+      // 2. Si l'événement provient d'un calendrier importé (préfixe gcalExternal),
+      //    vérifier aussi si un RDV Synoria existe avec l'ID brut (sans préfixe).
+      //    Format garanti : 'gcalExternal:encodedCalId:rawEventId'
+      //    encodeURIComponent ne contient pas de ':', donc le split est sûr.
       if (!existing && gcalSvc.isExternalGCalEventId(googleEventId)) {
-        const rawEventId = googleEventId.split(':').slice(2).join(':')
-        existing = appointmentRepo.getAppointmentByGoogleEventId(rawEventId) ?? undefined
+        const afterPrefix = googleEventId.slice('gcalExternal:'.length)
+        const colonIdx    = afterPrefix.indexOf(':')
+        if (colonIdx !== -1) {
+          const rawEventId = afterPrefix.slice(colonIdx + 1)
+          existing = appointmentRepo.getAppointmentByGoogleEventId(rawEventId) ?? undefined
+        }
+      }
+
+      // 3. Filet de sécurité : éviter les doublons même si google_event_id diverge.
+      //    Vérifie s'il existe déjà un RDV externe à la même date+heure
+      //    (importé depuis GCal sous un autre ID ou format).
+      if (!existing && gcalSvc.isExternalGCalEventId(googleEventId)) {
+        const sameSlot = appointmentRepo.getAppointmentsByDate(evDate)
+          .find(a =>
+            gcalSvc.isExternalGCalEventId(a.google_event_id) &&
+            a.heure_debut === evHeureD &&
+            (a.heure_fin ?? '') === (evHeureF ?? '')
+          )
+        if (sameSlot) existing = sameSlot
       }
 
       if (existing) {
-        // Mettre à jour si l'événement GCal a changé
         const changed =
           existing.date        !== evDate   ||
           existing.heure_debut !== evHeureD ||
@@ -846,7 +868,6 @@ export function registerAllHandlers(): void {
           updated++
         }
       } else {
-        // Créer un nouveau RDV Synoria depuis l'événement GCal
         appointmentRepo.createAppointment({
           date:            evDate,
           heure_debut:     evHeureD,

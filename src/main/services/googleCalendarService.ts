@@ -411,13 +411,25 @@ function addOneDay(date: string): string {
   return d.toISOString().slice(0, 10)
 }
 
-function makeEvent(appt: { date: string; heure_debut: string; heure_fin?: string | null; note?: string | null }) {
+// Marqueur interne : permet d'identifier les événements créés par Synoria lors du sync retour
+const SYNORIA_SOURCE_KEY = 'syneriaSource'
+const SYNORIA_SOURCE_VAL = 'synoria'
+const SYNORIA_APPT_KEY   = 'syneriaApptId'
+
+function makeEvent(appt: { id?: string; date: string; heure_debut: string; heure_fin?: string | null; note?: string | null }) {
   const end = appt.heure_fin || addOneHour(appt.heure_debut)
   return {
     summary: 'Consultation',
     description: appt.note || '',
     start: { dateTime: `${appt.date}T${appt.heure_debut}:00`, timeZone: 'Europe/Paris' },
-    end: { dateTime: `${appt.date}T${end}:00`, timeZone: 'Europe/Paris' },
+    end:   { dateTime: `${appt.date}T${end}:00`,              timeZone: 'Europe/Paris' },
+    // Marque distinctive : reconnaître cet event lors du sync retour
+    extendedProperties: {
+      private: {
+        [SYNORIA_SOURCE_KEY]: SYNORIA_SOURCE_VAL,
+        ...(appt.id ? { [SYNORIA_APPT_KEY]: appt.id } : {}),
+      },
+    },
   }
 }
 
@@ -450,7 +462,7 @@ async function findEventByPrivateProperty(token: string, calendarId: string, key
 }
 
 export async function createGCalEvent(appt: {
-  date: string; heure_debut: string; heure_fin?: string | null; note?: string | null
+  id?: string; date: string; heure_debut: string; heure_fin?: string | null; note?: string | null
 }): Promise<string | null> {
   const cfg = loadConfig()
   if (!cfg?.tokens) return null
@@ -462,7 +474,7 @@ export async function createGCalEvent(appt: {
 }
 
 export async function updateGCalEvent(eventId: string, appt: {
-  date: string; heure_debut: string; heure_fin?: string | null; note?: string | null
+  id?: string; date: string; heure_debut: string; heure_fin?: string | null; note?: string | null
 }): Promise<boolean> {
   const cfg = loadConfig()
   if (!cfg?.tokens) return false
@@ -517,9 +529,15 @@ export interface GCalEvent {
   start: { dateTime?: string; date?: string }
   end: { dateTime?: string; date?: string }
   status: string
+  extendedProperties?: { private?: Record<string, string> }
   calendarId?: string
   calendarSummary?: string
   storageId?: string
+}
+
+/** Retourne true si cet événement GCal a été créé par Synoria (ne pas ré-importer) */
+export function isSynoriaOwnedEvent(ev: GCalEvent): boolean {
+  return ev.extendedProperties?.private?.[SYNORIA_SOURCE_KEY] === SYNORIA_SOURCE_VAL
 }
 
 export async function listGCalEvents(timeMin: string, timeMax: string): Promise<GCalEvent[]> {
@@ -550,33 +568,42 @@ export async function listSelectedImportEvents(timeMin: string, timeMax: string)
   const cfg = loadConfig()
   if (!cfg?.tokens) throw new Error('Non connecte a Google Calendar')
   const ensured = await ensureSynoriaCalendar()
-  const token = await getAccessToken()
-  const calendars = [
-    { id: ensured.calendar_id, summary: ensured.calendar_name },
-    ...(cfg.import_calendars ?? []),
-  ]
-  const unique = calendars.filter((cal, index, arr) => arr.findIndex(c => c.id === cal.id) === index)
+  const token   = await getAccessToken()
+
+  // IMPORTANT : on n'inclut PAS le calendrier principal Synoria ici.
+  // Ses événements sont gérés par la sync bidirectionnelle dans gcal:sync (export path).
+  // L'inclure ici crée systématiquement des doublons.
+  const importCalendars = (cfg.import_calendars ?? [])
+    .filter(cal => cal.id !== ensured.calendar_id)
+
+  if (importCalendars.length === 0) return []
+
   const params = new URLSearchParams({
     timeMin,
     timeMax,
     singleEvents: 'true',
-    orderBy: 'startTime',
-    maxResults: '500',
+    orderBy:      'startTime',
+    maxResults:   '500',
   })
 
   const all: GCalEvent[] = []
-  for (const cal of unique) {
-    const calId = encodeURIComponent(cal.id)
-    const res = await httpsReq('GET', `${CALENDAR_BASE}/calendars/${calId}/events?${params}`, token)
-    const items = ((res?.items ?? []) as GCalEvent[])
-      .filter(e => e.status !== 'cancelled')
-      .map(e => ({
-        ...e,
-        calendarId: cal.id,
-        calendarSummary: cal.summary,
-        storageId: storageEventId(cal.id, e.id, ensured.calendar_id),
-      }))
-    all.push(...items)
+  for (const cal of importCalendars) {
+    try {
+      const calId = encodeURIComponent(cal.id)
+      const res   = await httpsReq('GET', `${CALENDAR_BASE}/calendars/${calId}/events?${params}`, token)
+      const items = ((res?.items ?? []) as GCalEvent[])
+        .filter(e => e.status !== 'cancelled')
+        .filter(e => !isSynoriaOwnedEvent(e))  // NE PAS ré-importer les events créés par Synoria
+        .map(e => ({
+          ...e,
+          calendarId:      cal.id,
+          calendarSummary: (cal as any).summary || cal.id,
+          storageId:       storageEventId(cal.id, e.id, ensured.calendar_id),
+        }))
+      all.push(...items)
+    } catch (e) {
+      console.error(`[GCal] Erreur import calendrier ${cal.id}:`, e)
+    }
   }
   return all
 }
