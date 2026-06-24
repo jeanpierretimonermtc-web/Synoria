@@ -1197,6 +1197,21 @@ export default function CalendarPage() {
               {syncing ? 'Sync…' : 'Sync GCal'}
             </button>
           )}
+          {gcalConnected && (
+            <button
+              className="btn btn-secondary btn-sm"
+              style={{ color: '#e53e3e', borderColor: '#e53e3e', fontSize: 11 }}
+              title="Supprimer les événements en double dans Google Calendar (même RDV créé plusieurs fois)"
+              onClick={async () => {
+                try {
+                  const { deleted } = await window.mtcApi.gcalCleanupDuplicates()
+                  showToast(deleted > 0 ? `${deleted} doublon(s) supprimé(s) dans Google Calendar ✓` : 'Aucun doublon trouvé dans Google Calendar ✓', 'success')
+                } catch (e: any) { showToast(`Erreur nettoyage : ${e?.message || e}`, 'error') }
+              }}
+            >
+              🧹 Nettoyer doublons GCal
+            </button>
+          )}
         </div>
       </div>
 

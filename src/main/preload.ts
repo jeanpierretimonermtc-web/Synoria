@@ -116,6 +116,7 @@ const api: IpcApi = {
   gcalSetCalendar:   (id, name)      => ipcRenderer.invoke('gcal:setCalendar', id, name),
   gcalSetImportCalendars: (calendars) => ipcRenderer.invoke('gcal:setImportCalendars', calendars),
   gcalCleanupOldImportedAppointments: () => ipcRenderer.invoke('gcal:cleanupOldImportedAppointments'),
+  gcalCleanupDuplicates: ()             => ipcRenderer.invoke('gcal:cleanupDuplicates'),
   gcalSync:                    (start, end) => ipcRenderer.invoke('gcal:sync', start, end),
   appointmentsBackfillFromSessions: ()         => ipcRenderer.invoke('appointments:backfillFromSessions'),
   // Diagnostic

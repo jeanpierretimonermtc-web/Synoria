@@ -448,45 +448,80 @@ function makeSessionEvent(session: Pick<Session, 'id' | 'date' | 'motif'>) {
   }
 }
 
-async function findEventByPrivateProperty(token: string, calendarId: string, key: string, value: string): Promise<string | null> {
+async function findAllEventsByPrivateProperty(token: string, calendarId: string, key: string, value: string): Promise<string[]> {
   const calId = encodeURIComponent(calendarId)
   const params = new URLSearchParams({
     privateExtendedProperty: `${key}=${value}`,
     showDeleted: 'false',
     singleEvents: 'false',
-    maxResults: '1',
+    maxResults: '10',
   })
   const res = await httpsReq('GET', `${CALENDAR_BASE}/calendars/${calId}/events?${params}`, token)
-  const item = (res?.items ?? []).find((e: any) => e.status !== 'cancelled')
+  return ((res?.items ?? []) as any[])
+    .filter(e => e.status !== 'cancelled')
+    .map(e => e.id as string)
+}
+
+async function findEventByPrivateProperty(token: string, calendarId: string, key: string, value: string): Promise<string | null> {
+  const ids = await findAllEventsByPrivateProperty(token, calendarId, key, value)
+  return ids[0] || null
   return item?.id || null
 }
 
+/**
+ * Création idempotente : si un event GCal existe déjà pour cet appt.id
+ * (via la propriété privée syneriaApptId), on le met à jour et retourne
+ * son ID au lieu d'en créer un nouveau.
+ * Empêche les doublons même si createGCalEvent est appelé plusieurs fois
+ * pour le même RDV (réseau coupé, retry, etc.).
+ */
 export async function createGCalEvent(appt: {
   id?: string; date: string; heure_debut: string; heure_fin?: string | null; note?: string | null
 }): Promise<string | null> {
   const cfg = loadConfig()
   if (!cfg?.tokens) return null
   const ensured = await ensureSynoriaCalendar()
-  const token = await getAccessToken()
-  const calId = encodeURIComponent(ensured.calendar_id)
+  const token   = await getAccessToken()
+  const calId   = encodeURIComponent(ensured.calendar_id)
+
+  // Vérifier si un event existe déjà pour ce RDV (idempotence)
+  if (appt.id) {
+    const existingId = await findEventByPrivateProperty(token, ensured.calendar_id, SYNORIA_APPT_KEY, appt.id)
+    if (existingId) {
+      // Event déjà là → mettre à jour et retourner l'ID existant (pas de doublon)
+      try {
+        await httpsReq('PATCH', `${CALENDAR_BASE}/calendars/${calId}/events/${existingId}`, token, makeEvent(appt))
+      } catch {}
+      return existingId
+    }
+  }
+
   const res = await httpsReq('POST', `${CALENDAR_BASE}/calendars/${calId}/events`, token, makeEvent(appt))
   return (res?.id as string) || null
 }
 
+/**
+ * Retourne :
+ *  'updated'  — event mis à jour avec succès
+ *  'deleted'  — event introuvable dans GCal (404), le caller peut recréer
+ *  'error'    — erreur réseau transitoire, NE PAS recréer (évite les doublons)
+ */
 export async function updateGCalEvent(eventId: string, appt: {
   id?: string; date: string; heure_debut: string; heure_fin?: string | null; note?: string | null
-}): Promise<boolean> {
+}): Promise<'updated' | 'deleted' | 'error'> {
   const cfg = loadConfig()
-  if (!cfg?.tokens) return false
+  if (!cfg?.tokens) return 'error'
   try {
     const ensured = await ensureSynoriaCalendar()
-    const token = await getAccessToken()
-    const calId = encodeURIComponent(ensured.calendar_id)
+    const token   = await getAccessToken()
+    const calId   = encodeURIComponent(ensured.calendar_id)
     await httpsReq('PATCH', `${CALENDAR_BASE}/calendars/${calId}/events/${eventId}`, token, makeEvent(appt))
-    return true
-  } catch (e) {
+    return 'updated'
+  } catch (e: any) {
+    const status = e?.statusCode ?? e?.status ?? 0
+    if (status === 404 || status === 410) return 'deleted'   // Event définitivement absent
     console.error('[GCal] updateEvent:', e)
-    return false
+    return 'error'  // Erreur réseau / timeout → ne pas recréer
   }
 }
 
@@ -501,6 +536,42 @@ export async function deleteGCalEvent(eventId: string): Promise<void> {
   } catch (e) {
     console.error('[GCal] deleteEvent:', e)
   }
+}
+
+/**
+ * Supprime les doublons GCal pour tous les RDV Synoria.
+ * Pour chaque RDV ayant un syneriaApptId, s'il existe plus d'un event GCal
+ * avec cet ID, supprime les copies en trop (garde le plus récent).
+ * À appeler une fois pour nettoyer les doublons existants.
+ */
+export async function cleanupGCalDuplicates(appts: Array<{ id: string; google_event_id?: string | null }>): Promise<number> {
+  const cfg = loadConfig()
+  if (!cfg?.tokens) return 0
+  const ensured = await ensureSynoriaCalendar()
+  const token   = await getAccessToken()
+  const calId   = encodeURIComponent(ensured.calendar_id)
+  let deleted   = 0
+
+  for (const appt of appts) {
+    if (!appt.id) continue
+    try {
+      const allIds = await findAllEventsByPrivateProperty(token, ensured.calendar_id, SYNORIA_APPT_KEY, appt.id)
+      if (allIds.length <= 1) continue
+      // Garder l'ID connu dans Synoria (appt.google_event_id) ou le premier, supprimer les autres
+      const keepId = (appt.google_event_id && allIds.includes(appt.google_event_id))
+        ? appt.google_event_id
+        : allIds[0]
+      for (const id of allIds) {
+        if (id === keepId) continue
+        try {
+          await httpsReq('DELETE', `${CALENDAR_BASE}/calendars/${calId}/events/${id}`, token)
+          deleted++
+          console.log(`[GCal] Doublon supprimé : event ${id} (appt ${appt.id})`)
+        } catch {}
+      }
+    } catch {}
+  }
+  return deleted
 }
 
 export async function syncSessionToGCal(session: Pick<Session, 'id' | 'date' | 'motif'>): Promise<'created' | 'updated' | null> {

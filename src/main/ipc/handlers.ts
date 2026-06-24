@@ -64,8 +64,10 @@ export function registerAllHandlers(): void {
     if (gcalSvc.isExternalGCalEventId(appt.google_event_id)) return appt
     if (appt.google_event_id) {
       try {
-        const ok = await gcalSvc.updateGCalEvent(appt.google_event_id, appt)
-        if (!ok) {
+        const result = await gcalSvc.updateGCalEvent(appt.google_event_id, appt)
+        // 'deleted' = event effacé de GCal → recréer
+        // 'error'   = problème réseau → NE PAS recréer (évite les doublons)
+        if (result === 'deleted') {
           const eventId = await gcalSvc.createGCalEvent(appt)
           if (eventId) return appointmentRepo.updateAppointment(appt.id, { google_event_id: eventId })
         }
@@ -696,6 +698,14 @@ export function registerAllHandlers(): void {
     return { deleted }
   })
 
+  // Nettoyer les doublons GCal (events en trop pour le même RDV Synoria)
+  ipcMain.handle('gcal:cleanupDuplicates', async () => {
+    const appts = appointmentRepo.getAllAppointments()
+      .filter(a => !gcalSvc.isExternalGCalEventId(a.google_event_id))
+    const deleted = await gcalSvc.cleanupGCalDuplicates(appts)
+    return { deleted }
+  })
+
   // ── Rappels RDV (J-1) ────────────────────────────────────────────
   ipcMain.handle('reminders:getPending', () => {
     const now   = new Date()
@@ -888,11 +898,10 @@ export function registerAllHandlers(): void {
       if (gcalSvc.isExternalGCalEventId(appt.google_event_id)) continue
 
       if (appt.google_event_id) {
-        const updatedInGoogle = await gcalSvc.updateGCalEvent(appt.google_event_id, appt)
-        if (updatedInGoogle) {
-          updated++
-          continue
-        }
+        const result = await gcalSvc.updateGCalEvent(appt.google_event_id, appt)
+        if (result === 'updated') { updated++; continue }
+        if (result === 'error')   { continue } // erreur réseau → skip, ne pas recréer
+        // result === 'deleted' → event absent de GCal, on le recrée ci-dessous
       }
 
       const eventId = await gcalSvc.createGCalEvent(appt)

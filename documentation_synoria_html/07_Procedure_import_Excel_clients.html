@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Procedure cible - Import Excel clients dans Synoria</title>
+  <style>
+:root {
+  --ink: #1f2933;
+  --muted: #65717f;
+  --line: #d9e0e7;
+  --soft: #f5f7f8;
+  --brand: #315c4f;
+  --brand-2: #486f66;
+  --accent: #b07b43;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  color: var(--ink);
+  background: #eef2f3;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+}
+.page {
+  width: min(980px, calc(100% - 32px));
+  margin: 24px auto;
+  background: #fff;
+  box-shadow: 0 18px 60px rgba(20, 30, 40, .12);
+}
+.cover {
+  padding: 54px 64px 42px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+}
+.cover .label {
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: 12px;
+  opacity: .78;
+  font-weight: 700;
+}
+.cover h1 {
+  margin: 8px 0 12px;
+  color: #fff;
+  border: 0;
+  font-size: 34px;
+  line-height: 1.15;
+}
+.cover .meta {
+  font-size: 14px;
+  opacity: .85;
+}
+main {
+  padding: 44px 64px 58px;
+}
+h1, h2, h3, h4 {
+  color: var(--brand);
+  line-height: 1.25;
+}
+h1 {
+  font-size: 30px;
+  margin: 0 0 24px;
+  padding-bottom: 14px;
+  border-bottom: 3px solid var(--brand);
+}
+h2 {
+  font-size: 22px;
+  margin: 34px 0 12px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--line);
+}
+h3 { font-size: 18px; margin: 26px 0 10px; }
+h4 { font-size: 16px; margin: 22px 0 8px; }
+p { margin: 0 0 13px; }
+ul, ol { margin: 8px 0 18px 26px; padding: 0; }
+li { margin: 4px 0; }
+code {
+  background: #f1f4f6;
+  border: 1px solid #dce3e8;
+  border-radius: 5px;
+  padding: 1px 5px;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: .92em;
+}
+pre {
+  overflow-x: auto;
+  padding: 14px 16px;
+  background: #17212b;
+  color: #eef6ff;
+  border-radius: 8px;
+  margin: 14px 0 20px;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0 22px;
+  font-size: 14px;
+}
+th {
+  background: var(--brand);
+  color: #fff;
+  text-align: left;
+  padding: 9px 11px;
+}
+td {
+  border-bottom: 1px solid var(--line);
+  padding: 9px 11px;
+  vertical-align: top;
+}
+tr:nth-child(even) td { background: var(--soft); }
+a { color: #1d5f91; }
+hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 28px 0;
+}
+.toc {
+  margin: 0;
+  padding: 22px 64px 26px;
+  background: #f7faf9;
+  border-bottom: 1px solid var(--line);
+}
+.toc h2 {
+  margin: 0 0 10px;
+  font-size: 17px;
+  border: 0;
+}
+.toc a {
+  display: block;
+  padding: 3px 0;
+  color: var(--ink);
+  text-decoration: none;
+}
+.footer {
+  padding: 18px 64px 30px;
+  color: var(--muted);
+  font-size: 12px;
+  border-top: 1px solid var(--line);
+}
+@media print {
+  @page { size: A4; margin: 14mm; }
+  body { background: #fff; font-size: 11pt; }
+  .page { width: auto; margin: 0; box-shadow: none; }
+  .cover { padding: 28mm 16mm 18mm; }
+  main { padding: 12mm 0 0; }
+  .toc { padding: 10mm 0; }
+  .footer { padding: 8mm 0 0; }
+  h1, h2, h3 { page-break-after: avoid; }
+  table, pre, ul, ol { page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+  <article class="page">
+    <header class="cover">
+      <div class="label">Documentation Synoria</div>
+      <h1>Procedure cible - Import Excel clients dans Synoria</h1>
+      <div class="meta">Version de travail 1.5.0 - Source : 07_Procedure_import_Excel_clients.md</div>
+    </header>
+    <nav class="toc"><h2>Sommaire</h2><a href="#statut">Statut</a><a href="#objectif">Objectif</a><a href="#formats-acceptes">Formats acceptes</a><a href="#colonnes-possibles">Colonnes possibles</a><a href="#procedure-utilisateur">Procedure utilisateur</a><a href="#mapping-des-colonnes">Mapping des colonnes</a><a href="#validation">Validation</a><a href="#doublons">Doublons</a><a href="#rapport-d-import">Rapport d'import</a><a href="#securite">Securite</a><a href="#rgpd">RGPD</a><a href="#tests-d-acceptation">Tests d'acceptation</a></nav>
+    <main>
+<h1 id="procedure-cible-import-excel-clients-dans-synoria">Procedure cible - Import Excel clients dans Synoria</h1>
+<p>Version : document de cadrage Public : produit, support, utilisateur avance</p>
+<h2 id="statut">Statut</h2>
+<p>Cette procedure decrit la fonction d'import Excel client a prevoir ou activer. Elle ne doit pas etre presentee comme disponible tant que l'interface d'import, la validation et les tests ne sont pas finalises dans Synoria.</p>
+<h2 id="objectif">Objectif</h2>
+<p>Permettre a un praticien d'importer une liste de patients depuis un fichier Excel ou CSV provenant :</p>
+<ul>
+<li>d'un ancien logiciel ;</li>
+<li>d'un tableur personnel ;</li>
+<li>d'un export administratif ;</li>
+<li>d'une liste de contacts cabinet.</li>
+</ul>
+<h2 id="formats-acceptes">Formats acceptes</h2>
+<p>Formats recommandes :</p>
+<ul>
+<li><code>.xlsx</code> ;</li>
+<li><code>.csv</code>.</li>
+</ul>
+<p>Le fichier doit contenir une ligne d'en-tete avec des colonnes nommees.</p>
+<h2 id="colonnes-possibles">Colonnes possibles</h2>
+<p>Colonnes patient :</p>
+<ul>
+<li>civilite ;</li>
+<li>nom ;</li>
+<li>prenom ;</li>
+<li>date de naissance ;</li>
+<li>telephone ;</li>
+<li>email ;</li>
+<li>adresse ;</li>
+<li>profession ;</li>
+<li>medecin traitant ;</li>
+<li>antecedents ;</li>
+<li>traitements en cours ;</li>
+<li>alertes ;</li>
+<li>notes ;</li>
+<li>date de consentement ;</li>
+<li>consentement oui/non.</li>
+</ul>
+<p>Colonnes techniques :</p>
+<ul>
+<li>identifiant externe ;</li>
+<li>date de creation ;</li>
+<li>statut actif/archive.</li>
+</ul>
+<h2 id="procedure-utilisateur">Procedure utilisateur</h2>
+<ol>
+<li>Aller dans <code>Parametres</code> ou <code>Patients</code>.</li>
+<li>Cliquer sur <code>Importer des patients</code>.</li>
+<li>Selectionner un fichier <code>.xlsx</code> ou <code>.csv</code>.</li>
+<li>Afficher l'aperçu des premieres lignes.</li>
+<li>Associer les colonnes du fichier aux champs Synoria.</li>
+<li>Corriger les erreurs signalees.</li>
+<li>Lancer un import test si l'option existe.</li>
+<li>Confirmer l'import final.</li>
+<li>Consulter le rapport d'import.</li>
+</ol>
+<h2 id="mapping-des-colonnes">Mapping des colonnes</h2>
+<p>L'utilisateur doit pouvoir mapper :</p>
+<table>
+<thead><tr><th>Colonne fichier</th><th>Champ Synoria</th></tr></thead>
+<tbody>
+<tr><td>Nom client</td><td>Nom</td></tr>
+<tr><td>Prenom client</td><td>Prenom</td></tr>
+<tr><td>Tel</td><td>Telephone</td></tr>
+<tr><td>Mail</td><td>Email</td></tr>
+<tr><td>Naissance</td><td>Date de naissance</td></tr>
+<tr><td>Adresse complete</td><td>Adresse</td></tr>
+<tr><td>Notes</td><td>Notes generales</td></tr>
+</tbody>
+</table>
+<p>Le mapping automatique peut proposer des correspondances, mais l'utilisateur doit valider.</p>
+<h2 id="validation">Validation</h2>
+<p>Synoria doit verifier :</p>
+<ul>
+<li>nom obligatoire ;</li>
+<li>prenom recommande ;</li>
+<li>email valide si present ;</li>
+<li>telephone normalise si possible ;</li>
+<li>date de naissance lisible ;</li>
+<li>consentement interpretable ;</li>
+<li>lignes vides ignorees ;</li>
+<li>caracteres dangereux neutralises ;</li>
+<li>taille de fichier raisonnable.</li>
+</ul>
+<h2 id="doublons">Doublons</h2>
+<p>Detection proposee :</p>
+<ul>
+<li>meme nom + prenom + date de naissance ;</li>
+<li>meme email ;</li>
+<li>meme telephone ;</li>
+<li>identifiant externe identique si fourni.</li>
+</ul>
+<p>Options utilisateur :</p>
+<ul>
+<li>ignorer le doublon ;</li>
+<li>mettre a jour la fiche existante ;</li>
+<li>creer une nouvelle fiche ;</li>
+<li>decider ligne par ligne.</li>
+</ul>
+<h2 id="rapport-d-import">Rapport d'import</h2>
+<p>Le rapport doit indiquer :</p>
+<ul>
+<li>nombre de lignes lues ;</li>
+<li>patients crees ;</li>
+<li>patients mis a jour ;</li>
+<li>lignes ignorees ;</li>
+<li>erreurs ;</li>
+<li>doublons detectes ;</li>
+<li>fichier source ;</li>
+<li>date de l'import.</li>
+</ul>
+<p>Le rapport doit etre exportable ou consultable apres import.</p>
+<h2 id="securite">Securite</h2>
+<p>Avant import :</p>
+<ol>
+<li>Faire une sauvegarde generale.</li>
+<li>Verifier l'origine du fichier.</li>
+<li>Ne pas importer un fichier inconnu.</li>
+<li>Ne pas ouvrir de macros.</li>
+<li>Ne jamais executer de script contenu dans un fichier client.</li>
+</ol>
+<p>Apres import :</p>
+<ol>
+<li>Verifier un echantillon de fiches.</li>
+<li>Corriger les champs mal reconnus.</li>
+<li>Supprimer le fichier source s'il n'est plus necessaire.</li>
+</ol>
+<h2 id="rgpd">RGPD</h2>
+<p>L'import Excel est un traitement de donnees personnelles.</p>
+<p>Le praticien doit s'assurer :</p>
+<ul>
+<li>qu'il a le droit d'importer ces donnees ;</li>
+<li>que les patients sont informes ;</li>
+<li>que les donnees sont utiles et proportionnees ;</li>
+<li>que les fichiers sources sont securises ;</li>
+<li>que les donnees obsoletes ne sont pas importees inutilement.</li>
+</ul>
+<h2 id="tests-d-acceptation">Tests d'acceptation</h2>
+<p>Avant livraison, tester :</p>
+<ul>
+<li>fichier <code>.xlsx</code> simple ;</li>
+<li>fichier <code>.csv</code> avec point-virgule ;</li>
+<li>accents ;</li>
+<li>dates francaises ;</li>
+<li>lignes vides ;</li>
+<li>colonnes inconnues ;</li>
+<li>email invalide ;</li>
+<li>doublons ;</li>
+<li>fichier trop volumineux ;</li>
+<li>annulation avant import ;</li>
+<li>sauvegarde avant import ;</li>
+<li>restauration apres import.</li>
+</ul>
+    </main>
+    <footer class="footer">Document genere automatiquement depuis les sources Markdown Synoria.</footer>
+  </article>
+</body>
+</html>

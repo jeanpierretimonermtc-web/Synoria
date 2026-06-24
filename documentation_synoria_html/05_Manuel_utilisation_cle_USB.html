@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manuel d'utilisation - Synoria sur cle USB</title>
+  <style>
+:root {
+  --ink: #1f2933;
+  --muted: #65717f;
+  --line: #d9e0e7;
+  --soft: #f5f7f8;
+  --brand: #315c4f;
+  --brand-2: #486f66;
+  --accent: #b07b43;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  color: var(--ink);
+  background: #eef2f3;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+}
+.page {
+  width: min(980px, calc(100% - 32px));
+  margin: 24px auto;
+  background: #fff;
+  box-shadow: 0 18px 60px rgba(20, 30, 40, .12);
+}
+.cover {
+  padding: 54px 64px 42px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+}
+.cover .label {
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: 12px;
+  opacity: .78;
+  font-weight: 700;
+}
+.cover h1 {
+  margin: 8px 0 12px;
+  color: #fff;
+  border: 0;
+  font-size: 34px;
+  line-height: 1.15;
+}
+.cover .meta {
+  font-size: 14px;
+  opacity: .85;
+}
+main {
+  padding: 44px 64px 58px;
+}
+h1, h2, h3, h4 {
+  color: var(--brand);
+  line-height: 1.25;
+}
+h1 {
+  font-size: 30px;
+  margin: 0 0 24px;
+  padding-bottom: 14px;
+  border-bottom: 3px solid var(--brand);
+}
+h2 {
+  font-size: 22px;
+  margin: 34px 0 12px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--line);
+}
+h3 { font-size: 18px; margin: 26px 0 10px; }
+h4 { font-size: 16px; margin: 22px 0 8px; }
+p { margin: 0 0 13px; }
+ul, ol { margin: 8px 0 18px 26px; padding: 0; }
+li { margin: 4px 0; }
+code {
+  background: #f1f4f6;
+  border: 1px solid #dce3e8;
+  border-radius: 5px;
+  padding: 1px 5px;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: .92em;
+}
+pre {
+  overflow-x: auto;
+  padding: 14px 16px;
+  background: #17212b;
+  color: #eef6ff;
+  border-radius: 8px;
+  margin: 14px 0 20px;
+}
+pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0 22px;
+  font-size: 14px;
+}
+th {
+  background: var(--brand);
+  color: #fff;
+  text-align: left;
+  padding: 9px 11px;
+}
+td {
+  border-bottom: 1px solid var(--line);
+  padding: 9px 11px;
+  vertical-align: top;
+}
+tr:nth-child(even) td { background: var(--soft); }
+a { color: #1d5f91; }
+hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 28px 0;
+}
+.toc {
+  margin: 0;
+  padding: 22px 64px 26px;
+  background: #f7faf9;
+  border-bottom: 1px solid var(--line);
+}
+.toc h2 {
+  margin: 0 0 10px;
+  font-size: 17px;
+  border: 0;
+}
+.toc a {
+  display: block;
+  padding: 3px 0;
+  color: var(--ink);
+  text-decoration: none;
+}
+.footer {
+  padding: 18px 64px 30px;
+  color: var(--muted);
+  font-size: 12px;
+  border-top: 1px solid var(--line);
+}
+@media print {
+  @page { size: A4; margin: 14mm; }
+  body { background: #fff; font-size: 11pt; }
+  .page { width: auto; margin: 0; box-shadow: none; }
+  .cover { padding: 28mm 16mm 18mm; }
+  main { padding: 12mm 0 0; }
+  .toc { padding: 10mm 0; }
+  .footer { padding: 8mm 0 0; }
+  h1, h2, h3 { page-break-after: avoid; }
+  table, pre, ul, ol { page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+  <article class="page">
+    <header class="cover">
+      <div class="label">Documentation Synoria</div>
+      <h1>Manuel d'utilisation - Synoria sur cle USB</h1>
+      <div class="meta">Version de travail 1.5.0 - Source : 05_Manuel_utilisation_cle_USB.md</div>
+    </header>
+    <nav class="toc"><h2>Sommaire</h2><a href="#principe">Principe</a><a href="#contenu-attendu">Contenu attendu</a><a href="#lancer-synoria-depuis-la-cle">Lancer Synoria depuis la cle</a><a href="#fermer-correctement">Fermer correctement</a><a href="#sauvegarder">Sauvegarder</a><a href="#travailler-sur-plusieurs-ordinateurs">Travailler sur plusieurs ordinateurs</a><a href="#mise-a-jour-de-la-cle">Mise a jour de la cle</a><a href="#perte-ou-vol-de-la-cle">Perte ou vol de la cle</a><a href="#bonnes-pratiques">Bonnes pratiques</a><a href="#problemes-courants">Problemes courants</a></nav>
+    <main>
+<h1 id="manuel-d-utilisation-synoria-sur-cle-usb">Manuel d'utilisation - Synoria sur cle USB</h1>
+<p>Version : 1.5.0 Public : utilisateur praticien</p>
+<h2 id="principe">Principe</h2>
+<p>La version cle USB permet d'utiliser Synoria sans installation complete sur l'ordinateur hote. L'application et ses donnees restent dans le dossier de la cle USB.</p>
+<p>Cette version est pratique pour :</p>
+<ul>
+<li>travailler sur plusieurs ordinateurs Windows compatibles ;</li>
+<li>conserver une version portable ;</li>
+<li>eviter une installation sur un poste temporaire.</li>
+</ul>
+<p>Elle demande en contrepartie une discipline stricte de sauvegarde.</p>
+<h2 id="contenu-attendu">Contenu attendu</h2>
+<p>La cle USB doit contenir :</p>
+<ul>
+<li>l'application Synoria ;</li>
+<li>un dossier <code>data</code> ou equivalent ;</li>
+<li>un fichier de lecture rapide ;</li>
+<li>eventuellement un dossier de sauvegardes ;</li>
+<li>eventuellement des plugins.</li>
+</ul>
+<p>Ne jamais supprimer le dossier de donnees.</p>
+<h2 id="lancer-synoria-depuis-la-cle">Lancer Synoria depuis la cle</h2>
+<ol>
+<li>Brancher la cle USB.</li>
+<li>Attendre que Windows la reconnaisse.</li>
+<li>Ouvrir le dossier de la cle.</li>
+<li>Double-cliquer sur l'application Synoria.</li>
+<li>Saisir le mot de passe.</li>
+</ol>
+<p>Ne pas retirer la cle pendant que Synoria est ouverte.</p>
+<h2 id="fermer-correctement">Fermer correctement</h2>
+<ol>
+<li>Fermer Synoria.</li>
+<li>Attendre quelques secondes.</li>
+<li>Ejecter la cle USB depuis Windows.</li>
+<li>Retirer la cle.</li>
+</ol>
+<p>Retirer la cle sans ejection peut corrompre les donnees.</p>
+<h2 id="sauvegarder">Sauvegarder</h2>
+<p>La cle USB est un support fragile. Elle peut etre perdue, cassee ou effacee.</p>
+<p>Routine conseillee :</p>
+<ul>
+<li>sauvegarde a la fin de chaque journee ;</li>
+<li>copie de la sauvegarde sur un ordinateur principal ;</li>
+<li>copie supplementaire sur un support externe ;</li>
+<li>verification regulierement qu'une sauvegarde peut etre relue.</li>
+</ul>
+<p>Ne conserver qu'une seule cle USB sans copie est risque.</p>
+<h2 id="travailler-sur-plusieurs-ordinateurs">Travailler sur plusieurs ordinateurs</h2>
+<p>Avant de changer d'ordinateur :</p>
+<ol>
+<li>Fermer Synoria.</li>
+<li>Ejecter la cle.</li>
+<li>Brancher la cle sur l'autre ordinateur.</li>
+<li>Relancer Synoria.</li>
+</ol>
+<p>Ne pas ouvrir Synoria deux fois en meme temps depuis la meme cle.</p>
+<h2 id="mise-a-jour-de-la-cle">Mise a jour de la cle</h2>
+<ol>
+<li>Faire une sauvegarde.</li>
+<li>Copier le dossier complet de la cle sur l'ordinateur.</li>
+<li>Remplacer l'application par la nouvelle version fournie.</li>
+<li>Garder le dossier de donnees.</li>
+<li>Relancer Synoria.</li>
+<li>Verifier les patients et les seances.</li>
+</ol>
+<h2 id="perte-ou-vol-de-la-cle">Perte ou vol de la cle</h2>
+<p>Action immediate :</p>
+<ol>
+<li>Identifier la derniere sauvegarde disponible.</li>
+<li>Installer Synoria ou preparer une nouvelle cle.</li>
+<li>Restaurer la sauvegarde.</li>
+<li>Changer les mots de passe si necessaire.</li>
+<li>Evaluer si une declaration d'incident RGPD est necessaire.</li>
+</ol>
+<p>Le praticien doit traiter cette situation comme une possible violation de donnees, surtout si la cle contenait des donnees patients accessibles.</p>
+<h2 id="bonnes-pratiques">Bonnes pratiques</h2>
+<ul>
+<li>Utiliser une cle USB de bonne qualite.</li>
+<li>Eviter les cles publicitaires bas de gamme.</li>
+<li>Ne pas laisser la cle branchee sans surveillance.</li>
+<li>Ne pas preter la cle.</li>
+<li>Ne pas stocker le mot de passe dans un fichier texte sur la cle.</li>
+<li>Faire des sauvegardes externes.</li>
+<li>Ejecter proprement avant retrait.</li>
+<li>Transporter la cle dans un endroit separe du mot de passe.</li>
+</ul>
+<h2 id="problemes-courants">Problemes courants</h2>
+<h3 id="l-application-ne-demarre-pas">L'application ne demarre pas</h3>
+<p>Verifier :</p>
+<ul>
+<li>Windows 10/11 64 bits ;</li>
+<li>antivirus ;</li>
+<li>fichier complet ;</li>
+<li>cle non endommagee ;</li>
+<li>lancement en administrateur si necessaire.</li>
+</ul>
+<h3 id="fenetre-blanche">Fenetre blanche</h3>
+<p>Fermer Synoria puis relancer. Si le probleme persiste, contacter le support avec la version de l'application et le systeme Windows.</p>
+<h3 id="antivirus">Antivirus</h3>
+<p>Les executables non signes peuvent etre bloques. Verifier l'origine du fichier avant d'ajouter une exception.</p>
+<h3 id="donnees-manquantes">Donnees manquantes</h3>
+<p>Ne pas creer de nouvelles donnees avant diagnostic. Verifier :</p>
+<ul>
+<li>que le bon dossier est ouvert ;</li>
+<li>que la cle contient le dossier de donnees ;</li>
+<li>qu'une sauvegarde existe ;</li>
+<li>que l'utilisateur n'a pas lance une autre copie de Synoria.</li>
+</ul>
+    </main>
+    <footer class="footer">Document genere automatiquement depuis les sources Markdown Synoria.</footer>
+  </article>
+</body>
+</html>
