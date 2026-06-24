@@ -1212,10 +1212,13 @@ export default function CalendarPage() {
             <div className="card" style={{ padding: '10px' }}>
               <div style={{ display: 'flex', gap: 12, fontSize: 10, color: 'var(--text-muted)', marginBottom: 8, flexWrap: 'wrap' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                  <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--blue)', display: 'inline-block' }} /> RDV planifié
+                  <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--blue)', display: 'inline-block' }} /> Planifié
                 </span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                   <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--amber)', display: 'inline-block' }} /> En attente
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: '#38a169', display: 'inline-block' }} /> Réalisé
                 </span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 3, marginLeft: 'auto', color: 'var(--accent)', fontWeight: 600, cursor: 'pointer' }}
                   onClick={() => switchView('week')}>
@@ -1266,8 +1269,8 @@ export default function CalendarPage() {
                           // Couleur du point : réalisé=vert · GCal=couleur GCal · passé=ambre · futur=bleu
                           const gColor = googleCalendarColor(appt, gcalImportCalendars)
                           const dotColor = isSel ? 'rgba(255,255,255,.9)'
-                            : gColor        ? gColor
-                            : appt.is_done  ? 'var(--accent)'
+                            : gColor            ? gColor
+                            : appt.is_done      ? '#38a169'
                             : appt.date < todayStr ? 'var(--amber)'
                             : 'var(--blue)'
                           return (
@@ -1309,17 +1312,7 @@ export default function CalendarPage() {
                         → Vue jour complète
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button className="btn btn-primary btn-sm" onClick={() => openNewAppt(selectedDay)}>
-                        + Nouveau RDV
-                      </button>
-                      <button className="btn btn-secondary btn-sm"
-                        style={{ color: BLOCK_COLOR.border, borderColor: BLOCK_COLOR.border }}
-                        onClick={() => openNewBlock(selectedDay)}
-                        title="Ajouter un créneau perso / indisponibilité">
-                        ⊘
-                      </button>
-                    </div>
+                    <div />
                   </div>
 
                   {/* Blocs du jour */}
