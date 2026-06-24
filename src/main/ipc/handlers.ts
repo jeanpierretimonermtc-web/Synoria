@@ -550,6 +550,9 @@ export function registerAllHandlers(): void {
       auth.encryptDb()      // chiffre le fichier existant
       auth.decryptDb()      // déchiffre pour la session courante
       initDatabase()
+      if (!app.isPackaged) {
+        try { const { seedDevDataIfEmpty } = require('../database/seedDevData'); seedDevDataIfEmpty() } catch {}
+      }
       return { ok: true }
     } catch (e: any) {
       logError('auth:setup', e)
@@ -570,6 +573,13 @@ export function registerAllHandlers(): void {
     if (!isDatabaseOpen()) {
       auth.decryptDb()
       initDatabase()
+    }
+    // En mode dev : compléter les données de test si des patients manquent
+    if (!app.isPackaged) {
+      try {
+        const { seedDevDataIfEmpty } = require('../database/seedDevData')
+        seedDevDataIfEmpty()
+      } catch (e) { console.error('[DEV] Seed after login:', e) }
     }
     return true
   })
