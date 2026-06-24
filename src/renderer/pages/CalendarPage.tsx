@@ -11,10 +11,10 @@ const MONTH_NAMES = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet',
 const DAY_SHORT   = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim']
 const DAY_FULL    = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche']
 
-// Créneaux précis toutes les 5 min de 07:00 à 20:00 (sélecteurs modal)
+// Créneaux toutes les 15 min pour les blocs perso (BlockModal utilise encore <select>)
 const FINE_TIMES: string[] = []
 for (let h = 7; h <= 20; h++) {
-  for (let m = 0; m < 60; m += 5) {
+  for (let m = 0; m < 60; m += 15) {
     if (h === 20 && m > 0) break
     FINE_TIMES.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`)
   }
@@ -407,16 +407,27 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
         <div className="grid2" style={{ marginBottom: 12 }}>
           <div className="field">
             <label>Heure début *</label>
-            <select value={heureD} onChange={e => setHeureD(e.target.value)}>
-              {FINE_TIMES.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
+            <input
+              type="time"
+              value={heureD}
+              onChange={e => setHeureD(e.target.value)}
+              min="07:00"
+              max="20:00"
+              step="900"
+              style={{ fontSize: 14, cursor: 'pointer' }}
+            />
           </div>
           <div className="field">
-            <label>Heure fin</label>
-            <select value={heureF} onChange={e => setHeureF(e.target.value)}>
-              <option value="">—</option>
-              {FINE_TIMES.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
+            <label>Heure fin <span style={{ fontSize: 10, color: 'var(--text-hint)', fontWeight: 400 }}>(optionnel)</span></label>
+            <input
+              type="time"
+              value={heureF}
+              onChange={e => setHeureF(e.target.value)}
+              min="07:00"
+              max="20:00"
+              step="900"
+              style={{ fontSize: 14, cursor: 'pointer' }}
+            />
           </div>
         </div>
 
