@@ -54,7 +54,42 @@ function insertSession(session: Session): void {
       @next_session_date,
       @created_at, @updated_at
     )
-  `).run(session)
+  `).run({
+    id:                session.id,
+    patient_id:        session.patient_id,
+    date:              session.date,
+    practitioner:      session.practitioner      ?? null,
+    motif:             session.motif             ?? null,
+    evolution_tags:    session.evolution_tags    ?? null,
+    evolution:         session.evolution         ?? null,
+    problematiques:    session.problematiques    ?? null,
+    langue:            session.langue            ?? null,
+    pouls:             session.pouls             ?? null,
+    constitution:      session.constitution      ?? null,
+    type_corps:        session.type_corps        ?? null,
+    teint:             session.teint             ?? null,
+    observation:       session.observation       ?? null,
+    diagnostic_mtc:    session.diagnostic_mtc   ?? null,
+    cinq_elements:     session.cinq_elements     ?? null,
+    causes:            session.causes            ?? null,
+    analyse:           session.analyse           ?? null,
+    principes:         session.principes         ?? null,
+    points:            session.points            ?? null,
+    pts_oreille:       session.pts_oreille       ?? null,
+    techniques:        session.techniques        ?? null,
+    plantes:           session.plantes           ?? null,
+    reactions:         session.reactions         ?? null,
+    traitement_notes:  session.traitement_notes  ?? null,
+    conseils:          session.conseils          ?? null,
+    plan:              session.plan              ?? null,
+    surveiller:        session.surveiller        ?? null,
+    energy_tests_json: session.energy_tests_json ?? null,
+    systemes_json:     session.systemes_json     ?? null,
+    full_data_json:    session.full_data_json    ?? null,
+    next_session_date: session.next_session_date ?? null,
+    created_at:        session.created_at,
+    updated_at:        session.updated_at,
+  })
 }
 
 export function updateSession(id: string, data: Partial<Session>): Session {
