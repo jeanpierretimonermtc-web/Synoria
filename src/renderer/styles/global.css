@@ -1668,6 +1668,9 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
 .factures-action-red  { color: var(--red)  !important; }
 
 .factures-tfoot td { padding: 10px 12px; font-size: 12px; vertical-align: middle; }
+.factures-row-paid { opacity: .65; }
+.factures-row-paid .factures-montant { color: var(--accent) !important; }
+
 .factures-montant-total {
   padding: 10px 12px; font-family: 'DM Serif Display', serif;
   font-size: 18px; font-weight: 700; text-align: right; color: var(--accent);

@@ -285,6 +285,18 @@ export function registerAllHandlers(): void {
   ipcMain.handle('invoice:generate', (_e, data)       => generateInvoice(data))
   ipcMain.handle('invoice:update',   (_e, id, data)   => comptaRepo.updateInvoiceLog(id, data))
   ipcMain.handle('invoice:delete',   (_e, id)         => comptaRepo.deleteInvoiceLog(id))
+  ipcMain.handle('invoice:markPaid', (_e, id: string, paid: boolean) => {
+    const now = new Date().toISOString().slice(0, 10)
+    comptaRepo.updateInvoiceLog(id, { is_paid: paid ? 1 : 0, paid_date: paid ? now : undefined } as any)
+  })
+  ipcMain.handle('invoice:overdue', (_e, thresholdDays: number) => {
+    const cutoff = new Date()
+    cutoff.setDate(cutoff.getDate() - thresholdDays)
+    const cutoffStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart(2,'0')}-${String(cutoff.getDate()).padStart(2,'0')}`
+    return comptaRepo.getAllInvoicesLog().filter(
+      inv => !inv.is_paid && inv.invoice_date <= cutoffStr
+    )
+  })
 
   ipcMain.handle('invoice:sendByEmail', async (_e, invoiceId: string) => {
     const inv = comptaRepo.getInvoiceLogById(invoiceId)
@@ -667,6 +679,39 @@ export function registerAllHandlers(): void {
       }
     }
     return { deleted }
+  })
+
+  // ── Rappels RDV (J-1) ────────────────────────────────────────────
+  ipcMain.handle('reminders:getPending', () => {
+    const now   = new Date()
+    const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1)
+    const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth()+1).padStart(2,'0')}-${String(tomorrow.getDate()).padStart(2,'0')}`
+    const appts = appointmentRepo.getAllAppointments().filter(
+      a => a.date === tomorrowStr && !a.is_done && !a.is_cancelled && !a.reminder_sent
+    )
+    const patients = patientRepo.getAllPatients()
+    return appts
+      .filter(a => {
+        if (!a.patient_id) return false
+        const pat = patients.find(p => p.id === a.patient_id)
+        return !!pat?.email
+      })
+      .map(a => {
+        const pat = patients.find(p => p.id === a.patient_id)!
+        return {
+          appointment_id: a.id,
+          patient_id:     pat.id,
+          patient_email:  pat.email || '',
+          patient_name:   `${pat.first_name} ${pat.last_name}`,
+          appt_date:      a.date,
+          appt_heure:     a.heure_debut,
+          appt_note:      a.note,
+          reminder_sent:  a.reminder_sent ?? 0,
+        }
+      })
+  })
+  ipcMain.handle('reminders:markSent', (_e, appointmentId: string) => {
+    appointmentRepo.updateAppointment(appointmentId, { reminder_sent: 1 } as any)
   })
 
   // ── Rattrapage : créer les RDV manquants depuis next_session_date ──

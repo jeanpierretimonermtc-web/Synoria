@@ -324,4 +324,15 @@ export function runMigrations(db: Database.Database): void {
     `)
     console.log('[DB] Migration v15 done')
   }
+
+  if (currentVersion < 16) {
+    console.log('[DB] Running migration v16 (reminder_sent + invoice paid status)...')
+    db.exec(`
+      ALTER TABLE appointments   ADD COLUMN reminder_sent INTEGER DEFAULT 0;
+      ALTER TABLE invoices_log   ADD COLUMN is_paid       INTEGER DEFAULT 0;
+      ALTER TABLE invoices_log   ADD COLUMN paid_date     TEXT;
+      INSERT INTO schema_version(version) VALUES(16);
+    `)
+    console.log('[DB] Migration v16 done')
+  }
 }

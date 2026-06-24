@@ -598,6 +598,30 @@ export default function SettingsPage() {
                 La numérotation repart à 1 chaque année civile.
               </div>
             </div>
+
+            {/* Alerte retard de paiement */}
+            <div className="settings-card">
+              <div className="settings-card-title">
+                <span className="card-title-icon icon-amber">⚠️</span>
+                Alerte retard de paiement
+              </div>
+              <div style={{ marginBottom: 8, fontSize: 13 }}>
+                Afficher une alerte sur le tableau de bord pour les factures non payées depuis plus de :
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <input type="range" min={7} max={90} step={1}
+                  value={settings.invoiceOverdueDays ?? 30}
+                  onChange={e => setSettings({ ...settings, invoiceOverdueDays: Number(e.target.value) })}
+                  onMouseUp={e => save({ invoiceOverdueDays: Number((e.target as HTMLInputElement).value) })}
+                  style={{ width: 200 }} />
+                <span style={{ fontWeight: 700, color: 'var(--amber)', fontSize: 16, minWidth: 70 }}>
+                  {settings.invoiceOverdueDays ?? 30} jours
+                </span>
+              </div>
+              <div className="settings-enc-note" style={{ marginTop: 8 }}>
+                Les factures non marquées comme payées depuis ce délai apparaissent en alerte sur le tableau de bord.
+              </div>
+            </div>
           </div>
         )}
 

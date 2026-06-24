@@ -286,9 +286,105 @@ function DynamicField({ field, value, onChange }: {
     case 'rating':
       return <RatingField value={value} onChange={onChange} min={field.min ?? 0} max={field.max ?? 10} />
 
+    case 'bodychart':
+      return <BodyChartField value={value} onChange={onChange} />
+
     default:
       return null
   }
+}
+
+type BodyChartSide = 'front' | 'back'
+
+interface BodyChartValue {
+  front?: string[]
+  back?: string[]
+  notes?: string
+}
+
+const BODY_CHART_ZONES: Record<BodyChartSide, string[]> = {
+  front: [
+    'Tête / visage', 'Cervical antérieur', 'Thorax', 'Abdomen',
+    'Épaule droite', 'Épaule gauche', 'Coude droit', 'Coude gauche',
+    'Poignet / main droite', 'Poignet / main gauche', 'Bassin / pubis',
+    'Hanche droite', 'Hanche gauche', 'Genou droit', 'Genou gauche',
+    'Cheville / pied droit', 'Cheville / pied gauche',
+  ],
+  back: [
+    'Crâne / occiput', 'Cervical postérieur', 'Dorsal haut', 'Dorsal bas',
+    'Lombaire', 'Sacrum / coccyx', 'Omoplate droite', 'Omoplate gauche',
+    'Épaule droite postérieure', 'Épaule gauche postérieure',
+    'Membre supérieur droit', 'Membre supérieur gauche',
+    'Fesse / SI droite', 'Fesse / SI gauche', 'Ischio-jambiers droits',
+    'Ischio-jambiers gauches', 'Mollet / pied droit', 'Mollet / pied gauche',
+  ],
+}
+
+function BodyChartField({ value, onChange }: {
+  value: BodyChartValue | null | undefined
+  onChange: (v: BodyChartValue) => void
+}) {
+  const current: BodyChartValue = value && typeof value === 'object' && !Array.isArray(value)
+    ? value
+    : {}
+
+  const toggle = (side: BodyChartSide, zone: string) => {
+    const selected = current[side] || []
+    const next = selected.includes(zone)
+      ? selected.filter(z => z !== zone)
+      : [...selected, zone]
+    onChange({ ...current, [side]: next })
+  }
+
+  const updateNotes = (notes: string) => {
+    onChange({ ...current, notes })
+  }
+
+  const renderSide = (side: BodyChartSide, label: string) => (
+    <div className="bodychart-side">
+      <div className="bodychart-title">{label}</div>
+      <div className="bodychart-silhouette" aria-hidden="true">
+        <span className="bodychart-head" />
+        <span className="bodychart-neck" />
+        <span className="bodychart-torso" />
+        <span className="bodychart-arm bodychart-arm-left" />
+        <span className="bodychart-arm bodychart-arm-right" />
+        <span className="bodychart-leg bodychart-leg-left" />
+        <span className="bodychart-leg bodychart-leg-right" />
+      </div>
+      <div className="bodychart-zones">
+        {BODY_CHART_ZONES[side].map(zone => {
+          const active = (current[side] || []).includes(zone)
+          return (
+            <button
+              key={zone}
+              type="button"
+              className={`bodychart-zone${active ? ' active' : ''}`}
+              onClick={() => toggle(side, zone)}
+              aria-pressed={active}
+            >
+              {zone}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="bodychart-field">
+      <div className="bodychart-grid">
+        {renderSide('front', 'Vue antérieure')}
+        {renderSide('back', 'Vue postérieure')}
+      </div>
+      <textarea
+        value={current.notes || ''}
+        onChange={e => updateNotes(e.target.value)}
+        placeholder="Annotations : trajet de douleur, intensité par zone, irradiation, paresthésies, restrictions, cicatrices, zones à surveiller..."
+        style={{ minHeight: 72, resize: 'vertical', marginTop: 10 }}
+      />
+    </div>
+  )
 }
 
 // ── TAGS ───────────────────────────────────────────────────────────────────

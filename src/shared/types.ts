@@ -300,6 +300,19 @@ export interface InvoiceLog {
   montant: number
   file_path?: string
   created_at: string
+  is_paid?: number    // 0 = en attente, 1 = payée (v16)
+  paid_date?: string  // date du paiement (v16)
+}
+
+export interface PendingReminder {
+  appointment_id: string
+  patient_id: string
+  patient_email: string
+  patient_name: string
+  appt_date: string
+  appt_heure: string
+  appt_note?: string
+  reminder_sent: number
 }
 
 export interface ComptaYearData {
@@ -330,6 +343,7 @@ export interface AppSettings {
   rgpdPractitionerEmail: string
   rgpdNotice:            string
   dataRetentionYears:    number  // durée de conservation (défaut 10 ans)
+  invoiceOverdueDays:    number  // seuil alerte retard paiement (défaut 30 j)
   // Profil praticien (affiché sur les factures)
   practitionerFirstName:    string
   practitionerLastName:     string
@@ -459,7 +473,13 @@ export interface IpcApi {
   generateInvoice:    (data: InvoiceData) => Promise<InvoiceResult>
   updateInvoiceLog:   (id: string, data: Partial<Omit<InvoiceLog, 'id' | 'created_at'>>) => Promise<void>
   deleteInvoiceLog:   (id: string) => Promise<void>
+  markInvoicePaid:    (id: string, paid: boolean) => Promise<void>
   sendInvoiceByEmail: (invoiceId: string) => Promise<{ pdfAttached: boolean }>
+  // Rappels RDV
+  getPendingReminders:   () => Promise<PendingReminder[]>
+  markReminderSent:      (appointmentId: string) => Promise<void>
+  // Alertes factures
+  getOverdueInvoices:    (thresholdDays: number) => Promise<InvoiceLog[]>
   // Comptabilité
   getComptaYearData: (year: number) => Promise<ComptaYearData>
   setMonthlyRevenue:       (year: number, month: number, typeId: string, nbSeances: number) => Promise<void>

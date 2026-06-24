@@ -27,6 +27,7 @@ const iconPath = process.platform === 'darwin'
   ? join(__dirname, '../../build/icons/icon.png')
   : join(__dirname, '../../build/icons/icon.ico')
 let win: BrowserWindow | null = null
+let nativeMenuVisible = false
 
 // ── Menu macOS (obligatoire pour activer la saisie clavier) ───────
 function buildMacMenu(): void {
@@ -226,9 +227,6 @@ function setupContextMenu(window: BrowserWindow): void {
   })
 }
 
-// ── Zone de survol pour afficher la barre de menu native ──────────
-// (géré côté renderer via MenuBarHotspot dans App.tsx)
-
 // ── Fenêtre principale ─────────────────────────────────────────────
 function createWindow() {
   const state = loadWindowState()
@@ -240,7 +238,7 @@ function createWindow() {
     y:         state.y,
     minWidth:  1024,
     minHeight: 700,
-    autoHideMenuBar: true,
+    autoHideMenuBar: false,
     title: 'Synoria',
     backgroundColor: '#F5F2ED',
     icon: iconPath,
@@ -255,15 +253,23 @@ function createWindow() {
   })
 
   if (state.maximized) win.maximize()
+  win.setMenuBarVisibility(false)
 
   // Persiste la taille/position à chaque fermeture
   win.on('close', () => { if (win) saveWindowState(win) })
 
   setupContextMenu(win)
 
-  // Zoom Ctrl+/- / Ctrl+0 et impression Ctrl+P
-  win.webContents.on('before-input-event', (_e, input) => {
-    if ((!input.control && !input.meta) || input.type !== 'keyDown') return
+  // Raccourcis fenêtre : menu admin, zoom et impression
+  win.webContents.on('before-input-event', (e, input) => {
+    if (input.type !== 'keyDown') return
+    if (input.control && input.alt && input.shift && input.key.toLowerCase() === 'm') {
+      e.preventDefault()
+      nativeMenuVisible = !nativeMenuVisible
+      win?.setMenuBarVisibility(nativeMenuVisible)
+      return
+    }
+    if ((!input.control && !input.meta)) return
     const wc = win?.webContents
     if (!wc) return
     const z = wc.getZoomFactor()
@@ -339,6 +345,7 @@ app.whenReady().then(async () => {
   createWindow()
 
   ipcMain.handle('win:setMenuBarVisible', (_e, visible: boolean) => {
+    nativeMenuVisible = visible
     win?.setMenuBarVisibility(visible)
   })
 

@@ -72,6 +72,7 @@ function getDefaults(): AppSettings {
     rgpdPractitionerEmail: '',
     rgpdNotice:            DEFAULT_NOTICE,
     dataRetentionYears:    10,
+    invoiceOverdueDays:    30,
     practitionerFirstName:    '',
     practitionerLastName:     '',
     practitionerActivity:     '',

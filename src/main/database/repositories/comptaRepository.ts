@@ -144,6 +144,10 @@ export function getInvoicesLog(year?: number): InvoiceLog[] {
   ).all() as InvoiceLog[]
 }
 
+export function getAllInvoicesLog(): InvoiceLog[] {
+  return getDb().prepare('SELECT * FROM invoices_log ORDER BY invoice_date DESC').all() as InvoiceLog[]
+}
+
 export function addInvoiceLog(inv: Omit<InvoiceLog, 'id' | 'created_at'>): void {
   getDb().prepare(`
     INSERT OR IGNORE INTO invoices_log

@@ -446,6 +446,9 @@ export default function DashboardPage() {
   const [todayAppts,      setTodayAppts]      = useState<Appointment[]>([])
   const [patients,        setPatients]        = useState<Patient[]>([])
   const [followUpPatients,setFollowUpPatients]= useState<FollowUpPatient[]>([])
+  const [pendingReminders,setPendingReminders]= useState<import('../../shared/types').PendingReminder[]>([])
+  const [overdueInvoices, setOverdueInvoices] = useState<import('../../shared/types').InvoiceLog[]>([])
+  const [sendingReminder, setSendingReminder] = useState<string | null>(null)
   const navigate  = useNavigate()
   const showToast = useContext(ToastContext)
 
@@ -473,6 +476,10 @@ export default function DashboardPage() {
       setUpcomingAppts(future)
     }).catch(() => {})
     window.mtcApi.getPatientsToFollowUp(90).then(setFollowUpPatients).catch(() => {})
+    window.mtcApi.getPendingReminders().then(setPendingReminders).catch(() => {})
+    window.mtcApi.getSettings().then(s => {
+      window.mtcApi.getOverdueInvoices(s.invoiceOverdueDays ?? 30).then(setOverdueInvoices).catch(() => {})
+    }).catch(() => window.mtcApi.getOverdueInvoices(30).then(setOverdueInvoices).catch(() => {}))
 
     window.mtcApi.getAppointmentsByMonth(now.getFullYear(), now.getMonth() + 1)
       .then(a => setMonthApptCount(a.length))
@@ -689,6 +696,130 @@ export default function DashboardPage() {
               )
             })}
           </div>
+        </div>
+      )}
+
+      {/* ── Rappels email J-1 ── */}
+      {pendingReminders.length > 0 && (
+        <div className="card" style={{ borderLeft: '4px solid var(--blue)' }}>
+          <div className="card-title">
+            <span className="card-title-icon icon-blue">✉️</span>
+            Rappels à envoyer — RDV demain
+            <span className="page-header-count" style={{ background: 'var(--blue-light)', color: 'var(--blue)', marginLeft: 6 }}>
+              {pendingReminders.length}
+            </span>
+          </div>
+          <div className="recent-sessions-list">
+            {pendingReminders.map((r, idx) => (
+              <div key={r.appointment_id} className="recent-session-row" style={{ animationDelay: `${idx * 30}ms` }}>
+                <div className="initials" style={{ width: 36, height: 36, fontSize: 12, flexShrink: 0, background: 'var(--blue)', color: '#fff' }}>
+                  {r.patient_name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
+                </div>
+                <div className="recent-session-info">
+                  <div className="recent-session-name">{r.patient_name}</div>
+                  <div className="recent-session-meta">
+                    <span className="recent-session-date">{fmtDate(r.appt_date)} · {r.appt_heure}</span>
+                    {r.appt_note && <span className="recent-session-motif">· {r.appt_note.slice(0, 40)}</span>}
+                  </div>
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--blue)', flexShrink: 0 }}>{r.patient_email}</div>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  disabled={sendingReminder === r.appointment_id}
+                  style={{ color: 'var(--blue)', borderColor: 'var(--blue-mid)', flexShrink: 0 }}
+                  onClick={async () => {
+                    setSendingReminder(r.appointment_id)
+                    try {
+                      await window.mtcApi.sendAppointmentReminder(r.appointment_id)
+                      await window.mtcApi.markReminderSent(r.appointment_id)
+                      setPendingReminders(prev => prev.filter(x => x.appointment_id !== r.appointment_id))
+                      showToast(`Rappel envoyé à ${r.patient_name} ✓`)
+                    } catch (e: any) {
+                      showToast(`Erreur : ${e?.message || e}`, 'error')
+                    }
+                    setSendingReminder(null)
+                  }}
+                >
+                  {sendingReminder === r.appointment_id ? '⏳…' : '✉ Envoyer rappel'}
+                </button>
+              </div>
+            ))}
+          </div>
+          {pendingReminders.length > 1 && (
+            <div style={{ paddingTop: 10, borderTop: '1px solid var(--border-soft)', marginTop: 4 }}>
+              <button className="btn btn-primary btn-sm"
+                style={{ background: 'var(--blue)', borderColor: 'var(--blue)' }}
+                onClick={async () => {
+                  for (const r of pendingReminders) {
+                    try {
+                      await window.mtcApi.sendAppointmentReminder(r.appointment_id)
+                      await window.mtcApi.markReminderSent(r.appointment_id)
+                    } catch { /* continue */ }
+                  }
+                  setPendingReminders([])
+                  showToast(`${pendingReminders.length} rappels envoyés ✓`)
+                }}>
+                ✉ Envoyer tous les rappels ({pendingReminders.length})
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Alertes factures en retard ── */}
+      {overdueInvoices.length > 0 && (
+        <div className="card" style={{ borderLeft: '4px solid var(--amber)' }}>
+          <div className="card-title">
+            <span className="card-title-icon icon-amber">⚠️</span>
+            Factures non payées — plus de 30 jours
+            <span className="page-header-count" style={{ background: 'var(--amber-light)', color: 'var(--amber)', marginLeft: 6 }}>
+              {overdueInvoices.length}
+            </span>
+          </div>
+          <div className="recent-sessions-list">
+            {overdueInvoices.slice(0, 5).map((inv, idx) => {
+              const daysOld = Math.round((Date.now() - new Date(inv.invoice_date).getTime()) / 86400000)
+              return (
+                <div key={inv.id} className="recent-session-row" style={{ animationDelay: `${idx * 30}ms` }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
+                    <span style={{ fontWeight: 700, fontSize: 13 }}>
+                      {inv.patient_first_name} {inv.patient_last_name.toUpperCase()}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                      N° {inv.invoice_number} · {fmtDate(inv.invoice_date)}
+                      {inv.description ? ` · ${inv.description.slice(0, 30)}` : ''}
+                    </span>
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-serif)', fontSize: 16, fontWeight: 700, color: 'var(--accent)', flexShrink: 0 }}>
+                    {inv.montant.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                  </span>
+                  <span className="badge" style={{ background: daysOld > 60 ? 'var(--red)' : 'var(--amber)', color: '#fff', flexShrink: 0 }}>
+                    {daysOld} j
+                  </span>
+                  <button className="btn btn-secondary btn-sm"
+                    style={{ color: 'var(--accent)', borderColor: 'var(--accent-mid)', flexShrink: 0 }}
+                    onClick={async () => {
+                      await window.mtcApi.markInvoicePaid(inv.id, true)
+                      setOverdueInvoices(prev => prev.filter(x => x.id !== inv.id))
+                      showToast('Facture marquée comme payée ✓')
+                    }}>
+                    ✓ Marquer payée
+                  </button>
+                  <button className="btn btn-secondary btn-sm"
+                    style={{ flexShrink: 0 }}
+                    onClick={() => navigate('/factures-liste')}>
+                    Voir →
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+          {overdueInvoices.length > 5 && (
+            <div style={{ paddingTop: 8, fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
+              + {overdueInvoices.length - 5} autre{overdueInvoices.length - 5 > 1 ? 's' : ''} ·
+              <button className="btn btn-secondary btn-sm" style={{ marginLeft: 8 }} onClick={() => navigate('/factures-liste')}>Tout voir</button>
+            </div>
+          )}
         </div>
       )}
 

@@ -5,7 +5,7 @@ import type { PluginDefinition, PluginFieldType } from '../../shared/pluginTypes
 
 const VALID_TYPES: PluginFieldType[] = [
   'text','textarea','richtext','number','date',
-  'select','radio','checkbox','checkboxgroup','tags','rating','separator',
+  'select','radio','checkbox','checkboxgroup','tags','rating','bodychart','separator',
 ]
 
 function pluginPath(): string {

@@ -52,7 +52,12 @@ const api: IpcApi = {
   generateInvoice:     (data)       => ipcRenderer.invoke('invoice:generate', data),
   updateInvoiceLog:    (id, data)   => ipcRenderer.invoke('invoice:update', id, data),
   deleteInvoiceLog:    (id)         => ipcRenderer.invoke('invoice:delete', id),
+  markInvoicePaid:     (id, paid)   => ipcRenderer.invoke('invoice:markPaid', id, paid),
   sendInvoiceByEmail:  (id)         => ipcRenderer.invoke('invoice:sendByEmail', id),
+  // Rappels et alertes
+  getPendingReminders:  ()          => ipcRenderer.invoke('reminders:getPending'),
+  markReminderSent:     (apptId)    => ipcRenderer.invoke('reminders:markSent', apptId),
+  getOverdueInvoices:   (days)      => ipcRenderer.invoke('invoice:overdue', days),
 
   // ─── COMPTABILITÉ ─────────────────────────────────────────────────────────────
   getComptaYearData:     (year)                       => ipcRenderer.invoke('compta:yearData', year),

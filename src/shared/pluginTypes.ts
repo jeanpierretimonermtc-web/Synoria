@@ -17,6 +17,7 @@
  *   checkboxgroup → cases à cocher multiples
  *   tags         → étiquettes libres (saisir + Entrée)
  *   rating       → échelle numérique cliquable (ex : 0-10)
+ *   bodychart    → schéma corporel antérieur/postérieur avec zones cliquables
  *   separator    → séparateur visuel (pas de donnée)
  */
 
@@ -32,6 +33,7 @@ export type PluginFieldType =
   | 'checkboxgroup'
   | 'tags'
   | 'rating'
+  | 'bodychart'
   | 'separator'
 
 export interface PluginField {

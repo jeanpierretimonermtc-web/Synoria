@@ -300,14 +300,14 @@ export default function FacturesListPage() {
           <table className="factures-table">
             <thead>
               <tr className="factures-thead-row">
-                {['N° Facture','Date','Patient','Description','Montant','PDF','Actions'].map(h => (
+                {['N° Facture','Date','Patient','Description','Montant','Statut','Actions'].map(h => (
                   <th key={h} className={`factures-th${h === 'Montant' ? ' factures-th-right' : ''}`}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.map((inv, idx) => (
-                <tr key={inv.id} className={`factures-row${idx % 2 === 0 ? '' : ' factures-row-alt'}`}>
+                <tr key={inv.id} className={`factures-row${idx % 2 === 0 ? '' : ' factures-row-alt'}${inv.is_paid ? ' factures-row-paid' : ''}`}>
                   <td className="factures-td factures-num">
                     {inv.invoice_number}
                   </td>
@@ -320,6 +320,13 @@ export default function FacturesListPage() {
                     {inv.description || <span style={{ color: 'var(--text-hint)' }}>—</span>}
                   </td>
                   <td className="factures-td factures-montant">{euro(inv.montant)}</td>
+                  {/* Badge statut paiement */}
+                  <td className="factures-td" style={{ whiteSpace: 'nowrap' }}>
+                    {inv.is_paid
+                      ? <span className="badge badge-green" title={inv.paid_date ? `Payé le ${fmtDate(inv.paid_date)}` : 'Payé'}>✓ Payée</span>
+                      : <span className="badge badge-amber">En attente</span>
+                    }
+                  </td>
                   <td className="factures-td">
                     {inv.file_path
                       ? <button className="btn btn-secondary btn-sm" style={{ fontSize: 11 }} onClick={() => window.mtcApi.openPath(inv.file_path!)}>📄 PDF</button>
@@ -328,6 +335,17 @@ export default function FacturesListPage() {
                   </td>
                   <td className="factures-td-actions">
                     <div style={{ display: 'flex', gap: 5 }}>
+                      {/* Bouton paiement */}
+                      <button
+                        className="btn btn-secondary btn-sm factures-action-btn"
+                        style={{ color: inv.is_paid ? 'var(--amber)' : 'var(--accent)', borderColor: inv.is_paid ? 'var(--amber)' : 'var(--accent-mid)' }}
+                        title={inv.is_paid ? 'Marquer comme non payée' : 'Marquer comme payée'}
+                        onClick={async () => {
+                          await window.mtcApi.markInvoicePaid(inv.id, !inv.is_paid)
+                          load(year)
+                        }}>
+                        {inv.is_paid ? '↩ Non payée' : '✓ Payée'}
+                      </button>
                       {inv.email && (
                         <button className="btn btn-secondary btn-sm factures-action-btn factures-action-teal"
                           title={`Email à ${inv.email}`} onClick={() => handleSendEmail(inv)}>
