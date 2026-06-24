@@ -614,21 +614,26 @@ export default function DashboardPage() {
               const isSoon   = diffDays <= 3
               return (
                 <div key={appt.id} className="recent-session-row"
-                  onClick={() => navigate('/calendrier', { state: { focusDate: appt.date } })}
-                  style={{ animationDelay: `${idx * 30}ms`, cursor: 'pointer' }}>
+                  style={{ animationDelay: `${idx * 30}ms`, cursor: 'default', alignItems: 'center' }}>
+
+                  {/* Initiales */}
                   <div className="initials" style={{ width: 36, height: 36, fontSize: 12, flexShrink: 0, background: isToday ? 'var(--teal)' : 'var(--accent)', color: '#fff' }}>
                     {initials}
                   </div>
+
+                  {/* Nom + date + motif */}
                   <div className="recent-session-info">
                     <div className="recent-session-name">{name}</div>
                     <div className="recent-session-meta">
                       <span className="recent-session-date">
                         {fmtDate(appt.date)}{appt.heure_debut ? ` · ${appt.heure_debut}` : ''}{appt.heure_fin ? `–${appt.heure_fin}` : ''}
                       </span>
-                      {appt.note && <span className="recent-session-motif">· {appt.note.slice(0, 50)}{appt.note.length > 50 ? '…' : ''}</span>}
+                      {appt.note && <span className="recent-session-motif">· {appt.note.slice(0, 40)}{appt.note.length > 40 ? '…' : ''}</span>}
                     </div>
                   </div>
-                  <div>
+
+                  {/* Badge délai */}
+                  <div style={{ flexShrink: 0 }}>
                     {isToday
                       ? <span className="badge" style={{ background: 'var(--teal)', color: '#fff' }}>Aujourd'hui !</span>
                       : isSoon
@@ -636,7 +641,50 @@ export default function DashboardPage() {
                       : <span className="badge badge-muted">Dans {diffDays} j</span>
                     }
                   </div>
-                  <div className="recent-session-chevron">›</div>
+
+                  {/* 3 boutons d'action */}
+                  <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
+
+                    {/* 1. Fiche anamnèse → Nouvelle séance */}
+                    {pat && (
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        title={`Nouvelle séance — ${name}`}
+                        onClick={e => {
+                          e.stopPropagation()
+                          const params = new URLSearchParams()
+                          params.set('date', appt.date)
+                          if (appt.note) params.set('motif', appt.note)
+                          navigate(`/nouvelle/${pat.id}?${params.toString()}`)
+                        }}
+                        style={{ padding: '4px 8px', color: 'var(--accent)', borderColor: 'var(--accent-mid)' }}
+                      >
+                        📋 Séance
+                      </button>
+                    )}
+
+                    {/* 2. Ouvrir le calendrier sur la date du RDV */}
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      title="Voir ce RDV dans le calendrier"
+                      onClick={e => { e.stopPropagation(); navigate('/calendrier', { state: { focusDate: appt.date } }) }}
+                      style={{ padding: '4px 8px', color: 'var(--blue)', borderColor: 'var(--blue-mid)' }}
+                    >
+                      📅 Calendrier
+                    </button>
+
+                    {/* 3. Historique séances + RDV du patient */}
+                    {pat && (
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        title={`Historique de ${name}`}
+                        onClick={e => { e.stopPropagation(); navigate('/seances', { state: { patientId: pat.id } }) }}
+                        style={{ padding: '4px 8px', color: 'var(--purple)', borderColor: 'var(--purple-mid)' }}
+                      >
+                        👤 Patient
+                      </button>
+                    )}
+                  </div>
                 </div>
               )
             })}
