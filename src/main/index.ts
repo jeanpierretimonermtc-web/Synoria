@@ -6,14 +6,16 @@ import { registerAllHandlers }              from './ipc/handlers'
 import { getSettings }                      from './services/settingsService'
 import { exportBackupEncrypted }            from './services/backupService'
 import * as auth                            from './services/authService'
+import { seedDevDataIfEmpty }               from './database/seedDevData'
 
 // ── Mode portable / clé USB ────────────────────────────────────────
 const portableDir = process.env.PORTABLE_EXECUTABLE_DIR
 if (portableDir) {
   app.setPath('userData', join(portableDir, 'data'))
 } else if (!app.isPackaged) {
+  // MODE DÉVELOPPEMENT : dossier dédié pour ne jamais toucher les données du cabinet
   const appData = process.env.APPDATA || ''
-  if (appData) app.setPath('userData', join(appData, 'Synoria'))
+  if (appData) app.setPath('userData', join(appData, 'Synoria Dev'))
 }
 
 // ── Supprime les erreurs de cache GPU Chromium (Windows permissions) ──
@@ -331,6 +333,10 @@ app.whenReady().then(async () => {
   try {
     if (!auth.hasPassword()) {
       initDatabase()
+      // En mode dev, peupler la base avec des données de test si elle est vide
+      if (!app.isPackaged) {
+        try { seedDevDataIfEmpty() } catch (e) { console.error('[DEV] Erreur seed:', e) }
+      }
     }
   } catch (e) {
     console.error('[Startup] Erreur initDatabase:', e)
