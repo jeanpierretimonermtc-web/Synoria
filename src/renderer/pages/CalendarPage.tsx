@@ -48,24 +48,27 @@ function monthSlotH(start: string, end?: string | null): number {
   return Math.max(MONTH_SLOT_H, Math.min(maxDiff * (MONTH_SLOT_H / 30), diff * (MONTH_SLOT_H / 30)))
 }
 
-/** Calcule la mise en colonnes pour les RDV qui se chevauchent dans le panneau jour.
+/** Calcule la mise en colonnes pour les RDV qui se chevauchent.
+ *  Utilisé dans la vue mois (panneau jour) ET les vues semaine/jour.
  *  Retourne pour chaque appt.id : { col, totalCols }  */
-function buildMonthApptLayout(appts: import('../../shared/types').Appointment[]): Map<string, { col: number; totalCols: number }> {
+function buildApptLayout(appts: Appointment[]): Map<string, { col: number; totalCols: number }> {
   if (appts.length === 0) return new Map()
 
-  const apptEnd = (a: import('../../shared/types').Appointment): string =>
-    a.heure_fin && a.heure_fin > a.heure_debut ? a.heure_fin : `${String(+a.heure_debut.slice(0,2) + 1).padStart(2,'0')}:${a.heure_debut.slice(3)}`
+  const getEnd = (a: Appointment): string =>
+    a.heure_fin && a.heure_fin > a.heure_debut
+      ? a.heure_fin
+      : `${String(+a.heure_debut.slice(0, 2) + 1).padStart(2, '0')}:${a.heure_debut.slice(3)}`
 
-  const overlaps = (a: import('../../shared/types').Appointment, b: import('../../shared/types').Appointment): boolean =>
-    a.heure_debut < apptEnd(b) && apptEnd(a) > b.heure_debut
+  const overlaps = (a: Appointment, b: Appointment): boolean =>
+    a.heure_debut < getEnd(b) && getEnd(a) > b.heure_debut
 
   const sorted = [...appts].sort((a, b) => a.heure_debut.localeCompare(b.heure_debut))
-  const columns: import('../../shared/types').Appointment[][] = []
+  const columns: Appointment[][] = []
 
   for (const appt of sorted) {
     let placed = false
     for (let c = 0; c < columns.length; c++) {
-      if (!columns[c].some(existing => overlaps(appt, existing))) {
+      if (!columns[c].some(ex => overlaps(appt, ex))) {
         columns[c].push(appt); placed = true; break
       }
     }
@@ -75,8 +78,8 @@ function buildMonthApptLayout(appts: import('../../shared/types').Appointment[])
   const layout = new Map<string, { col: number; totalCols: number }>()
   for (let c = 0; c < columns.length; c++) {
     for (const appt of columns[c]) {
-      const simultaneousCols = columns.filter(col => col.some(a => overlaps(appt, a))).length
-      layout.set(appt.id, { col: c, totalCols: simultaneousCols })
+      const totalCols = columns.filter(col => col.some(a => overlaps(appt, a))).length
+      layout.set(appt.id, { col: c, totalCols })
     }
   }
   return layout
@@ -853,38 +856,55 @@ function TimeGridView({ days, todayStr, sessionsByDate, apptByDate, blocksByDate
                   )
                 })}
 
-                {/* Blocs RDV */}
-                {appts.map(appt => {
-                  const y   = timeToY(appt.heure_debut)
-                  const h   = durationPx(appt.heure_debut, appt.heure_fin)
-                  const c   = apptColor(appt, todayStr, googleCalendarColor(appt, googleImportCalendars))
-                  const lbl = getApptLabel(appt)
-                  return (
-                    <div
-                      key={appt.id}
-                      className="cal-appt-block"
-                      style={{ top: y, height: h, background: c.bg, borderColor: c.border, color: c.text, zIndex: 2 }}
-                      onClick={e => { e.stopPropagation(); onApptClick(appt) }}
-                    >
-                      <div className="cal-appt-name">{lbl}</div>
-                      {h >= 22 && (
-                        <div className="cal-appt-time">
-                          {appt.heure_debut}{appt.heure_fin ? ` – ${appt.heure_fin}` : ''}
-                        </div>
-                      )}
-                      {h >= 40 && appt.note && (
-                        <div style={{
-                          fontSize: 10, lineHeight: 1.3, marginTop: 2,
-                          overflow: 'hidden', display: '-webkit-box',
-                          WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const,
-                          opacity: .85,
-                        }}>
-                          {appt.note}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
+                {/* Blocs RDV — côte à côte si chevauchement */}
+                {(() => {
+                  const layout = buildApptLayout(appts)
+                  return appts.map(appt => {
+                    const y   = timeToY(appt.heure_debut)
+                    const h   = durationPx(appt.heure_debut, appt.heure_fin)
+                    const c   = apptColor(appt, todayStr, googleCalendarColor(appt, googleImportCalendars))
+                    const lbl = getApptLabel(appt)
+                    const { col, totalCols } = layout.get(appt.id) ?? { col: 0, totalCols: 1 }
+                    // Calcul left/right pour affichage côte à côte
+                    const gap      = 3
+                    const colW     = totalCols > 1 ? `calc((100% - ${(totalCols + 1) * gap}px) / ${totalCols})` : undefined
+                    const colLeft  = totalCols > 1 ? `${gap + col * (100 / totalCols)}%` : undefined
+                    const colRight = totalCols > 1 ? undefined : undefined
+                    return (
+                      <div
+                        key={appt.id}
+                        className="cal-appt-block"
+                        style={{
+                          top: y, height: h,
+                          background: c.bg, borderColor: c.border, color: c.text, zIndex: 2,
+                          ...(totalCols > 1 ? {
+                            left: `calc(${gap}px + ${col} * (100% - ${(totalCols + 1) * gap}px) / ${totalCols} + ${col * gap}px)`,
+                            width: `calc((100% - ${(totalCols + 1) * gap}px) / ${totalCols})`,
+                            right: 'auto',
+                          } : {}),
+                        }}
+                        onClick={e => { e.stopPropagation(); onApptClick(appt) }}
+                      >
+                        <div className="cal-appt-name">{lbl}</div>
+                        {h >= 22 && (
+                          <div className="cal-appt-time">
+                            {appt.heure_debut}{appt.heure_fin ? ` – ${appt.heure_fin}` : ''}
+                          </div>
+                        )}
+                        {h >= 40 && appt.note && (
+                          <div style={{
+                            fontSize: 10, lineHeight: 1.3, marginTop: 2,
+                            overflow: 'hidden', display: '-webkit-box',
+                            WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const,
+                            opacity: .85,
+                          }}>
+                            {appt.note}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })
+                })()}
 
                 {/* Indicateur heure courante */}
                 {isT && nowY !== null && (
@@ -1496,7 +1516,7 @@ export default function CalendarPage() {
 
                         {/* ── Couche absolue : RDV avec leur vraie durée ── */}
                         {(() => {
-                          const apptLayout = buildMonthApptLayout(dayAppointments)
+                          const apptLayout = buildApptLayout(dayAppointments)
                           return (
                         <div style={{ position: 'absolute', top: 0, bottom: 0, left: LABEL_W, right: 0, pointerEvents: 'none' }}>
 
