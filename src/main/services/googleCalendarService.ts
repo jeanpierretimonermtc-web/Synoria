@@ -539,10 +539,17 @@ export async function deleteGCalEvent(eventId: string): Promise<void> {
 }
 
 /**
- * Supprime les doublons GCal pour tous les RDV Synoria.
- * Pour chaque RDV ayant un syneriaApptId, s'il existe plus d'un event GCal
- * avec cet ID, supprime les copies en trop (garde le plus récent).
- * À appeler une fois pour nettoyer les doublons existants.
+ * Supprime les doublons dans Google Calendar.
+ *
+ * Passe 1 — via marqueur syneriaApptId (events créés après le fix)
+ *   → trouve tous les events avec le même appt.id dans l'extended property
+ *   → garde celui dont l'ID est connu dans Synoria, supprime les autres
+ *
+ * Passe 2 — via date+heure (events créés AVANT le fix, sans marqueur)
+ *   → récupère TOUS les events du calendrier Synoria sur 12 mois
+ *   → groupe par startDateTime (à la minute près)
+ *   → si plusieurs events au même instant : garde celui connu dans Synoria,
+ *     supprime les autres
  */
 export async function cleanupGCalDuplicates(appts: Array<{ id: string; google_event_id?: string | null }>): Promise<number> {
   const cfg = loadConfig()
@@ -552,25 +559,73 @@ export async function cleanupGCalDuplicates(appts: Array<{ id: string; google_ev
   const calId   = encodeURIComponent(ensured.calendar_id)
   let deleted   = 0
 
+  // Ensemble des google_event_id connus dans Synoria
+  const knownIds = new Set(appts.map(a => a.google_event_id).filter(Boolean) as string[])
+
+  // ── Passe 1 : via syneriaApptId ────────────────────────────────────
   for (const appt of appts) {
     if (!appt.id) continue
     try {
       const allIds = await findAllEventsByPrivateProperty(token, ensured.calendar_id, SYNORIA_APPT_KEY, appt.id)
       if (allIds.length <= 1) continue
-      // Garder l'ID connu dans Synoria (appt.google_event_id) ou le premier, supprimer les autres
       const keepId = (appt.google_event_id && allIds.includes(appt.google_event_id))
-        ? appt.google_event_id
-        : allIds[0]
+        ? appt.google_event_id : allIds[0]
       for (const id of allIds) {
         if (id === keepId) continue
         try {
           await httpsReq('DELETE', `${CALENDAR_BASE}/calendars/${calId}/events/${id}`, token)
           deleted++
-          console.log(`[GCal] Doublon supprimé : event ${id} (appt ${appt.id})`)
+          console.log(`[GCal] Passe1 doublon supprimé : ${id}`)
         } catch {}
       }
     } catch {}
   }
+
+  // ── Passe 2 : via date+heure (sans marqueur) ────────────────────────
+  try {
+    // Récupérer tous les events Synoria sur les 6 derniers mois + 6 prochains mois
+    const now    = new Date()
+    const tMin   = new Date(now); tMin.setMonth(tMin.getMonth() - 6)
+    const tMax   = new Date(now); tMax.setMonth(tMax.getMonth() + 6)
+    const params = new URLSearchParams({
+      timeMin: tMin.toISOString(),
+      timeMax: tMax.toISOString(),
+      singleEvents: 'true',
+      orderBy: 'startTime',
+      maxResults: '1000',
+    })
+    const res   = await httpsReq('GET', `${CALENDAR_BASE}/calendars/${calId}/events?${params}`, token)
+    const items = ((res?.items ?? []) as any[]).filter(e => e.status !== 'cancelled' && e.start?.dateTime)
+
+    // Grouper par startDateTime (arrondi à la minute)
+    const byStart = new Map<string, Array<{ id: string; created: string }>>()
+    for (const ev of items) {
+      const key = (ev.start.dateTime as string).slice(0, 16) // "2026-06-24T09:00"
+      if (!byStart.has(key)) byStart.set(key, [])
+      byStart.get(key)!.push({ id: ev.id, created: ev.created || '' })
+    }
+
+    // Pour chaque créneau avec plusieurs events → supprimer les doublons
+    for (const [, group] of byStart) {
+      if (group.length <= 1) continue
+
+      // Garder l'event dont l'ID est connu dans Synoria
+      const knownInGroup = group.find(e => knownIds.has(e.id))
+      const keepId       = knownInGroup?.id ?? group[0].id
+
+      for (const ev of group) {
+        if (ev.id === keepId) continue
+        try {
+          await httpsReq('DELETE', `${CALENDAR_BASE}/calendars/${calId}/events/${ev.id}`, token)
+          deleted++
+          console.log(`[GCal] Passe2 doublon supprimé : ${ev.id} (même créneau que ${keepId})`)
+        } catch {}
+      }
+    }
+  } catch (e) {
+    console.error('[GCal] cleanupDuplicates passe2:', e)
+  }
+
   return deleted
 }
 
