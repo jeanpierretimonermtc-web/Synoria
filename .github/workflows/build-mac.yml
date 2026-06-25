@@ -10,8 +10,10 @@ permissions:
   contents: write
 
 jobs:
-  build-x64:
-    runs-on: macos-13
+  build-mac-universal:
+    name: Build Mac (Universal — Intel + Apple Silicon)
+    runs-on: macos-latest   # Runner ARM (M1/M2) — supporte le build universel
+
     steps:
       - uses: actions/checkout@v4
 
@@ -25,43 +27,29 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+        # Le postinstall reconstruit better-sqlite3 pour arm64 (natif)
+        # electron-builder rebuild pour x64 lors du packaging universel
 
-      - name: Build x64
-        run: npx vite build && npx electron-builder --mac --x64 --publish never
+      - name: Build Mac universel (DMG Intel + Apple Silicon)
+        # --universal = electron-builder compile pour x64 ET arm64,
+        # puis lipo-merge en un seul binaire universel.
+        # Fonctionne depuis un runner ARM grâce aux prebuilt binaries de better-sqlite3.
+        run: npx vite build && npx electron-builder --mac --universal --publish never
 
-      - name: Publish vers GitHub Release
+      - name: Publier vers GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: release/*.dmg
-          overwrite: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: Synoria ${{ github.ref_name }}
+          body: |
+            ## Synoria ${{ github.ref_name }} — macOS
 
-  build-arm64:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
+            | Fichier | Compatible |
+            |---------|-----------|
+            | `*-universal.dmg` | Intel (2020 et avant) + Apple Silicon M1/M2/M3 |
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build arm64
-        run: npx vite build && npx electron-builder --mac --arm64 --publish never
-
-      - name: Publish vers GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: release/*.dmg
+            > **Un seul fichier DMG universel** fonctionne sur tous les Mac.
+          files: release/*-universal.dmg
           overwrite: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
