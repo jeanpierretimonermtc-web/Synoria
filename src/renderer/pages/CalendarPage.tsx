@@ -41,7 +41,45 @@ function monthSlotY(time: string): number {
 }
 function monthSlotH(start: string, end?: string | null): number {
   if (!end) return MONTH_SLOT_H * 2   // 1h par défaut
-  return Math.max(MONTH_SLOT_H, (timeToMins(end) - timeToMins(start)) * (MONTH_SLOT_H / 30))
+  const diff = timeToMins(end) - timeToMins(start)
+  if (diff <= 0) return MONTH_SLOT_H * 2  // Heure fin invalide / minuit
+  // Cap à 23h30 (fin de grille) pour éviter les blocs géants d'events GCal all-day
+  const maxDiff = (20 - MONTH_START_H) * 60
+  return Math.max(MONTH_SLOT_H, Math.min(maxDiff * (MONTH_SLOT_H / 30), diff * (MONTH_SLOT_H / 30)))
+}
+
+/** Calcule la mise en colonnes pour les RDV qui se chevauchent dans le panneau jour.
+ *  Retourne pour chaque appt.id : { col, totalCols }  */
+function buildMonthApptLayout(appts: import('../../shared/types').Appointment[]): Map<string, { col: number; totalCols: number }> {
+  if (appts.length === 0) return new Map()
+
+  const apptEnd = (a: import('../../shared/types').Appointment): string =>
+    a.heure_fin && a.heure_fin > a.heure_debut ? a.heure_fin : `${String(+a.heure_debut.slice(0,2) + 1).padStart(2,'0')}:${a.heure_debut.slice(3)}`
+
+  const overlaps = (a: import('../../shared/types').Appointment, b: import('../../shared/types').Appointment): boolean =>
+    a.heure_debut < apptEnd(b) && apptEnd(a) > b.heure_debut
+
+  const sorted = [...appts].sort((a, b) => a.heure_debut.localeCompare(b.heure_debut))
+  const columns: import('../../shared/types').Appointment[][] = []
+
+  for (const appt of sorted) {
+    let placed = false
+    for (let c = 0; c < columns.length; c++) {
+      if (!columns[c].some(existing => overlaps(appt, existing))) {
+        columns[c].push(appt); placed = true; break
+      }
+    }
+    if (!placed) columns.push([appt])
+  }
+
+  const layout = new Map<string, { col: number; totalCols: number }>()
+  for (let c = 0; c < columns.length; c++) {
+    for (const appt of columns[c]) {
+      const simultaneousCols = columns.filter(col => col.some(a => overlaps(appt, a))).length
+      layout.set(appt.id, { col: c, totalCols: simultaneousCols })
+    }
+  }
+  return layout
 }
 
 type CalView = 'month' | 'week' | 'day'
@@ -1457,6 +1495,9 @@ export default function CalendarPage() {
                         })}
 
                         {/* ── Couche absolue : RDV avec leur vraie durée ── */}
+                        {(() => {
+                          const apptLayout = buildMonthApptLayout(dayAppointments)
+                          return (
                         <div style={{ position: 'absolute', top: 0, bottom: 0, left: LABEL_W, right: 0, pointerEvents: 'none' }}>
 
                           {/* Overlay journée entière bloquée */}
@@ -1468,7 +1509,7 @@ export default function CalendarPage() {
                             }} />
                           )}
 
-                          {/* RDV patients */}
+                          {/* RDV patients — côte à côte si chevauchement */}
                           {dayAppointments.map(appt => {
                             const cols    = apptColor(appt, todayStr, googleCalendarColor(appt, gcalImportCalendars))
                             const label   = appt.is_done ? 'Réalisé' : appt.date < todayStr ? 'En attente' : 'Planifié'
@@ -1476,11 +1517,14 @@ export default function CalendarPage() {
                             const isGuest = !appt.patient_id && (appt.guest_first_name || appt.guest_last_name)
                             const yTop    = monthSlotY(appt.heure_debut)
                             const hPx     = monthSlotH(appt.heure_debut, appt.heure_fin)
+                            const { col, totalCols } = apptLayout.get(appt.id) ?? { col: 0, totalCols: 1 }
+                            const colW    = `calc((100% - ${(totalCols + 1) * 3}px) / ${totalCols})`
+                            const colL    = `calc(3px + (${col} * (100% - ${(totalCols + 1) * 3}px) / ${totalCols}) + ${col * 3}px)`
                             return (
                               <div key={appt.id}
                                 style={{
                                   position: 'absolute', top: yTop, height: hPx,
-                                  left: 4, right: 4,
+                                  left: colL, width: colW,
                                   pointerEvents: 'auto',
                                   background: cols.bg,
                                   border: `1.5px solid ${cols.border}`,
@@ -1550,6 +1594,8 @@ export default function CalendarPage() {
                             )
                           })}
                         </div>
+                          )
+                        })()}
 
                       </div>
                     )
