@@ -3208,6 +3208,13 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
   min-width: 0;
   background: linear-gradient(180deg, rgba(248,250,252,.65), rgba(255,255,255,0) 80px);
 }
+/* Contraste un jour sur deux — position 1 = cal-time-col, donc jours à partir de 2 */
+.cal-day-col:nth-child(even) {
+  background: linear-gradient(180deg, rgba(246,249,255,.9), rgba(246,249,255,.3) 80px, rgba(246,249,255,.18));
+}
+.cal-col-header:nth-child(even) {
+  background: rgba(246,249,255,.7);
+}
 .cal-hour-line {
   position: absolute;
   left: 0;
@@ -3455,6 +3462,12 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
 }
 [data-theme="dark"] .cal-day-col {
   background: linear-gradient(180deg, rgba(255,255,255,.018), rgba(255,255,255,0) 80px);
+}
+[data-theme="dark"] .cal-day-col:nth-child(even) {
+  background: linear-gradient(180deg, rgba(255,255,255,.038), rgba(255,255,255,.012) 80px, rgba(255,255,255,.008));
+}
+[data-theme="dark"] .cal-col-header:nth-child(even) {
+  background: rgba(255,255,255,.03);
 }
 [data-theme="dark"] .cal-hour-line { border-top-color: var(--border-soft); }
 [data-theme="dark"] .cal-half-line { border-top-color: rgba(255,255,255,.06); }
