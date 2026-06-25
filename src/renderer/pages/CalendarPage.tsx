@@ -33,6 +33,16 @@ for (let h = 8; h < 20; h++) {
   TIME_SLOTS.push(`${String(h).padStart(2,'0')}:00`)
   TIME_SLOTS.push(`${String(h).padStart(2,'0')}:30`)
 }
+// Hauteur fixe d'un créneau de 30 min dans le panneau jour du mode mois
+const MONTH_SLOT_H   = 42   // px (doit correspondre au CSS .time-slot)
+const MONTH_START_H  = 8    // heure de début de la grille (08:00)
+function monthSlotY(time: string): number {
+  return Math.max(0, (timeToMins(time) - MONTH_START_H * 60) * (MONTH_SLOT_H / 30))
+}
+function monthSlotH(start: string, end?: string | null): number {
+  if (!end) return MONTH_SLOT_H * 2   // 1h par défaut
+  return Math.max(MONTH_SLOT_H, (timeToMins(end) - timeToMins(start)) * (MONTH_SLOT_H / 30))
+}
 
 type CalView = 'month' | 'week' | 'day'
 
@@ -1408,112 +1418,142 @@ export default function CalendarPage() {
                   <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>
                     Planning du jour
                   </div>
-                  <div className="time-grid">
-                    {TIME_SLOTS.map((slot, slotIdx) => {
-                      const nextSlot   = TIME_SLOTS[slotIdx + 1] ?? '20:00'
-                      const startAppts = dayAppointments.filter(a => a.heure_debut >= slot && a.heure_debut < nextSlot)
-                      const contAppts  = dayAppointments.filter(a => a.heure_debut < slot && a.heure_fin && a.heure_fin > slot)
-                      // Blocs perso dans la grille
-                      const allDayBlks = (blocksByDate[selectedDay] || []).filter(b => b.is_day === 1)
-                      const timedBlks  = (blocksByDate[selectedDay] || []).filter(b => b.is_day === 0)
-                      const startBlks  = timedBlks.filter(b => b.heure_debut && b.heure_debut >= slot && b.heure_debut < nextSlot)
-                      const contBlks   = timedBlks.filter(b => b.heure_debut && b.heure_debut < slot && b.heure_fin && b.heure_fin > slot)
-                      // Blocs journée entière : apparaissent dans tous les créneaux sauf le 1er (affiché en banner)
-                      const allDayHere = slotIdx > 0 ? allDayBlks : []
-                      const isFirstSlot = slotIdx === 0
-                      const isEmpty    = startAppts.length === 0 && contAppts.length === 0 && startBlks.length === 0 && contBlks.length === 0 && allDayBlks.length === 0
 
-                      return (
-                        <div key={slot} className="time-slot">
-                          <div className="time-slot-label">{slot}</div>
-                          <div className="time-slot-content">
-                            {isEmpty && (
-                              <div className="time-slot-empty" onClick={() => openNewAppt(selectedDay, slot)} title="Cliquer pour créer un RDV">
-                                <span className="time-slot-plus">+</span>
-                              </div>
-                            )}
-                            {startAppts.map(appt => {
-                              const cols  = apptColor(appt, todayStr, googleCalendarColor(appt, gcalImportCalendars))
-                              const label = appt.is_done ? 'Réalisé' : appt.date < todayStr ? 'En attente' : 'Planifié'
-                              const name  = getApptLabel(appt)
-                              const isGuest = !appt.patient_id && (appt.guest_first_name || appt.guest_last_name)
-                              return (
-                                <div key={appt.id} className="rdv-block"
-                                  style={{ background: cols.bg, border: `1.5px solid ${cols.border}` }}
-                                  onClick={() => openEditAppt(appt)}
-                                >
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <div className="initials" style={{ width: 22, height: 22, fontSize: 9, flexShrink: 0, background: cols.border, color: 'white' }}>
-                                      {getApptInitials(appt)}
-                                    </div>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                      <div style={{ fontWeight: 600, fontSize: 11, color: cols.text }}>
-                                        {name}
-                                        {isGuest && <span style={{ fontSize: 9, marginLeft: 4, opacity: .75 }}>· nouveau</span>}
-                                        {appt.heure_fin && <span style={{ fontWeight: 400, marginLeft: 4 }}>({appt.heure_debut}–{appt.heure_fin})</span>}
-                                      </div>
-                                      {appt.note && (
-                                        <div style={{ fontSize: 10, color: cols.text, opacity: .8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{appt.note}</div>
-                                      )}
-                                    </div>
-                                    <span style={{ fontSize: 9, color: cols.border, fontWeight: 700, flexShrink: 0 }}>{label}</span>
+                  {/* ── Grille horaire : positionnement absolu pour RDV pleine durée ── */}
+                  {(() => {
+                    const allDayBlks = (blocksByDate[selectedDay] || []).filter(b => b.is_day === 1)
+                    const timedBlks  = (blocksByDate[selectedDay] || []).filter(b => b.is_day === 0)
+                    const isAllDayBlocked = allDayBlks.length > 0
+                    const LABEL_W = 58 // px, largeur colonne labels (CSS .time-slot-label)
+
+                    return (
+                      <div className="time-grid" style={{ position: 'relative' }}>
+
+                        {/* ── Couche fond : labels + zones cliquables ── */}
+                        {TIME_SLOTS.map((slot, slotIdx) => {
+                          const nextSlot = TIME_SLOTS[slotIdx + 1] ?? '20:00'
+                          // Ce slot est-il couvert par un RDV ou un bloc ?
+                          const coveredByAppt = dayAppointments.some(a =>
+                            (a.heure_debut >= slot && a.heure_debut < nextSlot) ||
+                            (a.heure_debut < slot && a.heure_fin && a.heure_fin > slot)
+                          )
+                          const coveredByBlk = isAllDayBlocked || timedBlks.some(b => {
+                            const bS = b.heure_debut || '00:00'; const bE = b.heure_fin || '23:59'
+                            return bS < nextSlot && bE > slot
+                          })
+                          const showClick = !coveredByAppt && !coveredByBlk
+                          return (
+                            <div key={slot} className="time-slot">
+                              <div className="time-slot-label">{slot}</div>
+                              <div className="time-slot-content">
+                                {showClick && (
+                                  <div className="time-slot-empty" onClick={() => openNewAppt(selectedDay, slot)} title="Créer un RDV">
+                                    <span className="time-slot-plus">+</span>
                                   </div>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+
+                        {/* ── Couche absolue : RDV avec leur vraie durée ── */}
+                        <div style={{ position: 'absolute', top: 0, bottom: 0, left: LABEL_W, right: 0, pointerEvents: 'none' }}>
+
+                          {/* Overlay journée entière bloquée */}
+                          {isAllDayBlocked && (
+                            <div style={{
+                              position: 'absolute', inset: 0, pointerEvents: 'none',
+                              background: 'repeating-linear-gradient(-45deg,rgba(90,74,122,.07) 0,rgba(90,74,122,.07) 5px,transparent 5px,transparent 14px)',
+                              borderLeft: `3px solid ${BLOCK_COLOR.border}`,
+                            }} />
+                          )}
+
+                          {/* RDV patients */}
+                          {dayAppointments.map(appt => {
+                            const cols    = apptColor(appt, todayStr, googleCalendarColor(appt, gcalImportCalendars))
+                            const label   = appt.is_done ? 'Réalisé' : appt.date < todayStr ? 'En attente' : 'Planifié'
+                            const name    = getApptLabel(appt)
+                            const isGuest = !appt.patient_id && (appt.guest_first_name || appt.guest_last_name)
+                            const yTop    = monthSlotY(appt.heure_debut)
+                            const hPx     = monthSlotH(appt.heure_debut, appt.heure_fin)
+                            return (
+                              <div key={appt.id}
+                                style={{
+                                  position: 'absolute', top: yTop, height: hPx,
+                                  left: 4, right: 4,
+                                  pointerEvents: 'auto',
+                                  background: cols.bg,
+                                  border: `1.5px solid ${cols.border}`,
+                                  borderRadius: 8,
+                                  padding: '5px 8px',
+                                  overflow: 'hidden',
+                                  cursor: 'pointer',
+                                  zIndex: 2,
+                                  boxShadow: '0 2px 8px rgba(0,0,0,.07)',
+                                }}
+                                onClick={() => openEditAppt(appt)}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, height: '100%' }}>
+                                  <div className="initials" style={{ width: 22, height: 22, fontSize: 9, flexShrink: 0, background: cols.border, color: 'white', marginTop: 1 }}>
+                                    {getApptInitials(appt)}
+                                  </div>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontWeight: 600, fontSize: 11, color: cols.text, lineHeight: 1.3 }}>
+                                      {name}
+                                      {isGuest && <span style={{ fontSize: 9, marginLeft: 4, opacity: .75 }}>· nouveau</span>}
+                                    </div>
+                                    {appt.heure_fin && (
+                                      <div style={{ fontSize: 10, color: cols.text, opacity: .75, marginTop: 1 }}>
+                                        {appt.heure_debut} – {appt.heure_fin}
+                                      </div>
+                                    )}
+                                    {hPx > 70 && appt.note && (
+                                      <div style={{ fontSize: 10, color: cols.text, opacity: .7, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {appt.note}
+                                      </div>
+                                    )}
+                                  </div>
+                                  {hPx > 45 && (
+                                    <span style={{ fontSize: 9, color: cols.border, fontWeight: 700, flexShrink: 0, marginTop: 2 }}>{label}</span>
+                                  )}
                                 </div>
-                              )
-                            })}
-                            {contAppts.map(appt => {
-                              const cols = apptColor(appt, todayStr, googleCalendarColor(appt, gcalImportCalendars))
-                              return (
-                                <div key={`cont-${appt.id}`}
-                                  style={{ height: '100%', borderLeft: `3px solid ${cols.border}`, background: `${cols.bg}88`, borderRadius: 4, cursor: 'pointer', minHeight: 28 }}
-                                  onClick={() => openEditAppt(appt)} />
-                              )
-                            })}
-                            {/* Blocs perso horaires (timed) */}
-                            {startBlks.map(blk => (
+                              </div>
+                            )
+                          })}
+
+                          {/* Blocs perso horaires */}
+                          {timedBlks.map(blk => {
+                            if (!blk.heure_debut) return null
+                            const yTop = monthSlotY(blk.heure_debut)
+                            const hPx  = monthSlotH(blk.heure_debut, blk.heure_fin)
+                            return (
                               <div key={blk.id}
                                 style={{
+                                  position: 'absolute', top: yTop, height: hPx,
+                                  left: 4, right: 4,
+                                  pointerEvents: 'auto',
                                   background: 'repeating-linear-gradient(-45deg,rgba(90,74,122,.06) 0,rgba(90,74,122,.06) 4px,rgba(240,237,247,.92) 4px,rgba(240,237,247,.92) 12px)',
                                   border: `1.5px dashed ${BLOCK_COLOR.border}`,
-                                  borderRadius: 6, padding: '3px 6px', fontSize: 10,
-                                  color: BLOCK_COLOR.text, fontStyle: 'italic', cursor: 'pointer',
+                                  borderRadius: 7, padding: '5px 8px',
+                                  fontSize: 10, color: BLOCK_COLOR.text, fontStyle: 'italic',
+                                  cursor: 'pointer', overflow: 'hidden', zIndex: 2,
                                 }}
-                                onClick={() => openEditBlock(blk)}>
-                                ⊘ {blk.motif || 'Perso / Indispo'}{blk.heure_debut ? ` ${blk.heure_debut}${blk.heure_fin ? `–${blk.heure_fin}` : ''}` : ''}
+                                onClick={() => openEditBlock(blk)}
+                              >
+                                <div style={{ fontWeight: 700, fontSize: 11 }}>⊘ {blk.motif || 'Perso / Indispo'}</div>
+                                {blk.heure_debut && (
+                                  <div style={{ fontSize: 10, opacity: .8, marginTop: 1 }}>
+                                    {blk.heure_debut}{blk.heure_fin ? ` – ${blk.heure_fin}` : ''}
+                                  </div>
+                                )}
                               </div>
-                            ))}
-                            {contBlks.map(blk => (
-                              <div key={`cb-${blk.id}`}
-                                style={{ height: '100%', borderLeft: `3px solid ${BLOCK_COLOR.border}`, background: `${BLOCK_COLOR.bg}88`, borderRadius: 4, cursor: 'pointer', minHeight: 20 }}
-                                onClick={() => openEditBlock(blk)} />
-                            ))}
-                            {/* Blocs journée entière : banner dans le 1er créneau, barre dans les suivants */}
-                            {isFirstSlot && allDayBlks.map(blk => (
-                              <div key={blk.id}
-                                style={{
-                                  background: 'repeating-linear-gradient(-45deg,rgba(90,74,122,.08) 0,rgba(90,74,122,.08) 4px,rgba(240,237,247,.95) 4px,rgba(240,237,247,.95) 12px)',
-                                  border: `1.5px dashed ${BLOCK_COLOR.border}`,
-                                  borderRadius: 6, padding: '4px 8px', fontSize: 10,
-                                  color: BLOCK_COLOR.text, fontStyle: 'italic', cursor: 'pointer',
-                                  display: 'flex', alignItems: 'center', gap: 5,
-                                }}
-                                onClick={() => openEditBlock(blk)}>
-                                <span style={{ fontSize: 13 }}>⊘</span>
-                                <span><strong>{blk.motif || 'Perso / Indispo'}</strong> — Journée entière</span>
-                              </div>
-                            ))}
-                            {!isFirstSlot && allDayBlks.map(blk => (
-                              <div key={`ad-${blk.id}`}
-                                style={{ height: '100%', borderLeft: `3px solid ${BLOCK_COLOR.border}`, background: `${BLOCK_COLOR.bg}55`, borderRadius: 4, cursor: 'pointer', minHeight: 20, display: 'flex', alignItems: 'center', paddingLeft: 6, fontSize: 10, color: BLOCK_COLOR.text, fontStyle: 'italic' }}
-                                onClick={() => openEditBlock(blk)}>
-                                {slotIdx === 1 ? '' : ''}
-                              </div>
-                            ))}
-                          </div>
+                            )
+                          })}
                         </div>
-                      )
-                    })}
-                  </div>
+
+                      </div>
+                    )
+                  })()}
                 </div>
               ) : (
                 /* Résumé mensuel si aucun jour sélectionné */
