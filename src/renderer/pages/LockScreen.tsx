@@ -98,13 +98,6 @@ export default function LockScreen({ mode, onUnlock, theme = 'light' }: Props) {
         overflow: 'hidden',
         transition: 'background .3s',
       }}>
-        {/* Bande verte en haut */}
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0,
-          height: 5,
-          background: 'linear-gradient(90deg, #4A6741, #2A7A6A)',
-        }} />
-
         {/* Cercle décoratif en arrière-plan */}
         <div style={{
           position: 'absolute', bottom: -120, right: -120,
