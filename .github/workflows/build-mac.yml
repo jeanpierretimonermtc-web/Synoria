@@ -12,7 +12,7 @@ permissions:
 jobs:
   build-mac-universal:
     name: Build Mac (Universal — Intel + Apple Silicon)
-    runs-on: macos-latest   # Runner ARM (M1/M2) — supporte le build universel
+    runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -27,14 +27,24 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-        # Le postinstall reconstruit better-sqlite3 pour arm64 (natif)
-        # electron-builder rebuild pour x64 lors du packaging universel
 
-      - name: Build Mac universel (DMG Intel + Apple Silicon)
-        # --universal = electron-builder compile pour x64 ET arm64,
-        # puis lipo-merge en un seul binaire universel.
-        # Fonctionne depuis un runner ARM grâce aux prebuilt binaries de better-sqlite3.
+      - name: Build Mac universel
         run: npx vite build && npx electron-builder --mac --universal --publish never
+
+      - name: Lister les fichiers release (debug)
+        run: ls -lh release/ || echo "Dossier release vide"
+
+      - name: Renommer le DMG sans espaces
+        run: |
+          DMG=$(ls release/*.dmg 2>/dev/null | head -1)
+          if [ -n "$DMG" ]; then
+            DEST="release/Synoria-${{ github.ref_name }}-universal.dmg"
+            mv "$DMG" "$DEST"
+            echo "DMG renommé : $DEST"
+          else
+            echo "ERREUR : aucun fichier .dmg trouvé dans release/"
+            exit 1
+          fi
 
       - name: Publier vers GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
@@ -44,12 +54,13 @@ jobs:
           body: |
             ## Synoria ${{ github.ref_name }} — macOS
 
-            | Fichier | Compatible |
-            |---------|-----------|
-            | `*-universal.dmg` | Intel (2020 et avant) + Apple Silicon M1/M2/M3 |
+            **Télécharger :** `Synoria-${{ github.ref_name }}-universal.dmg`
 
-            > **Un seul fichier DMG universel** fonctionne sur tous les Mac.
-          files: release/*-universal.dmg
+            Compatible **Intel (2019 et avant)** et **Apple Silicon M1/M2/M3** — un seul fichier pour tous les Mac.
+
+            > Premier lancement : clic droit → Ouvrir → Ouvrir quand même (app non signée)
+          files: release/Synoria-${{ github.ref_name }}-universal.dmg
           overwrite: true
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
