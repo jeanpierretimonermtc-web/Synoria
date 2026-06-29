@@ -392,10 +392,10 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
 
           {/* Autres observations */}
           <div className="summary-grid" style={{ marginTop: 10 }}>
-            <Row label="Constitution"      value={s.constitution} />
-            <Row label="Type de corps"     value={s.type_corps} />
-            <Row label="Teint"             value={s.teint} />
-            <Row label="Observation générale" value={s.observation} />
+            <Row     label="Constitution"        value={s.constitution} />
+            <Row     label="Type de corps"       value={s.type_corps} />
+            <Row     label="Teint"               value={s.teint} />
+            <HtmlRow label="Observation générale" value={s.observation} />
           </div>
         </div>
       )}
@@ -513,11 +513,11 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
       {/* ─── 4. DIAGNOSTIC MTC ───────────────────────────────────── */}
       {showMtcSections && (
         <SummaryBlock title="Diagnostic MTC" icon="🔵" color="var(--purple)">
-          <Row label="Diagnostic MTC principal" value={s.diagnostic_mtc} />
-          <Row label="5 Éléments"               value={s.cinq_elements} />
-          <Row label="Causes"                   value={s.causes} />
-          <Row label="Mécanisme / terrain"       value={s.analyse} />
-          <Row label="Principes de traitement"   value={s.principes} />
+          <Row     label="Diagnostic MTC principal" value={s.diagnostic_mtc} />
+          <Row     label="5 Éléments"               value={s.cinq_elements} />
+          <Row     label="Causes"                   value={s.causes} />
+          <HtmlRow label="Mécanisme / terrain"       value={s.analyse} />
+          <Row     label="Principes de traitement"   value={s.principes} />
         </SummaryBlock>
       )}
 
@@ -640,12 +640,12 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
       {/* ─── 6. TRAITEMENT ───────────────────────────────────────── */}
       {showMtcSections && (
         <SummaryBlock title="Traitement du jour" icon="🌿" color="var(--accent)">
-          <Row label="Points d'acupuncture"     value={s.points} />
-          <Row label="Points d'oreille"         value={s.pts_oreille} />
-          <Row label="Techniques utilisées"     value={s.techniques} />
-          <Row label="Plantes / Formule"        value={s.plantes} />
-          <Row label="Réactions / observations" value={s.reactions} />
-          <Row label="Notes traitement"         value={s.traitement_notes} />
+          <Row     label="Points d'acupuncture"     value={s.points} />
+          <Row     label="Points d'oreille"         value={s.pts_oreille} />
+          <Row     label="Techniques utilisées"     value={s.techniques} />
+          <Row     label="Plantes / Formule"        value={s.plantes} />
+          <HtmlRow label="Réactions / observations" value={s.reactions} />
+          <HtmlRow label="Notes traitement"         value={s.traitement_notes} />
         </SummaryBlock>
       )}
 
@@ -691,10 +691,10 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
       {/* ─── DOSSIER PATIENT ─────────────────────────────────────── */}
       {p && (p.medications || p.antecedents || p.regular_doctor || p.notes_general) && (
         <SummaryBlock title="Dossier patient" icon="📁" color="var(--text-muted)">
-          <Row label="Médecin régulier"             value={p.regular_doctor} />
-          <Row label="Médicaments / compléments"    value={p.medications} />
-          <Row label="Antécédents"                  value={p.antecedents} />
-          <Row label="Notes générales"              value={p.notes_general} />
+          <Row     label="Médecin régulier"          value={p.regular_doctor} />
+          <HtmlRow label="Médicaments / compléments" value={p.medications} />
+          <HtmlRow label="Antécédents"               value={p.antecedents} />
+          <HtmlRow label="Notes générales"           value={p.notes_general} />
         </SummaryBlock>
       )}
 
