@@ -335,6 +335,7 @@ export default function NewSessionPage() {
   const [simpleNotesEntretien,     setSimpleNotesEntretien]     = useState('')
   // Clôture séance : marquer RDV réalisé + comptabilité
   const [markRdvDone,      setMarkRdvDone]      = useState(false)
+  const [enableCompta,     setEnableCompta]     = useState(false)
   const [clotureTypeId,    setClotureTypeId]    = useState('')
   const [clotureTypes,     setClotureTypes]     = useState<ConsultationType[]>([])
   const [currentMonthNb,   setCurrentMonthNb]   = useState<number | null>(null)
@@ -1255,34 +1256,59 @@ export default function NewSessionPage() {
                 </span>
               </label>
 
-              {/* Comptabilité */}
+              {/* Comptabilité — case à cocher simple */}
               {clotureTypes.length > 0 && (
                 <div>
                   <div style={{ height: 1, background: 'var(--purple-mid)', opacity: .3, marginBottom: 12 }} />
-                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--purple)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
-                    📊 Enregistrer en comptabilité
-                  </div>
-                  <div className="field" style={{ margin: 0 }}>
-                    <select
-                      value={clotureTypeId}
-                      onChange={e => setClotureTypeId(e.target.value)}
-                      style={{ fontSize: 13, borderColor: 'var(--purple-mid)', background: '#fff' }}
-                    >
-                      <option value="">— Ne pas comptabiliser —</option>
-                      {clotureTypes.map(t => (
-                        <option key={t.id} value={t.id}>
-                          {t.name}{t.price > 0 ? ` — ${t.price.toFixed(2)} €` : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {clotureTypeId && (() => {
+
+                  {/* Case principale */}
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={enableCompta}
+                      onChange={e => {
+                        const checked = e.target.checked
+                        setEnableCompta(checked)
+                        if (checked && clotureTypes.length === 1) {
+                          setClotureTypeId(clotureTypes[0].id)
+                        } else if (!checked) {
+                          setClotureTypeId('')
+                        }
+                      }}
+                      style={{ width: 16, height: 16, accentColor: 'var(--purple)', cursor: 'pointer', flexShrink: 0, marginTop: 2 }}
+                    />
+                    <span>
+                      <strong>Enregistrer cette séance en comptabilité</strong>
+                      <span style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
+                        Ajoute +1 au tableau mensuel de revenus
+                      </span>
+                    </span>
+                  </label>
+
+                  {/* Select type uniquement si plusieurs types et case cochée */}
+                  {enableCompta && clotureTypes.length > 1 && (
+                    <div className="field" style={{ margin: '10px 0 0 26px' }}>
+                      <select
+                        value={clotureTypeId}
+                        onChange={e => setClotureTypeId(e.target.value)}
+                        style={{ fontSize: 13, borderColor: 'var(--purple-mid)', background: '#fff' }}
+                      >
+                        <option value="">— Choisir le type —</option>
+                        {clotureTypes.map(t => (
+                          <option key={t.id} value={t.id}>
+                            {t.name}{t.price > 0 ? ` — ${t.price.toFixed(2)} €` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {enableCompta && clotureTypeId && (() => {
                     const type = clotureTypes.find(t => t.id === clotureTypeId)
                     const [y, m] = date.split('-')
                     const alreadyNb = currentMonthNb ?? null
                     const afterNb   = alreadyNb !== null ? alreadyNb + 1 : null
                     return (
-                      <div style={{ marginTop: 8 }}>
+                      <div style={{ marginTop: 10, marginLeft: 26 }}>
                         {/* Résumé du mois actuel */}
                         {alreadyNb !== null && (
                           <div style={{
