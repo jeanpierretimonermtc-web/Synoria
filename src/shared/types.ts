@@ -355,7 +355,8 @@ export interface AppSettings {
   practitionerApe:          string
   practitionerPaymentTerms: string
   practitionerLogoPath:     string
-  theme?: 'light' | 'dark'
+  theme?:     'light' | 'dark'
+  themeMode?: 'light' | 'dark' | 'system'
 }
 
 // ─── RECHERCHE GLOBALE ────────────────────────────────────────────────────────

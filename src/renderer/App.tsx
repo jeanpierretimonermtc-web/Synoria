@@ -33,33 +33,56 @@ export default function App() {
   const [showWizard,  setShowWizard]  = useState(false)
   const navigate = useNavigate()
 
-  // Lecture synchrone depuis localStorage → pas de flash au premier rendu
-  const [theme, setTheme] = useState<'light' | 'dark'>(() =>
-    (localStorage.getItem('synoria-theme') as 'light' | 'dark') || 'light'
+  type ThemeMode = 'light' | 'dark' | 'system'
+  const getSystemPref = () => window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() =>
+    (localStorage.getItem('synoria-theme-mode') as ThemeMode) || 'light'
   )
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const m = (localStorage.getItem('synoria-theme-mode') as ThemeMode) || 'light'
+    return m === 'system' ? getSystemPref() : m === 'dark' ? 'dark' : 'light'
+  })
 
   // ── Chargement et application du thème ──
   useEffect(() => {
-    // Sync depuis les settings (source de vérité persistante côté Electron)
     window.mtcApi.getSettings().then(s => {
-      const t = s.theme === 'dark' ? 'dark' : 'light'
-      setTheme(t)
-      localStorage.setItem('synoria-theme', t)
+      const mode = (s.themeMode as ThemeMode) || (s.theme === 'dark' ? 'dark' : 'light')
+      setThemeMode(mode)
+      setTheme(mode === 'system' ? getSystemPref() : mode === 'dark' ? 'dark' : 'light')
+      localStorage.setItem('synoria-theme-mode', mode)
     }).catch(() => {})
   }, [])
+
+  // Écouter les changements de préférence système
+  useEffect(() => {
+    if (themeMode !== 'system') return
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const handler = (e: MediaQueryListEvent) => setTheme(e.matches ? 'dark' : 'light')
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [themeMode])
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
 
-  const toggleTheme = () => {
-    const next = theme === 'light' ? 'dark' : 'light'
-    setTheme(next)
-    localStorage.setItem('synoria-theme', next)
-    window.mtcApi.saveSettings({ theme: next }).catch(() => {})
+  const cycleTheme = () => {
+    const cycle: ThemeMode[] = ['light', 'dark', 'system']
+    const next = cycle[(cycle.indexOf(themeMode) + 1) % 3]
+    setThemeMode(next)
+    setTheme(next === 'system' ? getSystemPref() : next === 'dark' ? 'dark' : 'light')
+    localStorage.setItem('synoria-theme-mode', next)
+    window.mtcApi.saveSettings({ themeMode: next } as any).catch(() => {})
   }
+  const toggleTheme = cycleTheme  // alias pour compatibilité
 
-  const [searchOpen, setSearchOpen]   = useState(false)
-  const [adminOpen, setAdminOpen]     = useState(false)
+  const [searchOpen,    setSearchOpen]    = useState(false)
+  const [adminOpen,     setAdminOpen]     = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [aboutOpen,     setAboutOpen]     = useState(false)
+  const [appVersion,    setAppVersion]    = useState('')
+  useEffect(() => { window.mtcApi.getAppVersion().then(setAppVersion).catch(() => {}) }, [])
 
   // ── Ctrl+Shift+Alt+A → panneau admin ──
   useEffect(() => {
@@ -73,13 +96,20 @@ export default function App() {
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
-  // ── Ctrl+K → recherche globale ──
+  // ── Ctrl+K → recherche globale · ? → raccourcis ──
   useEffect(() => {
     if (authState !== 'unlocked') return
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
         e.preventDefault()
         setSearchOpen(v => !v)
+      }
+      // '?' sans modificateur → modal raccourcis (sauf si focus dans un champ texte)
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const t = e.target as HTMLElement
+        if (t.tagName !== 'INPUT' && t.tagName !== 'TEXTAREA' && !t.isContentEditable) {
+          setShortcutsOpen(v => !v)
+        }
       }
     }
     window.addEventListener('keydown', handler)
@@ -162,6 +192,55 @@ export default function App() {
       {searchOpen && <GlobalSearch onClose={() => setSearchOpen(false)} />}
       {adminOpen && <AdminPanel onClose={() => setAdminOpen(false)} theme={theme} />}
       {showWizard && <SetupWizard theme={theme} onComplete={() => setShowWizard(false)} />}
+
+      {/* ── Modal raccourcis clavier ── */}
+      {shortcutsOpen && (
+        <div style={{ position:'fixed',inset:0,zIndex:9000,background:'rgba(0,0,0,.5)',display:'flex',alignItems:'center',justifyContent:'center' }} onClick={() => setShortcutsOpen(false)}>
+          <div style={{ background:'var(--surface)',borderRadius:16,padding:'32px 40px',maxWidth:480,width:'100%',boxShadow:'0 32px 80px rgba(0,0,0,.28)',border:'1px solid var(--border)' }} onClick={e=>e.stopPropagation()}>
+            <div style={{ fontFamily:'var(--font-serif)',fontSize:20,fontWeight:700,color:'var(--accent)',marginBottom:24 }}>Raccourcis clavier</div>
+            {[
+              ['Ctrl + K', 'Recherche globale'],
+              ['Ctrl + 1', 'Tableau de bord'],
+              ['Ctrl + 2', 'Patients'],
+              ['Ctrl + 3', 'Nouvelle séance'],
+              ['Ctrl + 4', 'Séances'],
+              ['Ctrl + 5', 'Calendrier'],
+              ['Ctrl + 6', 'Comptabilité'],
+              ['Ctrl + 7', 'Paramètres'],
+              ['Ctrl + L', 'Verrouiller l\'application'],
+              ['?', 'Afficher cette aide'],
+            ].map(([k, v]) => (
+              <div key={k} style={{ display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:'1px solid var(--border-soft)' }}>
+                <span style={{ fontSize:13,color:'var(--text-muted)' }}>{v}</span>
+                <kbd style={{ background:'var(--bg)',border:'1px solid var(--border)',borderRadius:6,padding:'3px 10px',fontSize:12,fontFamily:'var(--font-mono)',fontWeight:600,color:'var(--text)',boxShadow:'0 2px 0 var(--border)' }}>{k}</kbd>
+              </div>
+            ))}
+            <button className="btn btn-secondary" style={{ marginTop:20,width:'100%' }} onClick={() => setShortcutsOpen(false)}>Fermer</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal À propos ── */}
+      {aboutOpen && (
+        <div style={{ position:'fixed',inset:0,zIndex:9000,background:'rgba(0,0,0,.5)',display:'flex',alignItems:'center',justifyContent:'center' }} onClick={() => setAboutOpen(false)}>
+          <div style={{ background:'var(--surface)',borderRadius:16,padding:'36px 44px',maxWidth:460,width:'100%',boxShadow:'0 32px 80px rgba(0,0,0,.28)',border:'1px solid var(--border)',textAlign:'center' }} onClick={e=>e.stopPropagation()}>
+            <img src="./Synoria.png" alt="Synoria" style={{ width:80,height:80,objectFit:'contain',marginBottom:16 }} />
+            <div style={{ fontFamily:'var(--font-serif)',fontSize:24,fontWeight:700,color:'var(--accent)',marginBottom:4 }}>Synoria</div>
+            <div style={{ fontSize:12,color:'var(--text-muted)',marginBottom:20 }}>v{appVersion} · Logiciel de gestion de dossiers patients</div>
+            <div style={{ fontSize:13,color:'var(--text)',lineHeight:1.8,marginBottom:20,textAlign:'left',background:'var(--bg)',borderRadius:10,padding:'14px 18px' }}>
+              <div><strong>Auteur :</strong> Jean-Pierre Timoner</div>
+              <div><strong>Contact :</strong> jeanpierre.timoner.mtc@gmail.com</div>
+              <div><strong>Données :</strong> 100% locales — chiffrement AES-256-GCM</div>
+              <div><strong>RGPD :</strong> aucune donnée transmise à des tiers</div>
+              <div style={{ marginTop:8,paddingTop:8,borderTop:'1px solid var(--border-soft)',fontSize:12,color:'var(--text-muted)' }}>
+                © 2025-2026 Jean-Pierre Timoner. Tous droits réservés.<br/>
+                Usage professionnel uniquement — praticiens de santé.
+              </div>
+            </div>
+            <button className="btn btn-secondary" style={{ width:'100%' }} onClick={() => setAboutOpen(false)}>Fermer</button>
+          </div>
+        </div>
+      )}
       <div className="app-shell">
 
         {/* ── HEADER compact ── */}
@@ -171,9 +250,16 @@ export default function App() {
             <img src="./Text Synoria fond blanc.png" alt="SYNORIA" className="logo-title-img" />
             <span title="Données chiffrées AES-256" className="logo-secure">🔒 chiffré</span>
           </div>
-          <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button className="theme-toggle-btn" onClick={toggleTheme} title={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}>
-              {theme === 'dark' ? '☀' : '🌙'}
+          <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button className="btn-header-icon" onClick={() => setShortcutsOpen(true)} title="Raccourcis clavier (?)">
+              <span style={{ fontSize: 13, fontWeight: 700 }}>?</span>
+            </button>
+            <button className="btn-header-icon" onClick={() => setAboutOpen(true)} title="À propos de Synoria">
+              <span style={{ fontSize: 13, fontWeight: 700 }}>ℹ</span>
+            </button>
+            <button className="theme-toggle-btn" onClick={cycleTheme}
+              title={themeMode === 'light' ? 'Mode clair — clic : mode sombre' : themeMode === 'dark' ? 'Mode sombre — clic : mode système' : 'Mode système (OS) — clic : mode clair'}>
+              {themeMode === 'light' ? '☀' : themeMode === 'dark' ? '🌙' : '⚙'}
             </button>
             <BackupButton showToast={showToast} />
           </div>

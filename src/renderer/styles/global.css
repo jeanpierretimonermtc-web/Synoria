@@ -36,6 +36,9 @@
   --shadow-lg: 0 4px 16px rgba(0,0,0,.09), 0 20px 52px rgba(0,0,0,.14);
   --input-bg:  #ffffff;
   --font-size-base: 14px;
+  --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-serif: 'DM Serif Display', Georgia, 'Times New Roman', serif;
+  --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
   /* Niveau de pénétration – codes couleur distincts */
   --pen-mtm-bg: #EAF0E8; --pen-mtm-text: #2F5D34; --pen-mtm-border: #4A6741;
   --pen-mp-bg: #E8F0F8;  --pen-mp-text: #2A5A8A;  --pen-mp-border: #6A9AC4;
@@ -46,7 +49,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   background: var(--bg);
   color: var(--text);
   font-size: 14px;
@@ -418,7 +421,7 @@ body {
 }
 .stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
 .stat-num {
-  font-family: 'DM Serif Display', serif;
+  font-family: var(--font-serif);
   font-size: 40px;
   color: var(--accent);
   line-height: 1.1;
@@ -444,7 +447,7 @@ body {
 input[type="text"], input[type="email"], input[type="date"], input[type="tel"],
 select, textarea {
   width: 100%;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
   background: var(--input-bg);
   border: 1.5px solid var(--border);
@@ -478,7 +481,7 @@ input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; accent-colo
 .btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 8px 16px; border-radius: 9px;
-  font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+  font-size: 13px; font-weight: 600; font-family: var(--font-sans);
   cursor: pointer; border: 1.5px solid transparent;
   transition: all .15s cubic-bezier(.25,.46,.45,.94);
   text-decoration: none; white-space: nowrap;
@@ -692,7 +695,7 @@ input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; accent-colo
 .pol-btn {
   padding: 4px 14px; border-radius: 20px; border: 1px solid var(--purple-mid);
   background: #fff; color: var(--purple); cursor: pointer;
-  font-size: 12px; font-weight: 500; font-family: 'DM Sans', sans-serif; transition: all .15s;
+  font-size: 12px; font-weight: 500; font-family: var(--font-sans); transition: all .15s;
 }
 .pol-btn:hover { background: var(--purple-light); }
 .pol-btn.active-plus { background: #4A8A4A; color: #fff; border-color: #4A8A4A; }
@@ -702,7 +705,7 @@ input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; accent-colo
 .foyer-sub-btn {
   padding: 4px 10px; border-radius: 20px; border: 1px solid var(--purple-mid);
   background: #fff; color: var(--purple); cursor: pointer;
-  font-size: 11px; font-weight: 500; font-family: 'DM Sans', sans-serif;
+  font-size: 11px; font-weight: 500; font-family: var(--font-sans);
   transition: all .15s; margin: 2px;
 }
 .foyer-sub-btn:hover { background: var(--purple-light); }
@@ -764,7 +767,7 @@ input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; accent-colo
 }
 @keyframes slideModal { from { opacity: 0; transform: scale(.93) translateY(12px) } to { opacity: 1; transform: scale(1) translateY(0) } }
 .modal h2 {
-  font-family: 'DM Serif Display', serif; font-size: 20px;
+  font-family: var(--font-serif); font-size: 20px;
   margin-bottom: 1.25rem; color: var(--accent);
   padding-bottom: .875rem; border-bottom: 1px solid var(--border-soft);
 }
@@ -1059,7 +1062,7 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
   gap: 16px; flex-wrap: wrap;
 }
 .dash-welcome-title {
-  font-family: 'DM Serif Display', serif;
+  font-family: var(--font-serif);
   font-size: 22px; color: #fff; line-height: 1.2;
 }
 .dash-welcome-date { font-size: 12px; color: rgba(255,255,255,.75); margin-top: 3px; }
@@ -1109,7 +1112,7 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
   box-shadow: 0 2px 10px rgba(0,0,0,.2);
 }
 .stat-num {
-  font-family: 'DM Serif Display', serif; font-size: 42px;
+  font-family: var(--font-serif); font-size: 42px;
   line-height: 1.05; letter-spacing: -.03em;
 }
 .stat-lbl { font-size: 13px; color: var(--text); font-weight: 700; margin-top: 2px; }
@@ -1296,7 +1299,7 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
   display: flex; align-items: center; gap: 6px;
   padding: 5px 14px; border-radius: 7px;
   border: none; background: none; cursor: pointer;
-  font-size: 13px; font-weight: 500; font-family: 'DM Sans', sans-serif;
+  font-size: 13px; font-weight: 500; font-family: var(--font-sans);
   color: var(--text-muted); transition: all .15s;
 }
 .patient-filter-tab:hover { background: var(--surface); color: var(--text); }
@@ -1362,7 +1365,7 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
 }
 .pouls-pos-input {
   padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px;
-  font-size: 12px; font-family: 'DM Sans', sans-serif;
+  font-size: 12px; font-family: var(--font-sans);
   background: var(--surface); color: var(--text);
   width: 100%;
 }
@@ -1373,7 +1376,7 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
   display: flex; align-items: center; justify-content: space-between;
   cursor: pointer; user-select: none; width: 100%;
   background: none; border: none; padding: 0;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
 }
 .sys-card-toggle-icon {
   font-size: 11px; color: var(--text-hint); transition: transform .2s;
@@ -1506,7 +1509,7 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
 .compta-kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 .compta-kpi-icon { font-size: 22px; flex-shrink: 0; }
 .compta-kpi-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; opacity: .75; margin-bottom: 3px; }
-.compta-kpi-value { font-family: 'DM Serif Display', serif; font-size: 20px; font-weight: 700; letter-spacing: -.02em; }
+.compta-kpi-value { font-family: var(--font-serif); font-size: 20px; font-weight: 700; letter-spacing: -.02em; }
 .compta-kpi-green { background: var(--accent-light); border-color: var(--accent-mid); color: var(--accent); }
 .compta-kpi-amber { background: var(--amber-light); border-color: var(--amber); color: var(--amber); }
 .compta-kpi-teal  { background: var(--teal-light);  border-color: var(--teal);  color: var(--teal); }
@@ -1573,7 +1576,7 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
 
 /* Cellule éditable */
 .compta-cell-input {
-  width: 100%; padding: 3px 5px; font-size: 12px; font-family: 'DM Sans', sans-serif;
+  width: 100%; padding: 3px 5px; font-size: 12px; font-family: var(--font-sans);
   border: 1.5px solid var(--accent-mid); border-radius: 4px;
   background: var(--accent-light); color: var(--text); text-align: center;
 }
@@ -1629,7 +1632,7 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
   border-radius: 20px; padding: 6px 16px;
 }
 .factures-kpi-count { font-size: 12px; color: var(--accent); font-weight: 600; }
-.factures-kpi-total { font-family: 'DM Serif Display', serif; font-size: 17px; color: var(--accent); font-weight: 700; }
+.factures-kpi-total { font-family: var(--font-serif); font-size: 17px; color: var(--accent); font-weight: 700; }
 
 .factures-table-wrap {
   overflow-x: auto; border-radius: var(--radius-lg);
@@ -1672,7 +1675,7 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
 .factures-row-paid .factures-montant { color: var(--accent) !important; }
 
 .factures-montant-total {
-  padding: 10px 12px; font-family: 'DM Serif Display', serif;
+  padding: 10px 12px; font-family: var(--font-serif);
   font-size: 18px; font-weight: 700; text-align: right; color: var(--accent);
   background: var(--accent-light); vertical-align: middle;
 }
@@ -3187,7 +3190,7 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
   color: var(--text);
   font-size: 13px;
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   line-height: 1.4;
   transition: background .12s, border-color .12s;
   flex-shrink: 0;
