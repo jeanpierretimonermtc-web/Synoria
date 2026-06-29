@@ -134,11 +134,22 @@ export default function App() {
       if (!e.ctrlKey && !e.metaKey) return
       const target = e.target as HTMLElement
       if (target.isContentEditable || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return
+      // Navigation
       const routes: Record<string, string> = {
-        '1': '/', '2': '/patients', '3': '/nouvelle',
-        '4': '/calendrier', '5': '/comptabilite', '6': '/parametres', '7': '/rgpd',
+        '1': '/',              // Tableau de bord
+        '2': '/patients',     // Patients
+        '3': '/nouvelle',     // Nouvelle séance
+        '4': '/seances',      // Séances
+        '5': '/calendrier',   // Calendrier
+        '6': '/comptabilite', // Comptabilité
+        '7': '/parametres',   // Paramètres
       }
-      if (routes[e.key]) { e.preventDefault(); navigate(routes[e.key]) }
+      if (routes[e.key]) { e.preventDefault(); navigate(routes[e.key]); return }
+      // Ctrl+L → Verrouiller
+      if (e.key === 'l' || e.key === 'L') {
+        e.preventDefault()
+        window.mtcApi.authLock().then(() => setAuthState('locked')).catch(() => {})
+      }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
