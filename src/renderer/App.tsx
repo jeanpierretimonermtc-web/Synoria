@@ -63,6 +63,17 @@ export default function App() {
     return () => mq.removeEventListener('change', handler)
   }, [themeMode])
 
+  // Écouter les changements de thème depuis SettingsPage
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const mode = (e as CustomEvent).detail as ThemeMode
+      setThemeMode(mode)
+      setTheme(mode === 'system' ? getSystemPref() : mode === 'dark' ? 'dark' : 'light')
+    }
+    window.addEventListener('synoria-theme-change', handler)
+    return () => window.removeEventListener('synoria-theme-change', handler)
+  }, [])
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
@@ -260,10 +271,6 @@ export default function App() {
             </button>
             <button className="btn-header-icon" onClick={() => setAboutOpen(true)} title="À propos de Synoria">
               <span style={{ fontSize: 13, fontWeight: 700 }}>ℹ</span>
-            </button>
-            <button className="theme-toggle-btn" onClick={cycleTheme}
-              title={themeMode === 'light' ? 'Mode clair — clic : mode sombre' : themeMode === 'dark' ? 'Mode sombre — clic : mode système' : 'Mode système (OS) — clic : mode clair'}>
-              {themeMode === 'light' ? '☀' : themeMode === 'dark' ? '🌙' : '⚙'}
             </button>
             <BackupButton showToast={showToast} />
           </div>

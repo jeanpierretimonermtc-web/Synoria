@@ -24,16 +24,17 @@ function StatusDot({ ok }: { ok: boolean }) {
 
 // ── Onglets de la sidebar ─────────────────────────────────────────
 
-type Tab = 'sauvegardes' | 'facturation' | 'rgpd' | 'securite' | 'plugin' | 'gcal' | 'support'
+type Tab = 'apparence' | 'sauvegardes' | 'facturation' | 'rgpd' | 'securite' | 'plugin' | 'gcal' | 'support'
 
 const TABS: { id: Tab; icon: string; label: string; desc: string }[] = [
-  { id: 'sauvegardes', icon: '💾', label: 'Sauvegardes',  desc: 'Chemins, automatisation'     },
-  { id: 'facturation', icon: '🧾', label: 'Facturation',  desc: 'Factures, numérotation'       },
-  { id: 'rgpd',        icon: '🔒', label: 'RGPD',         desc: 'Notice, consentements'        },
-  { id: 'securite',    icon: '🔐', label: 'Sécurité',     desc: 'Mot de passe, mise à jour'    },
-  { id: 'plugin',      icon: '🔌', label: 'Plugin',       desc: 'Formulaire de spécialité'     },
-  { id: 'gcal',        icon: '📅', label: 'Google Cal.',  desc: 'Sync calendrier téléphone'    },
-  { id: 'support',     icon: '🔧', label: 'Support',      desc: 'Diagnostic, assistance'       },
+  { id: 'apparence',   icon: '🎨', label: 'Apparence',   desc: 'Thème, affichage'             },
+  { id: 'sauvegardes', icon: '💾', label: 'Sauvegardes', desc: 'Chemins, automatisation'      },
+  { id: 'facturation', icon: '🧾', label: 'Facturation', desc: 'Factures, numérotation'       },
+  { id: 'rgpd',        icon: '🔒', label: 'RGPD',        desc: 'Notice, consentements'        },
+  { id: 'securite',    icon: '🔐', label: 'Sécurité',    desc: 'Mot de passe, mise à jour'    },
+  { id: 'plugin',      icon: '🔌', label: 'Plugin',      desc: 'Formulaire de spécialité'     },
+  { id: 'gcal',        icon: '📅', label: 'Google Cal.', desc: 'Sync calendrier téléphone'    },
+  { id: 'support',     icon: '🔧', label: 'Support',     desc: 'Diagnostic, assistance'       },
 ]
 
 // ── PAGE ──────────────────────────────────────────────────────────
@@ -408,6 +409,86 @@ export default function SettingsPage() {
 
       {/* ── CONTENU ── */}
       <div className="settings-content">
+
+        {/* ════ APPARENCE ════ */}
+        {activeTab === 'apparence' && (
+          <div>
+            <div className="settings-tab-header">
+              <div className="settings-tab-title">🎨 Apparence</div>
+              <div className="settings-tab-desc">Personnalisez l'affichage de Synoria</div>
+            </div>
+
+            <div className="settings-card">
+              <div className="settings-card-title">
+                <span className="card-title-icon icon-purple">🌓</span>
+                Thème de l'interface
+              </div>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
+                Choisissez entre le mode clair, sombre, ou laissez Synoria suivre automatiquement
+                les préférences de votre système d'exploitation.
+              </p>
+
+              {/* Sélecteur 3 boutons */}
+              {(() => {
+                const current = (localStorage.getItem('synoria-theme-mode') || 'light') as 'light' | 'dark' | 'system'
+                const [localMode, setLocalMode] = React.useState<'light'|'dark'|'system'>(current)
+
+                const applyTheme = (mode: 'light' | 'dark' | 'system') => {
+                  setLocalMode(mode)
+                  localStorage.setItem('synoria-theme-mode', mode)
+                  window.dispatchEvent(new CustomEvent('synoria-theme-change', { detail: mode }))
+                  window.mtcApi.saveSettings({ themeMode: mode } as any).catch(() => {})
+                }
+
+                const options: { id: 'light'|'dark'|'system'; icon: string; label: string; desc: string }[] = [
+                  { id: 'light',  icon: '☀️', label: 'Clair',   desc: 'Fond blanc, idéal en journée' },
+                  { id: 'dark',   icon: '🌙', label: 'Sombre',  desc: 'Fond foncé, confort le soir'  },
+                  { id: 'system', icon: '⚙️', label: 'Système', desc: 'Suit votre OS automatiquement'},
+                ]
+
+                return (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                    {options.map(o => {
+                      const active = localMode === o.id
+                      return (
+                        <button
+                          key={o.id}
+                          onClick={() => applyTheme(o.id)}
+                          style={{
+                            display: 'flex', flexDirection: 'column', alignItems: 'center',
+                            gap: 8, padding: '20px 12px',
+                            borderRadius: 12,
+                            border: active ? '2px solid var(--accent)' : '2px solid var(--border)',
+                            background: active ? 'var(--accent-light)' : 'var(--surface)',
+                            cursor: 'pointer',
+                            transition: 'all .15s',
+                            outline: 'none',
+                          }}
+                        >
+                          <span style={{ fontSize: 28 }}>{o.icon}</span>
+                          <div style={{ fontWeight: 700, fontSize: 14, color: active ? 'var(--accent)' : 'var(--text)' }}>
+                            {o.label}
+                          </div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.4 }}>
+                            {o.desc}
+                          </div>
+                          {active && (
+                            <div style={{
+                              width: 20, height: 20, borderRadius: '50%',
+                              background: 'var(--accent)', color: '#fff',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: 12, fontWeight: 800,
+                            }}>✓</div>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )
+              })()}
+            </div>
+          </div>
+        )}
 
         {/* ════ SAUVEGARDES ════ */}
         {activeTab === 'sauvegardes' && (
