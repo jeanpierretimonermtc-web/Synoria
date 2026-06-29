@@ -204,6 +204,18 @@ export default function ComptaPage() {
         <button className="btn btn-primary btn-sm" onClick={handleExport} disabled={exporting}>
           {exporting ? '⏳' : '📥'} Export Excel
         </button>
+        <button
+          className="btn btn-secondary btn-sm"
+          title="Rapport annuel — CA par trimestre + cotisations Urssaf estimées"
+          onClick={async () => {
+            try {
+              const path = await window.mtcApi.exportUrssafReport(year)
+              await window.mtcApi.openPath(path)
+            } catch (e: any) { alert(`Erreur : ${e?.message || e}`) }
+          }}
+        >
+          📊 Rapport Urssaf {year}
+        </button>
       </div>
 
       <div className="compta-table-wrap">

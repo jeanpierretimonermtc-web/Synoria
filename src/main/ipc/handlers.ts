@@ -28,7 +28,9 @@ import * as gcalSvc                   from '../services/googleCalendarService'
 import { logError }                             from '../services/logService'
 import { getAllBlocks, getBlocksByMonth, createBlock, updateBlock, deleteBlock } from '../database/repositories/calendarBlockRepository'
 import { generateDiagnosticReport, generateSupportDoc, generateRecoveryDoc } from '../services/diagnosticService'
-import { exportPatientReport } from '../services/patientReportService'
+import { exportPatientReport }  from '../services/patientReportService'
+import { exportConsentForm }    from '../services/consentFormService'
+import { exportUrssafReport }   from '../services/urssafReportService'
 import { adminVerify, adminGetLogs, adminClearLogs, adminGetSystemInfo, adminDbIntegrity, adminWalCheckpoint, adminDbStats, adminGetSettings, adminForceBackup } from '../services/adminService'
 
 // ── Slug patient (même logique que backupService) ─────────────────
@@ -229,9 +231,9 @@ export function registerAllHandlers(): void {
     return 'PDF export: utilisez Imprimer (Ctrl+P) depuis le résumé de séance'
   })
 
-  ipcMain.handle('exports:patientReport', (_e, patientId: string) => {
-    return exportPatientReport(patientId)
-  })
+  ipcMain.handle('exports:patientReport',  (_e, patientId: string) => exportPatientReport(patientId))
+  ipcMain.handle('exports:consentForm',    (_e, patientId?: string) => exportConsentForm(patientId))
+  ipcMain.handle('exports:urssafReport',   (_e, year: number)      => exportUrssafReport(year))
 
   // ─── BACKUP GÉNÉRAL ────────────────────────────────────────────────────────
   ipcMain.handle('exports:backupJson',   ()             => exportBackupEncrypted())
@@ -583,6 +585,10 @@ export function registerAllHandlers(): void {
         seedDevDataIfEmpty()
       } catch (e) { console.error('[DEV] Seed after login:', e) }
     }
+    // Notification desktop J-1 après un court délai (laisse la fenêtre s'afficher)
+    setTimeout(() => {
+      try { require('../services/notificationService').checkJ1Reminders() } catch {}
+    }, 4000)
     return true
   })
 

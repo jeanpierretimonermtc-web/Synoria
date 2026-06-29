@@ -68,6 +68,16 @@ export default function RgpdPage() {
     setExportingReg(false)
   }
 
+  const handleExportConsent = async (patientId?: string) => {
+    try {
+      const path = await window.mtcApi.exportConsentForm(patientId)
+      await window.mtcApi.openPath(path)
+      showToast('Formulaire de consentement généré ✓ — Imprimez et faites signer', 'success')
+    } catch (e: any) {
+      showToast(`Erreur : ${e?.message || e}`, 'error')
+    }
+  }
+
   // ── Journal filtré ──────────────────────────────────────────────
   const filteredLog = logFilter
     ? accessLog.filter(l =>
@@ -105,6 +115,14 @@ export default function RgpdPage() {
           style={{ background: 'var(--teal)', borderColor: 'var(--teal)' }}
         >
           {exportingReg ? '⏳…' : '📄 Exporter le registre Art. 30'}
+        </button>
+        <button
+          className="btn btn-secondary btn-sm"
+          onClick={() => handleExportConsent()}
+          title="Formulaire vierge — imprimer et faire signer par le patient"
+          style={{ color: 'var(--purple)', borderColor: 'var(--purple-mid)' }}
+        >
+          📝 Formulaire consentement vierge
         </button>
       </div>
 

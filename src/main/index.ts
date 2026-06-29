@@ -7,6 +7,7 @@ import { getSettings }                      from './services/settingsService'
 import { exportBackupEncrypted }            from './services/backupService'
 import * as auth                            from './services/authService'
 import { seedDevDataIfEmpty }               from './database/seedDevData'
+import { checkJ1Reminders, checkUpcomingAppointments } from './services/notificationService'
 
 // ── Mode portable / clé USB ────────────────────────────────────────
 const portableDir = process.env.PORTABLE_EXECUTABLE_DIR
@@ -107,42 +108,7 @@ function startAutoSaveEncrypted(): void {
   }, 3 * 60 * 1000)
 }
 
-// ── Notifications bureau — RDV dans 15 min ────────────────────────
-const notifiedIds = new Set<string>()
-
-function checkUpcomingAppointments(): void {
-  if (!auth.isKeyLoaded()) return
-  try {
-    const { getAppointmentsByDate } = require('./database/repositories/appointmentRepository')
-    const { getPatientById }        = require('./database/repositories/patientRepository')
-    const now     = new Date()
-    const today   = now.toISOString().slice(0, 10)
-    const appts   = getAppointmentsByDate(today) as any[]
-    for (const appt of appts) {
-      if (appt.is_done || appt.is_cancelled || notifiedIds.has(appt.id)) continue
-      const [h, m]    = (appt.heure_debut as string).split(':').map(Number)
-      const apptTime  = new Date(now); apptTime.setHours(h, m, 0, 0)
-      const diffMin   = (apptTime.getTime() - now.getTime()) / 60000
-      if (diffMin > 0 && diffMin <= 15) {
-        notifiedIds.add(appt.id)
-        let name = appt.guest_first_name
-          ? `${appt.guest_first_name} ${appt.guest_last_name ?? ''}`.trim()
-          : 'Patient'
-        if (appt.patient_id) {
-          try {
-            const p = getPatientById(appt.patient_id) as any
-            if (p) name = `${p.first_name} ${p.last_name}`
-          } catch {}
-        }
-        new Notification({
-          title: `Synoria — RDV dans ${Math.round(diffMin)} min`,
-          body:  `${name} à ${appt.heure_debut}${appt.note ? ' · ' + appt.note : ''}`,
-          icon:  iconPath,
-        }).show()
-      }
-    }
-  } catch { /* DB pas encore ouverte */ }
-}
+// ── Notifications (voir services/notificationService.ts) ────────────
 
 // ── État de la fenêtre (taille + position persistés) ───────────────
 interface WindowState {

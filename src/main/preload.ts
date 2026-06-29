@@ -42,6 +42,8 @@ const api: IpcApi = {
   exportSessionPdf:     (sessionId)  => ipcRenderer.invoke('exports:sessionPdf', sessionId),
   exportPatientExcel:   (patientId, sessionId) => ipcRenderer.invoke('exports:patientExcel', patientId, sessionId),
   exportPatientReport:  (patientId)            => ipcRenderer.invoke('exports:patientReport', patientId),
+  exportConsentForm:    (patientId?: string)   => ipcRenderer.invoke('exports:consentForm', patientId),
+  exportUrssafReport:   (year: number)         => ipcRenderer.invoke('exports:urssafReport', year),
 
   // ─── BACKUP (nouveaux) ───────────────────────────────────────────────────────
   getBackupInfo:        ()           => ipcRenderer.invoke('backup:info'),

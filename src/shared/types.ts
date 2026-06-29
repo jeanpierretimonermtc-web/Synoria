@@ -500,6 +500,8 @@ export interface IpcApi {
   exportPatientBackup: (patientId: string) => Promise<string>
   exportPatientExcel:  (patientId: string, sessionId: string) => Promise<string>
   exportPatientReport: (patientId: string)                    => Promise<string>
+  exportConsentForm:   (patientId?: string)                   => Promise<string>
+  exportUrssafReport:  (year: number)                         => Promise<string>
   openBackupFolder: (type: 'general' | 'patient') => Promise<void>
   // ── Google Calendar ──
   gcalStatus:        () => Promise<GoogleCalendarInfo>
