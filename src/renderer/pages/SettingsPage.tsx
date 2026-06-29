@@ -83,6 +83,17 @@ export default function SettingsPage() {
   const [gcalImportState, setGcalImportState] = useState<Record<string, { selected: boolean; color: string }>>({})
   const [gcalImportSaving, setGcalImportSaving] = useState(false)
 
+  // Apparence — thème (état local synchronisé avec localStorage + App)
+  const [localThemeMode, setLocalThemeMode] = useState<'light'|'dark'|'system'>(
+    () => (localStorage.getItem('synoria-theme-mode') || 'light') as 'light'|'dark'|'system'
+  )
+  const applyThemeMode = (mode: 'light'|'dark'|'system') => {
+    setLocalThemeMode(mode)
+    localStorage.setItem('synoria-theme-mode', mode)
+    window.dispatchEvent(new CustomEvent('synoria-theme-change', { detail: mode }))
+    window.mtcApi.saveSettings({ themeMode: mode } as any).catch(() => {})
+  }
+
   // Support
   const [diagGenerating, setDiagGenerating] = useState(false)
 
@@ -428,64 +439,45 @@ export default function SettingsPage() {
                 les préférences de votre système d'exploitation.
               </p>
 
-              {/* Sélecteur 3 boutons */}
-              {(() => {
-                const current = (localStorage.getItem('synoria-theme-mode') || 'light') as 'light' | 'dark' | 'system'
-                const [localMode, setLocalMode] = React.useState<'light'|'dark'|'system'>(current)
-
-                const applyTheme = (mode: 'light' | 'dark' | 'system') => {
-                  setLocalMode(mode)
-                  localStorage.setItem('synoria-theme-mode', mode)
-                  window.dispatchEvent(new CustomEvent('synoria-theme-change', { detail: mode }))
-                  window.mtcApi.saveSettings({ themeMode: mode } as any).catch(() => {})
-                }
-
-                const options: { id: 'light'|'dark'|'system'; icon: string; label: string; desc: string }[] = [
-                  { id: 'light',  icon: '☀️', label: 'Clair',   desc: 'Fond blanc, idéal en journée' },
-                  { id: 'dark',   icon: '🌙', label: 'Sombre',  desc: 'Fond foncé, confort le soir'  },
-                  { id: 'system', icon: '⚙️', label: 'Système', desc: 'Suit votre OS automatiquement'},
-                ]
-
-                return (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-                    {options.map(o => {
-                      const active = localMode === o.id
-                      return (
-                        <button
-                          key={o.id}
-                          onClick={() => applyTheme(o.id)}
-                          style={{
-                            display: 'flex', flexDirection: 'column', alignItems: 'center',
-                            gap: 8, padding: '20px 12px',
-                            borderRadius: 12,
-                            border: active ? '2px solid var(--accent)' : '2px solid var(--border)',
-                            background: active ? 'var(--accent-light)' : 'var(--surface)',
-                            cursor: 'pointer',
-                            transition: 'all .15s',
-                            outline: 'none',
-                          }}
-                        >
-                          <span style={{ fontSize: 28 }}>{o.icon}</span>
-                          <div style={{ fontWeight: 700, fontSize: 14, color: active ? 'var(--accent)' : 'var(--text)' }}>
-                            {o.label}
-                          </div>
-                          <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.4 }}>
-                            {o.desc}
-                          </div>
-                          {active && (
-                            <div style={{
-                              width: 20, height: 20, borderRadius: '50%',
-                              background: 'var(--accent)', color: '#fff',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: 12, fontWeight: 800,
-                            }}>✓</div>
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-                )
-              })()}
+              {/* Sélecteur 3 boutons — state dans le composant parent, pas d'IIFE */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                {([
+                  { id: 'light'  as const, icon: '☀️', label: 'Clair',   desc: 'Fond blanc, idéal en journée'  },
+                  { id: 'dark'   as const, icon: '🌙', label: 'Sombre',  desc: 'Fond foncé, confort le soir'   },
+                  { id: 'system' as const, icon: '⚙️', label: 'Système', desc: 'Suit votre OS automatiquement' },
+                ]).map(o => {
+                  const active = localThemeMode === o.id
+                  return (
+                    <button
+                      key={o.id}
+                      onClick={() => applyThemeMode(o.id)}
+                      style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center',
+                        gap: 8, padding: '20px 12px', borderRadius: 12,
+                        border: active ? '2px solid var(--accent)' : '2px solid var(--border)',
+                        background: active ? 'var(--accent-light)' : 'var(--surface)',
+                        cursor: 'pointer', transition: 'all .15s', outline: 'none',
+                      }}
+                    >
+                      <span style={{ fontSize: 28 }}>{o.icon}</span>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: active ? 'var(--accent)' : 'var(--text)' }}>
+                        {o.label}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.4 }}>
+                        {o.desc}
+                      </div>
+                      {active && (
+                        <div style={{
+                          width: 20, height: 20, borderRadius: '50%',
+                          background: 'var(--accent)', color: '#fff',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 12, fontWeight: 800,
+                        }}>✓</div>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </div>
         )}
