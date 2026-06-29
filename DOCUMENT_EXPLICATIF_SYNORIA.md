@@ -1,22 +1,57 @@
 # Document explicatif - Synoria
 
-## 1. Resume
+Document de contexte a transmettre a Claude, ChatGPT ou tout autre assistant IA avant de travailler sur le projet Synoria.
 
-Synoria est un logiciel de gestion de cabinet et de dossiers patients pense pour les praticiens independants, notamment les pratiques therapeutiques et les specialites comme la Medecine Traditionnelle Chinoise, la kinesiologie, la naturopathie ou l'osteopathie.
+Derniere mise a jour : 2026-06-29  
+Version projet : 1.5.0  
+Nom package : `synoria`  
+Application : Electron + React + TypeScript + SQLite
 
-Le logiciel centralise les informations patient, les seances, l'agenda, les exports, les sauvegardes, la facturation, la comptabilite simplifiee et les obligations RGPD dans une application de bureau securisee.
+---
 
-Son positionnement principal est le suivant :
+## 1. Resume court
 
-- un outil professionnel simple a prendre en main ;
-- des donnees stockees localement, sans cloud obligatoire ;
-- une approche securisee des donnees sensibles ;
-- un systeme de plugins permettant d'adapter l'anamnese a chaque specialite ;
-- une solution plus proche des besoins terrain des praticiens qu'un logiciel medical generaliste.
+Synoria est une application de bureau de gestion de cabinet et de dossiers patients pour praticiens independants : Medecine Traditionnelle Chinoise, osteopathie, kinesiologie, naturopathie, therapies manuelles et pratiques d'accompagnement.
 
-## 2. A qui s'adresse Synoria ?
+Le logiciel centralise :
 
-Synoria s'adresse principalement aux praticiens qui ont besoin de suivre leurs patients dans le temps sans utiliser un logiciel lourd, hospitalier ou trop administratif.
+- les fiches patients ;
+- les seances et leur historique ;
+- l'agenda et les rendez-vous ;
+- les exports, rapports et sauvegardes ;
+- la facturation ;
+- une comptabilite simplifiee ;
+- les obligations RGPD ;
+- les plugins metier par specialite.
+
+Son positionnement principal : un dossier patient local, securise, personnalisable et adapte aux praticiens qui ne veulent pas dependre d'un cloud obligatoire.
+
+---
+
+## 2. Positionnement produit
+
+Synoria n'est pas un logiciel medical hospitalier. C'est un outil de cabinet pour praticiens independants qui ont besoin d'un suivi patient riche, narratif et personnalise.
+
+Promesse principale :
+
+> Synoria, le dossier patient local et personnalisable pour les praticiens independants.
+
+Arguments forts :
+
+- donnees stockees localement ;
+- fonctionnement possible sans cloud ;
+- application desktop Windows, avec cibles Mac et Linux prevues dans la configuration ;
+- chiffrement et mot de passe ;
+- sauvegardes chiffrees ;
+- plugins par specialite ;
+- agenda, factures, comptabilite et RGPD dans le meme outil ;
+- version installee ou portable possible.
+
+---
+
+## 3. Public cible
+
+Synoria s'adresse principalement aux praticiens qui veulent suivre leurs patients dans le temps sans utiliser un logiciel lourd, trop medicalise ou trop administratif.
 
 Publics cibles :
 
@@ -25,23 +60,30 @@ Publics cibles :
 - kinesiologues ;
 - naturopathes ;
 - therapeutes manuels ;
-- praticiens bien-etre ou accompagnement corporel ;
+- praticiens bien-etre ;
 - professionnels independants ayant besoin d'un dossier patient structure.
 
-Synoria est particulierement adapte aux praticiens qui veulent :
+Besoin principal du public :
 
-- garder la maitrise de leurs donnees ;
-- eviter une solution SaaS complexe ou dependante d'un abonnement ;
-- personnaliser leurs fiches de consultation ;
-- disposer d'un outil metier simple, clair et securise.
+- retrouver rapidement l'historique patient ;
+- structurer les seances ;
+- personnaliser les formulaires selon la pratique ;
+- generer factures et exports ;
+- respecter une logique RGPD ;
+- conserver la maitrise des donnees sensibles.
 
-## 3. Ce que Synoria permet de faire
+---
 
-### Gestion des patients
+## 4. Fonctionnalites principales
 
-Synoria permet de creer et gerer une base de patients avec les informations essentielles :
+### Patients
 
-- nom, prenom, civilite ;
+Synoria permet de creer, modifier, consulter, archiver et supprimer des fiches patients.
+
+Champs principaux :
+
+- civilite ;
+- nom, prenom ;
 - date de naissance ;
 - telephone, email, adresse ;
 - profession ;
@@ -53,36 +95,55 @@ Synoria permet de creer et gerer une base de patients avec les informations esse
 - statut actif ou archive ;
 - consentement RGPD et date de consentement.
 
-Le logiciel permet egalement d'ouvrir rapidement une fiche patient, de consulter son historique, de generer une facture et d'exporter ses donnees.
+La page patient sert de point d'entree vers :
 
-### Gestion des seances
+- l'historique des seances ;
+- la creation d'une seance ;
+- la generation d'une facture ;
+- les exports patient ;
+- le rapport patient.
+
+### Seances
 
 Synoria permet de creer, modifier, consulter, dupliquer et supprimer des seances.
 
-Chaque seance peut contenir :
+Les seances contiennent :
 
-- motif de consultation ;
+- patient, date, praticien ;
+- motif ;
 - evolution depuis la precedente seance ;
-- problematiques principales ;
+- problematiques ;
 - observations ;
-- diagnostic ou analyse selon la specialite ;
+- diagnostic ou analyse ;
 - traitement effectue ;
-- conseils donnes ;
-- points a surveiller ;
+- conseils, plan et points a surveiller ;
 - prochain rendez-vous ;
-- donnees specifiques au plugin actif.
+- donnees specifiques au plugin actif ;
+- donnees MTC avancees si le plugin MTC integre est actif.
 
-Le logiciel conserve l'historique complet des seances par patient, ce qui permet de suivre l'evolution dans le temps.
+La route `/modifier/:sessionId` permet l'edition d'une seance existante.
 
 ### Formulaire MTC integre
 
-Synoria dispose d'un formulaire MTC complet integre, avec des elements specialises :
+Le formulaire MTC complet est active via le plugin MTC JP avec `useBuiltinForm: true`.
 
+Il inclut notamment :
+
+- anamnese ;
 - observation de la langue ;
 - observation du pouls ;
-- constitution ;
-- type de corps ;
-- teint ;
+- questionnaire par systemes ;
+- constitution, type de corps, teint ;
+- tests energetiques ;
+- trois rechauffeurs ;
+- trois foyers ;
+- merveilleux vaisseaux ;
+- points Mu ;
+- empereur ;
+- vide / plenitude ;
+- syndromes ;
+- energie compensatrice ;
+- niveaux de penetration ;
 - diagnostic MTC ;
 - cinq elements ;
 - causes ;
@@ -93,408 +154,555 @@ Synoria dispose d'un formulaire MTC complet integre, avec des elements specialis
 - techniques ;
 - plantes ou formules ;
 - reactions ;
-- suivi.
-
-Il integre aussi un questionnaire par systemes et des tests energetiques avances :
-
-- trois rechauffeurs ;
-- trois foyers ;
-- merveilleux vaisseaux ;
-- points Mu ;
-- empereur ;
-- vide / plenitude ;
-- syndromes ;
-- energie compensatrice ;
-- niveaux de penetration.
+- barrage homeopathique ;
+- plan de suivi.
 
 ### Plugins par specialite
 
-L'un des points forts de Synoria est son systeme de plugins.
+Synoria dispose d'un moteur de plugins JSON.
 
-Un plugin est un fichier qui modifie le formulaire de seance pour l'adapter a une pratique precise. Cela permet de vendre un socle commun, puis des modules metier specialises.
+Un plugin decrit les sections et champs d'un formulaire d'anamnese. Il permet d'adapter Synoria a une specialite sans recoder toute l'application.
 
-Plugins disponibles ou en cours :
+Plugins presents dans `public/plugins/` :
 
-- MTC ;
-- MTC JP ;
-- kinesiologie ;
-- naturopathie ;
-- osteopathie.
+- `mtc.plugin.json` ;
+- `mtc_jp.plugin.json` ;
+- `kinesio.plugin.json` ;
+- `kinesiologie_pro.plugin.json` ;
+- `naturopathie.plugin.json` ;
+- `naturopathie_pro.plugin.json` ;
+- `osteopathie.plugin.json` ;
+- `osteopathie_pro.plugin.json`.
 
-Exemples de ce qu'un plugin peut apporter :
+Types de champs supportes :
 
-- champs specifiques d'anamnese ;
-- cases a cocher adaptees a la pratique ;
-- echelles de notation ;
-- zones de texte enrichi ;
+- texte court ;
+- textarea ;
+- texte riche ;
+- nombre ;
+- date ;
+- select ;
+- radio ;
+- checkbox ;
+- groupe de checkbox ;
 - tags ;
-- schemas corporels ;
-- tests propres a une discipline ;
-- sections de traitement et de suivi personnalisees.
+- rating ;
+- bodychart ;
+- separateur.
 
-Le plugin osteopathie, par exemple, inclut :
+Le plugin osteopathie utilise notamment le type `bodychart`, avec cartes anatomiques et zones cliquables.
 
-- drapeaux rouges musculo-squelettiques ;
-- schema corporel anterieur / posterieur ;
-- antecedents traumatiques detailles ;
-- mobilite rachidienne, bassin et membres ;
-- tests orthopediques ;
-- tests neurologiques ;
-- tests osteopathiques ;
-- bilan et traitement osteopathique.
+### Agenda et rendez-vous
 
-## 4. Agenda et rendez-vous
+Synoria integre un agenda avec :
 
-Synoria integre un agenda pour gerer les rendez-vous.
-
-Fonctionnalites principales :
-
-- affichage des rendez-vous par date ou par mois ;
-- creation de rendez-vous pour un patient existant ;
-- creation de rendez-vous pour un nouveau contact ;
-- heures de debut et de fin ;
-- notes de rendez-vous ;
+- vue calendrier ;
+- rendez-vous patients existants ;
+- rendez-vous pour nouveaux contacts ;
+- heure de debut et de fin ;
+- note de rendez-vous ;
 - statut realise ;
 - statut annule ;
-- liaison entre rendez-vous et seance ;
+- liaison rendez-vous / seance ;
 - blocage de creneaux ou de journees ;
-- synchronisation possible avec Google Calendar.
+- synchronisation Google Calendar ;
+- import de calendriers Google selectionnes ;
+- nettoyage des doublons Google Calendar ;
+- rappels de rendez-vous J-1.
 
-Cette partie rapproche Synoria d'un logiciel de cabinet complet, pas seulement d'un outil de prise de notes.
+La creation d'un prochain rendez-vous depuis une seance peut alimenter automatiquement l'agenda.
 
-## 5. Tableau de bord
+### Tableau de bord
 
-Le tableau de bord donne une vision rapide de l'activite :
+Le tableau de bord donne une vue rapide :
 
-- nombre total de patients ;
-- nombre de patients actifs ;
-- nombre total de seances ;
+- total patients ;
+- patients actifs ;
+- total seances ;
 - seances du mois ;
 - seances recentes ;
 - prochains rendez-vous ;
 - patients a relancer ;
-- activite mensuelle.
+- rappels de rendez-vous en attente ;
+- alertes importantes.
 
-Il permet au praticien de retrouver rapidement ce qui est important au quotidien.
+### Recherche globale
 
-## 6. Recherche globale
-
-Synoria dispose d'une recherche globale permettant de retrouver rapidement :
+La recherche globale permet de retrouver :
 
 - un patient ;
 - une seance ;
-- un contenu lie a un dossier ;
-- une information importante saisie dans l'historique.
+- un motif ;
+- une information contenue dans les notes ;
+- une donnee stockee dans `full_data_json`.
 
-C'est un avantage important pour les praticiens qui accumulent beaucoup de notes au fil des annees.
+Raccourci : `Ctrl+K`.
 
-## 7. Exports et impressions
+### Exports et rapports
 
-Synoria permet d'exporter les donnees de seance et de patient.
+Exports disponibles :
 
-Formats disponibles :
-
-- export JSON ;
-- export Excel ;
+- seance JSON chiffree ;
+- seance Excel ;
 - export patient Excel ;
-- export PDF ou impression via le systeme ;
-- sauvegardes generales ;
-- sauvegardes par patient.
+- rapport patient HTML ;
+- impression / PDF systeme ;
+- sauvegarde generale chiffree ;
+- sauvegarde par patient ;
+- export comptabilite Excel ;
+- registre RGPD HTML.
 
-Ces exports peuvent servir a :
+Le fichier `patientReportService.ts` genere un rapport patient lisible avec historique et donnees importantes.
 
-- archiver ;
-- transmettre au patient ;
-- travailler hors logiciel ;
-- faire une analyse ;
-- preparer un dossier ;
-- conserver une preuve de suivi.
+### Facturation
 
-## 8. Facturation
+Synoria integre un module de facturation :
 
-Synoria integre un module de facturation.
+- generation de facture ;
+- journal des factures ;
+- numero de facture ;
+- logo praticien ;
+- informations de profil ;
+- SIRET, APE, activite, adresse, email ;
+- TVA configurable ;
+- envoi par email via client mail local ;
+- statut paye / non paye ;
+- date de paiement ;
+- alertes de factures en retard.
 
-Il permet :
+### Comptabilite simplifiee
 
-- de generer une facture depuis une fiche patient ;
-- de personnaliser les informations du praticien ;
-- d'ajouter le SIRET, l'activite, l'adresse, l'email, le logo ;
-- de numeroter les factures ;
-- de conserver un journal des factures ;
-- d'ouvrir les factures generees ;
-- de gerer l'envoi par email selon la configuration.
+Le module comptable permet :
 
-Cette fonctionnalite est importante commercialement, car beaucoup de praticiens utilisent plusieurs outils separes : un agenda, un dossier patient, un tableur, un modele de facture. Synoria regroupe ces usages.
-
-## 9. Comptabilite simplifiee
-
-Synoria propose une comptabilite adaptee aux praticiens independants.
-
-Fonctionnalites :
-
-- types de consultations configurables ;
-- tarifs par type de consultation ;
-- suivi mensuel du nombre de seances ;
+- types de consultation configurables ;
+- tarifs par type ;
+- nombre de seances par mois ;
 - taux URSSAF configurable ;
 - charges fixes ;
 - charges variables ;
-- depenses par categorie ;
-- export Excel de la comptabilite ;
-- suivi annuel.
+- categories de depenses ;
+- depenses reparties par mois ;
+- export Excel annuel.
 
-Ce n'est pas un logiciel comptable complet, mais un outil de pilotage simple pour suivre l'activite et preparer les informations utiles.
+Ce n'est pas un logiciel comptable complet, mais un outil de pilotage pour independants.
 
-## 10. RGPD et donnees sensibles
+### RGPD
 
-Synoria integre plusieurs fonctions liees au RGPD et aux donnees de sante.
-
-Fonctionnalites :
+Synoria aide le praticien a documenter ses obligations RGPD :
 
 - consentement patient ;
-- date du consentement ;
+- date de consentement ;
 - journal d'acces aux dossiers ;
 - alertes de duree de conservation ;
-- registre des traitements article 30 ;
-- export du registre RGPD ;
-- parametrage du responsable de traitement ;
+- registre des traitements Article 30 ;
+- notice RGPD modifiable ;
+- responsable de traitement ;
 - duree de conservation configurable ;
-- sauvegardes securisees.
+- export du registre ;
+- sauvegardes chiffrees.
 
-Le logiciel est concu pour aider le praticien a mieux documenter ses obligations, sans se substituer a un conseil juridique.
+Synoria aide a structurer la conformite, mais ne remplace pas un conseil juridique.
 
-## 11. Securite
+### Securite
 
-Synoria met l'accent sur la securite des donnees.
-
-Points importants :
+Points principaux :
 
 - application de bureau ;
 - stockage local ;
 - mot de passe au lancement ;
 - verrouillage automatique apres inactivite ;
 - changement de mot de passe ;
-- sauvegardes chiffrees ;
 - chiffrement AES-256-GCM ;
-- derivation de cle par mot de passe ;
+- derivation de cle par PBKDF2 ;
+- base chiffree au repos ;
+- sauvegardes chiffrees ;
 - export de cle de chiffrement ;
-- verification des sauvegardes ;
-- aucune dependance obligatoire a un serveur cloud.
+- verification de sauvegarde ;
+- aucun serveur cloud obligatoire.
 
-Le positionnement "donnees locales" est un axe de differenciation fort face aux solutions SaaS. Il rassure les praticiens qui ne veulent pas envoyer leurs dossiers patients sur une plateforme externe.
+### Administration et diagnostic
 
-## 12. Sauvegardes et restauration
+Synoria contient des outils de support :
 
-Synoria propose plusieurs mecanismes de sauvegarde :
-
-- sauvegarde generale ;
-- sauvegarde par patient ;
-- sauvegarde automatique a la fermeture ;
-- sauvegarde quotidienne ;
-- retention configurable ;
-- verification d'une sauvegarde ;
-- import de sauvegarde ;
-- import avec mot de passe ;
-- import avec cle de chiffrement ;
-- ouverture du dossier de sauvegarde.
-
-Ces fonctions sont essentielles pour un logiciel contenant des donnees sensibles et irremplacables.
-
-## 13. Version installee et version portable
-
-Synoria peut etre distribue sous plusieurs formes :
-
-- version installee sur PC ;
-- version portable sur cle USB ;
-- installateur Windows ;
-- application utilisable sans installation selon le mode de distribution.
-
-La version cle USB peut etre un argument commercial fort pour :
-
-- les praticiens itinerants ;
-- les cabinets partages ;
-- les utilisateurs qui changent d'ordinateur ;
-- les personnes qui refusent le cloud mais veulent transporter leurs donnees.
-
-## 14. Parametres et personnalisation
-
-Synoria permet de personnaliser plusieurs aspects :
-
-- theme clair ou sombre ;
-- chemins de sauvegarde ;
-- automatisation des sauvegardes ;
-- informations de facturation ;
-- logo praticien ;
-- taux TVA ;
-- duree de conservation RGPD ;
-- plugin actif ;
-- connexion Google Calendar ;
-- mise a jour de l'application.
-
-Cette personnalisation rend le logiciel adaptable a plusieurs profils de praticiens.
-
-## 15. Administration et diagnostic
-
-Synoria integre aussi des fonctions de diagnostic et d'administration :
-
-- rapport diagnostic ;
-- document support ;
-- document de recuperation ;
 - panneau administrateur ;
+- verification mot de passe admin ;
 - logs ;
 - informations systeme ;
-- verification de l'integrite de la base ;
-- statistiques de base ;
-- sauvegarde forcee.
+- verification d'integrite SQLite ;
+- WAL checkpoint ;
+- statistiques base de donnees ;
+- consultation settings ;
+- sauvegarde forcee ;
+- rapport diagnostic ;
+- document support ;
+- document de recuperation.
 
-Ces outils sont utiles pour assurer le support client et reduire le temps passe a diagnostiquer les problemes.
+Raccourci panneau admin : `Ctrl+Shift+Alt+A`.
 
-## 16. Forces de Synoria
+---
 
-Les principales forces actuelles de Synoria sont :
+## 5. Stack technique
 
-- logiciel tres specialise pour les praticiens ;
-- fonctionnement local ;
-- donnees sous controle du praticien ;
-- securite integree ;
-- RGPD integre ;
-- plugins metier ;
-- agenda ;
-- facturation ;
-- comptabilite simplifiee ;
-- export Excel / JSON / PDF ;
-- version portable possible ;
-- prise en main adaptee a des praticiens non techniciens.
+| Couche | Technologie |
+|---|---|
+| Desktop | Electron 28 |
+| UI | React 18 + TypeScript |
+| Routing | react-router-dom 6 |
+| Build | Vite 5 + electron-builder |
+| Base de donnees | SQLite via better-sqlite3 |
+| Chiffrement | Node.js crypto, AES-256-GCM, PBKDF2 |
+| Exports Excel | xlsx + xlsx-js-style |
+| Styles | CSS global vanilla |
+| Package | npm |
 
-Ce qui peut vraiment differencier Synoria :
+Commandes importantes :
 
-- vendre un logiciel "fait pour les therapeutes", pas un logiciel medical froid ;
-- proposer des plugins par specialite ;
-- proposer un achat unique ou une licence simple ;
-- insister sur les donnees locales et l'absence de cloud obligatoire ;
-- fournir des fiches d'anamnese tres pertinentes par metier ;
-- offrir un accompagnement humain et proche des praticiens.
+```powershell
+npm run electron:dev
+npm run build
+npm run electron:build
+npm run build:portable
+npx vite build
+```
 
-## 17. Limites actuelles ou points a ameliorer
+---
 
-Pour etre encore plus competitif, Synoria pourrait progresser sur les points suivants :
+## 6. Architecture du projet
 
-- signature numerique officielle de l'installateur ;
-- site commercial professionnel ;
-- demo video ;
-- documentation utilisateur modernisee sous marque Synoria ;
-- systeme de licence ;
-- mise a jour automatique ;
-- essai gratuit limite dans le temps ;
-- templates de seance ;
-- statistiques patient plus visuelles ;
-- graphiques d'evolution ;
-- export PDF natif plus direct ;
-- meilleure mise en avant marketing des plugins ;
-- comparaison claire avec les concurrents.
+Structure principale :
 
-Ces limites ne rendent pas le produit faible, mais elles representent les prochaines etapes pour passer d'un logiciel fonctionnel a une offre commerciale solide.
+```text
+src/
+  main/
+    index.ts
+    preload.ts
+    database/
+      connection.ts
+      migrations.ts
+      repositories/
+    ipc/
+      handlers.ts
+    services/
+  renderer/
+    App.tsx
+    pages/
+    components/
+    hooks/
+    styles/
+    utils/
+    assets/
+  shared/
+    types.ts
+    pluginTypes.ts
 
-## 18. Differenciation possible face aux concurrents
+public/
+  plugins/
+  assets/
 
-Pour se departager, Synoria peut etre positionne autour de cinq promesses :
+documentation_synoria/
+documentation_synoria_html/
+documentation_synoria_pdf/
+release/
+```
 
-### 1. Un logiciel local et securise
+Principe architectural :
+
+```text
+React renderer
+  -> window.mtcApi
+  -> preload.ts
+  -> ipcMain.handle dans handlers.ts
+  -> services / repositories
+  -> SQLite et fichiers locaux
+```
+
+Le renderer ne doit jamais acceder directement a SQLite ou aux API Node.
+
+---
+
+## 7. Pages principales
+
+Routes principales dans `src/renderer/App.tsx` :
+
+- `/` : tableau de bord ;
+- `/patients` : gestion patients ;
+- `/nouvelle` : creation de seance ;
+- `/nouvelle/:patientId` : creation de seance pour un patient ;
+- `/modifier/:sessionId` : edition de seance ;
+- `/seances` : liste et consultation des seances ;
+- `/seances/:sessionId` : consultation d'une seance ;
+- `/calendrier` : agenda ;
+- `/comptabilite` : comptabilite ;
+- `/depenses` : depenses ;
+- `/factures-liste` : journal factures ;
+- `/rgpd` : espace RGPD ;
+- `/parametres` : parametres ;
+- `/profil` : profil praticien.
+
+---
+
+## 8. Base de donnees
+
+La base SQLite est geree dans le process main avec `better-sqlite3`.
+
+Schema actuel : migrations jusqu'a v16.
+
+Tables ou ensembles importants :
+
+- `patients` ;
+- `sessions` ;
+- `appointments` ;
+- `calendar_blocks` ;
+- `access_log` ;
+- `consultation_types` ;
+- `monthly_revenue` ;
+- `ursaf_rates` ;
+- `expense_config` ;
+- `monthly_var_expenses` ;
+- `invoices_log` ;
+- `session_templates` ;
+- `exports` ;
+- `schema_version`.
+
+Champs recents importants :
+
+- `patients.civility` ;
+- `appointments.google_event_id` ;
+- `appointments.is_cancelled` ;
+- `appointments.reminder_sent` ;
+- `invoices_log.is_paid` ;
+- `invoices_log.paid_date` ;
+- `expense_config.months`.
+
+Point critique :
+
+`sessions.full_data_json` stocke tous les champs qui ne sont pas dans les colonnes SQL principales : donnees plugin, schema plugin, donnees de formulaire avancees, informations de prochain rendez-vous, etc.
+
+---
+
+## 9. Fichiers importants pour Claude / ChatGPT
+
+Quand une IA doit modifier le projet, lui donner ce document puis lui demander de lire les fichiers concernes.
+
+Fichiers souvent utiles :
+
+| Besoin | Fichiers |
+|---|---|
+| Types et IPC | `src/shared/types.ts`, `src/main/preload.ts`, `src/main/ipc/handlers.ts` |
+| Base de donnees | `src/main/database/migrations.ts`, `src/main/database/repositories/*` |
+| Patients | `src/renderer/pages/PatientsPage.tsx`, `patientRepository.ts` |
+| Seances | `src/renderer/pages/NewSessionPage.tsx`, `SeancesPage.tsx`, `sessionRepository.ts` |
+| Plugins | `src/shared/pluginTypes.ts`, `PluginFormRenderer.tsx`, `public/plugins/*.plugin.json` |
+| Agenda | `CalendarPage.tsx`, `appointmentRepository.ts`, `calendarBlockRepository.ts` |
+| Google Calendar | `googleCalendarService.ts`, `CalendarPage.tsx`, `handlers.ts` |
+| Factures | `invoiceService.ts`, `FacturesListPage.tsx`, `comptaRepository.ts` |
+| Comptabilite | `ComptaPage.tsx`, `DepensesPage.tsx`, `comptaExportService.ts` |
+| RGPD | `RgpdPage.tsx`, `rgpdService.ts`, `accessLogRepository.ts` |
+| Sauvegardes | `backupService.ts`, `encryptionService.ts`, `settingsService.ts` |
+| Diagnostic/Admin | `diagnosticService.ts`, `adminService.ts`, `AdminPanel.tsx` |
+| Styles | `src/renderer/styles/global.css` |
+
+---
+
+## 10. Regles de modification importantes
+
+### Avant de coder
+
+- Lire les fichiers concernes.
+- Respecter l'architecture Electron : renderer -> preload -> IPC -> main.
+- Ne pas contourner `window.mtcApi`.
+- Verifier si la fonctionnalite touche une table SQLite, un type TypeScript ou un canal IPC.
+
+### Ajouter un champ patient
+
+1. Ajouter une migration dans `migrations.ts`.
+2. Ajouter le champ dans `Patient` dans `types.ts`.
+3. Mettre a jour `patientRepository.ts`, notamment INSERT et UPDATE.
+4. Mettre a jour `PatientsPage.tsx`.
+5. Verifier les exports si le champ doit apparaitre dans les rapports.
+
+### Ajouter un canal IPC
+
+1. Ajouter la methode dans `IpcApi` (`src/shared/types.ts`).
+2. L'exposer dans `preload.ts`.
+3. Ajouter `ipcMain.handle(...)` dans `handlers.ts`.
+4. Appeler via `window.mtcApi.xxx()` cote renderer.
+
+### Ajouter une page
+
+1. Creer le composant dans `src/renderer/pages/`.
+2. Importer dans `App.tsx`.
+3. Ajouter une route.
+4. Ajouter un lien dans la sidebar si necessaire.
+5. Ajouter le CSS dans `global.css`.
+
+### Modifier les seances
+
+`NewSessionPage.tsx` est central et volumineux. Il faut faire des modifications ciblees.
+
+Modes existants :
+
+- aucun plugin : formulaire simple ;
+- plugin MTC avec `useBuiltinForm: true` : formulaire MTC integre ;
+- plugin tiers : rendu dynamique avec `PluginFormRenderer`.
+
+Les champs non SQL doivent etre conserves dans `full_data_json`.
+
+### Modifier les plugins
+
+Un plugin JSON doit respecter `PluginDefinition` dans `src/shared/pluginTypes.ts`.
+
+Si on ajoute un nouveau type de champ plugin :
+
+1. Ajouter le type dans `pluginTypes.ts`.
+2. Ajouter la validation dans `pluginService.ts`.
+3. Ajouter le rendu dans `PluginFormRenderer.tsx`.
+4. Ajouter le resume dans `SummaryPage.tsx` ou `SeancesPage.tsx` si necessaire.
+5. Ajouter les styles dans `global.css`.
+
+### Base de donnees
+
+- `better-sqlite3` est synchrone.
+- Ne pas utiliser `.then()` sur les appels DB.
+- Ne jamais modifier une migration deja publiee si des utilisateurs ont pu l'executer.
+- Ajouter une nouvelle migration.
+- Faire attention a l'ordre des migrations existantes.
+
+---
+
+## 11. Points d'attention connus
+
+- Le projet contient encore des noms historiques lies a "Dossier Patient MTC" dans certains fichiers, mais le produit actuel est Synoria.
+- Le formulaire de seance est un gros fichier : modifier prudemment.
+- `full_data_json` est indispensable pour ne pas perdre les donnees plugin.
+- Les sauvegardes utilisent une cle de chiffrement distincte du mot de passe utilisateur.
+- Google Calendar peut creer des doublons si les identifiants d'evenements ne sont pas bien geres.
+- Les exports PDF natifs restent limites : l'application s'appuie surtout sur impression / HTML / systeme selon les cas.
+- La signature officielle de l'installateur reste un sujet commercial important.
+- Le build Mac ne doit pas etre considere acquis depuis Windows.
+
+---
+
+## 12. Differenciation commerciale
+
+Synoria peut se differencier autour de cinq idees :
+
+### 1. Donnees locales
 
 "Vos donnees patients restent chez vous."
 
-Beaucoup de solutions modernes sont en ligne. Synoria peut se distinguer en rassurant les praticiens qui veulent garder leurs donnees sur leur ordinateur ou leur cle USB.
+C'est l'argument cle face aux solutions SaaS.
 
-### 2. Un logiciel adapte aux pratiques non conventionnelles ou complementaires
+### 2. Plugins metier
 
-Les logiciels medicaux classiques sont souvent concus pour les medecins, cabinets medicaux ou professions reglementees. Synoria peut viser les praticiens qui ont besoin de dossiers riches, qualitatifs, narratifs et personnalises.
-
-### 3. Des plugins vraiment metier
-
-Chaque specialite peut avoir sa propre anamnese :
+Chaque specialite peut avoir son anamnese :
 
 - MTC ;
 - osteopathie ;
 - kinesiologie ;
 - naturopathie ;
-- autres pratiques.
+- autres pratiques a venir.
 
-Cela peut devenir le coeur du modele commercial.
-
-### 4. Une solution tout-en-un pour independants
+### 3. Outil tout-en-un
 
 Synoria regroupe :
 
 - dossier patient ;
-- agenda ;
 - seances ;
+- agenda ;
+- factures ;
+- comptabilite ;
 - exports ;
 - RGPD ;
-- facturation ;
-- comptabilite simplifiee ;
 - sauvegardes.
 
-Cela evite au praticien de multiplier les outils.
+### 4. Simplicite pour independants
 
-### 5. Une relation client humaine
+Le logiciel vise des praticiens non techniciens. Les workflows doivent rester clairs, concrets et rapides.
 
-Un petit editeur peut se differencier par :
+### 5. Relation humaine
 
-- support rapide ;
-- personnalisation ;
-- ecoute terrain ;
+Un petit editeur peut proposer :
+
+- support direct ;
+- adaptation metier ;
 - creation de plugins sur demande ;
-- adaptation aux vraies pratiques des utilisateurs.
+- ecoute des praticiens.
 
-## 19. Grille de comparaison a utiliser contre les concurrents
+---
 
-Pour comparer Synoria aux logiciels concurrents, il faudra analyser chaque solution selon ces criteres :
+## 13. Limites et axes d'amelioration
 
-| Critere | Synoria | Concurrent A | Concurrent B | Concurrent C |
-|---|---:|---:|---:|---:|
-| Dossier patient | Oui |  |  |  |
-| Anamnese personnalisable | Oui |  |  |  |
-| Plugins par specialite | Oui |  |  |  |
-| Agenda integre | Oui |  |  |  |
-| Facturation | Oui |  |  |  |
-| Comptabilite simplifiee | Oui |  |  |  |
-| RGPD integre | Oui |  |  |  |
-| Journal d'acces | Oui |  |  |  |
-| Sauvegardes chiffrees | Oui |  |  |  |
-| Donnees locales | Oui |  |  |  |
-| Cloud obligatoire | Non |  |  |  |
-| Version portable cle USB | Oui |  |  |  |
-| Export Excel | Oui |  |  |  |
-| Export JSON | Oui |  |  |  |
-| Export PDF / impression | Oui |  |  |  |
-| Google Calendar | Oui |  |  |  |
-| Application Windows | Oui |  |  |  |
-| Abonnement obligatoire | A definir |  |  |  |
-| Prix | A definir |  |  |  |
-| Support personnalise | Oui |  |  |  |
+Axes encore utiles :
 
-## 20. Formulation commerciale courte
+- signature numerique officielle de l'installateur ;
+- site commercial professionnel ;
+- video de demonstration ;
+- systeme de licence ;
+- mise a jour automatique complete ;
+- essai gratuit limite dans le temps ;
+- meilleure documentation commerciale ;
+- graphiques d'evolution patient ;
+- statistiques plus visuelles ;
+- export PDF natif plus direct ;
+- meilleure mise en avant des plugins ;
+- tests automatises ;
+- CI/CD pour builds Windows/Mac/Linux.
 
-Synoria est un logiciel de gestion de cabinet pour praticiens independants. Il permet de gerer les patients, les seances, l'agenda, les factures, les sauvegardes et les obligations RGPD dans une application locale securisee. Sa force principale est son systeme de plugins, qui adapte l'anamnese a chaque specialite : MTC, osteopathie, kinesiologie, naturopathie et autres pratiques.
+---
 
-## 21. Formulation commerciale plus humaine
+## 14. Formulations commerciales
 
-Synoria est concu pour les praticiens qui veulent un outil simple, securise et vraiment adapte a leur facon de travailler. Le logiciel garde les donnees patients en local, structure les seances, facilite le suivi, aide a gerer les rendez-vous, les factures et les sauvegardes, tout en permettant d'utiliser une anamnese specifique a chaque specialite grace aux plugins.
+### Version courte
 
-## 22. Phrase de positionnement
+Synoria est un logiciel de gestion de cabinet pour praticiens independants. Il permet de gerer les patients, les seances, l'agenda, les factures, les sauvegardes et les obligations RGPD dans une application locale securisee. Sa force principale est son systeme de plugins, qui adapte l'anamnese a chaque specialite.
 
-Synoria, le dossier patient local et personnalisable pour les praticiens independants.
+### Version humaine
 
-## 23. Conclusion
+Synoria est concu pour les praticiens qui veulent un outil simple, securise et vraiment adapte a leur facon de travailler. Les donnees patients restent en local, les seances sont structurees, les rendez-vous et factures sont geres dans le meme espace, et chaque specialite peut avoir son propre formulaire grace aux plugins.
 
-Synoria n'est pas seulement un carnet de notes numerique. C'est une base de gestion de cabinet complete pour praticiens independants, avec un positionnement fort sur la securite locale, la personnalisation metier et la simplicite.
+### Version technique
 
-Face aux concurrents, ses meilleurs arguments sont :
+Synoria est une application desktop Electron/React/TypeScript avec base SQLite locale, IPC securise via preload, chiffrement AES-256-GCM, sauvegardes chiffrees, moteur de plugins JSON et modules metier pour agenda, facturation, comptabilite et RGPD.
 
-- donnees locales ;
+---
+
+## 15. Prompt de depart pour Claude ou ChatGPT
+
+Copier-coller possible :
+
+```text
+Tu travailles sur Synoria, une application desktop Electron + React + TypeScript + SQLite de gestion de dossiers patients pour praticiens independants.
+
+Avant de proposer du code, lis le document DOCUMENT_EXPLICATIF_SYNORIA.md puis les fichiers concernes par ma demande.
+
+Contraintes importantes :
+- ne pas casser l'existant ;
+- respecter l'architecture renderer -> preload -> IPC -> main ;
+- ne jamais acceder a SQLite depuis le renderer ;
+- utiliser window.mtcApi cote React ;
+- ajouter les types dans src/shared/types.ts si necessaire ;
+- ajouter les handlers IPC dans src/main/ipc/handlers.ts si necessaire ;
+- ajouter une migration SQLite pour tout changement de schema ;
+- conserver les donnees complexes de seance dans full_data_json ;
+- apres une modification code, verifier avec npx vite build quand c'est pertinent.
+
+Reponds de facon directe, avec les fichiers modifies et les points a verifier.
+```
+
+---
+
+## 16. Conclusion
+
+Synoria est aujourd'hui une base solide de logiciel de cabinet : dossier patient, seances, plugins, agenda, Google Calendar, facturation, comptabilite, RGPD, sauvegardes chiffrees, diagnostic et administration.
+
+Les meilleurs arguments restent :
+
+- controle local des donnees ;
+- securite integree ;
 - plugins par specialite ;
-- dossier patient structure ;
+- suivi patient structure ;
 - fonctions cabinet tout-en-un ;
-- RGPD et sauvegardes integres ;
-- approche humaine et personnalisable.
+- adaptation aux praticiens independants.
 
-La prochaine etape logique est de realiser un benchmark concurrentiel detaille avec prix, fonctionnalites, forces, faiblesses et opportunites de differenciation.
+Ce document doit servir de contexte commun pour Claude, ChatGPT et toute personne qui intervient sur le projet.

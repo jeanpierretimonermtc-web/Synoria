@@ -471,6 +471,8 @@ export default function DashboardPage() {
   const [overdueInvoices, setOverdueInvoices] = useState<import('../../shared/types').InvoiceLog[]>([])
   const [gcalCalendars,   setGcalCalendars]   = useState<GCalCalendar[]>([])
   const [sendingReminder, setSendingReminder] = useState<string | null>(null)
+  const [backupWarning,   setBackupWarning]   = useState<'none' | 'old' | 'never'>('none')
+  const [backupDismissed, setBackupDismissed] = useState(false)
   const navigate  = useNavigate()
   const showToast = useContext(ToastContext)
 
@@ -502,6 +504,20 @@ export default function DashboardPage() {
     window.mtcApi.gcalStatus().then(g => setGcalCalendars(g.importCalendars ?? [])).catch(() => {})
     window.mtcApi.getSettings().then(s => {
       window.mtcApi.getOverdueInvoices(s.invoiceOverdueDays ?? 30).then(setOverdueInvoices).catch(() => {})
+
+      // Vérifier date dernière sauvegarde
+      const dismissKey = 'synoria-backup-warn-dismissed'
+      const dismissedAt = localStorage.getItem(dismissKey)
+      const dismissExpired = !dismissedAt || (Date.now() - +dismissedAt) > 86400000 // 24h
+      if (dismissExpired) {
+        const last = s.lastGeneralBackup || s.lastAutoBackup
+        if (!last) {
+          setBackupWarning('never')
+        } else {
+          const daysSince = (Date.now() - new Date(last).getTime()) / 86400000
+          if (daysSince > 7) setBackupWarning('old')
+        }
+      }
     }).catch(() => window.mtcApi.getOverdueInvoices(30).then(setOverdueInvoices).catch(() => {}))
 
     window.mtcApi.getAppointmentsByMonth(now.getFullYear(), now.getMonth() + 1)
@@ -537,6 +553,44 @@ export default function DashboardPage() {
 
   return (
     <div className="dashboard">
+
+      {/* ── Alerte sauvegarde ── */}
+      {backupWarning !== 'none' && !backupDismissed && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '12px 18px',
+          background: backupWarning === 'never' ? '#FEF3F2' : '#FFFBEB',
+          border: `1.5px solid ${backupWarning === 'never' ? '#FECACA' : '#FDE68A'}`,
+          borderRadius: 10, marginBottom: 16,
+        }}>
+          <span style={{ fontSize: 22, flexShrink: 0 }}>{backupWarning === 'never' ? '🚨' : '⚠️'}</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: 13, color: backupWarning === 'never' ? '#991B1B' : '#92400E' }}>
+              {backupWarning === 'never' ? 'Aucune sauvegarde configurée' : 'Sauvegarde ancienne de plus de 7 jours'}
+            </div>
+            <div style={{ fontSize: 12, color: backupWarning === 'never' ? '#B91C1C' : '#B45309', marginTop: 2 }}>
+              {backupWarning === 'never'
+                ? 'En cas de panne ou perte de l\'ordinateur, toutes vos données patients seront perdues.'
+                : 'Pensez à sauvegarder régulièrement pour éviter toute perte de données.'}
+            </div>
+          </div>
+          <button
+            className="btn btn-sm"
+            style={{ background: backupWarning === 'never' ? '#DC2626' : '#F59E0B', color: '#fff', border: 'none', flexShrink: 0 }}
+            onClick={() => navigate('/parametres', { state: { tab: 'backup' } })}
+          >
+            Configurer les sauvegardes →
+          </button>
+          <button
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', fontSize: 18, flexShrink: 0, lineHeight: 1, padding: '2px 4px' }}
+            title="Ignorer pour 24h"
+            onClick={() => {
+              localStorage.setItem('synoria-backup-warn-dismissed', String(Date.now()))
+              setBackupDismissed(true)
+            }}
+          >×</button>
+        </div>
+      )}
 
       {/* ── Bienvenue ── */}
       <div className="dash-welcome">

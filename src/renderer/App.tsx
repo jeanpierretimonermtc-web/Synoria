@@ -12,6 +12,7 @@ import { Toast } from './components/common/Toast'
 import { useToast } from './hooks/useToast'
 import SplashScreen from './components/common/SplashScreen'
 import LockScreen from './pages/LockScreen'
+import SetupWizard from './components/common/SetupWizard'
 import SettingsPage      from './pages/SettingsPage'
 import RgpdPage          from './pages/RgpdPage'
 import ComptaPage        from './pages/ComptaPage'
@@ -28,7 +29,8 @@ type AuthState = 'splash' | 'checking' | 'setup' | 'locked' | 'unlocked'
 
 export default function App() {
   const { toast, showToast } = useToast()
-  const [authState, setAuthState] = useState<AuthState>('splash')
+  const [authState,   setAuthState]   = useState<AuthState>('splash')
+  const [showWizard,  setShowWizard]  = useState(false)
   const navigate = useNavigate()
 
   // Lecture synchrone depuis localStorage → pas de flash au premier rendu
@@ -134,7 +136,19 @@ export default function App() {
   }
 
   if (authState === 'setup' || authState === 'locked') {
-    return <LockScreen mode={authState} onUnlock={() => setAuthState('unlocked')} theme={theme} />
+    return (
+      <LockScreen
+        mode={authState}
+        onUnlock={(wasSetup?: boolean) => {
+          setAuthState('unlocked')
+          // Wizard au 1er démarrage uniquement (setup) et si pas déjà vu
+          if (wasSetup && !localStorage.getItem('synoria-wizard-done')) {
+            setShowWizard(true)
+          }
+        }}
+        theme={theme}
+      />
+    )
   }
 
   const handleLock = async () => {
@@ -147,6 +161,7 @@ export default function App() {
       <FormattingPopup />
       {searchOpen && <GlobalSearch onClose={() => setSearchOpen(false)} />}
       {adminOpen && <AdminPanel onClose={() => setAdminOpen(false)} theme={theme} />}
+      {showWizard && <SetupWizard theme={theme} onComplete={() => setShowWizard(false)} />}
       <div className="app-shell">
 
         {/* ── HEADER compact ── */}

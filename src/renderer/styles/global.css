@@ -2569,24 +2569,38 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
   display: grid;
   grid-template-columns: minmax(310px, 420px) minmax(260px, 1fr);
   gap: 14px;
-  align-items: stretch;
+  align-items: start;
 }
 .bodychart-clinical-map {
   position: relative;
-  min-height: 520px;
   border-radius: 14px;
   background:
-    radial-gradient(circle at 50% 42%, rgba(255,255,255,.86), rgba(255,255,255,.32) 45%, transparent 68%),
-    linear-gradient(180deg, #DCE7E1, #C8D8D0);
+    radial-gradient(circle at 50% 42%, rgba(255,255,255,.92), rgba(255,255,255,.38) 48%, transparent 72%),
+    linear-gradient(180deg, #E3ECE8, #CBD9D3);
   border: 1.5px solid #93A89D;
   overflow: hidden;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.65), 0 12px 28px rgba(32, 44, 38, .12);
 }
+.bodychart-asset,
+.bodychart-overlay,
 .bodychart-anatomy {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+}
+.bodychart-asset {
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+  filter: drop-shadow(0 18px 24px rgba(24, 35, 29, .16));
+}
+.bodychart-overlay {
+  pointer-events: none;
+  z-index: 2;
+}
+.bodychart-anatomy {
   transform: none;
 }
 .bodychart-anatomy-fill {
@@ -2668,6 +2682,7 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
   font-weight: 900;
   opacity: 0;
   background: rgba(38, 49, 43, .74);
+  z-index: 3;
 }
 .bodychart-clinical-map:hover .bodychart-marker {
   opacity: .22;
@@ -2871,11 +2886,266 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
 }
 
 .bodychart-clinical-map {
-  width: min(100%, 360px);
-  max-width: 360px;
+  width: min(100%, 380px);
   min-height: 0;
-  aspect-ratio: 220 / 380;
   margin: 0 auto;
+  align-self: start;
+  flex: 0 0 auto;
+}
+.bodychart-clinical-map.front {
+  max-width: 330px;
+  aspect-ratio: 618 / 1288;
+}
+.bodychart-clinical-map.back {
+  max-width: 390px;
+  aspect-ratio: 860 / 1459;
+}
+
+/* Osteopathy anatomical workspace */
+.bodychart-command {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1F2C27, #31463D);
+  color: #F7FAF8;
+  border: 1px solid rgba(255,255,255,.18);
+  box-shadow: 0 12px 28px rgba(26, 38, 32, .18);
+}
+.bodychart-command strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 15px;
+  letter-spacing: 0;
+}
+.bodychart-command-kicker {
+  display: block;
+  color: #BED2C8;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.bodychart-command-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+.bodychart-command-stats span {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.12);
+  color: #F7FAF8;
+  border: 1px solid rgba(255,255,255,.16);
+  font-size: 12px;
+  font-weight: 800;
+}
+.bodychart-workspace {
+  grid-template-columns: 92px minmax(280px, 430px) minmax(330px, 1fr);
+  gap: 14px;
+}
+.bodychart-view-rail {
+  display: grid;
+  gap: 8px;
+  align-self: start;
+}
+.bodychart-view-rail button {
+  position: relative;
+  min-height: 78px;
+  padding: 9px 8px;
+  border-radius: 10px;
+  border: 1.5px solid #8FA59A;
+  background: #DCE7E1;
+  color: #203029;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.55);
+}
+.bodychart-view-rail button span {
+  display: inline-flex;
+  margin-bottom: 6px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #F7FAF8;
+  color: #405149;
+  font-size: 10px;
+  font-weight: 900;
+}
+.bodychart-view-rail button strong {
+  display: block;
+  font-size: 11px;
+  line-height: 1.2;
+}
+.bodychart-view-rail button em {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  min-width: 19px;
+  height: 19px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #C2410C;
+  color: #fff;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+}
+.bodychart-view-rail button.active {
+  background: #F8FAF9;
+  border-color: color-mix(in srgb, var(--plugin-accent, var(--accent)) 72%, #26312B);
+  box-shadow: 0 8px 18px rgba(31, 44, 37, .14);
+}
+.bodychart-map-card {
+  align-self: start;
+  padding: 12px;
+  border-radius: 14px;
+  background: #D8E4DE;
+  border: 1.5px solid #8FA59A;
+  box-shadow: 0 10px 24px rgba(32, 44, 38, .11);
+}
+.bodychart-map-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  color: #1E2A24;
+}
+.bodychart-map-head span {
+  display: inline-flex;
+  margin-right: 7px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #22312B;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+}
+.bodychart-map-head strong {
+  font-size: 13px;
+  font-weight: 900;
+}
+.bodychart-map-head small {
+  color: #4E5E55;
+  font-size: 12px;
+  font-weight: 900;
+}
+.bodychart-map-card .bodychart-clinical-map {
+  background:
+    var(--bodychart-image) center / contain no-repeat,
+    radial-gradient(circle at 50% 40%, rgba(255,255,255,.95), rgba(255,255,255,.55) 45%, rgba(235,242,238,.24) 74%),
+    linear-gradient(180deg, #EEF4F1, #D2E0D9);
+  border-color: #9CB0A6;
+}
+.bodychart-clinical-map.front {
+  max-width: 360px;
+  aspect-ratio: 760 / 1435;
+  height: 680px;
+}
+.bodychart-clinical-map.back {
+  max-width: 350px;
+  aspect-ratio: 717 / 1422;
+  height: 694px;
+}
+.bodychart-clinical-map.left {
+  max-width: 145px;
+  aspect-ratio: 311 / 1476;
+  height: 688px;
+}
+.bodychart-clinical-map.right {
+  max-width: 170px;
+  aspect-ratio: 370 / 1452;
+  height: 666px;
+}
+.bodychart-map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.bodychart-map-legend span {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: rgba(31, 44, 37, .08);
+  color: #405149;
+  font-size: 11px;
+  font-weight: 800;
+}
+.bodychart-clinical-map .bodychart-marker {
+  width: 23px;
+  height: 23px;
+  opacity: .58;
+  background: rgba(31, 44, 37, .78);
+  border-color: rgba(255,255,255,.92);
+}
+.bodychart-clinical-map:hover .bodychart-marker {
+  opacity: .72;
+}
+.bodychart-clinical-map .bodychart-marker:hover,
+.bodychart-clinical-map .bodychart-marker.active {
+  opacity: 1 !important;
+}
+.bodychart-zone-panel {
+  background: #DDE8E2;
+  border-color: #8FA59A;
+}
+.bodychart-zone-panel .bodychart-zones {
+  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+  max-height: 336px;
+}
+.bodychart-zone-card {
+  background: #F3F7F5;
+  border-color: #A8BBB1;
+  color: #17211C;
+}
+.bodychart-zone-card.active {
+  background: #FFFFFF;
+  border-color: var(--zone-color, var(--plugin-accent, var(--accent)));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--zone-color, var(--plugin-accent, var(--accent))) 30%, transparent);
+}
+.bodychart-detail-card {
+  background: #FFFFFF;
+}
+
+@media (max-width: 1060px) {
+  .bodychart-workspace {
+    grid-template-columns: 92px minmax(260px, 420px);
+  }
+  .bodychart-zone-panel {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .bodychart-command {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .bodychart-command-stats {
+    justify-content: flex-start;
+  }
+  .bodychart-workspace {
+    grid-template-columns: 1fr;
+  }
+  .bodychart-view-rail {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .bodychart-view-rail button {
+    min-height: 62px;
+  }
+  .bodychart-clinical-map.front,
+  .bodychart-clinical-map.back,
+  .bodychart-clinical-map.left,
+  .bodychart-clinical-map.right {
+    max-width: 310px;
+  }
 }
 
 .richtextarea-wrap {

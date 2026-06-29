@@ -1,6 +1,12 @@
 import React, { useState } from 'react'
 import type { PluginDefinition, PluginSection, PluginField } from '../../../shared/pluginTypes'
 import RichTextArea from '../common/RichTextArea'
+import {
+  osteoAnatomyBackImage,
+  osteoAnatomyFrontImage,
+  osteoAnatomyLeftImage,
+  osteoAnatomyRightImage,
+} from '../../assets/bodycharts/bodychartImages.generated'
 
 // ── COMPOSANT PRINCIPAL ────────────────────────────────────────────────────
 
@@ -11,8 +17,31 @@ interface RendererProps {
 }
 
 export default function PluginFormRenderer({ plugin, data, onChange }: RendererProps) {
+  const fieldCount = plugin.sections.reduce(
+    (total, section) => total + section.fields.filter(field => field.type !== 'separator').length,
+    0
+  )
+  const accent = plugin.accentColor || 'var(--accent)'
+
   return (
-    <>
+    <div
+      className="plugin-form"
+      style={{ '--plugin-accent': accent } as React.CSSProperties}
+    >
+      <div className="plugin-form-overview">
+        <div className="plugin-form-badge">{plugin.icon || 'Plugin'}</div>
+        <div className="plugin-form-copy">
+          <div className="plugin-form-kicker">{plugin.specialty}</div>
+          <h3>{plugin.name}</h3>
+          {plugin.description && <p>{plugin.description}</p>}
+        </div>
+        <div className="plugin-form-meta">
+          <span>{plugin.sections.length} sections</span>
+          <span>{fieldCount} champs</span>
+          <span>v{plugin.version}</span>
+        </div>
+      </div>
+
       {plugin.sections.map(section => (
         <PluginSectionCard
           key={section.id}
@@ -21,7 +50,7 @@ export default function PluginFormRenderer({ plugin, data, onChange }: RendererP
           onChange={onChange}
         />
       ))}
-    </>
+    </div>
   )
 }
 
@@ -294,12 +323,31 @@ function DynamicField({ field, value, onChange }: {
   }
 }
 
-type BodyChartSide = 'front' | 'back'
+type BodyChartSide = 'front' | 'back' | 'left' | 'right'
 
 interface BodyChartValue {
   front?: string[]
   back?: string[]
+  left?: string[]
+  right?: string[]
   notes?: string
+  details?: Record<string, BodyChartZoneDetail>
+}
+
+interface BodyChartZoneDetail {
+  intensity?: number
+  symptom?: string
+  laterality?: string
+  note?: string
+}
+
+const BODY_CHART_SIDES: BodyChartSide[] = ['front', 'back', 'left', 'right']
+
+const BODY_CHART_VIEW_META: Record<BodyChartSide, { label: string; shortLabel: string; panelLabel: string; anatomy: string }> = {
+  front: { label: 'Vue anterieure', shortLabel: 'ANT', panelLabel: 'Zones anterieures', anatomy: 'Plan frontal' },
+  back: { label: 'Vue posterieure', shortLabel: 'POST', panelLabel: 'Zones posterieures', anatomy: 'Rachis et ceinture scapulaire' },
+  left: { label: 'Profil gauche', shortLabel: 'GAU', panelLabel: 'Zones laterales gauches', anatomy: 'Profil gauche' },
+  right: { label: 'Profil droit', shortLabel: 'DRO', panelLabel: 'Zones laterales droites', anatomy: 'Profil droit' },
 }
 
 const BODY_CHART_ZONES: Record<BodyChartSide, string[]> = {
@@ -318,53 +366,257 @@ const BODY_CHART_ZONES: Record<BodyChartSide, string[]> = {
     'Fesse / SI droite', 'Fesse / SI gauche', 'Ischio-jambiers droits',
     'Ischio-jambiers gauches', 'Mollet / pied droit', 'Mollet / pied gauche',
   ],
+  left: [
+    'Temporal / ATM gauche', 'Cervical gauche', 'Epaule gauche laterale', 'Thorax gauche',
+    'Coude gauche lateral', 'Poignet / main gauche', 'Bassin gauche', 'Hanche gauche',
+    'Genou gauche lateral', 'Cheville / pied gauche', 'Chaine posterieure gauche',
+    'Chaine anterieure gauche',
+  ],
+  right: [
+    'Temporal / ATM droit', 'Cervical droit', 'Epaule droite laterale', 'Thorax droit',
+    'Coude droit lateral', 'Poignet / main droit', 'Bassin droit', 'Hanche droite',
+    'Genou droit lateral', 'Cheville / pied droit', 'Chaine posterieure droite',
+    'Chaine anterieure droite',
+  ],
+}
+
+const BODY_CHART_ZONE_POSITIONS: Record<BodyChartSide, { x: number; y: number }[]> = {
+  front: [
+    { x: 50, y: 9 }, { x: 50, y: 18 }, { x: 50, y: 27 }, { x: 50, y: 36 },
+    { x: 33, y: 22 }, { x: 67, y: 22 }, { x: 24, y: 35 }, { x: 76, y: 35 },
+    { x: 12, y: 49 }, { x: 88, y: 49 }, { x: 50, y: 49 },
+    { x: 39, y: 52 }, { x: 61, y: 52 }, { x: 38, y: 69 }, { x: 62, y: 69 },
+    { x: 37, y: 92 }, { x: 63, y: 92 },
+  ],
+  back: [
+    { x: 50, y: 8 }, { x: 50, y: 16 }, { x: 50, y: 27 }, { x: 50, y: 36 },
+    { x: 50, y: 45 }, { x: 50, y: 51 }, { x: 35, y: 24 }, { x: 65, y: 24 },
+    { x: 25, y: 25 }, { x: 75, y: 25 }, { x: 15, y: 45 }, { x: 85, y: 45 },
+    { x: 42, y: 52 }, { x: 58, y: 52 }, { x: 40, y: 66 }, { x: 60, y: 66 },
+    { x: 38, y: 91 }, { x: 62, y: 91 },
+  ],
+  left: [
+    { x: 39, y: 8 }, { x: 54, y: 16 }, { x: 68, y: 23 }, { x: 47, y: 31 },
+    { x: 67, y: 37 }, { x: 54, y: 50 }, { x: 61, y: 47 }, { x: 60, y: 52 },
+    { x: 59, y: 69 }, { x: 53, y: 92 }, { x: 68, y: 33 }, { x: 39, y: 33 },
+  ],
+  right: [
+    { x: 60, y: 8 }, { x: 46, y: 16 }, { x: 32, y: 23 }, { x: 53, y: 31 },
+    { x: 34, y: 37 }, { x: 47, y: 50 }, { x: 39, y: 47 }, { x: 40, y: 52 },
+    { x: 41, y: 69 }, { x: 47, y: 92 }, { x: 32, y: 33 }, { x: 62, y: 33 },
+  ],
+}
+
+const BODY_CHART_IMAGES: Record<BodyChartSide, string> = {
+  front: osteoAnatomyFrontImage,
+  back: osteoAnatomyBackImage,
+  left: osteoAnatomyLeftImage,
+  right: osteoAnatomyRightImage,
+}
+
+const BODY_CHART_SYMPTOMS = ['Douleur', 'Tension', 'Blocage', 'Irradiation', 'Fourmillement', 'Engourdissement', 'Brulure', 'Faiblesse']
+const BODY_CHART_LATERALITY = ['Non precise', 'Droit', 'Gauche', 'Bilateral', 'Central']
+
+function bodyChartKey(side: BodyChartSide, zone: string): string {
+  return `${side}:${zone}`
+}
+
+function defaultBodyChartDetail(): BodyChartZoneDetail {
+  return { intensity: 5, symptom: 'Douleur', laterality: 'Non precise', note: '' }
+}
+
+function bodyChartIntensityColor(intensity: number | undefined): string {
+  const value = typeof intensity === 'number' ? intensity : 5
+  if (value <= 2) return '#D5A51C'
+  if (value <= 5) return '#D97706'
+  if (value <= 7) return '#DC2626'
+  return '#8F1D1D'
 }
 
 function BodyChartField({ value, onChange }: {
   value: BodyChartValue | null | undefined
   onChange: (v: BodyChartValue) => void
 }) {
+  const [activeSide, setActiveSide] = useState<BodyChartSide>('front')
   const current: BodyChartValue = value && typeof value === 'object' && !Array.isArray(value)
     ? value
     : {}
 
   const toggle = (side: BodyChartSide, zone: string) => {
     const selected = current[side] || []
+    const key = bodyChartKey(side, zone)
     const next = selected.includes(zone)
       ? selected.filter(z => z !== zone)
       : [...selected, zone]
-    onChange({ ...current, [side]: next })
+    const details = { ...(current.details || {}) }
+    if (selected.includes(zone)) {
+      delete details[key]
+    } else if (!details[key]) {
+      details[key] = defaultBodyChartDetail()
+    }
+    onChange({ ...current, [side]: next, details })
   }
 
   const updateNotes = (notes: string) => {
     onChange({ ...current, notes })
   }
 
-  const renderSide = (side: BodyChartSide, label: string) => (
-    <div className="bodychart-side">
-      <div className="bodychart-title">{label}</div>
-      <div className="bodychart-silhouette" aria-hidden="true">
-        <span className="bodychart-head" />
-        <span className="bodychart-neck" />
-        <span className="bodychart-torso" />
-        <span className="bodychart-arm bodychart-arm-left" />
-        <span className="bodychart-arm bodychart-arm-right" />
-        <span className="bodychart-leg bodychart-leg-left" />
-        <span className="bodychart-leg bodychart-leg-right" />
+  const updateZoneDetail = (side: BodyChartSide, zone: string, patch: Partial<BodyChartZoneDetail>) => {
+    const key = bodyChartKey(side, zone)
+    onChange({
+      ...current,
+      details: {
+        ...(current.details || {}),
+        [key]: {
+          ...defaultBodyChartDetail(),
+          ...(current.details || {})[key],
+          ...patch,
+        },
+      },
+    })
+  }
+
+  const selectedZones = current[activeSide] || []
+  const activeMeta = BODY_CHART_VIEW_META[activeSide]
+  const totalSelected = BODY_CHART_SIDES.reduce((total, side) => total + (current[side] || []).length, 0)
+  const selectedTrace = BODY_CHART_ZONES[activeSide]
+    .map((zone, index) => ({
+      zone,
+      pos: BODY_CHART_ZONE_POSITIONS[activeSide][index] || { x: 50, y: 50 },
+    }))
+    .filter(item => selectedZones.includes(item.zone))
+    .map(item => `${item.pos.x},${item.pos.y}`)
+    .join(' ')
+
+  const renderClinicalMap = () => (
+    <div
+      className={`bodychart-clinical-map ${activeSide}`}
+      aria-label={activeMeta.label}
+      style={{ '--bodychart-image': `url("${BODY_CHART_IMAGES[activeSide]}")` } as React.CSSProperties}
+    >
+      <img
+        className="bodychart-asset"
+        src={BODY_CHART_IMAGES[activeSide]}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+      />
+      <svg className="bodychart-overlay" viewBox="0 0 100 100" role="img" aria-hidden="true" preserveAspectRatio="none">
+        {BODY_CHART_ZONES[activeSide].map((zone, index) => {
+          if (!selectedZones.includes(zone)) return null
+          const pos = BODY_CHART_ZONE_POSITIONS[activeSide][index] || { x: 50, y: 50 }
+          const detail = (current.details || {})[bodyChartKey(activeSide, zone)]
+          const intensity = typeof detail?.intensity === 'number' ? detail.intensity : 5
+          return (
+            <g key={`heat-${zone}`} className={`bodychart-heat heat-${Math.min(10, Math.max(0, intensity))}`}>
+              <circle cx={pos.x} cy={pos.y} r={3.2 + intensity * .42} />
+              <circle cx={pos.x} cy={pos.y} r={1.4 + intensity * .2} />
+            </g>
+          )
+        })}
+        {selectedTrace && (
+          <polyline className="bodychart-trace" points={selectedTrace} />
+        )}
+      </svg>
+
+      {BODY_CHART_ZONES[activeSide].map((zone, index) => {
+        const active = selectedZones.includes(zone)
+        const pos = BODY_CHART_ZONE_POSITIONS[activeSide][index] || { x: 50, y: 50 }
+        const detail = (current.details || {})[bodyChartKey(activeSide, zone)]
+        const markerColor = bodyChartIntensityColor(detail?.intensity)
+        return (
+          <button
+            key={zone}
+            type="button"
+            className={`bodychart-marker${active ? ' active' : ''}`}
+            style={{ left: `${pos.x}%`, top: `${pos.y}%`, '--zone-color': markerColor } as React.CSSProperties}
+            onClick={() => toggle(activeSide, zone)}
+            aria-pressed={active}
+            title={zone}
+          >
+            <span>{index + 1}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+
+  const renderClinicalCards = () => (
+    <div className="bodychart-zone-panel">
+      <div className="bodychart-zone-panel-head">
+        <strong>{activeMeta.panelLabel}</strong>
+        <span>{selectedZones.length} selectionnee(s)</span>
       </div>
       <div className="bodychart-zones">
-        {BODY_CHART_ZONES[side].map(zone => {
-          const active = (current[side] || []).includes(zone)
+        {BODY_CHART_ZONES[activeSide].map((zone, index) => {
+          const active = selectedZones.includes(zone)
+          const detail = (current.details || {})[bodyChartKey(activeSide, zone)]
+          const markerColor = bodyChartIntensityColor(detail?.intensity)
           return (
             <button
               key={zone}
               type="button"
-              className={`bodychart-zone${active ? ' active' : ''}`}
-              onClick={() => toggle(side, zone)}
+              className={`bodychart-zone-card${active ? ' active' : ''}`}
+              onClick={() => toggle(activeSide, zone)}
               aria-pressed={active}
+              style={{ '--zone-color': markerColor } as React.CSSProperties}
             >
-              {zone}
+              <span className="bodychart-zone-index">{index + 1}</span>
+              <span>{zone}</span>
             </button>
+          )
+        })}
+      </div>
+      <div className="bodychart-selected-panel">
+        <div className="bodychart-selected-title">Details des zones selectionnees</div>
+        {selectedZones.length === 0 ? (
+          <div className="bodychart-empty-detail">Selectionner une zone sur le corps pour renseigner le symptome.</div>
+        ) : selectedZones.map(zone => {
+          const key = bodyChartKey(activeSide, zone)
+          const detail = { ...defaultBodyChartDetail(), ...(current.details || {})[key] }
+          const markerColor = bodyChartIntensityColor(detail.intensity)
+          return (
+            <div key={zone} className="bodychart-detail-card" style={{ '--zone-color': markerColor } as React.CSSProperties}>
+              <div className="bodychart-detail-head">
+                <span>{zone}</span>
+                <strong>{detail.intensity ?? 5}/10</strong>
+              </div>
+              <div className="bodychart-detail-grid">
+                <label>
+                  Type
+                  <select
+                    value={detail.symptom || 'Douleur'}
+                    onChange={e => updateZoneDetail(activeSide, zone, { symptom: e.target.value })}
+                  >
+                    {BODY_CHART_SYMPTOMS.map(option => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                </label>
+                <label>
+                  Cote
+                  <select
+                    value={detail.laterality || 'Non precise'}
+                    onChange={e => updateZoneDetail(activeSide, zone, { laterality: e.target.value })}
+                  >
+                    {BODY_CHART_LATERALITY.map(option => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                </label>
+              </div>
+              <label className="bodychart-intensity-row">
+                <span>Intensite</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={10}
+                  value={detail.intensity ?? 5}
+                  onChange={e => updateZoneDetail(activeSide, zone, { intensity: Number(e.target.value) })}
+                />
+              </label>
+              <textarea
+                value={detail.note || ''}
+                onChange={e => updateZoneDetail(activeSide, zone, { note: e.target.value })}
+                placeholder="Trajet, irradiation, restriction, circonstance, test positif..."
+              />
+            </div>
           )
         })}
       </div>
@@ -373,9 +625,52 @@ function BodyChartField({ value, onChange }: {
 
   return (
     <div className="bodychart-field">
-      <div className="bodychart-grid">
-        {renderSide('front', 'Vue antérieure')}
-        {renderSide('back', 'Vue postérieure')}
+      <div className="bodychart-command">
+        <div>
+          <span className="bodychart-command-kicker">Carte anatomique osteopathie</span>
+          <strong>Localisation clinique des zones symptomatiques</strong>
+        </div>
+        <div className="bodychart-command-stats">
+          <span>{totalSelected} zone(s)</span>
+          <span>{activeMeta.anatomy}</span>
+        </div>
+      </div>
+      <div className="bodychart-workspace">
+        <div className="bodychart-view-rail" aria-label="Choix de la vue anatomique">
+          {BODY_CHART_SIDES.map(side => {
+            const meta = BODY_CHART_VIEW_META[side]
+            const count = (current[side] || []).length
+            return (
+              <button
+                key={side}
+                type="button"
+                className={activeSide === side ? 'active' : ''}
+                onClick={() => setActiveSide(side)}
+                aria-pressed={activeSide === side}
+              >
+                <span>{meta.shortLabel}</span>
+                <strong>{meta.label}</strong>
+                {count > 0 && <em>{count}</em>}
+              </button>
+            )
+          })}
+        </div>
+        <div className="bodychart-map-card">
+          <div className="bodychart-map-head">
+            <div>
+              <span>{activeMeta.shortLabel}</span>
+              <strong>{activeMeta.label}</strong>
+            </div>
+            <small>{selectedZones.length} selectionnee(s)</small>
+          </div>
+          {renderClinicalMap()}
+          <div className="bodychart-map-legend">
+            <span>Point discret</span>
+            <span>Halo = intensite</span>
+            <span>Trait = trajet</span>
+          </div>
+        </div>
+        {renderClinicalCards()}
       </div>
       <textarea
         value={current.notes || ''}

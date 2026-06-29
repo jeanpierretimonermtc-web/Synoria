@@ -803,6 +803,51 @@ function PluginFieldSummary({ field, value }: { field: PluginField; value: any }
       )
     }
 
+    case 'bodychart': {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+      const sides = [
+        { key: 'front', label: 'Anterieur' },
+        { key: 'back', label: 'Posterieur' },
+        { key: 'left', label: 'Profil gauche' },
+        { key: 'right', label: 'Profil droit' },
+      ]
+      const front: string[] = Array.isArray(value.front) ? value.front : []
+      const back: string[] = Array.isArray(value.back) ? value.back : []
+      const left: string[] = Array.isArray(value.left) ? value.left : []
+      const right: string[] = Array.isArray(value.right) ? value.right : []
+      const details: Record<string, any> = value.details && typeof value.details === 'object' ? value.details : {}
+      const rows = [
+        ...front.map(zone => ({ side: 'Antérieur', zone, detail: details[`front:${zone}`] || {} })),
+        ...back.map(zone => ({ side: 'Postérieur', zone, detail: details[`back:${zone}`] || {} })),
+      ]
+      rows.push(
+        ...left.map(zone => ({ side: 'Profil gauche', zone, detail: details[`left:${zone}`] || {} })),
+        ...right.map(zone => ({ side: 'Profil droit', zone, detail: details[`right:${zone}`] || {} })),
+      )
+      const notes = typeof value.notes === 'string' ? value.notes.trim() : ''
+      if (!rows.length && !notes) return null
+      return (
+        <div style={{ gridColumn: '1 / -1' }}>
+          <div className="detail-label">{field.label}</div>
+          {rows.length > 0 && (
+            <div className="bodychart-summary-list">
+              {rows.map(row => (
+                <div key={`${row.side}-${row.zone}`} className="bodychart-summary-row">
+                  <strong>{row.zone}</strong>
+                  <span>{row.side}</span>
+                  {row.detail?.symptom && <span>{row.detail.symptom}</span>}
+                  {row.detail?.laterality && row.detail.laterality !== 'Non precise' && <span>{row.detail.laterality}</span>}
+                  {typeof row.detail?.intensity === 'number' && <span>{row.detail.intensity}/10</span>}
+                  {row.detail?.note && <em>{row.detail.note}</em>}
+                </div>
+              ))}
+            </div>
+          )}
+          {notes && <div className="detail-value" style={{ marginTop: 8 }}>{notes}</div>}
+        </div>
+      )
+    }
+
     default:
       return null
   }

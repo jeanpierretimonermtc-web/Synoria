@@ -1,0 +1,281 @@
+{
+  "id": "kinesiologie_pro",
+  "name": "Kinesiologie Pro",
+  "specialty": "Kinesiologie",
+  "version": "2.0.0",
+  "author": "Synoria",
+  "description": "Fiche professionnelle de kinesiologie : cadre, objectif, stress, contexte psycho-emotionnel, test, equilibrations, integration et suivi.",
+  "icon": "KIN",
+  "accentColor": "#5E6F8F",
+  "sections": [
+    {
+      "id": "cadre_consentement",
+      "title": "Cadre de seance et consentement",
+      "icon": "CAD",
+      "accentColor": "#8A6A4F",
+      "fields": [
+        {
+          "id": "cadreSeance",
+          "type": "checkboxgroup",
+          "label": "Cadre pose",
+          "options": [
+            "Approche complementaire expliquee",
+            "Ne remplace pas un suivi medical",
+            "Consentement recueilli",
+            "Confidentialite rappelee",
+            "Objectif formule avec le client",
+            "Limites de seance rappelees",
+            "Orientation conseillee si necessaire"
+          ],
+          "width": "full"
+        },
+        {
+          "id": "precautions",
+          "type": "richtext",
+          "label": "Precautions ou contexte sensible",
+          "placeholder": "Trauma, suivi psychologique, traitement medical, grossesse, enfant, demande hors cadre, dissociation, urgence...",
+          "width": "full",
+          "minHeight": 85
+        }
+      ]
+    },
+    {
+      "id": "demande_objectif",
+      "title": "Demande, objectif et indicateurs",
+      "icon": "OBJ",
+      "accentColor": "#5E6F8F",
+      "fields": [
+        {
+          "id": "demande",
+          "type": "richtext",
+          "label": "Demande exprimee",
+          "placeholder": "Sujet amene, contexte, evenement declencheur, anciennete, attentes du client...",
+          "width": "full",
+          "minHeight": 95
+        },
+        {
+          "id": "objectif",
+          "type": "richtext",
+          "label": "Objectif de seance",
+          "placeholder": "Formulation positive, concrete, verifiable, personnelle et situee dans le temps...",
+          "width": "full",
+          "minHeight": 90
+        },
+        {
+          "id": "stressInitial",
+          "type": "rating",
+          "label": "Stress initial",
+          "min": 0,
+          "max": 10,
+          "width": "third",
+          "hint": "0 = neutre, 10 = charge maximale"
+        },
+        {
+          "id": "indicateurs",
+          "type": "richtext",
+          "label": "Indicateurs de changement",
+          "placeholder": "Comment le client saura que cela evolue : sensations, comportements, pensees, actions concretes...",
+          "width": "half",
+          "minHeight": 90
+        },
+        {
+          "id": "motsCles",
+          "type": "tags",
+          "label": "Mots-cles",
+          "placeholder": "ex : confiance, sommeil, examen, separation",
+          "width": "half"
+        }
+      ]
+    },
+    {
+      "id": "contexte",
+      "title": "Contexte global",
+      "icon": "CTX",
+      "accentColor": "#6E8B78",
+      "fields": [
+        {
+          "id": "domainesImpactes",
+          "type": "checkboxgroup",
+          "label": "Domaines impactes",
+          "options": [
+            "Famille",
+            "Couple",
+            "Travail",
+            "Etudes",
+            "Sommeil",
+            "Corps",
+            "Alimentation",
+            "Relations",
+            "Confiance",
+            "Decision",
+            "Deuil",
+            "Projet de vie"
+          ],
+          "width": "full"
+        },
+        {
+          "id": "histoireSujet",
+          "type": "richtext",
+          "label": "Histoire du sujet",
+          "placeholder": "Premiere apparition, repetitions, personnes impliquees, croyances, benefices secondaires, ressources deja tentees...",
+          "width": "full",
+          "minHeight": 105
+        },
+        {
+          "id": "ressentiCorps",
+          "type": "richtext",
+          "label": "Ressenti corporel associe",
+          "placeholder": "Localisation, sensations, respiration, tension, posture, mouvement, image interne...",
+          "width": "half",
+          "minHeight": 90
+        },
+        {
+          "id": "emotions",
+          "type": "checkboxgroup",
+          "label": "Emotions dominantes",
+          "options": [
+            "Peur",
+            "Colere",
+            "Tristesse",
+            "Honte",
+            "Culpabilite",
+            "Impuissance",
+            "Degout",
+            "Frustration",
+            "Confusion",
+            "Joie retenue",
+            "Soulagement"
+          ],
+          "width": "half"
+        }
+      ]
+    },
+    {
+      "id": "test_equilibration",
+      "title": "Test, corrections et equilibrations",
+      "icon": "TES",
+      "accentColor": "#7A678D",
+      "fields": [
+        {
+          "id": "modeTest",
+          "type": "radio",
+          "label": "Mode de travail",
+          "options": [
+            "Test musculaire",
+            "Balancement",
+            "Verbalisation",
+            "Observation corporelle",
+            "Mixte",
+            "Non precise"
+          ],
+          "width": "half"
+        },
+        {
+          "id": "pistesTestees",
+          "type": "checkboxgroup",
+          "label": "Pistes explorees",
+          "options": [
+            "Stress actuel",
+            "Stress passe",
+            "Croyance limitante",
+            "Emotion bloquee",
+            "Objectif futur",
+            "Lignee familiale",
+            "Besoin corporel",
+            "Ressource",
+            "Sabotage",
+            "Benefice secondaire",
+            "Integration neurologique"
+          ],
+          "width": "full"
+        },
+        {
+          "id": "equilibrations",
+          "type": "checkboxgroup",
+          "label": "Equilibrations utilisees",
+          "options": [
+            "Respiration",
+            "Mouvements oculaires",
+            "Points neuro-lymphatiques",
+            "Points neuro-vasculaires",
+            "Ancrage",
+            "Visualisation",
+            "Affirmation",
+            "Mouvement",
+            "Integration sensorielle",
+            "Liberation emotionnelle",
+            "Autre correction"
+          ],
+          "width": "full"
+        },
+        {
+          "id": "deroule",
+          "type": "richtext",
+          "label": "Deroule de seance",
+          "placeholder": "Elements testes, priorites, corrections, reactions, phrases importantes, observation du praticien...",
+          "width": "full",
+          "minHeight": 120
+        }
+      ]
+    },
+    {
+      "id": "integration_suivi",
+      "title": "Integration, fin de seance et suivi",
+      "icon": "SUI",
+      "accentColor": "#5E6F8F",
+      "fields": [
+        {
+          "id": "stressFinal",
+          "type": "rating",
+          "label": "Stress final",
+          "min": 0,
+          "max": 10,
+          "width": "third"
+        },
+        {
+          "id": "ressentiFinal",
+          "type": "radio",
+          "label": "Ressenti global",
+          "options": [
+            "Apaise",
+            "Plus clair",
+            "Energise",
+            "Emu",
+            "Fatigue",
+            "Stable",
+            "A surveiller"
+          ],
+          "width": "half"
+        },
+        {
+          "id": "integration",
+          "type": "richtext",
+          "label": "Integration et observations finales",
+          "placeholder": "Nouvelle perception, phrase ressource, sensation corporelle, action spontanee, point a surveiller...",
+          "width": "full",
+          "minHeight": 95
+        },
+        {
+          "id": "actions",
+          "type": "tags",
+          "label": "Actions ou exercices proposes",
+          "placeholder": "ex : respiration, phrase, mouvement, observation",
+          "width": "half"
+        },
+        {
+          "id": "prochainRdv",
+          "type": "radio",
+          "label": "Suite proposee",
+          "options": [
+            "Dans 2 semaines",
+            "Dans 3 semaines",
+            "Dans 1 mois",
+            "A la demande",
+            "Orientation autre professionnel"
+          ],
+          "width": "half"
+        }
+      ]
+    }
+  ]
+}

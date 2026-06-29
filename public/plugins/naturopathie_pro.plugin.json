@@ -1,0 +1,335 @@
+{
+  "id": "naturopathie_pro",
+  "name": "Naturopathie Pro",
+  "specialty": "Naturopathie",
+  "version": "2.0.0",
+  "author": "Synoria",
+  "description": "Fiche professionnelle de naturopathie : terrain, hygiene de vie, alimentation, digestion, stress, vitalite, programme et suivi.",
+  "icon": "NAT",
+  "accentColor": "#4F7B5B",
+  "sections": [
+    {
+      "id": "cadre_securite",
+      "title": "Cadre, securite et limites",
+      "icon": "CAD",
+      "accentColor": "#A86A43",
+      "fields": [
+        {
+          "id": "cadreExplique",
+          "type": "checkboxgroup",
+          "label": "Cadre de la consultation",
+          "options": [
+            "Approche complementaire expliquee",
+            "Ne remplace pas un avis medical",
+            "Traitements medicaux non modifies",
+            "Consentement recueilli",
+            "Objectifs realistes poses",
+            "Orientation medicale conseillee si necessaire"
+          ],
+          "width": "full"
+        },
+        {
+          "id": "vigilances",
+          "type": "checkboxgroup",
+          "label": "Vigilances et precautions",
+          "options": [
+            "Grossesse",
+            "Allaitement",
+            "Enfant",
+            "Pathologie chronique",
+            "Traitement medicamenteux",
+            "Anticoagulants",
+            "Diabete",
+            "Trouble alimentaire",
+            "Allergies connues",
+            "Trouble psychiatrique suivi"
+          ],
+          "width": "full"
+        },
+        {
+          "id": "orientation",
+          "type": "richtext",
+          "label": "Orientation ou precaution particuliere",
+          "placeholder": "Professionnel a contacter, examen conseille, demande d'avis medical, limites du conseil donne...",
+          "width": "full",
+          "minHeight": 85
+        }
+      ]
+    },
+    {
+      "id": "motif_terrain",
+      "title": "Motif, terrain et objectifs",
+      "icon": "MOT",
+      "accentColor": "#4F7B5B",
+      "fields": [
+        {
+          "id": "motifPrincipal",
+          "type": "richtext",
+          "label": "Motif principal et demande",
+          "placeholder": "Plainte principale, priorite du consultant, attentes, anciennete, demarche actuelle...",
+          "width": "full",
+          "minHeight": 95
+        },
+        {
+          "id": "objectif",
+          "type": "tags",
+          "label": "Objectifs",
+          "placeholder": "ex : energie, digestion, sommeil, stress",
+          "width": "half"
+        },
+        {
+          "id": "vitalite",
+          "type": "rating",
+          "label": "Vitalite ressentie",
+          "min": 0,
+          "max": 10,
+          "width": "third",
+          "hint": "0 = epuise, 10 = tres bonne vitalite"
+        },
+        {
+          "id": "terrain",
+          "type": "checkboxgroup",
+          "label": "Terrain dominant",
+          "options": [
+            "Digestif",
+            "Nerveux",
+            "Inflammatoire",
+            "Allergique",
+            "Hormonal",
+            "Metabolique",
+            "ORL",
+            "Cutane",
+            "Articulaire",
+            "Immunitaire",
+            "Fatigue chronique",
+            "Stress chronique"
+          ],
+          "width": "full"
+        },
+        {
+          "id": "historiqueSante",
+          "type": "richtext",
+          "label": "Historique de sante utile",
+          "placeholder": "Antecedents, diagnostics, operations, traitements, cycles, episodes recurrents, contexte familial...",
+          "width": "full",
+          "minHeight": 95
+        }
+      ]
+    },
+    {
+      "id": "hygiene_vie",
+      "title": "Hygiene de vie et rythme",
+      "icon": "RYT",
+      "accentColor": "#607D4D",
+      "fields": [
+        {
+          "id": "sommeilQualite",
+          "type": "radio",
+          "label": "Qualite du sommeil",
+          "options": [
+            "Reparateur",
+            "Correct",
+            "Fragmente",
+            "Insomnie",
+            "Reveil precoce",
+            "Non reparateur"
+          ],
+          "width": "half"
+        },
+        {
+          "id": "sommeilDuree",
+          "type": "radio",
+          "label": "Duree moyenne",
+          "options": [
+            "Moins de 6 h",
+            "6 h",
+            "7 h",
+            "8 h",
+            "Plus de 8 h",
+            "Variable"
+          ],
+          "width": "half"
+        },
+        {
+          "id": "stress",
+          "type": "rating",
+          "label": "Stress quotidien",
+          "min": 0,
+          "max": 10,
+          "width": "third"
+        },
+        {
+          "id": "activite",
+          "type": "radio",
+          "label": "Activite physique",
+          "options": [
+            "Aucune",
+            "Occasionnelle",
+            "1-2 fois/semaine",
+            "3-4 fois/semaine",
+            "Quotidienne",
+            "Trop intense"
+          ],
+          "width": "half"
+        },
+        {
+          "id": "rythmeVie",
+          "type": "richtext",
+          "label": "Rythme de vie et contraintes",
+          "placeholder": "Travail, ecrans, horaires decales, charge mentale, aidant familial, exposition nature, recuperation...",
+          "width": "full",
+          "minHeight": 90
+        }
+      ]
+    },
+    {
+      "id": "alimentation_digestion",
+      "title": "Alimentation, digestion et eliminations",
+      "icon": "ALI",
+      "accentColor": "#7A8150",
+      "fields": [
+        {
+          "id": "profilAlimentaire",
+          "type": "checkboxgroup",
+          "label": "Profil alimentaire",
+          "options": [
+            "Cuisine maison",
+            "Produits transformes frequents",
+            "Grignotage",
+            "Repas irreguliers",
+            "Vegetarien",
+            "Vegan",
+            "Sans gluten",
+            "Sans lactose",
+            "Sucre frequent",
+            "Cafe important",
+            "Alcool regulier",
+            "Hydratation insuffisante"
+          ],
+          "width": "full"
+        },
+        {
+          "id": "digestif",
+          "type": "checkboxgroup",
+          "label": "Signes digestifs",
+          "options": [
+            "Ballonnements",
+            "Reflux",
+            "Lourdeurs",
+            "Nausees",
+            "Constipation",
+            "Diarrhee",
+            "Alternance transit",
+            "Douleurs abdominales",
+            "Gaz",
+            "Intolerances suspectees",
+            "Faim emotionnelle",
+            "Compulsions"
+          ],
+          "width": "full"
+        },
+        {
+          "id": "journalAlimentaire",
+          "type": "richtext",
+          "label": "Journee alimentaire type",
+          "placeholder": "Petit-dejeuner, dejeuner, diner, collations, boissons, contexte des repas, horaires...",
+          "width": "half",
+          "minHeight": 115
+        },
+        {
+          "id": "eliminations",
+          "type": "richtext",
+          "label": "Eliminations et observations",
+          "placeholder": "Transit, urines, transpiration, peau, cycles, signes de surcharge ou de carence suspectee...",
+          "width": "half",
+          "minHeight": 115
+        }
+      ]
+    },
+    {
+      "id": "psycho_emotionnel",
+      "title": "Psycho-emotionnel et ressources",
+      "icon": "PSY",
+      "accentColor": "#6D6A8A",
+      "fields": [
+        {
+          "id": "etatEmotionnel",
+          "type": "checkboxgroup",
+          "label": "Etat actuel",
+          "options": [
+            "Anxiete",
+            "Irritabilite",
+            "Tristesse",
+            "Ruminations",
+            "Epuisement",
+            "Hypercontrole",
+            "Manque de motivation",
+            "Surcharge mentale",
+            "Bonne ressource",
+            "Besoin de soutien"
+          ],
+          "width": "full"
+        },
+        {
+          "id": "ressources",
+          "type": "tags",
+          "label": "Ressources deja presentes",
+          "placeholder": "ex : marche, respiration, entourage, meditation",
+          "width": "half"
+        },
+        {
+          "id": "freins",
+          "type": "richtext",
+          "label": "Freins et leviers",
+          "placeholder": "Ce qui empeche le changement, ce qui motive, contexte familial/professionnel, disponibilite...",
+          "width": "half",
+          "minHeight": 95
+        }
+      ]
+    },
+    {
+      "id": "programme_suivi",
+      "title": "Programme, priorites et suivi",
+      "icon": "SUI",
+      "accentColor": "#4F7B5B",
+      "fields": [
+        {
+          "id": "priorites",
+          "type": "richtext",
+          "label": "Priorites de travail",
+          "placeholder": "Axes retenus, priorite n1, rythme de changement acceptable, precautions...",
+          "width": "full",
+          "minHeight": 90
+        },
+        {
+          "id": "conseils",
+          "type": "richtext",
+          "label": "Conseils proposes",
+          "placeholder": "Alimentation, sommeil, respiration, activite, hydratation, phytotherapie, complements, hygiene de vie...",
+          "width": "full",
+          "minHeight": 115
+        },
+        {
+          "id": "engagementPatient",
+          "type": "tags",
+          "label": "Actions choisies par le consultant",
+          "placeholder": "ex : eau, marche, coucher 23h, petit-dejeuner",
+          "width": "half"
+        },
+        {
+          "id": "suiviPrevu",
+          "type": "radio",
+          "label": "Suivi",
+          "options": [
+            "Dans 2 semaines",
+            "Dans 1 mois",
+            "Dans 6 semaines",
+            "Dans 3 mois",
+            "A la demande"
+          ],
+          "width": "half"
+        }
+      ]
+    }
+  ]
+}

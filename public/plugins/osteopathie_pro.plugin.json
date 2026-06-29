@@ -1,0 +1,295 @@
+{
+  "id": "osteopathie_pro",
+  "name": "Osteopathie Pro",
+  "specialty": "Osteopathie",
+  "version": "2.0.0",
+  "author": "Synoria",
+  "description": "Fiche professionnelle d'osteopathie : securite, motif, douleur, bilan fonctionnel, schema corporel, tests, traitement et suivi.",
+  "icon": "OST",
+  "accentColor": "#4E6673",
+  "sections": [
+    {
+      "id": "securite_orientation",
+      "title": "Securite, limites et orientation",
+      "icon": "SEC",
+      "accentColor": "#A84F4F",
+      "fields": [
+        {
+          "id": "motifAlerte",
+          "type": "checkboxgroup",
+          "label": "Signaux d'alerte a verifier",
+          "options": [
+            "Traumatisme important recent",
+            "Fievre ou infection suspectee",
+            "Perte de poids inexpliquee",
+            "Douleur nocturne non soulagee",
+            "Douleur thoracique ou dyspnee",
+            "Deficit moteur progressif",
+            "Troubles sensitifs etendus",
+            "Troubles urinaires ou fecaux nouveaux",
+            "Cephalee brutale inhabituelle",
+            "Antecedent de cancer",
+            "Grossesse ou post-partum recent",
+            "Osteoporose ou corticotherapie longue"
+          ],
+          "width": "full",
+          "hint": "Aide-memoire de vigilance. La decision clinique reste celle du praticien."
+        },
+        {
+          "id": "conduiteTenue",
+          "type": "richtext",
+          "label": "Conduite tenue",
+          "placeholder": "Prise en charge, adaptation technique, orientation medicale, urgence conseillee, avis demande, motif de non-traitement...",
+          "width": "full",
+          "minHeight": 90
+        },
+        {
+          "id": "consentementPrecautions",
+          "type": "checkboxgroup",
+          "label": "Consentement et precautions",
+          "options": [
+            "Consentement oral recueilli",
+            "Objectifs de seance expliques",
+            "Limites de l'osteopathie rappelees",
+            "Techniques HVBA evitees",
+            "Techniques douces privilegiees",
+            "Adaptation douleur",
+            "Reorientation conseillee"
+          ],
+          "width": "full"
+        }
+      ]
+    },
+    {
+      "id": "motif_douleur",
+      "title": "Motif, douleur et retentissement",
+      "icon": "MOT",
+      "accentColor": "#4E6673",
+      "fields": [
+        {
+          "id": "motifPrincipal",
+          "type": "richtext",
+          "label": "Motif principal",
+          "placeholder": "Demande du patient, contexte, attente prioritaire, anciennete du trouble...",
+          "width": "full",
+          "minHeight": 90
+        },
+        {
+          "id": "debutMode",
+          "type": "radio",
+          "label": "Mode d'apparition",
+          "options": [
+            "Brutal",
+            "Progressif",
+            "Recidivant",
+            "Post-traumatique",
+            "Postural",
+            "Sans cause identifiee"
+          ],
+          "width": "half"
+        },
+        {
+          "id": "douleurEVA",
+          "type": "rating",
+          "label": "Intensite douleur",
+          "min": 0,
+          "max": 10,
+          "width": "third",
+          "hint": "0 = aucune, 10 = maximale"
+        },
+        {
+          "id": "profilDouleur",
+          "type": "checkboxgroup",
+          "label": "Profil de douleur",
+          "options": [
+            "Mecanique",
+            "Inflammatoire suspecte",
+            "Neuropathique suspecte",
+            "Irradiation",
+            "Paresthesies",
+            "Aigue",
+            "Chronique",
+            "Recidivante",
+            "Liee au stress",
+            "Liee au sommeil"
+          ],
+          "width": "full"
+        },
+        {
+          "id": "facteurs",
+          "type": "richtext",
+          "label": "Facteurs aggravants et soulageants",
+          "placeholder": "Mouvements, positions, repos, effort, toux, chaleur, froid, medicaments, horaire, activite...",
+          "width": "half",
+          "minHeight": 90
+        },
+        {
+          "id": "retentissement",
+          "type": "richtext",
+          "label": "Retentissement fonctionnel",
+          "placeholder": "Sommeil, travail, sport, marche, conduite, port de charge, autonomie, humeur...",
+          "width": "half",
+          "minHeight": 90
+        }
+      ]
+    },
+    {
+      "id": "terrain_antecedents",
+      "title": "Terrain, antecedents et contexte",
+      "icon": "TER",
+      "accentColor": "#7B6F5B",
+      "fields": [
+        {
+          "id": "antecedentsSignificatifs",
+          "type": "checkboxgroup",
+          "label": "Antecedents a prendre en compte",
+          "options": [
+            "Chirurgie",
+            "Fracture",
+            "Entorse",
+            "Luxation",
+            "Accident de la route",
+            "Commotion",
+            "Cicatrice importante",
+            "Grossesse",
+            "Pathologie inflammatoire",
+            "Trouble neurologique",
+            "Trouble cardio-vasculaire",
+            "Traitement anticoagulant"
+          ],
+          "width": "full"
+        },
+        {
+          "id": "chronologie",
+          "type": "richtext",
+          "label": "Chronologie des evenements",
+          "placeholder": "Evenements physiques, operations, accidents, stress majeurs, changements de vie, activites repetitives...",
+          "width": "full",
+          "minHeight": 100
+        },
+        {
+          "id": "modeVie",
+          "type": "tags",
+          "label": "Contraintes de vie",
+          "placeholder": "ex : ecran, voiture, portage, sport, sommeil court",
+          "width": "half"
+        },
+        {
+          "id": "traitementsExamens",
+          "type": "richtext",
+          "label": "Examens, traitements et suivis en cours",
+          "placeholder": "Imagerie, kine, medecin, medicaments, infiltrations, chirurgie prevue, resultats connus...",
+          "width": "half",
+          "minHeight": 90
+        }
+      ]
+    },
+    {
+      "id": "schema_bilan",
+      "title": "Schema corporel et bilan fonctionnel",
+      "icon": "COR",
+      "accentColor": "#577D8E",
+      "fields": [
+        {
+          "id": "schemaCorporel",
+          "type": "bodychart",
+          "label": "Zones douloureuses, irradiations et restrictions",
+          "width": "full",
+          "hint": "Selectionner les zones puis preciser le cote, le trajet et l'intensite."
+        },
+        {
+          "id": "testsFonctionnels",
+          "type": "checkboxgroup",
+          "label": "Tests ou observations realises",
+          "options": [
+            "Posture statique",
+            "Marche",
+            "Respiration",
+            "Mobilite cervicale",
+            "Mobilite thoracique",
+            "Mobilite lombaire",
+            "Bassin",
+            "Membres superieurs",
+            "Membres inferieurs",
+            "Tests neurologiques",
+            "Tests orthopediques",
+            "Palpation tissulaire"
+          ],
+          "width": "full"
+        },
+        {
+          "id": "resultatsBilan",
+          "type": "richtext",
+          "label": "Resultats du bilan",
+          "placeholder": "Restrictions, asymetries, douleurs provoquees, amplitudes, qualite tissulaire, tests positifs/negatifs...",
+          "width": "full",
+          "minHeight": 110
+        }
+      ]
+    },
+    {
+      "id": "analyse_traitement",
+      "title": "Analyse, traitement et suivi",
+      "icon": "ACT",
+      "accentColor": "#5F7D67",
+      "fields": [
+        {
+          "id": "hypotheseTravail",
+          "type": "richtext",
+          "label": "Hypothese de travail",
+          "placeholder": "Lecture osteopathique, priorites, chaines de compensation, liens avec le motif...",
+          "width": "full",
+          "minHeight": 95
+        },
+        {
+          "id": "techniques",
+          "type": "checkboxgroup",
+          "label": "Techniques utilisees",
+          "options": [
+            "Tissulaire",
+            "Myofascial",
+            "Articulaire doux",
+            "HVBA",
+            "Visceral",
+            "Cranien",
+            "Musculaire",
+            "Mobilisation",
+            "Drainage",
+            "Education mouvement",
+            "Respiration"
+          ],
+          "width": "full"
+        },
+        {
+          "id": "zonesTraitees",
+          "type": "tags",
+          "label": "Zones traitees",
+          "placeholder": "ex : cervicales, diaphragme, bassin",
+          "width": "half"
+        },
+        {
+          "id": "reactionSeance",
+          "type": "radio",
+          "label": "Reaction en fin de seance",
+          "options": [
+            "Amelioration nette",
+            "Amelioration partielle",
+            "Stable",
+            "Fatigue",
+            "Douleur moderee",
+            "A surveiller"
+          ],
+          "width": "half"
+        },
+        {
+          "id": "conseilsSuivi",
+          "type": "richtext",
+          "label": "Conseils, exercices et suivi",
+          "placeholder": "Conseils post-seance, mouvements, repos, hydratation, signes a surveiller, prochain rendez-vous...",
+          "width": "full",
+          "minHeight": 100
+        }
+      ]
+    }
+  ]
+}

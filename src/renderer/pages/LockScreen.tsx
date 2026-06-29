@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react'
 
 interface Props {
   mode: 'setup' | 'locked'
-  onUnlock: () => void
+  onUnlock: (wasSetup?: boolean) => void
   theme?: 'light' | 'dark'
 }
 
@@ -38,12 +38,12 @@ export default function LockScreen({ mode, onUnlock, theme = 'light' }: Props) {
     try {
       if (isSetup) {
         const result = await window.mtcApi.authSetup(password)
-        if (result.ok) { onUnlock() }
+        if (result.ok) { onUnlock(true) }  // wasSetup = true → déclenche le wizard
         else { setError(result.error || 'Erreur lors de la configuration.') }
       } else {
         const ok = await window.mtcApi.authLogin(password)
         if (ok) {
-          onUnlock()
+          onUnlock(false)
         } else {
           const next = attempts + 1
           setAttempts(next)
