@@ -26,33 +26,37 @@ if (portableDir) {
 /**
  * Migration automatique : si le dossier userData actuel est vide mais qu'un
  * autre chemin connu contient des données Synoria, on le réutilise.
- * Évite la perte de données lors d'un changement de productName entre versions.
+ * Fonctionne sur Windows ET Mac.
  */
 function migrateUserDataIfNeeded(): void {
-  const { existsSync, readdirSync, cpSync } = require('fs')
-  const appData    = process.env.APPDATA || ''
-  if (!appData) return
+  const { existsSync, cpSync } = require('fs')
 
+  // app.getPath('appData') fonctionne sur tous les OS :
+  //   Windows → C:\Users\...\AppData\Roaming
+  //   Mac     → ~/Library/Application Support
+  //   Linux   → ~/.config
+  const appData    = app.getPath('appData')
   const currentPath = app.getPath('userData')
   const authInCurrent = join(currentPath, 'auth.json')
 
-  // Si auth.json existe déjà → tout va bien, pas de migration nécessaire
+  // Si auth.json existe déjà → pas de migration nécessaire
   if (existsSync(authInCurrent)) return
 
-  // Chemins alternatifs connus (anciens noms de l'app entre les versions)
+  // Chemins alternatifs connus — inclut 'Synoria Dev' (anciens builds Mac défectueux)
   const candidates = [
     join(appData, 'Synoria'),
-    join(appData, 'Dossier Patient MTC'),
+    join(appData, 'Synoria Dev'),        // anciens builds Mac avec mauvais productName
+    join(appData, 'Dossier Patient MTC'), // très ancienne version
     join(appData, 'synoria'),
   ].filter(p => p !== currentPath)
 
   for (const candidate of candidates) {
     if (existsSync(join(candidate, 'auth.json'))) {
-      // Données trouvées dans un ancien chemin → copier vers le chemin actuel
-      console.log(`[Migration] Données trouvées dans ${candidate}, migration vers ${currentPath}`)
+      console.log(`[Migration] Données trouvées dans ${candidate}`)
+      console.log(`[Migration] → Migration vers ${currentPath}`)
       try {
         cpSync(candidate, currentPath, { recursive: true, force: true })
-        console.log('[Migration] ✓ Migration terminée')
+        console.log('[Migration] ✓ Terminée — redémarrage recommandé')
       } catch (e) {
         console.error('[Migration] Erreur :', e)
       }
