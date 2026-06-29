@@ -917,7 +917,7 @@ export default function DashboardPage() {
       {/* ── Patients à revoir ── */}
       <FollowUpSection
         followUp={followUpPatients}
-        onNavigate={id => navigate(`/patients`)}
+        onNavigate={id => navigate('/seances', { state: { patientId: id } })}
       />
 
       {/* ── Séances récentes ── */}

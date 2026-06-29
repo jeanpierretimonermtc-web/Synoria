@@ -877,11 +877,7 @@ function TimeGridView({ days, todayStr, sessionsByDate, apptByDate, blocksByDate
                     const c   = apptColor(appt, todayStr, googleCalendarColor(appt, googleImportCalendars))
                     const lbl = getApptLabel(appt)
                     const { col, totalCols } = layout.get(appt.id) ?? { col: 0, totalCols: 1 }
-                    // Calcul left/right pour affichage côte à côte
-                    const gap      = 3
-                    const colW     = totalCols > 1 ? `calc((100% - ${(totalCols + 1) * gap}px) / ${totalCols})` : undefined
-                    const colLeft  = totalCols > 1 ? `${gap + col * (100 / totalCols)}%` : undefined
-                    const colRight = totalCols > 1 ? undefined : undefined
+                    const gap = 3
                     return (
                       <div
                         key={appt.id}
