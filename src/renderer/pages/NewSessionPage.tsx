@@ -334,9 +334,10 @@ export default function NewSessionPage() {
   const [simpleObjectifs,          setSimpleObjectifs]          = useState('')
   const [simpleNotesEntretien,     setSimpleNotesEntretien]     = useState('')
   // Clôture séance : marquer RDV réalisé + comptabilité
-  const [markRdvDone,    setMarkRdvDone]    = useState(false)
-  const [clotureTypeId,  setClotureTypeId]  = useState('')
-  const [clotureTypes,   setClotureTypes]   = useState<ConsultationType[]>([])
+  const [markRdvDone,      setMarkRdvDone]      = useState(false)
+  const [clotureTypeId,    setClotureTypeId]    = useState('')
+  const [clotureTypes,     setClotureTypes]     = useState<ConsultationType[]>([])
+  const [currentMonthNb,   setCurrentMonthNb]   = useState<number | null>(null)
   // Brouillon auto-sauvegardé
   const [draftInfo, setDraftInfo] = useState<{ patientName: string; date: string } | null>(null)
   // Systèmes
@@ -380,6 +381,19 @@ export default function NewSessionPage() {
     }).catch(() => {})
   }, [])
 
+
+  // Charge le décompte déjà enregistré pour ce type/mois dans la compta
+  useEffect(() => {
+    if (!clotureTypeId || !date) { setCurrentMonthNb(null); return }
+    const [y, m] = date.split('-').map(Number)
+    if (!y || !m) return
+    window.mtcApi.getComptaYearData(y).then(data => {
+      const rev = (data as any).monthlyRevenue?.find(
+        (r: any) => r.month === m && r.type_id === clotureTypeId
+      )
+      setCurrentMonthNb(rev?.nb_seances ?? 0)
+    }).catch(() => setCurrentMonthNb(null))
+  }, [clotureTypeId, date])
 
   useEffect(() => {
     if (routePatientId) setPatientId(routePatientId)
@@ -1262,10 +1276,46 @@ export default function NewSessionPage() {
                   {clotureTypeId && (() => {
                     const type = clotureTypes.find(t => t.id === clotureTypeId)
                     const [y, m] = date.split('-')
+                    const alreadyNb = currentMonthNb ?? null
+                    const afterNb   = alreadyNb !== null ? alreadyNb + 1 : null
                     return (
-                      <div style={{ fontSize: 11, color: 'var(--purple)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span>→</span>
-                        <span>+1 <strong>"{type?.name}"</strong>{type?.price ? ` (${type.price.toFixed(2)} €)` : ''} enregistré en {m}/{y}</span>
+                      <div style={{ marginTop: 8 }}>
+                        {/* Résumé du mois actuel */}
+                        {alreadyNb !== null && (
+                          <div style={{
+                            display: 'flex', alignItems: 'center', gap: 8,
+                            padding: '7px 10px',
+                            borderRadius: 7,
+                            background: alreadyNb > 0 ? 'rgba(245,158,11,.1)' : 'rgba(74,103,65,.07)',
+                            border: `1px solid ${alreadyNb > 0 ? 'rgba(245,158,11,.35)' : 'rgba(74,103,65,.2)'}`,
+                            fontSize: 12,
+                          }}>
+                            <span style={{ fontSize: 15 }}>{alreadyNb > 0 ? '⚠️' : '✅'}</span>
+                            <div>
+                              <div style={{ fontWeight: 700, color: alreadyNb > 0 ? 'var(--amber)' : 'var(--accent)' }}>
+                                {alreadyNb > 0
+                                  ? `Déjà ${alreadyNb} séance${alreadyNb > 1 ? 's' : ''} enregistrée${alreadyNb > 1 ? 's' : ''} ce mois`
+                                  : 'Aucune séance enregistrée ce mois'
+                                }
+                              </div>
+                              <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 1 }}>
+                                "{type?.name}" · {m}/{y}
+                                {afterNb !== null && (
+                                  <span style={{ marginLeft: 6, color: 'var(--purple)', fontWeight: 600 }}>
+                                    → passera à {afterNb} après enregistrement
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        {/* Résumé de ce qui sera ajouté */}
+                        <div style={{ fontSize: 11, color: 'var(--purple)', marginTop: 5, display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <span>+1</span>
+                          <strong>"{type?.name}"</strong>
+                          {type?.price ? <span>({type.price.toFixed(2)} €)</span> : null}
+                          <span>· sera ajouté à la comptabilité {m}/{y}</span>
+                        </div>
                       </div>
                     )
                   })()}
