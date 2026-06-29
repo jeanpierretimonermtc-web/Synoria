@@ -684,12 +684,15 @@ export default function DashboardPage() {
           <div className="recent-sessions-list">
             {upcomingAppts.map((appt, idx) => {
               const pat = patients.find(p => p.id === appt.patient_id)
+              const guestName = [appt.guest_first_name, appt.guest_last_name].filter(Boolean).join(' ')
               const name = pat
                 ? `${pat.first_name} ${pat.last_name}`
-                : [appt.guest_first_name, appt.guest_last_name].filter(Boolean).join(' ') || '—'
+                : guestName || appt.note?.slice(0, 30) || 'Consultation'
               const initials = pat
                 ? getInitials(pat.first_name, pat.last_name)
-                : ((appt.guest_first_name?.[0] || '') + (appt.guest_last_name?.[0] || '')).toUpperCase() || '?'
+                : guestName
+                  ? ((appt.guest_first_name?.[0] || '') + (appt.guest_last_name?.[0] || '')).toUpperCase()
+                  : 'RDV'
               const [ry, rm, rd] = appt.date.split('-').map(Number)
               const apptDate = new Date(ry, rm - 1, rd)
               const tod      = new Date(); tod.setHours(0, 0, 0, 0)
@@ -738,23 +741,25 @@ export default function DashboardPage() {
                   {/* 3 boutons d'action */}
                   <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
 
-                    {/* 1. Fiche anamnèse → Nouvelle séance */}
-                    {pat && (
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        title={`Nouvelle séance — ${name}`}
-                        onClick={e => {
-                          e.stopPropagation()
-                          const params = new URLSearchParams()
-                          params.set('date', appt.date)
-                          if (appt.note) params.set('motif', appt.note)
+                    {/* 1. Nouvelle séance — toujours visible */}
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      title={pat ? `Nouvelle séance — ${name}` : 'Nouvelle séance (sélectionner le patient dans le formulaire)'}
+                      onClick={e => {
+                        e.stopPropagation()
+                        const params = new URLSearchParams()
+                        params.set('date', appt.date)
+                        if (appt.note) params.set('motif', appt.note)
+                        if (pat) {
                           navigate(`/nouvelle/${pat.id}?${params.toString()}`)
-                        }}
-                        style={{ padding: '4px 8px', color: cfg.dot, borderColor: cfg.border }}
-                      >
-                        📋 Séance
-                      </button>
-                    )}
+                        } else {
+                          navigate(`/nouvelle?${params.toString()}`)
+                        }
+                      }}
+                      style={{ padding: '4px 8px', color: cfg.dot, borderColor: cfg.border }}
+                    >
+                      📋 Séance
+                    </button>
 
                     {/* 2. Ouvrir le calendrier sur la date du RDV */}
                     <button
