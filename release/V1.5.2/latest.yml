@@ -1,0 +1,8 @@
+version: 1.5.2
+files:
+  - url: Synoria-Setup-1.5.2.exe
+    sha512: vP3WY/EWXlaV1oZoNhLtqi2RqgKJx1nzs9CY/67QnGtOqaJHG4B9C8ibkLGEQYnmEE/ieQEMndKeHxhhlcqHLw==
+    size: 100073640
+path: Synoria-Setup-1.5.2.exe
+sha512: vP3WY/EWXlaV1oZoNhLtqi2RqgKJx1nzs9CY/67QnGtOqaJHG4B9C8ibkLGEQYnmEE/ieQEMndKeHxhhlcqHLw==
+releaseDate: '2026-06-29T14:18:00.724Z'
