@@ -1,0 +1,77 @@
+name: Build Windows
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    name: Build Windows (Setup + Portable)
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Configurer package.json cabinet (identifiants stables)
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          if (-not $version -or $version -eq "") { $version = "1.5.3" }
+          $json = Get-Content "package.json" -Raw | ConvertFrom-Json
+          $json.version = $version
+          $json.build.appId = "com.synoria.cabinet"
+          $json.build.productName = "Synoria"
+          $json.build.nsis.guid = "C7A3F1E2-9B4D-4E8F-A2C6-D5F7E0B2C4A8"
+          $json.build.nsis.uninstallDisplayName = "Synoria"
+          $json.build.nsis.deleteAppDataOnUninstall = $false
+          $utf8 = New-Object System.Text.UTF8Encoding $false
+          [System.IO.File]::WriteAllText("$PWD\package.json", ($json | ConvertTo-Json -Depth 10), $utf8)
+          Write-Host "OK - package.json v$version (com.synoria.cabinet)"
+
+      - name: Build Windows
+        run: npx vite build && npx electron-builder --win --publish never
+
+      - name: Renommer DMG/EXE (supprimer espaces)
+        shell: pwsh
+        run: |
+          Get-ChildItem "release\*.exe" | ForEach-Object {
+            $nouveau = $_.Name -replace '\s+', '-'
+            if ($nouveau -ne $_.Name) {
+              Rename-Item $_.FullName (Join-Path $_.DirectoryName $nouveau)
+              Write-Host "Renomme: $($_.Name) -> $nouveau"
+            }
+          }
+
+      - name: Publier vers GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Synoria ${{ github.ref_name }}
+          body: |
+            ## Synoria ${{ github.ref_name }}
+
+            ### Windows
+            | Fichier | Type |
+            |---------|------|
+            | `*-Setup-*.exe` | Installation classique (recommandé) |
+            | `Synoria-*.exe` (sans Setup) | Version portable |
+
+            ### Mac
+            Voir le job **Build Mac** — `*-universal.dmg` (Intel + Apple Silicon)
+          files: release/Synoria*.exe
+          overwrite: true
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
