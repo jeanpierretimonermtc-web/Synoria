@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import type { DashboardStats, UpcomingSession, Appointment, Patient, FollowUpPatient } from '../../shared/types'
+import type { DashboardStats, UpcomingSession, Appointment, Patient, FollowUpPatient, GCalCalendar } from '../../shared/types'
 import { ToastContext } from '../App'
 import { fmtDate, getInitials, getEvolBadgeClass } from '../utils/format'
 import { UsersIcon, ClipboardIcon, CalendarIcon, CheckIcon, CloseIcon } from '../components/common/Icon'
@@ -18,6 +18,27 @@ function todayLabel() {
 
 function toDateStr(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+}
+
+// ── Couleur GCal personnalisée ────────────────────────────────────
+function gcalCustomColor(appt: Appointment, calendars: GCalCalendar[]): string | null {
+  const prefix = 'gcalExternal:'
+  if (!appt.google_event_id?.startsWith(prefix)) return null
+  const encodedId = appt.google_event_id.slice(prefix.length).split(':')[0]
+  const cal = calendars.find(c => encodeURIComponent(c.id) === encodedId)
+  return cal?.color || null
+}
+function mixWithWhite(hex: string, t: number): string {
+  const c = hex.replace('#',''); if (!/^[0-9a-fA-F]{6}$/.test(c)) return '#E8F0F8'
+  const n = parseInt(c,16), r=(n>>16)&255, g=(n>>8)&255, b=n&255
+  const m=(v:number)=>Math.round(v+(255-v)*t)
+  return `#${[m(r),m(g),m(b)].map(v=>v.toString(16).padStart(2,'0')).join('')}`
+}
+function darkenColor(hex: string, t: number): string {
+  const c = hex.replace('#',''); if (!/^[0-9a-fA-F]{6}$/.test(c)) return '#1a1a2e'
+  const n = parseInt(c,16), r=(n>>16)&255, g=(n>>8)&255, b=n&255
+  const d=(v:number)=>Math.round(v*(1-t))
+  return `#${[d(r),d(g),d(b)].map(v=>v.toString(16).padStart(2,'0')).join('')}`
 }
 
 // ── Statut RDV ────────────────────────────────────────────────────
@@ -448,6 +469,7 @@ export default function DashboardPage() {
   const [followUpPatients,setFollowUpPatients]= useState<FollowUpPatient[]>([])
   const [pendingReminders,setPendingReminders]= useState<import('../../shared/types').PendingReminder[]>([])
   const [overdueInvoices, setOverdueInvoices] = useState<import('../../shared/types').InvoiceLog[]>([])
+  const [gcalCalendars,   setGcalCalendars]   = useState<GCalCalendar[]>([])
   const [sendingReminder, setSendingReminder] = useState<string | null>(null)
   const navigate  = useNavigate()
   const showToast = useContext(ToastContext)
@@ -477,6 +499,7 @@ export default function DashboardPage() {
     }).catch(() => {})
     window.mtcApi.getPatientsToFollowUp(90).then(setFollowUpPatients).catch(() => {})
     window.mtcApi.getPendingReminders().then(setPendingReminders).catch(() => {})
+    window.mtcApi.gcalStatus().then(g => setGcalCalendars(g.importCalendars ?? [])).catch(() => {})
     window.mtcApi.getSettings().then(s => {
       window.mtcApi.getOverdueInvoices(s.invoiceOverdueDays ?? 30).then(setOverdueInvoices).catch(() => {})
     }).catch(() => window.mtcApi.getOverdueInvoices(30).then(setOverdueInvoices).catch(() => {}))
@@ -619,9 +642,12 @@ export default function DashboardPage() {
               const diffDays = Math.round((apptDate.getTime() - tod.getTime()) / 86400000)
               const isToday  = diffDays === 0
               const isSoon   = diffDays <= 3
-              // Couleurs identiques au calendrier via STATUS_CONFIG
-              const status = getApptStatus(appt, todayStr)
-              const cfg    = STATUS_CONFIG[status]
+              // Couleurs : couleur GCal personnalisée si disponible, sinon STATUS_CONFIG
+              const status    = getApptStatus(appt, todayStr)
+              const gcalColor = gcalCustomColor(appt, gcalCalendars)
+              const cfg = gcalColor
+                ? { bg: mixWithWhite(gcalColor, .88), border: gcalColor, dot: gcalColor, label: STATUS_CONFIG[status].label, labelColor: darkenColor(gcalColor, .52) }
+                : STATUS_CONFIG[status]
               return (
                 <div key={appt.id} className="recent-session-row"
                   style={{ animationDelay: `${idx * 30}ms`, cursor: 'default', alignItems: 'center', borderLeft: `3px solid ${cfg.border}`, paddingLeft: 8 }}>
