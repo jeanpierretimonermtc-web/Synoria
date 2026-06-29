@@ -23,32 +23,70 @@ function ComptaModal({ session, patient, types, onClose, onDone }: {
   patient: Patient | null
   types: ConsultationType[]
   onClose: () => void
-  onDone: (typeId: string) => void
+  onDone: (typeId: string | null) => void  // null = suppression
 }) {
   const showToast    = useContext(ToastContext)
   const existing     = getSessionCompta(session)
   const alreadyDone  = !!existing.comptaTypeId
-  const existingType = alreadyDone ? types.find(t => t.id === existing.comptaTypeId) : null
+  const existingType = types.find(t => t.id === existing.comptaTypeId)
 
-  const [selectedId, setSelectedId] = useState(existing.comptaTypeId || (types.length === 1 ? types[0].id : ''))
+  // Mode : 'view' (déjà fait, on voit les options) | 'change' (changer le type) | 'new' (première fois)
+  const [mode,       setMode]       = useState<'view' | 'change' | 'new'>(alreadyDone ? 'view' : 'new')
+  const [newTypeId,  setNewTypeId]  = useState(alreadyDone ? existing.comptaTypeId || '' : (types.length === 1 ? types[0].id : ''))
   const [saving,     setSaving]     = useState(false)
-
-  const selected = types.find(t => t.id === selectedId)
   const [yStr, mStr] = session.date.split('-')
 
-  const handleConfirm = async () => {
-    if (!selectedId) return
+  // ── Enregistrement (première fois) ────────────────────────────────
+  const handleNew = async () => {
+    if (!newTypeId) return
     setSaving(true)
     try {
       const [y, m] = session.date.split('-').map(Number)
-      await window.mtcApi.incrementMonthlyRevenue(y, m, selectedId)
-      const label = types.find(t => t.id === selectedId)?.name || ''
-      showToast(`Comptabilisé ✓ — +1 "${label}" en ${session.date.slice(0, 7)}`)
-      onDone(selectedId)
+      await window.mtcApi.incrementMonthlyRevenue(y, m, newTypeId)
+      showToast(`Comptabilisé ✓ — +1 "${types.find(t => t.id === newTypeId)?.name}" en ${session.date.slice(0, 7)}`)
+      onDone(newTypeId)
       onClose()
-    } catch (e: any) {
-      showToast(`Erreur : ${e?.message || e}`, 'error')
-    } finally { setSaving(false) }
+    } catch (e: any) { showToast(`Erreur : ${e?.message || e}`, 'error') }
+    finally { setSaving(false) }
+  }
+
+  // ── Modification du type (décrémente l'ancien, incrémente le nouveau) ──
+  const handleChange = async () => {
+    if (!newTypeId || newTypeId === existing.comptaTypeId) { onClose(); return }
+    setSaving(true)
+    try {
+      const [y, m] = session.date.split('-').map(Number)
+      // Décrémente l'ancien type de 1
+      if (existing.comptaTypeId) {
+        const data = await window.mtcApi.getComptaYearData(y)
+        const rev  = (data as any).monthlyRevenue?.find((r: any) => r.month === m && r.type_id === existing.comptaTypeId)
+        const nb   = Math.max(0, (rev?.nb_seances || 0) - 1)
+        await window.mtcApi.setMonthlyRevenue(y, m, existing.comptaTypeId, nb)
+      }
+      // Incrémente le nouveau type
+      await window.mtcApi.incrementMonthlyRevenue(y, m, newTypeId)
+      showToast(`Type modifié ✓ — "${existingType?.name}" → "${types.find(t => t.id === newTypeId)?.name}"`)
+      onDone(newTypeId)
+      onClose()
+    } catch (e: any) { showToast(`Erreur : ${e?.message || e}`, 'error') }
+    finally { setSaving(false) }
+  }
+
+  // ── Suppression (décrémente le type de 1, efface le flag) ──────────
+  const handleDelete = async () => {
+    if (!existing.comptaTypeId) return
+    setSaving(true)
+    try {
+      const [y, m] = session.date.split('-').map(Number)
+      const data = await window.mtcApi.getComptaYearData(y)
+      const rev  = (data as any).monthlyRevenue?.find((r: any) => r.month === m && r.type_id === existing.comptaTypeId)
+      const nb   = Math.max(0, (rev?.nb_seances || 0) - 1)
+      await window.mtcApi.setMonthlyRevenue(y, m, existing.comptaTypeId, nb)
+      showToast(`Entrée compta supprimée ✓`)
+      onDone(null)
+      onClose()
+    } catch (e: any) { showToast(`Erreur : ${e?.message || e}`, 'error') }
+    finally { setSaving(false) }
   }
 
   return (
@@ -56,64 +94,110 @@ function ComptaModal({ session, patient, types, onClose, onDone }: {
       <div className="modal" style={{ maxWidth: 440 }}>
         <button className="modal-close" onClick={onClose}>×</button>
         <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-          <span>📊</span> Enregistrer en comptabilité
+          <span>📊</span>
+          {alreadyDone ? 'Comptabilité de la séance' : 'Enregistrer en comptabilité'}
         </h2>
         <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
           Séance du <strong>{fmtDate(session.date)}</strong>
           {patient && <> — <strong>{patient.first_name} {patient.last_name}</strong></>}
         </div>
 
-        {/* Bandeau si déjà comptabilisé */}
-        {alreadyDone && (
-          <div style={{
-            display: 'flex', gap: 10, alignItems: 'flex-start',
-            background: 'rgba(245,158,11,.1)', border: '1.5px solid rgba(245,158,11,.4)',
-            borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13,
-          }}>
-            <span style={{ fontSize: 18 }}>⚠️</span>
-            <div>
-              <div style={{ fontWeight: 700, color: 'var(--amber)', marginBottom: 2 }}>
-                Déjà comptabilisée via Clôture de séance
+        {/* ── MODE : déjà comptabilisée ── */}
+        {mode === 'view' && (
+          <>
+            <div style={{
+              background: 'var(--accent-light)', border: '1.5px solid var(--accent-mid)',
+              borderRadius: 10, padding: '12px 16px', marginBottom: 18,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <span style={{ fontSize: 18 }}>✅</span>
+                <span style={{ fontWeight: 700, color: 'var(--accent)', fontSize: 13 }}>Séance comptabilisée</span>
               </div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+              <div style={{ fontSize: 13 }}>
                 Type : <strong>{existingType?.name || existing.comptaTypeId}</strong>
-                {existing.comptaMois && <> · Mois : <strong>{existing.comptaMois}</strong></>}
+                {existingType?.price ? <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>{existingType.price.toFixed(2)} €</span> : null}
               </div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 4 }}>
-                Enregistrer de nouveau ajoutera +1 supplémentaire à la comptabilité.
-              </div>
+              {existing.comptaMois && (
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>
+                  Mois comptable : {existing.comptaMois}
+                </div>
+              )}
             </div>
-          </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button className="btn btn-secondary btn-sm" onClick={() => setMode('change')}>
+                ✏️ Modifier le type
+              </button>
+              <button className="btn btn-secondary btn-sm"
+                style={{ color: 'var(--red)', borderColor: 'var(--red)' }}
+                onClick={handleDelete} disabled={saving}>
+                {saving ? '⏳…' : '🗑 Supprimer l\'entrée'}
+              </button>
+            </div>
+          </>
         )}
 
-        {types.length === 0 ? (
-          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>Chargement…</div>
-        ) : (
-          <div className="field" style={{ marginBottom: 16 }}>
-            <label>Type de consultation</label>
-            <select value={selectedId} onChange={e => setSelectedId(e.target.value)} style={{ fontSize: 14 }}>
-              <option value="">— Choisir —</option>
-              {types.map(t => (
-                <option key={t.id} value={t.id}>
-                  {t.name}{t.price > 0 ? ` — ${t.price.toFixed(2)} €` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* ── MODE : changer le type ── */}
+        {mode === 'change' && (
+          <>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>
+              Sélectionnez le nouveau type. L'ancien sera décrémenté de 1 automatiquement.
+            </div>
+            <div className="field" style={{ marginBottom: 16 }}>
+              <label>Nouveau type de consultation</label>
+              <select value={newTypeId} onChange={e => setNewTypeId(e.target.value)} style={{ fontSize: 14 }}>
+                <option value="">— Choisir —</option>
+                {types.map(t => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}{t.price > 0 ? ` — ${t.price.toFixed(2)} €` : ''}
+                    {t.id === existing.comptaTypeId ? ' (actuel)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-primary" onClick={handleChange}
+                disabled={!newTypeId || saving || newTypeId === existing.comptaTypeId}
+                style={{ background: 'var(--accent)', borderColor: 'var(--accent)' }}>
+                {saving ? '⏳…' : '✓ Modifier'}
+              </button>
+              <button className="btn btn-secondary" onClick={() => setMode('view')}>← Retour</button>
+            </div>
+          </>
         )}
-        {selected && (
-          <div style={{ background: 'var(--accent-light)', border: '1px solid var(--accent-mid)', borderRadius: 8, padding: '10px 14px', marginBottom: 20, fontSize: 13 }}>
-            <div>+1 <strong>"{selected.name}"</strong>{selected.price > 0 && <> — <strong>{selected.price.toFixed(2)} €</strong></>}</div>
-            <div style={{ color: 'var(--text-muted)', marginTop: 3, fontSize: 12 }}>Mois comptable : {mStr}/{yStr}</div>
-          </div>
+
+        {/* ── MODE : première fois ── */}
+        {mode === 'new' && (
+          <>
+            {types.length === 0 ? (
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>Chargement…</div>
+            ) : (
+              <div className="field" style={{ marginBottom: 16 }}>
+                <label>Type de consultation</label>
+                <select value={newTypeId} onChange={e => setNewTypeId(e.target.value)} style={{ fontSize: 14 }}>
+                  <option value="">— Choisir —</option>
+                  {types.map(t => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}{t.price > 0 ? ` — ${t.price.toFixed(2)} €` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {newTypeId && (
+              <div style={{ background: 'var(--accent-light)', border: '1px solid var(--accent-mid)', borderRadius: 8, padding: '10px 14px', marginBottom: 20, fontSize: 13 }}>
+                <div>+1 <strong>"{types.find(t => t.id === newTypeId)?.name}"</strong></div>
+                <div style={{ color: 'var(--text-muted)', marginTop: 3, fontSize: 12 }}>Mois comptable : {mStr}/{yStr}</div>
+              </div>
+            )}
+            <div className="modal-footer">
+              <button className="btn btn-primary" onClick={handleNew} disabled={!newTypeId || saving}
+                style={{ background: 'var(--accent)', borderColor: 'var(--accent)' }}>
+                {saving ? '⏳…' : '✓ Enregistrer'}
+              </button>
+              <button className="btn btn-secondary" onClick={onClose}>Annuler</button>
+            </div>
+          </>
         )}
-        <div className="modal-footer">
-          <button className="btn btn-primary" onClick={handleConfirm} disabled={!selectedId || saving}
-            style={{ background: alreadyDone ? 'var(--amber)' : 'var(--accent)', borderColor: alreadyDone ? 'var(--amber)' : 'var(--accent)' }}>
-            {saving ? '⏳…' : alreadyDone ? '⚠️ Enregistrer quand même' : '✓ Enregistrer'}
-          </button>
-          <button className="btn btn-secondary" onClick={onClose}>Annuler</button>
-        </div>
       </div>
     </div>
   )
@@ -435,15 +519,14 @@ export default function SeancesPage() {
           types={comptaTypes}
           onClose={() => setComptaOpen(false)}
           onDone={async (typeId) => {
-            // Marquer la session comme comptabilisée dans full_data_json
+            // Mettre à jour le flag comptaTypeId dans full_data_json
             try {
-              const fd = getSessionCompta(selectedSession)
-              const updated = {
-                ...JSON.parse(selectedSession.full_data_json || '{}'),
-                ...fd,
-                comptaTypeId: typeId,
-                comptaMois:   selectedSession.date.slice(0, 7),
-              }
+              const base = JSON.parse(selectedSession.full_data_json || '{}')
+              const updated = typeId
+                ? { ...base, comptaTypeId: typeId, comptaMois: selectedSession.date.slice(0, 7) }
+                : { ...base, comptaTypeId: undefined, comptaMois: undefined }
+              // Nettoyer les undefined
+              if (!typeId) { delete updated.comptaTypeId; delete updated.comptaMois }
               await window.mtcApi.updateSession(selectedSession.id, {
                 full_data_json: JSON.stringify(updated),
               })
