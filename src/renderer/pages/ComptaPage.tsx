@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useCallback } from 'react'
+import React, { useEffect, useState, useContext, useCallback, useRef } from 'react'
 import type { ComptaYearData, ConsultationType } from '../../shared/types'
 import { ToastContext } from '../App'
 
@@ -24,34 +24,62 @@ function EditCell({ value, onChange, isRate = false, isCurrency = false }: {
 }) {
   const [editing, setEditing] = useState(false)
   const [raw, setRaw]         = useState('')
+  const inputRef              = useRef<HTMLInputElement>(null)
+
+  // Force le focus dès que l'input apparaît (autoFocus peu fiable dans Electron)
+  useEffect(() => {
+    if (editing) {
+      const t = setTimeout(() => inputRef.current?.focus(), 0)
+      return () => clearTimeout(t)
+    }
+  }, [editing])
+
+  const commit = () => {
+    const cleaned = raw.replace(/\s/g, '').replace(',', '.').replace('%', '')
+    const v = parseFloat(cleaned)
+    onChange(isRate ? (isNaN(v) ? 0 : v / 100) : (isNaN(v) ? 0 : v))
+    setEditing(false)
+  }
 
   const display = isRate ? pct(value) : isCurrency ? euro(value) : String(value || '')
 
   if (editing) {
     return (
       <input
-        autoFocus
-        type="text"
+        ref={inputRef}
+        type="number"
+        min={0}
+        step={isRate ? 0.1 : 1}
         value={raw}
         className="compta-cell-input"
         onChange={e => setRaw(e.target.value)}
-        onBlur={() => {
-          const v = parseFloat(raw.replace(',', '.').replace('%', '')) || 0
-          onChange(isRate ? v / 100 : v)
-          setEditing(false)
-        }}
+        onBlur={commit}
         onKeyDown={e => {
-          if (e.key === 'Enter' || e.key === 'Tab') (e.target as HTMLInputElement).blur()
+          if (e.key === 'Enter') { e.preventDefault(); commit() }
+          if (e.key === 'Tab')   { e.preventDefault(); commit() }
           if (e.key === 'Escape') setEditing(false)
+          e.stopPropagation()   // évite les raccourcis Ctrl+chiffre de la sidebar
         }}
+        onClick={e => e.stopPropagation()}
       />
     )
   }
   return (
     <div
       className={`compta-cell-val${isRate ? ' compta-cell-rate' : ''}${isCurrency ? ' compta-cell-eur' : ''}`}
-      onClick={() => { setRaw(isRate ? String((value * 100).toFixed(1)) : String(value || '')); setEditing(true) }}
+      onClick={() => {
+        setRaw(isRate ? String((value * 100).toFixed(1)) : (value > 0 ? String(value) : ''))
+        setEditing(true)
+      }}
+      onKeyDown={e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          setRaw(isRate ? String((value * 100).toFixed(1)) : (value > 0 ? String(value) : ''))
+          setEditing(true)
+        }
+      }}
+      tabIndex={0}
       title="Cliquer pour modifier"
+      role="button"
     >
       {value ? display : <span className="compta-cell-zero">—</span>}
     </div>
