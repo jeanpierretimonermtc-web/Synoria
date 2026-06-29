@@ -247,7 +247,11 @@ export default function App() {
         <header className="app-header">
           <div className="logo">
             <img src="./Synoria.png" alt="Logo" className="logo-img" />
-            <img src="./Text Synoria fond blanc.png" alt="SYNORIA" className="logo-title-img" />
+            <img
+              src={theme === 'dark' ? './Synoria-text-sombre.png' : './Synoria-text-jour.png'}
+              alt="SYNORIA"
+              className="logo-title-img"
+            />
             <span title="Données chiffrées AES-256" className="logo-secure">🔒 chiffré</span>
           </div>
           <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

@@ -20,7 +20,11 @@ export default function SplashScreen({ onDone, theme = 'light' }: SplashScreenPr
     <div className={`splash-overlay splash-${phase}`}>
       <div className="splash-content">
         <img src="./Synoria.png" className="splash-logo" alt="Logo Synoria" />
-        <img src="./Text Synoria fond blanc.png" className="splash-title-img" alt="SYNORIA" />
+        <img
+          src={dark ? './Synoria-text-sombre.png' : './Synoria-text-jour.png'}
+          className="splash-title-img"
+          alt="SYNORIA"
+        />
         <div className="splash-dots">
           <span /><span /><span />
         </div>
