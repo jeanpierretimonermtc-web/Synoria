@@ -17,6 +17,48 @@ if (portableDir) {
   // MODE DÉVELOPPEMENT : dossier dédié pour ne jamais toucher les données du cabinet
   const appData = process.env.APPDATA || ''
   if (appData) app.setPath('userData', join(appData, 'Synoria Dev'))
+} else {
+  // MODE PRODUCTION : s'assurer que le userData pointe vers le bon dossier
+  // et migrer automatiquement si les données sont dans un ancien chemin
+  migrateUserDataIfNeeded()
+}
+
+/**
+ * Migration automatique : si le dossier userData actuel est vide mais qu'un
+ * autre chemin connu contient des données Synoria, on le réutilise.
+ * Évite la perte de données lors d'un changement de productName entre versions.
+ */
+function migrateUserDataIfNeeded(): void {
+  const { existsSync, readdirSync, cpSync } = require('fs')
+  const appData    = process.env.APPDATA || ''
+  if (!appData) return
+
+  const currentPath = app.getPath('userData')
+  const authInCurrent = join(currentPath, 'auth.json')
+
+  // Si auth.json existe déjà → tout va bien, pas de migration nécessaire
+  if (existsSync(authInCurrent)) return
+
+  // Chemins alternatifs connus (anciens noms de l'app entre les versions)
+  const candidates = [
+    join(appData, 'Synoria'),
+    join(appData, 'Dossier Patient MTC'),
+    join(appData, 'synoria'),
+  ].filter(p => p !== currentPath)
+
+  for (const candidate of candidates) {
+    if (existsSync(join(candidate, 'auth.json'))) {
+      // Données trouvées dans un ancien chemin → copier vers le chemin actuel
+      console.log(`[Migration] Données trouvées dans ${candidate}, migration vers ${currentPath}`)
+      try {
+        cpSync(candidate, currentPath, { recursive: true, force: false, errorOnExist: false })
+        console.log('[Migration] ✓ Migration terminée')
+      } catch (e) {
+        console.error('[Migration] Erreur :', e)
+      }
+      break
+    }
+  }
 }
 
 // ── Supprime les erreurs de cache GPU Chromium (Windows permissions) ──
