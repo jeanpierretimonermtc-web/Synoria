@@ -666,6 +666,9 @@ export default function NewSessionPage() {
           pluginId:        activePlugin?.id,
           pluginIsBuiltin: !!(activePlugin?.useBuiltinForm),
           pluginSchema:    (activePlugin && !activePlugin.useBuiltinForm) ? activePlugin : undefined,
+          // Traçabilité comptabilité
+          comptaTypeId: clotureTypeId || undefined,
+          comptaMois:   clotureTypeId ? date.slice(0, 7) : undefined,
         }),
       }
       if (isEditing && editSessionId) {

@@ -14,21 +14,27 @@ const MONTH_NAMES = ['Janvier','Février','Mars','Avril','Mai','Juin',
 
 /* ── MODAL COMPTABILITÉ ─────────────────────────────────────────── */
 
-function ComptaModal({ session, patient, onClose }: {
-  session: Session; patient: Patient | null; onClose: () => void
-}) {
-  const showToast   = useContext(ToastContext)
-  const [types,     setTypes]     = useState<ConsultationType[]>([])
-  const [selectedId,setSelectedId]= useState('')
-  const [saving,    setSaving]    = useState(false)
+function getSessionCompta(session: Session): { comptaTypeId?: string; comptaMois?: string } {
+  try { return JSON.parse(session.full_data_json || '{}') } catch { return {} }
+}
 
-  useEffect(() => {
-    window.mtcApi.getConsultationTypes().then(all => {
-      const active = all.filter(t => t.is_active)
-      setTypes(active)
-      if (active.length === 1) setSelectedId(active[0].id)
-    }).catch(() => {})
-  }, [])
+function ComptaModal({ session, patient, types, onClose, onDone }: {
+  session: Session
+  patient: Patient | null
+  types: ConsultationType[]
+  onClose: () => void
+  onDone: (typeId: string) => void
+}) {
+  const showToast    = useContext(ToastContext)
+  const existing     = getSessionCompta(session)
+  const alreadyDone  = !!existing.comptaTypeId
+  const existingType = alreadyDone ? types.find(t => t.id === existing.comptaTypeId) : null
+
+  const [selectedId, setSelectedId] = useState(existing.comptaTypeId || (types.length === 1 ? types[0].id : ''))
+  const [saving,     setSaving]     = useState(false)
+
+  const selected = types.find(t => t.id === selectedId)
+  const [yStr, mStr] = session.date.split('-')
 
   const handleConfirm = async () => {
     if (!selectedId) return
@@ -38,26 +44,48 @@ function ComptaModal({ session, patient, onClose }: {
       await window.mtcApi.incrementMonthlyRevenue(y, m, selectedId)
       const label = types.find(t => t.id === selectedId)?.name || ''
       showToast(`Comptabilisé ✓ — +1 "${label}" en ${session.date.slice(0, 7)}`)
+      onDone(selectedId)
       onClose()
     } catch (e: any) {
       showToast(`Erreur : ${e?.message || e}`, 'error')
     } finally { setSaving(false) }
   }
 
-  const selected = types.find(t => t.id === selectedId)
-  const [yStr, mStr] = session.date.split('-')
-
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 420 }}>
+      <div className="modal" style={{ maxWidth: 440 }}>
         <button className="modal-close" onClick={onClose}>×</button>
         <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
           <span>📊</span> Enregistrer en comptabilité
         </h2>
-        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
           Séance du <strong>{fmtDate(session.date)}</strong>
           {patient && <> — <strong>{patient.first_name} {patient.last_name}</strong></>}
         </div>
+
+        {/* Bandeau si déjà comptabilisé */}
+        {alreadyDone && (
+          <div style={{
+            display: 'flex', gap: 10, alignItems: 'flex-start',
+            background: 'rgba(245,158,11,.1)', border: '1.5px solid rgba(245,158,11,.4)',
+            borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13,
+          }}>
+            <span style={{ fontSize: 18 }}>⚠️</span>
+            <div>
+              <div style={{ fontWeight: 700, color: 'var(--amber)', marginBottom: 2 }}>
+                Déjà comptabilisée via Clôture de séance
+              </div>
+              <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                Type : <strong>{existingType?.name || existing.comptaTypeId}</strong>
+                {existing.comptaMois && <> · Mois : <strong>{existing.comptaMois}</strong></>}
+              </div>
+              <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 4 }}>
+                Enregistrer de nouveau ajoutera +1 supplémentaire à la comptabilité.
+              </div>
+            </div>
+          </div>
+        )}
+
         {types.length === 0 ? (
           <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>Chargement…</div>
         ) : (
@@ -74,16 +102,15 @@ function ComptaModal({ session, patient, onClose }: {
           </div>
         )}
         {selected && (
-          <div style={{ background: 'var(--amber-light)', border: '1px solid rgba(193,123,42,.25)', borderRadius: 8, padding: '10px 14px', marginBottom: 20, fontSize: 13 }}>
-            <div style={{ fontWeight: 700, color: 'var(--amber)', marginBottom: 4 }}>Résumé</div>
+          <div style={{ background: 'var(--accent-light)', border: '1px solid var(--accent-mid)', borderRadius: 8, padding: '10px 14px', marginBottom: 20, fontSize: 13 }}>
             <div>+1 <strong>"{selected.name}"</strong>{selected.price > 0 && <> — <strong>{selected.price.toFixed(2)} €</strong></>}</div>
             <div style={{ color: 'var(--text-muted)', marginTop: 3, fontSize: 12 }}>Mois comptable : {mStr}/{yStr}</div>
           </div>
         )}
         <div className="modal-footer">
           <button className="btn btn-primary" onClick={handleConfirm} disabled={!selectedId || saving}
-            style={{ background: 'var(--amber)', borderColor: 'var(--amber)' }}>
-            {saving ? '⏳…' : '✓ Enregistrer'}
+            style={{ background: alreadyDone ? 'var(--amber)' : 'var(--accent)', borderColor: alreadyDone ? 'var(--amber)' : 'var(--accent)' }}>
+            {saving ? '⏳…' : alreadyDone ? '⚠️ Enregistrer quand même' : '✓ Enregistrer'}
           </button>
           <button className="btn btn-secondary" onClick={onClose}>Annuler</button>
         </div>
@@ -111,6 +138,7 @@ export default function SeancesPage() {
   const [filterYear,     setFilterYear]     = useState('')
   const [filterMonth,    setFilterMonth]    = useState('')
   const [comptaOpen,     setComptaOpen]     = useState(false)
+  const [comptaTypes,    setComptaTypes]    = useState<ConsultationType[]>([])
 
   const load = async () => {
     setLoading(true)
@@ -127,6 +155,11 @@ export default function SeancesPage() {
   }
 
   useEffect(() => { load() }, [])
+  useEffect(() => {
+    window.mtcApi.getConsultationTypes()
+      .then(all => setComptaTypes(all.filter(t => t.is_active)))
+      .catch(() => {})
+  }, [])
   useEffect(() => { if (presetPatient) setFilterPatient(presetPatient) }, [presetPatient])
 
   // ── Séance sélectionnée ──────────────────────────────────────────
@@ -350,12 +383,27 @@ export default function SeancesPage() {
                 📄 Dossier PDF
               </button>
               <div style={{ flex: 1 }} />
-              <button
-                className="btn btn-secondary btn-sm"
-                style={{ color: 'var(--amber)', borderColor: 'var(--amber)' }}
-                title="Enregistrer cette séance en comptabilité"
-                onClick={() => setComptaOpen(true)}
-              >📊 Compta</button>
+              {(() => {
+                const fd = getSessionCompta(selectedSession)
+                const isAccounted = !!fd.comptaTypeId
+                const accType = isAccounted ? comptaTypes.find(t => t.id === fd.comptaTypeId) : null
+                return (
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    style={{
+                      color: isAccounted ? 'var(--accent)' : 'var(--amber)',
+                      borderColor: isAccounted ? 'var(--accent-mid)' : 'var(--amber)',
+                    }}
+                    title={isAccounted
+                      ? `Déjà comptabilisée : ${accType?.name || fd.comptaTypeId} (${fd.comptaMois}) — cliquer pour voir ou ajouter`
+                      : 'Enregistrer cette séance en comptabilité'
+                    }
+                    onClick={() => setComptaOpen(true)}
+                  >
+                    {isAccounted ? '✅ Comptabilisée' : '📊 Compta'}
+                  </button>
+                )
+              })()}
               <button
                 className="btn btn-amber btn-sm"
                 onClick={() => navigate(`/modifier/${selectedSession.id}`)}
@@ -384,7 +432,27 @@ export default function SeancesPage() {
         <ComptaModal
           session={selectedSession}
           patient={selectedPatient}
+          types={comptaTypes}
           onClose={() => setComptaOpen(false)}
+          onDone={async (typeId) => {
+            // Marquer la session comme comptabilisée dans full_data_json
+            try {
+              const fd = getSessionCompta(selectedSession)
+              const updated = {
+                ...JSON.parse(selectedSession.full_data_json || '{}'),
+                ...fd,
+                comptaTypeId: typeId,
+                comptaMois:   selectedSession.date.slice(0, 7),
+              }
+              await window.mtcApi.updateSession(selectedSession.id, {
+                full_data_json: JSON.stringify(updated),
+              })
+              setSessions(prev => prev.map(s => s.id === selectedSession.id
+                ? { ...s, full_data_json: JSON.stringify(updated) }
+                : s
+              ))
+            } catch {}
+          }}
         />
       )}
     </div>
