@@ -378,7 +378,7 @@ export default function NewSessionPage() {
     window.mtcApi.getConsultationTypes().then(all => {
       const active = all.filter(t => t.is_active)
       setClotureTypes(active)
-      if (active.length === 1) setClotureTypeId(active[0].id)
+      // Ne pas pré-sélectionner : l'utilisateur doit cocher la case explicitement
     }).catch(() => {})
   }, [])
 
@@ -667,9 +667,9 @@ export default function NewSessionPage() {
           pluginId:        activePlugin?.id,
           pluginIsBuiltin: !!(activePlugin?.useBuiltinForm),
           pluginSchema:    (activePlugin && !activePlugin.useBuiltinForm) ? activePlugin : undefined,
-          // Traçabilité comptabilité
-          comptaTypeId: clotureTypeId || undefined,
-          comptaMois:   clotureTypeId ? date.slice(0, 7) : undefined,
+          // Traçabilité comptabilité (uniquement si la case est cochée)
+          comptaTypeId: (enableCompta && clotureTypeId) ? clotureTypeId : undefined,
+          comptaMois:   (enableCompta && clotureTypeId) ? date.slice(0, 7) : undefined,
         }),
       }
       if (isEditing && editSessionId) {
@@ -691,7 +691,7 @@ export default function NewSessionPage() {
           catch { /* silencieux */ }
         }
       }
-      if (clotureTypeId && !isEditing) {
+      if (enableCompta && clotureTypeId && !isEditing) {
         try {
           const [y, m] = date.split('-').map(Number)
           await window.mtcApi.incrementMonthlyRevenue(y, m, clotureTypeId)
