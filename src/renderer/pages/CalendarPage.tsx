@@ -108,6 +108,18 @@ function durationPx(start: string, end?: string): number {
   if (!end) return Math.round(45 * HOUR_H / 60)
   return Math.max(22, (timeToMins(end) - timeToMins(start)) * (HOUR_H / 60))
 }
+/** Assombrit une couleur en la mélangeant avec du noir (amount = 0→inchangé, 1→noir) */
+function darkenColor(hex: string, amount: number): string {
+  const clean = hex.replace('#', '')
+  if (!/^[0-9a-fA-F]{6}$/.test(clean)) return '#1a1a2e'
+  const n = parseInt(clean, 16)
+  const r = (n >> 16) & 255
+  const g = (n >> 8) & 255
+  const b = n & 255
+  const d = (v: number) => Math.round(v * (1 - amount))
+  return `#${[d(r), d(g), d(b)].map(v => v.toString(16).padStart(2, '0')).join('')}`
+}
+
 function mixWithWhite(hex: string, amount: number): string {
   const clean = hex.replace('#', '')
   if (!/^[0-9a-fA-F]{6}$/.test(clean)) return '#E8F0F8'
@@ -129,7 +141,7 @@ function googleCalendarColor(appt: Appointment, calendars: GCalCalendar[]): stri
 
 function apptColor(appt: Appointment, today: string, calendarColor?: string | null): { bg: string; border: string; text: string } {
   if (appt.is_cancelled)  return { bg: '#FFF1F2', border: '#F43F5E', text: '#9F1239' }
-  if (calendarColor)      return { bg: mixWithWhite(calendarColor, .88), border: calendarColor, text: calendarColor }
+  if (calendarColor)      return { bg: mixWithWhite(calendarColor, .88), border: calendarColor, text: darkenColor(calendarColor, .52) }
   if (appt.is_done)       return { bg: '#ECFDF5', border: '#10B981', text: '#047857' }
   if (appt.date < today)  return { bg: '#FFFBEB', border: '#F59E0B', text: '#92400E' }
   return { bg: '#EFF6FF', border: '#3B82F6', text: '#1D4ED8' }
