@@ -171,7 +171,7 @@ export default function App() {
       else if (isUnlocked) setAuthState('unlocked')
       else setAuthState('locked')
     } catch {
-      setAuthState('unlocked')  // fallback si l'IPC échoue (dev sans auth)
+      setAuthState('locked')  // fallback sécurisé : forcer le verrou si IPC échoue
     }
   }
 

@@ -460,7 +460,7 @@ export default function NewSessionPage() {
       } catch {}
     }, 60_000)
     return () => clearInterval(interval)
-  }, [isEditing, patientId, date, practitioner, motif, evolutionTags, evolution,
+  }, [isEditing, patientId, date, practitioner, motif, evolutionTags, evolution, problematiques,
       anamnese,
       langue, langueNote, pouls, poulsNote, poulsPos, constitution, typeCorps, teint, observation,
       diagnostic, cinqElements, causes, analyse, principes,
@@ -779,6 +779,7 @@ export default function NewSessionPage() {
       setSimpleContextVie(d.simpleContextVie || '')
       setSimpleTraitementsEnCours(d.simpleTraitementsEnCours || '')
       setSimpleObjectifs(d.simpleObjectifs || '')
+      setSimpleNotesEntretien(d.simpleNotesEntretien || '')
       setBarrageNiv1(d.barrageNiv1 || '')
       setBarrageNiv2(d.barrageNiv2 || '')
       setBarrageNiv3(d.barrageNiv3 || '')

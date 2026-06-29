@@ -534,7 +534,9 @@ export default function SeancesPage() {
                 ? { ...s, full_data_json: JSON.stringify(updated) }
                 : s
               ))
-            } catch {}
+            } catch (e: any) {
+              console.error('[Compta] Erreur mise à jour flag session:', e)
+            }
           }}
         />
       )}

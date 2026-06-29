@@ -51,7 +51,7 @@ function migrateUserDataIfNeeded(): void {
       // Données trouvées dans un ancien chemin → copier vers le chemin actuel
       console.log(`[Migration] Données trouvées dans ${candidate}, migration vers ${currentPath}`)
       try {
-        cpSync(candidate, currentPath, { recursive: true, force: false, errorOnExist: false })
+        cpSync(candidate, currentPath, { recursive: true, force: true })
         console.log('[Migration] ✓ Migration terminée')
       } catch (e) {
         console.error('[Migration] Erreur :', e)
