@@ -11,8 +11,8 @@ permissions:
 
 jobs:
   build-mac:
-    name: Build Mac (arm64 + x64 séparés)
-    runs-on: macos-latest   # Runner ARM — peut aussi builder pour x64 via prebuilt binaries
+    name: Build Mac (arm64 + x64)
+    runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Configurer package.json cabinet (identifiants stables)
+      - name: Configurer package.json cabinet
         run: |
           VERSION="${{ github.ref_name }}"
           VERSION="${VERSION#v}"
@@ -39,42 +39,45 @@ jobs:
             pkg.build.appId = 'com.synoria.cabinet';
             pkg.build.productName = 'Synoria';
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2), 'utf8');
-            console.log('OK - package.json v' + pkg.version + ' (com.synoria.cabinet / Synoria)');
+            console.log('OK - ' + pkg.version + ' / com.synoria.cabinet / Synoria');
           "
 
-      # ── Build 1 : Apple Silicon (arm64) ──────────────────────────────
+      # ── Build arm64 (natif sur ce runner ARM) ───────────────────────
+      # npm install a déjà compilé better-sqlite3 pour arm64 → correct
       - name: Build Mac arm64 (Apple Silicon M1/M2/M3)
         run: npx vite build && npx electron-builder --mac --arm64 --publish never
 
       - name: Renommer DMG arm64
         run: |
           DMG=$(ls release/*.dmg 2>/dev/null | head -1)
-          if [ -n "$DMG" ]; then
-            DEST="release/Synoria-${{ github.ref_name }}-arm64.dmg"
-            mv "$DMG" "$DEST"
-            echo "arm64 DMG : $DEST"
-          else
-            echo "ERREUR : pas de DMG arm64" && exit 1
-          fi
+          [ -n "$DMG" ] && mv "$DMG" "release/Synoria-${{ github.ref_name }}-arm64.dmg" || (echo "Pas de DMG arm64" && exit 1)
+          echo "✓ arm64: release/Synoria-${{ github.ref_name }}-arm64.dmg"
 
-      # ── Build 2 : Intel x64 ──────────────────────────────────────────
-      # electron-builder télécharge les prebuilt binaries x64 de better-sqlite3
-      - name: Build Mac x64 (Intel 2020 et avant)
+      # ── Rebuild better-sqlite3 pour x64 AVANT le build Intel ────────
+      # Sans ce step, better-sqlite3.node reste arm64 → crash sur Intel
+      - name: Rebuild better-sqlite3 pour x64
+        run: npx electron-rebuild --force --arch x64 -w better-sqlite3
+        env:
+          npm_config_arch: x64
+
+      # ── Build x64 (Intel) avec better-sqlite3 x64 ───────────────────
+      - name: Build Mac x64 (Intel 2019 et avant)
         run: npx electron-builder --mac --x64 --publish never
 
       - name: Renommer DMG x64
         run: |
           DMG=$(ls release/*.dmg 2>/dev/null | grep -v arm64 | head -1)
-          if [ -n "$DMG" ]; then
-            DEST="release/Synoria-${{ github.ref_name }}-x64.dmg"
-            mv "$DMG" "$DEST"
-            echo "x64 DMG : $DEST"
-          else
-            echo "ERREUR : pas de DMG x64" && exit 1
-          fi
+          [ -n "$DMG" ] && mv "$DMG" "release/Synoria-${{ github.ref_name }}-x64.dmg" || (echo "Pas de DMG x64" && exit 1)
+          echo "✓ x64: release/Synoria-${{ github.ref_name }}-x64.dmg"
 
-      - name: Lister les fichiers release
-        run: ls -lh release/*.dmg
+      - name: Vérification finale
+        run: |
+          echo "=== DMG produits ==="
+          ls -lh release/*.dmg
+          echo "=== Architecture better-sqlite3 dans arm64 ==="
+          hdiutil attach "release/Synoria-${{ github.ref_name }}-arm64.dmg" -mountpoint /tmp/synoria-arm64 -quiet 2>/dev/null || true
+          file "/tmp/synoria-arm64/Synoria.app/Contents/Resources/app.asar.unpacked/node_modules/better-sqlite3/build/Release/better_sqlite3.node" 2>/dev/null || echo "Impossible de monter le DMG arm64"
+          hdiutil detach /tmp/synoria-arm64 -quiet 2>/dev/null || true
 
       - name: Publier vers GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
@@ -84,16 +87,16 @@ jobs:
           body: |
             ## Synoria ${{ github.ref_name }} — macOS
 
-            | Fichier | Compatible |
-            |---------|-----------|
-            | `*-arm64.dmg` | **Apple Silicon M1 / M2 / M3** (MacBook Air/Pro depuis 2020) |
-            | `*-x64.dmg`   | **Intel** (MacBook Air/Pro avant 2020) |
+            | Fichier | Pour quel Mac |
+            |---------|--------------|
+            | `*-arm64.dmg` | **Apple Silicon M1/M2/M3** — MacBook depuis fin 2020 |
+            | `*-x64.dmg`   | **Intel** — MacBook avant fin 2020 |
 
-            > **Comment savoir ?** Pomme → À propos de ce Mac
-            > - Si "Apple M..." → télécharger **arm64**
-            > - Si "Intel Core..." → télécharger **x64**
+            > **Comment savoir ?**  → Pomme → À propos de ce Mac
+            > - "Apple M1/M2/M3" → **arm64**
+            > - "Intel Core..." → **x64**
 
-            > Premier lancement : clic droit → Ouvrir → Ouvrir quand même (app non signée)
+            > Premier lancement : clic droit → Ouvrir → Ouvrir quand même
           files: |
             release/Synoria-${{ github.ref_name }}-arm64.dmg
             release/Synoria-${{ github.ref_name }}-x64.dmg
