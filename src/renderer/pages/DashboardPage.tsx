@@ -619,12 +619,15 @@ export default function DashboardPage() {
               const diffDays = Math.round((apptDate.getTime() - tod.getTime()) / 86400000)
               const isToday  = diffDays === 0
               const isSoon   = diffDays <= 3
+              // Couleurs identiques au calendrier via STATUS_CONFIG
+              const status = getApptStatus(appt, todayStr)
+              const cfg    = STATUS_CONFIG[status]
               return (
                 <div key={appt.id} className="recent-session-row"
-                  style={{ animationDelay: `${idx * 30}ms`, cursor: 'default', alignItems: 'center' }}>
+                  style={{ animationDelay: `${idx * 30}ms`, cursor: 'default', alignItems: 'center', borderLeft: `3px solid ${cfg.border}`, paddingLeft: 8 }}>
 
-                  {/* Initiales */}
-                  <div className="initials" style={{ width: 36, height: 36, fontSize: 12, flexShrink: 0, background: isToday ? 'var(--teal)' : 'var(--accent)', color: '#fff' }}>
+                  {/* Initiales — couleur du statut calendrier */}
+                  <div className="initials" style={{ width: 36, height: 36, fontSize: 12, flexShrink: 0, background: cfg.dot, color: '#fff' }}>
                     {initials}
                   </div>
 
@@ -639,13 +642,16 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* Badge délai */}
-                  <div style={{ flexShrink: 0 }}>
+                  {/* Badge délai + statut — couleurs calendrier */}
+                  <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center' }}>
+                    <span className="badge" style={{ background: cfg.bg, color: cfg.labelColor, border: `1px solid ${cfg.border}` }}>
+                      {cfg.label}
+                    </span>
                     {isToday
-                      ? <span className="badge" style={{ background: 'var(--teal)', color: '#fff' }}>Aujourd'hui !</span>
-                      : isSoon
-                      ? <span className="badge badge-amber">Dans {diffDays} j</span>
-                      : <span className="badge badge-muted">Dans {diffDays} j</span>
+                      ? <span className="badge" style={{ background: cfg.dot, color: '#fff' }}>Aujourd'hui !</span>
+                      : diffDays > 0
+                        ? <span className="badge badge-muted">J{diffDays > 0 ? `+${diffDays}` : diffDays}</span>
+                        : null
                     }
                   </div>
 
@@ -664,7 +670,7 @@ export default function DashboardPage() {
                           if (appt.note) params.set('motif', appt.note)
                           navigate(`/nouvelle/${pat.id}?${params.toString()}`)
                         }}
-                        style={{ padding: '4px 8px', color: 'var(--accent)', borderColor: 'var(--accent-mid)' }}
+                        style={{ padding: '4px 8px', color: cfg.dot, borderColor: cfg.border }}
                       >
                         📋 Séance
                       </button>
@@ -675,7 +681,7 @@ export default function DashboardPage() {
                       className="btn btn-secondary btn-sm"
                       title="Voir ce RDV dans le calendrier"
                       onClick={e => { e.stopPropagation(); navigate('/calendrier', { state: { focusDate: appt.date } }) }}
-                      style={{ padding: '4px 8px', color: 'var(--blue)', borderColor: 'var(--blue-mid)' }}
+                      style={{ padding: '4px 8px', color: cfg.dot, borderColor: cfg.border }}
                     >
                       📅 Calendrier
                     </button>
