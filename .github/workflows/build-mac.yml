@@ -28,6 +28,23 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Configurer package.json cabinet (identifiants stables)
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '${VERSION}' || pkg.version;
+            pkg.build.appId = 'com.synoria.cabinet';
+            pkg.build.productName = 'Synoria';
+            if (pkg.build.nsis) {
+              pkg.build.nsis.deleteAppDataOnUninstall = false;
+            }
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2), 'utf8');
+            console.log('OK - package.json v' + pkg.version + ' (com.synoria.cabinet)');
+          "
+
       - name: Build Mac universel
         run: npx vite build && npx electron-builder --mac --universal --publish never
 
