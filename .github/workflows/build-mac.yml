@@ -10,9 +10,9 @@ permissions:
   contents: write
 
 jobs:
-  build-mac-universal:
-    name: Build Mac (Universal — Intel + Apple Silicon)
-    runs-on: macos-latest
+  build-mac:
+    name: Build Mac (arm64 + x64 séparés)
+    runs-on: macos-latest   # Runner ARM — peut aussi builder pour x64 via prebuilt binaries
 
     steps:
       - uses: actions/checkout@v4
@@ -35,33 +35,46 @@ jobs:
           node -e "
             const fs = require('fs');
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            pkg.version = '${VERSION}' || pkg.version;
+            if ('$VERSION') pkg.version = '$VERSION';
             pkg.build.appId = 'com.synoria.cabinet';
             pkg.build.productName = 'Synoria';
-            if (pkg.build.nsis) {
-              pkg.build.nsis.deleteAppDataOnUninstall = false;
-            }
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2), 'utf8');
-            console.log('OK - package.json v' + pkg.version + ' (com.synoria.cabinet)');
+            console.log('OK - package.json v' + pkg.version + ' (com.synoria.cabinet / Synoria)');
           "
 
-      - name: Build Mac universel
-        run: npx vite build && npx electron-builder --mac --universal --publish never
+      # ── Build 1 : Apple Silicon (arm64) ──────────────────────────────
+      - name: Build Mac arm64 (Apple Silicon M1/M2/M3)
+        run: npx vite build && npx electron-builder --mac --arm64 --publish never
 
-      - name: Lister les fichiers release (debug)
-        run: ls -lh release/ || echo "Dossier release vide"
-
-      - name: Renommer le DMG sans espaces
+      - name: Renommer DMG arm64
         run: |
           DMG=$(ls release/*.dmg 2>/dev/null | head -1)
           if [ -n "$DMG" ]; then
-            DEST="release/Synoria-${{ github.ref_name }}-universal.dmg"
+            DEST="release/Synoria-${{ github.ref_name }}-arm64.dmg"
             mv "$DMG" "$DEST"
-            echo "DMG renommé : $DEST"
+            echo "arm64 DMG : $DEST"
           else
-            echo "ERREUR : aucun fichier .dmg trouvé dans release/"
-            exit 1
+            echo "ERREUR : pas de DMG arm64" && exit 1
           fi
+
+      # ── Build 2 : Intel x64 ──────────────────────────────────────────
+      # electron-builder télécharge les prebuilt binaries x64 de better-sqlite3
+      - name: Build Mac x64 (Intel 2020 et avant)
+        run: npx electron-builder --mac --x64 --publish never
+
+      - name: Renommer DMG x64
+        run: |
+          DMG=$(ls release/*.dmg 2>/dev/null | grep -v arm64 | head -1)
+          if [ -n "$DMG" ]; then
+            DEST="release/Synoria-${{ github.ref_name }}-x64.dmg"
+            mv "$DMG" "$DEST"
+            echo "x64 DMG : $DEST"
+          else
+            echo "ERREUR : pas de DMG x64" && exit 1
+          fi
+
+      - name: Lister les fichiers release
+        run: ls -lh release/*.dmg
 
       - name: Publier vers GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
@@ -71,12 +84,19 @@ jobs:
           body: |
             ## Synoria ${{ github.ref_name }} — macOS
 
-            **Télécharger :** `Synoria-${{ github.ref_name }}-universal.dmg`
+            | Fichier | Compatible |
+            |---------|-----------|
+            | `*-arm64.dmg` | **Apple Silicon M1 / M2 / M3** (MacBook Air/Pro depuis 2020) |
+            | `*-x64.dmg`   | **Intel** (MacBook Air/Pro avant 2020) |
 
-            Compatible **Intel (2019 et avant)** et **Apple Silicon M1/M2/M3** — un seul fichier pour tous les Mac.
+            > **Comment savoir ?** Pomme → À propos de ce Mac
+            > - Si "Apple M..." → télécharger **arm64**
+            > - Si "Intel Core..." → télécharger **x64**
 
             > Premier lancement : clic droit → Ouvrir → Ouvrir quand même (app non signée)
-          files: release/Synoria-${{ github.ref_name }}-universal.dmg
+          files: |
+            release/Synoria-${{ github.ref_name }}-arm64.dmg
+            release/Synoria-${{ github.ref_name }}-x64.dmg
           overwrite: true
           fail_on_unmatched_files: true
         env:
