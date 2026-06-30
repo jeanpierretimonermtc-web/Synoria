@@ -74,10 +74,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # ── Job 2 : Intel x64 (runner Intel natif macos-13) ────────────────
+  # ── Job 2 : Intel x64 (cross-compilation clang sur runner ARM) ─────
   build-x64:
     name: Build Mac x64 (Intel — MacBook avant fin 2020)
-    runs-on: macos-13        # ← Runner Intel x86_64 natif — aucune cross-compilation
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -99,9 +99,27 @@ jobs:
             console.log('OK',p.version,'com.synoria.cabinet');
           "
 
-      - name: npm install (Intel natif — better-sqlite3 x64 automatique)
-        run: npm install
-        # Sur macos-13 (Intel), npm install + postinstall electron-rebuild → x64 natif ✓
+      - name: npm install sans postinstall (évite electron-rebuild arm64)
+        run: npm install --ignore-scripts
+        # --ignore-scripts saute le postinstall qui ferait electron-rebuild arm64
+
+      - name: Compiler better-sqlite3 pour x64 (cross-compilation clang)
+        run: |
+          ELECTRON_VER=$(node -p "require('./node_modules/electron/package.json').version")
+          echo "Electron version : $ELECTRON_VER"
+          npx electron-rebuild \
+            --arch x64 \
+            --force \
+            --only better-sqlite3 \
+            --electron-version "$ELECTRON_VER"
+        # clang sur macOS ARM supporte nativement la cross-compilation x86_64
+
+      - name: Vérifier l'architecture du binaire
+        run: |
+          NODE_FILE=$(find node_modules/better-sqlite3 -name "*.node" | head -1)
+          echo "Fichier : $NODE_FILE"
+          file "$NODE_FILE"
+          # Doit afficher : Mach-O 64-bit dynamically linked shared library x86_64
 
       - name: Build x64
         run: npx vite build && npx electron-builder --mac --x64 --publish never
