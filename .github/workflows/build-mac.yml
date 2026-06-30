@@ -37,22 +37,33 @@ jobs:
 
       - name: npm install (arm64 natif)
         run: npm install
-        # Sur macos-latest (ARM), npm installe better-sqlite3 arm64 ✓
 
       - name: Build arm64
         run: npx vite build && npx electron-builder --mac --arm64 --publish never
+
+      - name: Garantir suffixe -arm64 dans le nom du DMG
+        run: |
+          cd release
+          for f in *.dmg; do
+            if [[ "$f" != *"-arm64.dmg" ]]; then
+              mv "$f" "${f%.dmg}-arm64.dmg"
+              echo "Renommé : $f → ${f%.dmg}-arm64.dmg"
+            else
+              echo "Déjà correct : $f"
+            fi
+          done
 
       - name: Upload DMG arm64
         uses: actions/upload-artifact@v4
         with:
           name: dmg-arm64
-          path: release/Synoria*.dmg
+          path: release/Synoria*-arm64.dmg
           retention-days: 1
 
-  # ── Job 2 : Intel x64 (npm install forcé en x64) ───────────────────
+  # ── Job 2 : Intel x64 (runner Intel natif macos-13) ────────────────
   build-x64:
-    name: Build Mac x64 (Intel 2019 et avant)
-    runs-on: macos-latest
+    name: Build Mac x64 (Intel — MacBook avant fin 2020)
+    runs-on: macos-13        # ← Runner Intel natif — AUCUNE cross-compilation
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -74,22 +85,30 @@ jobs:
             console.log('OK',p.version,'com.synoria.cabinet');
           "
 
-      - name: npm install (x64 forcé — télécharge better-sqlite3 x64)
+      - name: npm install (Intel natif — better-sqlite3 x64 automatique)
         run: npm install
-        env:
-          npm_config_arch: x64           # Force le téléchargement du binaire x64
-          npm_config_target_arch: x64
+        # Sur macos-13 (Intel), npm installe et electron-rebuild compile en x64 nativement ✓
 
       - name: Build x64
         run: npx vite build && npx electron-builder --mac --x64 --publish never
-        env:
-          npm_config_arch: x64
+
+      - name: Garantir suffixe -x64 dans le nom du DMG
+        run: |
+          cd release
+          for f in *.dmg; do
+            if [[ "$f" != *"-x64.dmg" ]]; then
+              mv "$f" "${f%.dmg}-x64.dmg"
+              echo "Renommé : $f → ${f%.dmg}-x64.dmg"
+            else
+              echo "Déjà correct : $f"
+            fi
+          done
 
       - name: Upload DMG x64
         uses: actions/upload-artifact@v4
         with:
           name: dmg-x64
-          path: release/Synoria*.dmg
+          path: release/Synoria*-x64.dmg
           retention-days: 1
 
   # ── Job 3 : Release GitHub avec les 2 DMG ──────────────────────────
@@ -111,20 +130,10 @@ jobs:
           name: dmg-x64
           path: release
 
-      - name: Renommer les DMG
+      - name: Vérification des fichiers
         run: |
-          VERSION="${{ github.ref_name }}"
+          echo "Fichiers dans release/ :"
           ls -la release/
-          for f in release/*.dmg; do
-            echo "Fichier trouvé : $f"
-          done
-          # Renommer selon l'architecture
-          arm=$(ls release/Synoria*.dmg 2>/dev/null | head -1)
-          x64=$(ls release/Synoria*.dmg 2>/dev/null | tail -1)
-          if [ "$arm" = "$x64" ]; then
-            # Un seul fichier — quelque chose a mal tourné
-            echo "ATTENTION : un seul DMG trouvé"
-          fi
 
       - name: Publier Release
         uses: softprops/action-gh-release@v2
@@ -136,11 +145,11 @@ jobs:
             | Fichier | Compatible |
             |---------|-----------|
             | `*-arm64.dmg` | **Apple Silicon M1/M2/M3** — MacBook depuis fin 2020 |
-            | `*-x64.dmg`   | **Intel** — MacBook avant fin 2020 |
+            | `*-x64.dmg`   | **Intel Core** — MacBook avant fin 2020 |
 
             > **Pomme → À propos de ce Mac** :
-            > - "Apple M..." → **arm64**
-            > - "Intel Core..." → **x64**
+            > - "Apple M..." → télécharger **arm64**
+            > - "Intel Core..." → télécharger **x64**
           files: release/*.dmg
           overwrite: true
         env:
