@@ -34,12 +34,18 @@ jobs:
             p.version = '${{ github.ref_name }}'.replace('v', '') || p.version;
             p.build.appId = 'com.synoria.cabinet';
             p.build.productName = 'Synoria';
-            fs.writeFileSync('package.json', JSON.stringify(p, null, 2), 'utf8');
-            console.log('Version:', p.version, '| appId: com.synoria.cabinet');
+            p.build.mac = p.build.mac || {};
+            p.build.mac.target = [{ target:'dmg', arch:['arm64'] }];
+            p.build.mac.artifactName = 'Synoria-${version}-arm64.${ext}';
+            fs.writeFileSync('package.json',JSON.stringify(p,null,2),'utf8');
+            console.log('OK',p.version,'com.synoria.cabinet arm64');
           "
 
       - name: npm install (arm64 natif)
         run: npm install
+
+      - name: Nettoyer les anciens DMG
+        run: rm -f release/*.dmg release/*.zip || true
 
       - name: Build DMG arm64
         run: npx vite build && npx electron-builder --mac --arm64 --publish never
@@ -80,9 +86,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # ── Job 2 : Intel x64 via Rosetta 2 ────────────────────────────────
+  # ── Job 2 : Intel x64 — CFLAGS cross-compilation clang ────────────
   build-x64:
-    name: Build Mac x64 (Intel — via Rosetta 2)
+    name: Build Mac x64 (Intel — CFLAGS x86_64)
     runs-on: macos-latest
 
     steps:
@@ -104,26 +110,44 @@ jobs:
             p.version = '${{ github.ref_name }}'.replace('v', '') || p.version;
             p.build.appId = 'com.synoria.cabinet';
             p.build.productName = 'Synoria';
+            p.build.mac = p.build.mac || {};
+            p.build.mac.target = [{ target:'dmg', arch:['x64'] }];
+            p.build.mac.artifactName = 'Synoria-${version}-x64.${ext}';
             fs.writeFileSync('package.json', JSON.stringify(p, null, 2), 'utf8');
-            console.log('Version:', p.version, '| appId: com.synoria.cabinet');
+            console.log('OK', p.version, 'com.synoria.cabinet x64');
           "
 
-      - name: Installer Rosetta 2
+      - name: Nettoyer les anciens DMG
+        run: rm -f release/*.dmg release/*.zip || true
+
+      - name: npm install (sans postinstall — évite electron-rebuild arm64)
+        run: npm install --ignore-scripts
+
+      - name: Compiler better-sqlite3 x64 via CFLAGS clang
         run: |
-          softwareupdate --install-rosetta --agree-to-license 2>/dev/null || true
-          arch -x86_64 echo "Rosetta 2 opérationnel"
+          ELECTRON_VER=$(node -p "require('./node_modules/electron/package.json').version")
+          echo "Electron : $ELECTRON_VER"
+          CFLAGS="-arch x86_64" \
+          CXXFLAGS="-arch x86_64" \
+          LDFLAGS="-arch x86_64" \
+          ARCHFLAGS="-arch x86_64" \
+          npm_config_target_arch="x64" \
+          npx electron-rebuild \
+            --arch x64 \
+            --force \
+            --only better-sqlite3 \
+            --electron-version "$ELECTRON_VER"
 
-      - name: npm install sous x86_64 (Rosetta 2)
-        run: arch -x86_64 npm install
-        # Tout tourne en x86_64 sous émulation Rosetta :
-        # npm, le postinstall, et electron-rebuild → better-sqlite3.node x64 ✓
-
-      - name: Vérifier architecture du binaire natif
+      - name: Vérifier architecture x86_64 (bloquant)
         run: |
           NODE_FILE=$(find node_modules/better-sqlite3 -name "*.node" | head -1)
           echo "Binaire : $NODE_FILE"
           file "$NODE_FILE"
-          # Doit afficher : Mach-O 64-bit dynamically linked shared library x86_64
+          if ! file "$NODE_FILE" | grep -q "x86_64"; then
+            echo "ERREUR : le binaire better-sqlite3 n'est PAS x86_64 — build annulé"
+            exit 1
+          fi
+          echo "✓ x86_64 confirmé — packaging autorisé"
 
       - name: Build DMG x64
         run: npx vite build && npx electron-builder --mac --x64 --publish never
