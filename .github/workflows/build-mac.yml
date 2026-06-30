@@ -107,17 +107,18 @@ jobs:
             p.version = '${{ github.ref_name }}'.replace('v', '') || p.version;
             p.build.appId = 'com.synoria.cabinet';
             p.build.productName = 'Synoria';
+            p.build.npmRebuild = false;
             fs.writeFileSync('package.json', JSON.stringify(p, null, 2), 'utf8');
-            console.log('OK', p.version, 'com.synoria.cabinet');
+            console.log('OK', p.version, 'npmRebuild=false');
           "
 
       - name: Nettoyer les anciens DMG
         run: rm -f release/*.dmg release/*.zip || true
 
-      - name: npm install (sans postinstall — évite electron-rebuild arm64)
+      - name: npm install (sans postinstall)
         run: npm install --ignore-scripts
 
-      - name: Compiler better-sqlite3 x64 via CFLAGS clang
+      - name: Compiler better-sqlite3 x64 (CFLAGS + npm_config_arch)
         env:
           CFLAGS: "-arch x86_64"
           CXXFLAGS: "-arch x86_64"
@@ -130,18 +131,18 @@ jobs:
           echo "Electron : $ELECTRON_VER"
           npx electron-rebuild --arch x64 --force --only better-sqlite3 --electron-version "$ELECTRON_VER"
 
-      - name: Vérifier architecture x86_64 (bloquant)
+      - name: Vérifier architecture x86_64 (BLOQUANT)
         run: |
           NODE_FILE=$(find node_modules/better-sqlite3 -name "*.node" | head -1)
           echo "Binaire : $NODE_FILE"
           file "$NODE_FILE"
           if ! file "$NODE_FILE" | grep -q "x86_64"; then
-            echo "ERREUR : le binaire better-sqlite3 n'est PAS x86_64 — build annulé"
+            echo "ERREUR : binaire non x86_64 — build annulé"
             exit 1
           fi
-          echo "✓ x86_64 confirmé — packaging autorisé"
+          echo "✓ x86_64 confirmé"
 
-      - name: Build DMG x64
+      - name: Build DMG x64 (npmRebuild=false — conserve notre binaire x64)
         run: npx vite build && npx electron-builder --mac --x64 --publish never
 
       - name: Garantir suffixe -x64.dmg
