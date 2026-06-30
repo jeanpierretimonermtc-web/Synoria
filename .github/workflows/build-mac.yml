@@ -52,18 +52,32 @@ jobs:
               echo "Déjà correct : $f"
             fi
           done
+          ls -lh *.dmg
 
-      - name: Upload DMG arm64
-        uses: actions/upload-artifact@v4
+      - name: Publier DMG arm64 sur GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
         with:
-          name: dmg-arm64
-          path: release/Synoria*-arm64.dmg
-          retention-days: 1
+          name: Synoria ${{ github.ref_name }}
+          body: |
+            ## Synoria ${{ github.ref_name }} — macOS
+
+            | Fichier | Compatible |
+            |---------|-----------|
+            | `*-arm64.dmg` | **Apple Silicon M1/M2/M3** — MacBook depuis fin 2020 |
+            | `*-x64.dmg`   | **Intel Core** — MacBook avant fin 2020 |
+
+            > **Pomme → À propos de ce Mac** :
+            > - "Apple M..." → télécharger **arm64**
+            > - "Intel Core..." → télécharger **x64**
+          files: release/Synoria*-arm64.dmg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ── Job 2 : Intel x64 (runner Intel natif macos-13) ────────────────
   build-x64:
     name: Build Mac x64 (Intel — MacBook avant fin 2020)
-    runs-on: macos-13        # ← Runner Intel natif — AUCUNE cross-compilation
+    runs-on: macos-13        # ← Runner Intel x86_64 natif — aucune cross-compilation
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -87,7 +101,7 @@ jobs:
 
       - name: npm install (Intel natif — better-sqlite3 x64 automatique)
         run: npm install
-        # Sur macos-13 (Intel), npm installe et electron-rebuild compile en x64 nativement ✓
+        # Sur macos-13 (Intel), npm install + postinstall electron-rebuild → x64 natif ✓
 
       - name: Build x64
         run: npx vite build && npx electron-builder --mac --x64 --publish never
@@ -103,39 +117,10 @@ jobs:
               echo "Déjà correct : $f"
             fi
           done
+          ls -lh *.dmg
 
-      - name: Upload DMG x64
-        uses: actions/upload-artifact@v4
-        with:
-          name: dmg-x64
-          path: release/Synoria*-x64.dmg
-          retention-days: 1
-
-  # ── Job 3 : Release GitHub avec les 2 DMG ──────────────────────────
-  release:
-    name: Publier GitHub Release
-    needs: [build-arm64, build-x64]
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-    steps:
-      - name: Télécharger DMG arm64
-        uses: actions/download-artifact@v4
-        with:
-          name: dmg-arm64
-          path: release
-
-      - name: Télécharger DMG x64
-        uses: actions/download-artifact@v4
-        with:
-          name: dmg-x64
-          path: release
-
-      - name: Vérification des fichiers
-        run: |
-          echo "Fichiers dans release/ :"
-          ls -la release/
-
-      - name: Publier Release
+      - name: Publier DMG x64 sur GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           name: Synoria ${{ github.ref_name }}
@@ -150,7 +135,6 @@ jobs:
             > **Pomme → À propos de ce Mac** :
             > - "Apple M..." → télécharger **arm64**
             > - "Intel Core..." → télécharger **x64**
-          files: release/*.dmg
-          overwrite: true
+          files: release/Synoria*-x64.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
