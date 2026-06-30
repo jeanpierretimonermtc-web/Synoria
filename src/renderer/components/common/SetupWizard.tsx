@@ -119,7 +119,7 @@ export default function SetupWizard({ onComplete, theme = 'light' }: Props) {
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
-                placeholder="Dr. Marie Dupont"
+                placeholder="Marie Dupont"
                 autoFocus
                 style={{ width: '100%', padding: '10px 13px', borderRadius: 8, border: `1.5px solid ${border}`, background: inputBg, color: text, fontSize: 14 }}
               />
