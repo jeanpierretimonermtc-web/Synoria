@@ -34,11 +34,8 @@ jobs:
             p.version = '${{ github.ref_name }}'.replace('v', '') || p.version;
             p.build.appId = 'com.synoria.cabinet';
             p.build.productName = 'Synoria';
-            p.build.mac = p.build.mac || {};
-            p.build.mac.target = [{ target:'dmg', arch:['arm64'] }];
-            p.build.mac.artifactName = 'Synoria-${version}-arm64.${ext}';
-            fs.writeFileSync('package.json',JSON.stringify(p,null,2),'utf8');
-            console.log('OK',p.version,'com.synoria.cabinet arm64');
+            fs.writeFileSync('package.json', JSON.stringify(p, null, 2), 'utf8');
+            console.log('OK', p.version, 'com.synoria.cabinet');
           "
 
       - name: npm install (arm64 natif)
@@ -110,11 +107,8 @@ jobs:
             p.version = '${{ github.ref_name }}'.replace('v', '') || p.version;
             p.build.appId = 'com.synoria.cabinet';
             p.build.productName = 'Synoria';
-            p.build.mac = p.build.mac || {};
-            p.build.mac.target = [{ target:'dmg', arch:['x64'] }];
-            p.build.mac.artifactName = 'Synoria-${version}-x64.${ext}';
             fs.writeFileSync('package.json', JSON.stringify(p, null, 2), 'utf8');
-            console.log('OK', p.version, 'com.synoria.cabinet x64');
+            console.log('OK', p.version, 'com.synoria.cabinet');
           "
 
       - name: Nettoyer les anciens DMG
@@ -124,19 +118,17 @@ jobs:
         run: npm install --ignore-scripts
 
       - name: Compiler better-sqlite3 x64 via CFLAGS clang
+        env:
+          CFLAGS: "-arch x86_64"
+          CXXFLAGS: "-arch x86_64"
+          LDFLAGS: "-arch x86_64"
+          ARCHFLAGS: "-arch x86_64"
+          npm_config_arch: "x64"
+          npm_config_target_arch: "x64"
         run: |
           ELECTRON_VER=$(node -p "require('./node_modules/electron/package.json').version")
           echo "Electron : $ELECTRON_VER"
-          CFLAGS="-arch x86_64" \
-          CXXFLAGS="-arch x86_64" \
-          LDFLAGS="-arch x86_64" \
-          ARCHFLAGS="-arch x86_64" \
-          npm_config_target_arch="x64" \
-          npx electron-rebuild \
-            --arch x64 \
-            --force \
-            --only better-sqlite3 \
-            --electron-version "$ELECTRON_VER"
+          npx electron-rebuild --arch x64 --force --only better-sqlite3 --electron-version "$ELECTRON_VER"
 
       - name: Vérifier architecture x86_64 (bloquant)
         run: |
