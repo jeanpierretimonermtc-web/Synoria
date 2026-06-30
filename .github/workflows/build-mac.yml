@@ -10,51 +10,57 @@ permissions:
   contents: write
 
 jobs:
-  # ── Job 1 : Apple Silicon arm64 (runner natif ARM) ─────────────────
+  # ── Job 1 : Apple Silicon arm64 ────────────────────────────────────
   build-arm64:
     name: Build Mac arm64 (Apple Silicon M1/M2/M3)
     runs-on: macos-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Configurer package.json cabinet
+      - name: Configurer package.json (cabinet, version)
         run: |
           node -e "
-            const fs=require('fs');
-            const p=JSON.parse(fs.readFileSync('package.json','utf8'));
-            p.version='${{ github.ref_name }}'.replace('v','') || p.version;
-            p.build.appId='com.synoria.cabinet';
-            p.build.productName='Synoria';
-            fs.writeFileSync('package.json',JSON.stringify(p,null,2),'utf8');
-            console.log('OK',p.version,'com.synoria.cabinet');
+            const fs = require('fs');
+            const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            p.version = '${{ github.ref_name }}'.replace('v', '') || p.version;
+            p.build.appId = 'com.synoria.cabinet';
+            p.build.productName = 'Synoria';
+            fs.writeFileSync('package.json', JSON.stringify(p, null, 2), 'utf8');
+            console.log('Version:', p.version, '| appId: com.synoria.cabinet');
           "
 
       - name: npm install (arm64 natif)
         run: npm install
 
-      - name: Build arm64
+      - name: Build DMG arm64
         run: npx vite build && npx electron-builder --mac --arm64 --publish never
 
-      - name: Garantir suffixe -arm64 dans le nom du DMG
+      - name: Vérifier architecture du binaire natif
+        run: |
+          NODE_FILE=$(find node_modules/better-sqlite3 -name "*.node" | head -1)
+          echo "Binaire : $NODE_FILE"
+          file "$NODE_FILE"
+
+      - name: Garantir suffixe -arm64.dmg
         run: |
           cd release
           for f in *.dmg; do
-            if [[ "$f" != *"-arm64.dmg" ]]; then
-              mv "$f" "${f%.dmg}-arm64.dmg"
-              echo "Renommé : $f → ${f%.dmg}-arm64.dmg"
-            else
-              echo "Déjà correct : $f"
-            fi
+            [[ "$f" == *"-arm64.dmg" ]] && echo "OK : $f" && continue
+            mv "$f" "${f%.dmg}-arm64.dmg"
+            echo "Renommé → ${f%.dmg}-arm64.dmg"
           done
           ls -lh *.dmg
 
-      - name: Publier DMG arm64 sur GitHub Release
+      - name: Publier sur GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
@@ -62,82 +68,77 @@ jobs:
           body: |
             ## Synoria ${{ github.ref_name }} — macOS
 
-            | Fichier | Compatible |
-            |---------|-----------|
-            | `*-arm64.dmg` | **Apple Silicon M1/M2/M3** — MacBook depuis fin 2020 |
+            | Fichier | Compatible avec |
+            |---------|----------------|
+            | `*-arm64.dmg` | **Apple Silicon** M1 / M2 / M3 — MacBook depuis fin 2020 |
             | `*-x64.dmg`   | **Intel Core** — MacBook avant fin 2020 |
 
-            > **Pomme → À propos de ce Mac** :
+            > **Comment savoir ?** Pomme  → À propos de ce Mac
             > - "Apple M..." → télécharger **arm64**
             > - "Intel Core..." → télécharger **x64**
           files: release/Synoria*-arm64.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # ── Job 2 : Intel x64 (cross-compilation clang sur runner ARM) ─────
+  # ── Job 2 : Intel x64 via Rosetta 2 ────────────────────────────────
   build-x64:
-    name: Build Mac x64 (Intel — MacBook avant fin 2020)
+    name: Build Mac x64 (Intel — via Rosetta 2)
     runs-on: macos-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Configurer package.json cabinet
+      - name: Configurer package.json (cabinet, version)
         run: |
           node -e "
-            const fs=require('fs');
-            const p=JSON.parse(fs.readFileSync('package.json','utf8'));
-            p.version='${{ github.ref_name }}'.replace('v','') || p.version;
-            p.build.appId='com.synoria.cabinet';
-            p.build.productName='Synoria';
-            fs.writeFileSync('package.json',JSON.stringify(p,null,2),'utf8');
-            console.log('OK',p.version,'com.synoria.cabinet');
+            const fs = require('fs');
+            const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            p.version = '${{ github.ref_name }}'.replace('v', '') || p.version;
+            p.build.appId = 'com.synoria.cabinet';
+            p.build.productName = 'Synoria';
+            fs.writeFileSync('package.json', JSON.stringify(p, null, 2), 'utf8');
+            console.log('Version:', p.version, '| appId: com.synoria.cabinet');
           "
 
-      - name: npm install sans postinstall (évite electron-rebuild arm64)
-        run: npm install --ignore-scripts
-        # --ignore-scripts saute le postinstall qui ferait electron-rebuild arm64
-
-      - name: Compiler better-sqlite3 pour x64 (cross-compilation clang)
+      - name: Installer Rosetta 2
         run: |
-          ELECTRON_VER=$(node -p "require('./node_modules/electron/package.json').version")
-          echo "Electron version : $ELECTRON_VER"
-          npx electron-rebuild \
-            --arch x64 \
-            --force \
-            --only better-sqlite3 \
-            --electron-version "$ELECTRON_VER"
-        # clang sur macOS ARM supporte nativement la cross-compilation x86_64
+          softwareupdate --install-rosetta --agree-to-license 2>/dev/null || true
+          arch -x86_64 echo "Rosetta 2 opérationnel"
 
-      - name: Vérifier l'architecture du binaire
+      - name: npm install sous x86_64 (Rosetta 2)
+        run: arch -x86_64 npm install
+        # Tout tourne en x86_64 sous émulation Rosetta :
+        # npm, le postinstall, et electron-rebuild → better-sqlite3.node x64 ✓
+
+      - name: Vérifier architecture du binaire natif
         run: |
           NODE_FILE=$(find node_modules/better-sqlite3 -name "*.node" | head -1)
-          echo "Fichier : $NODE_FILE"
+          echo "Binaire : $NODE_FILE"
           file "$NODE_FILE"
           # Doit afficher : Mach-O 64-bit dynamically linked shared library x86_64
 
-      - name: Build x64
+      - name: Build DMG x64
         run: npx vite build && npx electron-builder --mac --x64 --publish never
 
-      - name: Garantir suffixe -x64 dans le nom du DMG
+      - name: Garantir suffixe -x64.dmg
         run: |
           cd release
           for f in *.dmg; do
-            if [[ "$f" != *"-x64.dmg" ]]; then
-              mv "$f" "${f%.dmg}-x64.dmg"
-              echo "Renommé : $f → ${f%.dmg}-x64.dmg"
-            else
-              echo "Déjà correct : $f"
-            fi
+            [[ "$f" == *"-x64.dmg" ]] && echo "OK : $f" && continue
+            mv "$f" "${f%.dmg}-x64.dmg"
+            echo "Renommé → ${f%.dmg}-x64.dmg"
           done
           ls -lh *.dmg
 
-      - name: Publier DMG x64 sur GitHub Release
+      - name: Publier sur GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
@@ -145,12 +146,12 @@ jobs:
           body: |
             ## Synoria ${{ github.ref_name }} — macOS
 
-            | Fichier | Compatible |
-            |---------|-----------|
-            | `*-arm64.dmg` | **Apple Silicon M1/M2/M3** — MacBook depuis fin 2020 |
+            | Fichier | Compatible avec |
+            |---------|----------------|
+            | `*-arm64.dmg` | **Apple Silicon** M1 / M2 / M3 — MacBook depuis fin 2020 |
             | `*-x64.dmg`   | **Intel Core** — MacBook avant fin 2020 |
 
-            > **Pomme → À propos de ce Mac** :
+            > **Comment savoir ?** Pomme  → À propos de ce Mac
             > - "Apple M..." → télécharger **arm64**
             > - "Intel Core..." → télécharger **x64**
           files: release/Synoria*-x64.dmg
