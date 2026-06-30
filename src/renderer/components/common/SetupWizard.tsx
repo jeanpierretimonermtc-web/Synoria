@@ -119,7 +119,7 @@ export default function SetupWizard({ onComplete, theme = 'light' }: Props) {
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
-                placeholder="Dr Jean-Pierre Timoner"
+                placeholder="Dr. Marie Dupont"
                 autoFocus
                 style={{ width: '100%', padding: '10px 13px', borderRadius: 8, border: `1.5px solid ${border}`, background: inputBg, color: text, fontSize: 14 }}
               />
@@ -235,7 +235,7 @@ export default function SetupWizard({ onComplete, theme = 'light' }: Props) {
             {/* Grille de plugins disponibles */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
               {[
-                { icon: '🌿', name: 'MTC — Jean-Pierre Timoner', desc: 'Formulaire MTC complet (langue, pouls, 5 éléments, points…)', file: 'mtc_jp.plugin.json' },
+                { icon: '🌿', name: 'MTC — Formulaire intégré', desc: 'Formulaire MTC complet (langue, pouls, 5 éléments, points…)', file: 'mtc_jp.plugin.json' },
                 { icon: '⚡', name: 'Kinésiologie', desc: 'Bilan kinésiologique, tests musculaires, émotions', file: 'kinesio.plugin.json' },
                 { icon: '🦴', name: 'Ostéopathie', desc: 'Anamnèse ostéopathique, bilan postural, tests', file: 'osteopathie.plugin.json' },
                 { icon: '📋', name: 'Mode simple', desc: 'Formulaire générique sans plugin — toutes spécialités', file: null },

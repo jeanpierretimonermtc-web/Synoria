@@ -148,7 +148,7 @@ Pour ouvrir le rapport : <em>Paramètres → Support → Générer le rapport de
   <tr><th>Ligne</th><th>Description</th></tr>
   <tr>
     <td>Plugin actif</td>
-    <td>Identifiant et nom du plugin de formulaire chargé (ex : <em>mtc_jp (MTC Jean-Pierre)</em>) ou <em>aucun</em> si le formulaire générique est actif. Le fichier <em>active.plugin.json</em> est la source.</td>
+    <td>Identifiant et nom du plugin de formulaire chargé (ex : <em>mtc_jp (MTC — Formulaire intégré)</em>) ou <em>aucun</em> si le formulaire générique est actif. Le fichier <em>active.plugin.json</em> est la source.</td>
   </tr>
   <tr>
     <td>Sauveg. à la fermeture</td>
