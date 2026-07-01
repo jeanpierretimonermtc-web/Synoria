@@ -3,460 +3,437 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Synoria - Dossier patient pour thérapeutes</title>
-<meta name="description" content="Synoria est un logiciel local et chiffre de gestion de dossiers patients, seances, planning, facturation et sauvegardes pour therapeutes.">
+<title>Synoria — Logiciel dossier patient pour praticiens indépendants</title>
+<meta name="description" content="Synoria est un logiciel de bureau pour praticiens indépendants : dossiers patients, séances, planning, facturation, comptabilité et RGPD. Données 100 % locales et chiffrées.">
 <link rel="icon" type="image/png" href="assets/Synoria.png">
 <link rel="apple-touch-icon" href="assets/Synoria.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap">
 <style>
 *,*::before,*::after{box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{margin:0;font-family:"DM Sans",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#F5F2ED;color:#1C1A17;line-height:1.6;-webkit-font-smoothing:antialiased}
-img{max-width:100%;display:block}
+body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#fff;color:#192017;line-height:1.6;-webkit-font-smoothing:antialiased}
+img{display:block;max-width:100%}
 a{color:inherit;text-decoration:none}
+h1,h2,h3,p{margin-top:0}
+figure{margin:0}
+
 :root{
-  --bg:#F5F2ED;
-  --surface:#FDFCFA;
-  --surface-2:#EEE9E1;
-  --border:#DDD8CF;
-  --border-soft:#EAE6DF;
-  --text:#1C1A17;
-  --muted:#756F66;
-  --hint:#A19A8F;
-  --accent:#4A6741;
-  --accent-dark:#354E2F;
-  --accent-soft:#EAF0E8;
-  --blue:#2A5A8A;
-  --blue-soft:#E8F0F8;
-  --teal:#2A7A6A;
-  --teal-soft:#E7F3F0;
-  --amber:#B87325;
-  --amber-soft:#FDF3E3;
-  --purple:#5A4A7A;
-  --purple-soft:#F0EDF7;
-  --rose:#8A2A4A;
-  --rose-soft:#F8EAF0;
-  --radius:8px;
-  --shadow-sm:0 1px 3px rgba(0,0,0,.05),0 8px 22px rgba(0,0,0,.06);
-  --shadow-md:0 4px 18px rgba(0,0,0,.08),0 20px 55px rgba(0,0,0,.10);
+  --accent:#3d6035;
+  --accent-dark:#2c4828;
+  --accent-light:#edf5e9;
+  --accent-mid:#5e8e53;
+  --ink:#192017;
+  --muted:#617056;
+  --border:#dde8d9;
+  --soft:#f4f8f2;
+  --white:#ffffff;
+  --blue:#245c8f;
+  --teal:#2a7a6a;
+  --amber:#b87325;
+  --r:10px;
+  --shadow:0 4px 20px rgba(0,0,0,.07);
+  --shadow-lg:0 20px 56px rgba(0,0,0,.10);
   --max:1160px;
 }
-.page{overflow:hidden}
-.nav{
-  position:sticky;top:0;z-index:50;
-  background:rgba(245,242,237,.94);
-  backdrop-filter:blur(18px);
-  border-bottom:1px solid rgba(221,216,207,.75);
-}
-.nav-inner{max-width:var(--max);margin:auto;height:64px;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:20px}
-.brand{display:flex;align-items:center;gap:10px;min-width:0}
-.brand-logo{width:34px;height:34px;object-fit:contain;flex:0 0 auto}
-.brand-text{height:21px;object-fit:contain;mix-blend-mode:multiply}
-.nav-links{display:flex;align-items:center;gap:24px;color:var(--muted);font-size:14px;font-weight:600}
+
+/* ── NAV ─────────────────────────────────── */
+.nav{position:fixed;top:0;left:0;right:0;z-index:40;background:rgba(255,255,255,.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(221,232,217,.9)}
+.nav-inner{max-width:var(--max);margin:0 auto;height:64px;padding:0 28px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-logo{width:32px;height:32px;object-fit:contain}
+.brand-name{font-family:Georgia,"Times New Roman",serif;font-size:20px;font-weight:700;color:var(--accent-dark);letter-spacing:-.3px}
+.nav-links{display:flex;gap:26px;font-size:14px;font-weight:600;color:var(--muted)}
 .nav-links a:hover{color:var(--accent)}
-.nav-actions{display:flex;align-items:center;gap:10px}
-.button{
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  min-height:42px;padding:0 18px;border-radius:var(--radius);
-  font-weight:800;font-size:14px;border:1px solid transparent;
-  transition:transform .15s,box-shadow .15s,background .15s,border-color .15s;
-}
-.button:hover{transform:translateY(-1px)}
-.button-primary{background:var(--accent);color:#fff;box-shadow:0 8px 22px rgba(74,103,65,.25)}
-.button-primary:hover{background:var(--accent-dark)}
-.button-secondary{background:var(--surface);border-color:var(--border);color:var(--text)}
-.button-secondary:hover{border-color:var(--accent);color:var(--accent)}
-.hero{
-  min-height:calc(100vh - 64px);
-  display:grid;align-items:center;
-  padding:72px 24px;
-  background:
-    linear-gradient(180deg,rgba(255,255,255,.45),rgba(245,242,237,0) 34%),
-    radial-gradient(circle at 18% 18%,rgba(74,103,65,.10),transparent 28%),
-    radial-gradient(circle at 90% 62%,rgba(42,122,106,.09),transparent 30%),
-    var(--bg);
-}
-.hero-inner{max-width:var(--max);margin:auto;display:grid;grid-template-columns:minmax(0,.92fr) minmax(520px,1.08fr);gap:54px;align-items:center;width:100%}
-.eyebrow{display:inline-flex;align-items:center;gap:8px;background:var(--accent-soft);border:1px solid rgba(74,103,65,.18);color:var(--accent);font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:6px 12px;margin-bottom:20px}
-.eyebrow::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent)}
-h1,h2,h3,p{margin-top:0}
-h1{font-family:"DM Serif Display",serif;font-weight:400;font-size:clamp(42px,5.3vw,76px);line-height:.98;letter-spacing:0;margin-bottom:22px;color:var(--text)}
-.hero-lead{font-size:clamp(16px,1.5vw,20px);color:var(--muted);max-width:620px;margin-bottom:30px}
-.hero-actions{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:22px}
-.trust-row{display:flex;flex-wrap:wrap;gap:8px}
-.trust{background:rgba(253,252,250,.78);border:1px solid var(--border);border-radius:999px;padding:7px 11px;font-size:12px;font-weight:700;color:var(--muted)}
-.hero-product{position:relative}
-.device{
-  background:#E8E3DC;border:1px solid rgba(0,0,0,.12);border-radius:14px;overflow:hidden;
-  box-shadow:0 28px 80px rgba(28,26,23,.16),0 6px 20px rgba(28,26,23,.08);
-}
-.device-bar{height:34px;display:flex;align-items:center;gap:7px;padding:0 14px;border-bottom:1px solid #CBC5BA}
-.dot{width:10px;height:10px;border-radius:50%}.dot.red{background:#E05D56}.dot.yellow{background:#E2A93F}.dot.green{background:#55A85C}
-.app-header{height:52px;background:var(--surface);display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--border)}
-.app-header img:first-child{width:31px;height:31px}.app-header img:nth-child(2){height:20px;mix-blend-mode:multiply}
-.app-badge{margin-left:auto;background:var(--teal-soft);color:var(--teal);border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800}
-.app-body{display:grid;grid-template-columns:176px 1fr;min-height:420px;background:var(--bg)}
-.sidebar{background:#EDE8DF;border-right:1px solid var(--border);padding:12px 8px;display:flex;flex-direction:column;gap:5px}
-.side-label{font-size:9px;color:var(--hint);font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:8px 8px 4px}
-.side-item{display:flex;align-items:center;gap:8px;padding:8px;border-radius:7px;color:#5A5450;font-size:12px;font-weight:700}
-.side-item.active{background:var(--surface);color:var(--accent);box-shadow:0 1px 5px rgba(0,0,0,.08)}
-.side-icon{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;color:#fff;font-size:11px;font-weight:900;background:var(--accent)}
-.side-bottom{margin-top:auto;border-top:1px solid var(--border);padding-top:8px}
-.content{padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
-.welcome{background:linear-gradient(135deg,var(--accent),var(--accent-dark));color:#fff;border-radius:12px;padding:16px;display:flex;justify-content:space-between;gap:12px;align-items:center}
-.welcome h2{font-family:"DM Serif Display",serif;font-weight:400;font-size:22px;margin:0 0 3px}
-.welcome p{font-size:12px;color:rgba(255,255,255,.75);margin:0}
-.mini-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.24);border-radius:7px;padding:7px 10px;font-size:11px;font-weight:800;white-space:nowrap}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
-.stat{background:var(--surface);border:1px solid var(--border-soft);border-radius:10px;padding:12px 10px;box-shadow:var(--shadow-sm)}
-.stat-num{font-family:"DM Serif Display",serif;font-size:28px;line-height:1;margin-bottom:4px}
-.stat-label{font-size:11px;color:var(--muted);font-weight:700}
-.dash-grid{display:grid;grid-template-columns:.95fr 1.05fr;gap:12px;min-height:0}
-.panel{background:var(--surface);border:1px solid var(--border-soft);border-radius:10px;padding:13px;box-shadow:var(--shadow-sm);min-width:0}
-.panel-title{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:var(--text);margin-bottom:12px}
-.bars{height:94px;display:flex;align-items:flex-end;gap:7px}
-.bar{flex:1;border-radius:5px 5px 2px 2px;background:var(--accent)}
-.session{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border-soft);padding:8px 0}
-.session:last-child{border-bottom:0}
-.initials{width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:10px;font-weight:900;flex:0 0 auto}
-.session-name{font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.session-note{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.floating-card{position:absolute;right:-18px;bottom:-22px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow-md);max-width:280px}
-.floating-card strong{display:block;font-size:13px;margin-bottom:3px}.floating-card span{font-size:12px;color:var(--muted)}
-.section{padding:92px 24px}
-.inner{max-width:var(--max);margin:auto}
-.section-head{max-width:720px;margin-bottom:38px}
-.section-centered{text-align:center;margin-left:auto;margin-right:auto}
-.tag{display:inline-block;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px}
-h2{font-family:"DM Serif Display",serif;font-weight:400;font-size:clamp(32px,4vw,52px);line-height:1.05;letter-spacing:0;margin-bottom:14px}
-.section-text{font-size:17px;color:var(--muted);max-width:680px}
-.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow-sm)}
-.card-icon{width:42px;height:42px;border-radius:8px;display:grid;place-items:center;margin-bottom:16px}
-.card-icon svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.card h3{font-size:17px;margin-bottom:8px}.card p{font-size:14px;color:var(--muted);margin:0}
-.split{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
-.list{display:grid;gap:12px;margin-top:24px}
-.list-item{display:flex;gap:11px;color:var(--muted);font-size:15px}
-.check{width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:13px;font-weight:900;flex:0 0 auto}
-.calendar-demo{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:var(--shadow-md)}
-.cal-head{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:6px;color:var(--hint);font-size:11px;font-weight:900;text-align:center}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
-.cal-day{min-height:58px;background:var(--bg);border:1px solid var(--border-soft);border-radius:7px;padding:6px;font-size:12px;font-weight:800}
-.cal-day.today{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
-.pills{display:flex;gap:3px;margin-top:8px;flex-wrap:wrap}.pill{width:7px;height:7px;border-radius:50%;background:var(--blue)}
-.security{background:linear-gradient(135deg,#294B25 0%,#4A6741 55%,#2A7A6A 100%);color:#fff}
-.security .tag{background:rgba(255,255,255,.14);color:#fff}.security h2{color:#fff}.security .section-text{color:rgba(255,255,255,.78)}
-.security-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:32px}
-.security-card{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.14);border-radius:var(--radius);padding:20px}
-.security-card h3{font-size:15px;color:#fff;margin-bottom:6px}.security-card p{font-size:13px;color:rgba(255,255,255,.72);margin:0}
-.download{background:#fff;text-align:center}
-.download-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:30px}
-.download-card{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:22px}
-.download-card strong{font-size:17px}.download-card span{font-size:13px;color:var(--muted)}
-.download-link{margin-top:auto;color:#fff;background:var(--accent);border-radius:7px;padding:10px 12px;font-size:13px;font-weight:900}
-.footer{background:#1F2A1C;color:rgba(255,255,255,.78);padding:44px 24px}
-.footer-inner{max-width:var(--max);margin:auto;display:grid;grid-template-columns:1.3fr repeat(3,1fr);gap:34px}
-.footer-brand-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}.footer-brand-row img:first-child{width:34px}.footer-brand-row img:nth-child(2){height:21px}
-.footer h3{color:#fff;font-size:14px;margin-bottom:12px}.footer p,.footer a{font-size:13px;color:rgba(255,255,255,.68)}.footer a:hover{color:#fff}
-.footer ul{list-style:none;padding:0;margin:0;display:grid;gap:8px}
-.copyright{max-width:var(--max);margin:28px auto 0;padding-top:20px;border-top:1px solid rgba(255,255,255,.12);display:flex;justify-content:space-between;gap:16px;font-size:12px;color:rgba(255,255,255,.55)}
-@media (max-width:1040px){
-  .hero-inner{grid-template-columns:1fr;gap:40px}
-  .hero{padding-top:58px}
-  .hero-copy{max-width:780px}
-  .device{max-width:760px;margin:auto}
-  .cards,.download-grid{grid-template-columns:repeat(2,1fr)}
-  .security-grid{grid-template-columns:repeat(2,1fr)}
-  .split{grid-template-columns:1fr;gap:30px}
+.nav-actions{display:flex;gap:10px}
+
+/* ── BUTTONS ─────────────────────────────── */
+.btn{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 18px;border-radius:8px;border:1.5px solid transparent;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;transition:background .15s,border-color .15s,color .15s,transform .1s}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 4px 14px rgba(61,96,53,.24)}
+.btn-primary:hover{background:var(--accent-dark)}
+.btn-outline{border-color:var(--border);color:var(--ink);background:var(--white)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+.btn-lg{height:48px;padding:0 26px;font-size:15px;border-radius:10px}
+
+/* ── HERO ────────────────────────────────── */
+.hero{padding:112px 28px 0;text-align:center;background:linear-gradient(180deg,#edf6e9 0%,#f8fbf6 38%,#fff 68%);overflow:hidden}
+.hero-badge{display:inline-flex;align-items:center;gap:7px;background:var(--white);border:1.5px solid var(--border);border-radius:999px;padding:6px 14px;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:26px;box-shadow:var(--shadow)}
+.hero-badge-dot{width:8px;height:8px;border-radius:50%;background:var(--accent-mid);flex-shrink:0}
+h1{font-family:Georgia,"Times New Roman",serif;font-size:60px;font-weight:400;line-height:1.05;color:var(--ink);max-width:840px;margin:0 auto 22px;letter-spacing:-.5px}
+h1 em{font-style:normal;color:var(--accent)}
+.hero-lead{font-size:18px;color:var(--muted);line-height:1.7;max-width:600px;margin:0 auto 34px}
+.hero-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:12px;margin-bottom:22px}
+.hero-proof{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-bottom:60px}
+.proof-pill{display:inline-flex;align-items:center;gap:5px;background:var(--white);border:1px solid var(--border);border-radius:999px;padding:6px 13px;font-size:13px;font-weight:600;color:var(--muted)}
+.proof-check{color:var(--accent);font-weight:900}
+
+/* Hero screenshot */
+.hero-screen{max-width:1000px;margin:0 auto;border-radius:12px 12px 0 0;box-shadow:0 -1px 0 var(--border),0 28px 72px rgba(0,0,0,.11);overflow:hidden;border:1px solid var(--border);border-bottom:none}
+.screen-bar{height:34px;display:flex;align-items:center;gap:7px;padding:0 14px;background:#ebe7de;border-bottom:1px solid rgba(0,0,0,.08);flex-shrink:0}
+.dot{width:10px;height:10px;border-radius:50%;background:#d95d57}.dot:nth-child(2){background:#e0a33a}.dot:nth-child(3){background:#5ca866}
+
+/* ── TRUST BAR ───────────────────────────── */
+.trust-bar{background:var(--accent);padding:16px 28px}
+.trust-inner{max-width:var(--max);margin:0 auto;display:flex;justify-content:center;flex-wrap:wrap;gap:36px}
+.trust-item{display:flex;align-items:center;gap:9px;color:rgba(255,255,255,.92);font-size:13px;font-weight:700}
+.trust-icon{font-size:16px;opacity:.85}
+
+/* ── SECTIONS ────────────────────────────── */
+.section{padding:84px 28px}
+.section.alt{background:var(--soft)}
+.inner{max-width:var(--max);margin:0 auto}
+.section-label{display:inline-block;font-size:12px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+.section-head{max-width:720px;margin-bottom:48px}
+.section-head.center{text-align:center;margin-left:auto;margin-right:auto}
+h2{font-family:Georgia,"Times New Roman",serif;font-size:42px;font-weight:400;line-height:1.1;margin-bottom:14px;letter-spacing:-.3px}
+.section-text{font-size:17px;color:var(--muted);max-width:640px;line-height:1.7;margin-bottom:0}
+
+/* ── FEATURE CARDS ───────────────────────── */
+.features{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.feature{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:24px;transition:box-shadow .15s,transform .15s}
+.feature:hover{box-shadow:var(--shadow);transform:translateY(-2px)}
+.feature-icon{width:42px;height:42px;border-radius:10px;display:grid;place-items:center;font-size:20px;margin-bottom:16px}
+.feature h3{font-size:15px;font-weight:700;margin-bottom:8px}
+.feature p{font-size:14px;color:var(--muted);margin:0;line-height:1.65}
+
+/* ── SHOWCASE ────────────────────────────── */
+.showcase{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+.showcase.reverse .showcase-copy{order:2}
+.bullets{display:grid;gap:14px;margin-top:28px}
+.bullet{display:flex;gap:12px;font-size:15px;color:var(--muted);line-height:1.65;align-items:flex-start}
+.bullet-ck{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--accent-light);color:var(--accent);display:grid;place-items:center;font-size:11px;font-weight:900;margin-top:2px}
+.bullet strong{color:var(--ink)}
+.screen-frame{border-radius:var(--r);overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow-lg)}
+.screen-frame img{width:100%;height:auto;display:block}
+.caption{padding:12px 16px;background:var(--white);border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+.caption strong{color:var(--ink)}
+
+/* ── SCREENS GRID ────────────────────────── */
+.screens-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:20px;align-items:start}
+.screens-stack{display:grid;gap:20px}
+
+/* ── SECURITY ────────────────────────────── */
+.security-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.security-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:24px}
+.security-num{width:36px;height:36px;border-radius:50%;background:var(--accent-light);color:var(--accent);display:grid;place-items:center;font-size:15px;font-weight:900;margin-bottom:14px}
+.security-card h3{font-size:15px;font-weight:700;margin-bottom:8px}
+.security-card p{font-size:14px;color:var(--muted);margin:0;line-height:1.65}
+
+/* ── DOWNLOAD ────────────────────────────── */
+.download-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:42px}
+.download-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:28px;display:flex;flex-direction:column;gap:10px;transition:box-shadow .15s,border-color .15s}
+.download-card:hover{box-shadow:var(--shadow);border-color:rgba(61,96,53,.3)}
+.dl-os{font-size:30px;line-height:1;margin-bottom:4px}
+.dl-title{font-size:16px;font-weight:700;color:var(--ink)}
+.dl-desc{font-size:14px;color:var(--muted);line-height:1.65;flex:1}
+.download-card .btn{align-self:flex-start;margin-top:6px}
+
+/* ── FOOTER ──────────────────────────────── */
+.footer{background:#16211400;background:#172014;padding:52px 28px 28px}
+.footer-inner{max-width:var(--max);margin:0 auto;display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:32px;padding-bottom:32px;border-bottom:1px solid rgba(255,255,255,.08)}
+.footer-brand{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.footer-brand img{width:30px}
+.footer-brand-name{font-family:Georgia,"Times New Roman",serif;font-size:18px;font-weight:700;color:#fff}
+.footer-desc{font-size:13px;color:rgba(255,255,255,.52);line-height:1.7;max-width:260px;margin:0}
+.footer h4{font-size:13px;font-weight:700;color:#fff;margin-bottom:12px}
+.footer ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.footer ul a{font-size:13px;color:rgba(255,255,255,.52)}
+.footer ul a:hover{color:rgba(255,255,255,.9)}
+.footer-bottom{max-width:var(--max);margin:24px auto 0;display:flex;justify-content:space-between;align-items:center;gap:16px;font-size:12px;color:rgba(255,255,255,.35)}
+
+/* ── RESPONSIVE ──────────────────────────── */
+@media(max-width:980px){
+  .nav-links{display:none}
+  h1{font-size:48px}
+  h2{font-size:34px}
+  .features,.security-grid{grid-template-columns:repeat(2,1fr)}
+  .showcase,.screens-grid{grid-template-columns:1fr}
+  .showcase.reverse .showcase-copy{order:0}
+  .download-grid{grid-template-columns:repeat(2,1fr)}
   .footer-inner{grid-template-columns:1fr 1fr}
 }
-@media (max-width:760px){
-  .nav-inner{height:auto;min-height:62px;padding:10px 16px;align-items:flex-start}
-  .nav-links{display:none}
-  .nav-actions .button-secondary{display:none}
-  .brand-text{height:18px}
-  .hero{min-height:auto;padding:42px 16px 54px}
-  .hero-actions .button{width:100%}
-  .trust-row{display:grid;grid-template-columns:1fr 1fr;width:100%}
-  .trust{text-align:center}
-  .app-body{grid-template-columns:1fr;min-height:0}
-  .sidebar{display:none}
-  .app-header{height:48px}.app-header img:nth-child(2){height:17px}.app-badge{display:none}
-  .content{padding:12px}
-  .welcome{display:block}.mini-btn{display:inline-block;margin-top:10px}
-  .stats{grid-template-columns:repeat(2,1fr)}
-  .dash-grid{grid-template-columns:1fr}
-  .floating-card{position:static;margin-top:12px;max-width:none}
-  .section{padding:64px 16px}
-  .cards,.download-grid,.security-grid{grid-template-columns:1fr}
-  .card{padding:20px}
-  .calendar-demo{padding:10px}
-  .cal-day{min-height:44px;padding:5px}
+@media(max-width:640px){
+  h1{font-size:36px}
+  h2{font-size:28px}
+  .hero{padding:96px 16px 0}
+  .section{padding:60px 16px}
+  .nav-inner{padding:0 16px}
+  .nav-actions .btn-outline{display:none}
+  .hero-lead{font-size:16px}
+  .hero-actions .btn{width:100%}
+  .hero-actions{flex-direction:column;align-items:center}
+  .features,.security-grid{grid-template-columns:1fr}
+  .download-grid{grid-template-columns:1fr}
+  .trust-inner{gap:18px}
   .footer-inner{grid-template-columns:1fr}
-  .copyright{display:grid}
-}
-@media (max-width:430px){
-  h1{font-size:40px}
-  .trust-row{grid-template-columns:1fr}
-  .device{border-radius:10px}
-  .device-bar{height:28px}
-  .stat-num{font-size:23px}
-  .cal-head{font-size:9px}
-  .cal-day{min-height:38px;font-size:10px}
-  .pills{margin-top:5px}
+  .footer-bottom{flex-direction:column;text-align:center}
 }
 </style>
 </head>
 <body>
-<div class="page">
-  <nav class="nav">
-    <div class="nav-inner">
-      <a class="brand" href="#accueil" aria-label="Accueil Synoria">
-        <img class="brand-logo" src="assets/Synoria.png" alt="">
-        <img class="brand-text" src="assets/Text Synoria fond blanc.png" alt="Synoria">
-      </a>
-      <div class="nav-links">
-        <a href="#fonctionnalites">Fonctionnalites</a>
-        <a href="#planning">Planning</a>
-        <a href="#securite">Securite</a>
-        <a href="#telechargement">Telecharger</a>
-      </div>
-      <div class="nav-actions">
-        <a class="button button-secondary" href="#securite">RGPD</a>
-        <a class="button button-primary" href="#telechargement">Telecharger</a>
-      </div>
-    </div>
-  </nav>
 
-  <header class="hero" id="accueil">
-    <div class="hero-inner">
-      <div class="hero-copy">
-        <div class="eyebrow">Dossier patient local et chiffre</div>
-        <h1>Le logiciel patient pense pour les therapeutes independants.</h1>
-        <p class="hero-lead">Synoria regroupe dossiers patients, seances, planning, facturation, sauvegardes et RGPD dans une application sobre, locale et professionnelle.</p>
-        <div class="hero-actions">
-          <a class="button button-primary" href="#telechargement">Telecharger Synoria</a>
-          <a class="button button-secondary" href="#fonctionnalites">Voir les fonctions</a>
-        </div>
-        <div class="trust-row">
-          <span class="trust">Donnees 100% locales</span>
-          <span class="trust">Chiffrement AES-256-GCM</span>
-          <span class="trust">Conforme RGPD</span>
-          <span class="trust">Windows et macOS</span>
-        </div>
-      </div>
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="#accueil" aria-label="Accueil Synoria">
+      <img class="brand-logo" src="assets/Synoria.png" alt="">
+      <span class="brand-name">SYNORIA</span>
+    </a>
+    <nav class="nav-links" aria-label="Navigation principale">
+      <a href="#fonctionnalites">Fonctions</a>
+      <a href="#captures">Captures</a>
+      <a href="#securite">Sécurité</a>
+      <a href="#telechargement">Télécharger</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-outline" href="#captures">Voir l'interface</a>
+      <a class="btn btn-primary" href="#telechargement">Télécharger</a>
+    </div>
+  </div>
+</nav>
 
-      <div class="hero-product" aria-label="Apercu de l'application Synoria">
-        <div class="device">
-          <div class="device-bar"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
-          <div class="app-header">
-            <img src="assets/Synoria.png" alt="">
-            <img src="assets/Text Synoria fond blanc.png" alt="Synoria">
-            <span class="app-badge">Session chiffree</span>
-          </div>
-          <div class="app-body">
-            <aside class="sidebar">
-              <div class="side-label">Cabinet</div>
-              <div class="side-item active"><span class="side-icon">D</span> Tableau de bord</div>
-              <div class="side-item"><span class="side-icon" style="background:var(--blue)">P</span> Patients</div>
-              <div class="side-item"><span class="side-icon" style="background:var(--teal)">S</span> Seances</div>
-              <div class="side-item"><span class="side-icon" style="background:var(--amber)">A</span> Agenda</div>
-              <div class="side-item"><span class="side-icon" style="background:var(--purple)">F</span> Factures</div>
-              <div class="side-bottom">
-                <div class="side-item"><span class="side-icon" style="background:var(--rose)">R</span> RGPD</div>
-              </div>
-            </aside>
-            <main class="content">
-              <section class="welcome">
-                <div>
-                  <h2>Bonjour Jean-Pierre</h2>
-                  <p>Dimanche 21 juin 2026</p>
-                </div>
-                <span class="mini-btn">Nouvelle seance</span>
-              </section>
-              <section class="stats">
-                <div class="stat"><div class="stat-num">24</div><div class="stat-label">Patients</div></div>
-                <div class="stat"><div class="stat-num">142</div><div class="stat-label">Seances</div></div>
-                <div class="stat"><div class="stat-num">8</div><div class="stat-label">Ce mois</div></div>
-                <div class="stat"><div class="stat-num">22</div><div class="stat-label">Actifs</div></div>
-              </section>
-              <section class="dash-grid">
-                <div class="panel">
-                  <div class="panel-title">Activite 6 mois</div>
-                  <div class="bars">
-                    <div class="bar" style="height:32%;opacity:.35"></div>
-                    <div class="bar" style="height:55%;opacity:.45"></div>
-                    <div class="bar" style="height:44%;opacity:.55"></div>
-                    <div class="bar" style="height:72%;opacity:.75"></div>
-                    <div class="bar" style="height:58%;opacity:.85"></div>
-                    <div class="bar" style="height:86%"></div>
-                  </div>
-                </div>
-                <div class="panel">
-                  <div class="panel-title">Dernieres seances</div>
-                  <div class="session"><span class="initials">MD</span><div><div class="session-name">Martin Dubois</div><div class="session-note">Amelioration nette</div></div></div>
-                  <div class="session"><span class="initials" style="background:var(--purple-soft);color:var(--purple)">SL</span><div><div class="session-name">Simon Laurent</div><div class="session-note">Suivi stabilise</div></div></div>
-                  <div class="session"><span class="initials" style="background:var(--blue-soft);color:var(--blue)">AL</span><div><div class="session-name">Arnaud Leclerc</div><div class="session-note">Premiere seance</div></div></div>
-                </div>
-              </section>
-            </main>
-          </div>
-        </div>
-        <div class="floating-card"><strong>Planning synchronise</strong><span>Synoria peut creer son calendrier Google dedie et importer vos agendas personnels.</span></div>
-      </div>
+<!-- HERO -->
+<header class="hero" id="accueil">
+  <div class="hero-badge">
+    <span class="hero-badge-dot"></span>
+    Logiciel de bureau · Windows &amp; Mac
+  </div>
+  <h1>Le dossier patient <em>pensé</em> pour le praticien indépendant.</h1>
+  <p class="hero-lead">Synoria centralise fiches patients, séances, planning, facturation et comptabilité dans un logiciel de bureau. Vos données restent sur votre poste, chiffrées et maîtrisées.</p>
+  <div class="hero-actions">
+    <a class="btn btn-primary btn-lg" href="#telechargement">Télécharger Synoria</a>
+    <a class="btn btn-outline btn-lg" href="#captures">Voir les captures</a>
+  </div>
+  <div class="hero-proof">
+    <span class="proof-pill"><span class="proof-check">✓</span> Données 100 % locales</span>
+    <span class="proof-pill"><span class="proof-check">✓</span> Chiffrement AES-256-GCM</span>
+    <span class="proof-pill"><span class="proof-check">✓</span> Plugins métier</span>
+    <span class="proof-pill"><span class="proof-check">✓</span> Conforme RGPD</span>
+    <span class="proof-pill"><span class="proof-check">✓</span> Sans abonnement cloud</span>
+  </div>
+  <div class="hero-screen">
+    <div class="screen-bar">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
     </div>
-  </header>
+    <img src="assets/screens/patients.png" alt="Interface Synoria — liste des patients">
+  </div>
+</header>
 
-  <section class="section" id="fonctionnalites">
-    <div class="inner">
-      <div class="section-head section-centered">
-        <span class="tag">Fonctionnalites</span>
-        <h2>Tout le cabinet dans une seule application.</h2>
-        <p class="section-text">Une interface concise pour travailler vite, garder une trace propre des soins et proteger les informations patient.</p>
-      </div>
-      <div class="cards">
-        <article class="card">
-          <div class="card-icon" style="background:var(--blue-soft);color:var(--blue)"><svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M8 12h8M8 16h5"/></svg></div>
-          <h3>Dossiers patients complets</h3>
-          <p>Coordonnees, antecedents, alertes, consentement, notes et historique des seances au meme endroit.</p>
-        </article>
-        <article class="card">
-          <div class="card-icon" style="background:var(--accent-soft);color:var(--accent)"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
-          <h3>Seances structurees</h3>
-          <p>Formulaires adaptes a votre pratique, texte enrichi, exports, impression et suivi d'evolution.</p>
-        </article>
-        <article class="card">
-          <div class="card-icon" style="background:var(--amber-soft);color:var(--amber)"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
-          <h3>Planning et Google Calendar</h3>
-          <p>Vues mois, semaine et jour, synchronisation des consultations et import des agendas personnels.</p>
-        </article>
-        <article class="card">
-          <div class="card-icon" style="background:var(--teal-soft);color:var(--teal)"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></div>
-          <h3>Tableau de bord</h3>
-          <p>Activite, patients actifs, seances recentes et indicateurs utiles pour piloter votre cabinet.</p>
-        </article>
-        <article class="card">
-          <div class="card-icon" style="background:var(--purple-soft);color:var(--purple)"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 15h6"/></svg></div>
-          <h3>Facturation simple</h3>
-          <p>Factures numerotees, suivi des recettes, depenses, exports et preparation d'envoi par email.</p>
-        </article>
-        <article class="card">
-          <div class="card-icon" style="background:var(--rose-soft);color:var(--rose)"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg></div>
-          <h3>Sauvegardes chiffrees</h3>
-          <p>Sauvegarde globale ou patient, restauration, verification et conservation controlee.</p>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section class="section" id="planning">
-    <div class="inner split">
-      <div>
-        <span class="tag">Agenda</span>
-        <h2>Un planning lisible, connecte a votre rythme de travail.</h2>
-        <p class="section-text">Synoria distingue les consultations, les seances realisees, les indisponibilites et vos evenements personnels importes depuis Google Calendar.</p>
-        <div class="list">
-          <div class="list-item"><span class="check">✓</span><span>Creation automatique d'un calendrier Google nomme Synoria.</span></div>
-          <div class="list-item"><span class="check">✓</span><span>Import des calendriers personnels selectionnes avec couleurs locales.</span></div>
-          <div class="list-item"><span class="check">✓</span><span>Confidentialite preservee : les evenements Google affichent uniquement Consultation.</span></div>
-        </div>
-      </div>
-      <div class="calendar-demo" aria-label="Exemple de calendrier Synoria">
-        <div class="cal-head"><span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span></div>
-        <div class="cal-grid">
-          <div class="cal-day">1<div class="pills"><span class="pill"></span></div></div>
-          <div class="cal-day">2<div class="pills"><span class="pill" style="background:var(--accent)"></span><span class="pill" style="background:var(--blue)"></span></div></div>
-          <div class="cal-day">3</div>
-          <div class="cal-day today">4<div class="pills"><span class="pill" style="background:var(--teal)"></span><span class="pill" style="background:var(--amber)"></span></div></div>
-          <div class="cal-day">5<div class="pills"><span class="pill" style="background:var(--purple)"></span></div></div>
-          <div class="cal-day">6</div>
-          <div class="cal-day">7</div>
-          <div class="cal-day">8</div><div class="cal-day">9</div><div class="cal-day">10<div class="pills"><span class="pill" style="background:var(--teal)"></span></div></div><div class="cal-day">11</div><div class="cal-day">12<div class="pills"><span class="pill" style="background:var(--blue)"></span></div></div><div class="cal-day">13</div><div class="cal-day">14</div>
-          <div class="cal-day">15<div class="pills"><span class="pill" style="background:var(--accent)"></span></div></div><div class="cal-day">16</div><div class="cal-day">17</div><div class="cal-day">18<div class="pills"><span class="pill" style="background:var(--rose)"></span></div></div><div class="cal-day">19</div><div class="cal-day">20</div><div class="cal-day">21</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section security" id="securite">
-    <div class="inner">
-      <div class="section-head">
-        <span class="tag">Securite et RGPD</span>
-        <h2>Les donnees restent chez vous.</h2>
-        <p class="section-text">Synoria est concu pour respecter le secret professionnel : pas de serveur obligatoire, pas de compte Synoria, pas de collecte invisible.</p>
-      </div>
-      <div class="security-grid">
-        <div class="security-card"><h3>Chiffrement fort</h3><p>Base protegee avec AES-256-GCM et mot de passe derive par PBKDF2.</p></div>
-        <div class="security-card"><h3>Fonctionnement local</h3><p>Vos dossiers sont stockes sur votre ordinateur ou votre support de sauvegarde.</p></div>
-        <div class="security-card"><h3>Registre RGPD</h3><p>Consentements, journal d'acces, alertes de conservation et export du registre.</p></div>
-        <div class="security-card"><h3>Sauvegardes controlees</h3><p>Export chiffre, verification et restauration pour eviter les mauvaises surprises.</p></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section">
-    <div class="inner split">
-      <div>
-        <span class="tag">Specialites</span>
-        <h2>Adapte a plusieurs pratiques therapeutiques.</h2>
-        <p class="section-text">Le systeme de plugins adapte le formulaire de seance a votre specialite tout en conservant l'historique lisible.</p>
-      </div>
-      <div class="cards" style="grid-template-columns:1fr">
-        <div class="card"><h3>Medecine Traditionnelle Chinoise</h3><p>Langue, pouls, cinq elements, points, systemes energetiques, tests et traitement.</p></div>
-        <div class="card"><h3>Kinesiologie</h3><p>Contexte, objectifs, signes psycho-physiques, indicateurs de reussite et suivi.</p></div>
-        <div class="card"><h3>Autres specialites</h3><p>Formulaires personnalisables par fichier plugin JSON selon votre activite.</p></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section download" id="telechargement">
-    <div class="inner">
-      <div class="section-head section-centered">
-        <span class="tag">Telechargement</span>
-        <h2>Installer Synoria sur votre poste.</h2>
-        <p class="section-text">Choisissez le format adapte a votre environnement. Les donnees restent locales et vous appartiennent.</p>
-      </div>
-      <div class="download-grid">
-        <a class="download-card" href="https://github.com/jeanpierretimonermtc-web/Synoria/releases/download/v1.4.0/Synoria.Setup.1.4.0.exe">
-          <strong>Windows - Installateur</strong>
-          <span>Installation classique avec raccourci bureau. Windows 10/11 64 bits.</span>
-          <span class="download-link">Telecharger</span>
-        </a>
-        <a class="download-card" href="https://github.com/jeanpierretimonermtc-web/Synoria/releases/download/v1.4.0/Synoria.1.4.0.exe">
-          <strong>Windows - Portable</strong>
-          <span>Sans installation, pratique pour un dossier dedie ou une cle USB.</span>
-          <span class="download-link">Telecharger</span>
-        </a>
-        <a class="download-card" href="https://github.com/jeanpierretimonermtc-web/Synoria/releases/tag/v1.4.0">
-          <strong>macOS Universal</strong>
-          <span>Version pour Mac Intel et Apple Silicon, disponible depuis les releases.</span>
-          <span class="download-link">Voir la release</span>
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <footer class="footer">
-    <div class="footer-inner">
-      <div>
-        <div class="footer-brand-row">
-          <img src="assets/Synoria.png" alt="">
-          <img src="assets/Text Synoria fond blanc.png" alt="Synoria">
-        </div>
-        <p>Logiciel de gestion de dossiers patients pour therapeutes. Donnees locales, chiffrees et maitrisees.</p>
-      </div>
-      <div><h3>Logiciel</h3><ul><li><a href="#fonctionnalites">Fonctionnalites</a></li><li><a href="#planning">Planning</a></li><li><a href="#securite">Securite</a></li></ul></div>
-      <div><h3>Documentation</h3><ul><li><a href="/release/V1.4.0/Guide_Installation_Synoria_V1.4.0.html">Guide d'installation</a></li><li><a href="/release/V1.4.0/Guide_Utilisation_Synoria_V1.4.0.html">Guide d'utilisation</a></li><li><a href="/release/V1.4.0/Guide_Desinstallation_Synoria_V1.4.0.html">Desinstallation</a></li></ul></div>
-      <div><h3>Telecharger</h3><ul><li><a href="https://github.com/jeanpierretimonermtc-web/Synoria/releases/download/v1.4.0/Synoria.Setup.1.4.0.exe">Windows Setup</a></li><li><a href="https://github.com/jeanpierretimonermtc-web/Synoria/releases/download/v1.4.0/Synoria.1.4.0.exe">Windows Portable</a></li><li><a href="https://github.com/jeanpierretimonermtc-web/Synoria/releases/tag/v1.4.0">macOS</a></li></ul></div>
-    </div>
-    <div class="copyright">
-      <span>© 2026 Synoria - Logiciel de gestion de dossiers patients</span>
-      <span>Donnees locales - AES-256-GCM - RGPD</span>
-    </div>
-  </footer>
+<!-- TRUST BAR -->
+<div class="trust-bar">
+  <div class="trust-inner">
+    <div class="trust-item"><span class="trust-icon">🔒</span> Chiffrement AES-256-GCM</div>
+    <div class="trust-item"><span class="trust-icon">💾</span> Aucun cloud obligatoire</div>
+    <div class="trust-item"><span class="trust-icon">🔌</span> Plugins métier personnalisables</div>
+    <div class="trust-item"><span class="trust-icon">🇪🇺</span> Conforme RGPD</div>
+  </div>
 </div>
+
+<main>
+
+<!-- FONCTIONNALITÉS -->
+<section class="section" id="fonctionnalites">
+  <div class="inner">
+    <div class="section-head center">
+      <div class="section-label">Fonctionnalités</div>
+      <h2>Tout ce dont un praticien a besoin au quotidien.</h2>
+      <p class="section-text">Synoria évite de disperser les informations entre un agenda, des notes, un tableur et des modèles de facture.</p>
+    </div>
+    <div class="features">
+      <article class="feature">
+        <div class="feature-icon" style="background:#ebf2f9">🗂️</div>
+        <h3>Patients</h3>
+        <p>Coordonnées, antécédents, alertes, consentement RGPD, notes et historique complet des séances.</p>
+      </article>
+      <article class="feature">
+        <div class="feature-icon" style="background:#edf5e9">📋</div>
+        <h3>Séances</h3>
+        <p>Formulaires simples ou spécialisés, texte enrichi, édition, duplication et exports Excel et PDF.</p>
+      </article>
+      <article class="feature">
+        <div class="feature-icon" style="background:#fef6ea">📅</div>
+        <h3>Agenda</h3>
+        <p>Rendez-vous, prochains suivis, rappels et synchronisation Google Calendar.</p>
+      </article>
+      <article class="feature">
+        <div class="feature-icon" style="background:#edf0f9">💶</div>
+        <h3>Facturation</h3>
+        <p>Factures numérotées, statut payé, dépenses, recettes mensuelles et export comptable.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- SHOWCASE — Patients -->
+<section class="section alt" id="captures">
+  <div class="inner showcase">
+    <div class="showcase-copy">
+      <div class="section-label">Interface patients</div>
+      <h2>Des dossiers lisibles et directement exploitables.</h2>
+      <p class="section-text">La liste patients met en avant les informations utiles : identité, contact, alertes, consentement et accès rapide à l'historique.</p>
+      <div class="bullets">
+        <div class="bullet"><span class="bullet-ck">✓</span><span><strong>Accès rapide</strong> à la séance, à l'historique et à la facture.</span></div>
+        <div class="bullet"><span class="bullet-ck">✓</span><span><strong>Recherche et filtres</strong> pour retrouver un patient sans perdre de temps.</span></div>
+        <div class="bullet"><span class="bullet-ck">✓</span><span><strong>Données sensibles</strong> conservées localement sur le poste du praticien.</span></div>
+      </div>
+    </div>
+    <figure class="screen-frame">
+      <div class="screen-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <img src="assets/screens/patients.png" alt="Page patients de Synoria">
+      <figcaption class="caption"><strong>Patients.</strong> Fiches actives, alertes, historique et actions cabinet.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- SHOWCASE — Séances -->
+<section class="section">
+  <div class="inner showcase reverse">
+    <div class="showcase-copy">
+      <div class="section-label">Séances</div>
+      <h2>Une anamnèse structurée, adaptée à la pratique.</h2>
+      <p class="section-text">Synoria fonctionne en formulaire généraliste ou via des plugins métier : MTC, ostéopathie, kinésiologie, naturopathie et formulaires personnalisés.</p>
+      <div class="bullets">
+        <div class="bullet"><span class="bullet-ck">✓</span><span><strong>Formulaires spécialisés</strong> avec sections et progression.</span></div>
+        <div class="bullet"><span class="bullet-ck">✓</span><span><strong>Texte enrichi</strong> pour garder des notes claires et nuancées.</span></div>
+        <div class="bullet"><span class="bullet-ck">✓</span><span><strong>Exports</strong> JSON, Excel, rapport patient et impression.</span></div>
+      </div>
+    </div>
+    <figure class="screen-frame">
+      <div class="screen-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <img src="assets/screens/session.png" alt="Formulaire de séance Synoria">
+      <figcaption class="caption"><strong>Séance.</strong> Formulaire clinique, texte enrichi et plan de suivi.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- SCREENS GRID — Calendrier + Factures -->
+<section class="section alt">
+  <div class="inner screens-grid">
+    <figure class="screen-frame">
+      <div class="screen-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <img src="assets/screens/calendar.png" alt="Calendrier Synoria">
+      <figcaption class="caption"><strong>Calendrier.</strong> Planning du jour, rendez-vous et Google Calendar.</figcaption>
+    </figure>
+    <div class="screens-stack">
+      <div>
+        <div class="section-label">Planning &amp; finances</div>
+        <h2>Le cabinet reste organisé.</h2>
+        <p class="section-text">Rendez-vous, consultations réalisées et factures sont reliés au dossier patient pour garder une vision cohérente de l'activité.</p>
+      </div>
+      <figure class="screen-frame">
+        <div class="screen-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        <img src="assets/screens/billing.png" alt="Factures Synoria">
+        <figcaption class="caption"><strong>Factures.</strong> Suivi des montants, statuts et actions rapides.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- SÉCURITÉ -->
+<section class="section" id="securite">
+  <div class="inner">
+    <div class="section-head center">
+      <div class="section-label">Sécurité &amp; RGPD</div>
+      <h2>Les données restent chez le praticien.</h2>
+      <p class="section-text">Synoria est conçu pour une utilisation locale : mot de passe, chiffrement de la base, verrouillage automatique, sauvegardes chiffrées et registre RGPD intégré.</p>
+    </div>
+    <div class="security-grid">
+      <div class="security-card">
+        <div class="security-num">1</div>
+        <h3>Local</h3>
+        <p>Aucun cloud obligatoire. Les données ne quittent jamais le poste du praticien.</p>
+      </div>
+      <div class="security-card">
+        <div class="security-num">2</div>
+        <h3>Chiffré</h3>
+        <p>Base de données protégée par AES-256-GCM et dérivation PBKDF2 du mot de passe.</p>
+      </div>
+      <div class="security-card">
+        <div class="security-num">3</div>
+        <h3>RGPD</h3>
+        <p>Consentements patients, journal d'accès et registre de traitement Article 30.</p>
+      </div>
+      <div class="security-card">
+        <div class="security-num">4</div>
+        <h3>Sauvegardes</h3>
+        <p>Exports chiffrés, vérification d'intégrité et restauration des données.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TÉLÉCHARGEMENT -->
+<section class="section alt" id="telechargement">
+  <div class="inner">
+    <div class="section-head center">
+      <div class="section-label">Téléchargement</div>
+      <h2>Installer Synoria.</h2>
+      <p class="section-text">Disponible pour Windows 10/11 et macOS Intel et Apple Silicon. Téléchargement direct, aucun compte requis.</p>
+    </div>
+    <div class="download-grid">
+      <a class="download-card" href="../release/V1.5.3/Synoria%20Setup%201.5.3.exe">
+        <span class="dl-os">🪟</span>
+        <span class="dl-title">Windows — Installateur</span>
+        <span class="dl-desc">Installation classique pour Windows 10/11 64 bits avec raccourcis bureau et menu démarrer.</span>
+        <span class="btn btn-primary">Télécharger</span>
+      </a>
+      <a class="download-card" href="../release/V1.5.3/Synoria%201.5.3.exe">
+        <span class="dl-os">🪟</span>
+        <span class="dl-title">Windows — Portable</span>
+        <span class="dl-desc">Version sans installation, à lancer directement depuis n'importe quel dossier Windows.</span>
+        <span class="btn btn-primary">Télécharger</span>
+      </a>
+      <a class="download-card" href="../release/V1.5.3/Mac/Synoria-v1.5.3-universal.dmg">
+        <span class="dl-os">🍎</span>
+        <span class="dl-title">macOS — Intel &amp; Apple Silicon</span>
+        <span class="dl-desc">DMG compatible Mac Intel (avant fin 2020) et Apple Silicon M1/M2/M3.</span>
+        <span class="btn btn-primary">Télécharger</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">
+        <img src="assets/Synoria.png" alt="">
+        <span class="footer-brand-name">SYNORIA</span>
+      </div>
+      <p class="footer-desc">Logiciel de gestion de dossiers patients pour praticiens indépendants. Données locales, chiffrées et maîtrisées.</p>
+    </div>
+    <div>
+      <h4>Logiciel</h4>
+      <ul>
+        <li><a href="#fonctionnalites">Fonctionnalités</a></li>
+        <li><a href="#captures">Captures d'écran</a></li>
+        <li><a href="#securite">Sécurité &amp; RGPD</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Ressources</h4>
+      <ul>
+        <li><a href="../documentation_synoria_html/index.html">Documentation</a></li>
+        <li><a href="../GUIDE_INSTALLATION_CLIENT.html">Guide d'installation</a></li>
+        <li><a href="../LICENCE_SYSTEME.html">Licence</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Télécharger</h4>
+      <ul>
+        <li><a href="../release/V1.5.3/Synoria%20Setup%201.5.3.exe">Windows Setup</a></li>
+        <li><a href="../release/V1.5.3/Synoria%201.5.3.exe">Windows Portable</a></li>
+        <li><a href="../release/V1.5.3/Mac/Synoria-v1.5.3-universal.dmg">macOS</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Synoria — Logiciel de gestion de dossiers patients</span>
+    <span>Local · Chiffré · RGPD</span>
+  </div>
+</footer>
+
 </body>
 </html>
