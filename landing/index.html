@@ -131,7 +131,7 @@ h2{font-family:Georgia,"Times New Roman",serif;font-size:42px;font-weight:400;li
 .footer{background:#16211400;background:#172014;padding:52px 28px 28px}
 .footer-inner{max-width:var(--max);margin:0 auto;display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:32px;padding-bottom:32px;border-bottom:1px solid rgba(255,255,255,.08)}
 .footer-brand{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-.footer-brand-mark{width:10px;height:24px;border-radius:3px;background:#6a9b58;flex-shrink:0}
+.footer-brand-logo{width:36px;height:36px;object-fit:contain;filter:url(#remove-white-bg)}
 .footer-brand-name{font-family:Georgia,"Times New Roman",serif;font-size:18px;font-weight:700;color:#fff}
 .footer-desc{font-size:13px;color:rgba(255,255,255,.52);line-height:1.7;max-width:260px;margin:0}
 .footer h4{font-size:13px;font-weight:700;color:#fff;margin-bottom:12px}
@@ -189,6 +189,15 @@ h2{font-family:Georgia,"Times New Roman",serif;font-size:42px;font-weight:400;li
     </div>
   </div>
 </nav>
+
+<!-- Filtre SVG : suppression du fond blanc du logo pour usage sur fond sombre -->
+<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <defs>
+    <filter id="remove-white-bg">
+      <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  -1 -1 -1 3 0"/>
+    </filter>
+  </defs>
+</svg>
 
 <!-- HERO -->
 <header class="hero" id="accueil">
@@ -392,7 +401,7 @@ h2{font-family:Georgia,"Times New Roman",serif;font-size:42px;font-weight:400;li
   <div class="footer-inner">
     <div>
       <div class="footer-brand">
-        <span class="footer-brand-mark"></span>
+        <img class="footer-brand-logo" src="assets/Synoria.png" alt="">
         <span class="footer-brand-name">SYNORIA</span>
       </div>
       <p class="footer-desc">Logiciel de gestion de dossiers patients pour praticiens indépendants. Données locales, chiffrées et maîtrisées.</p>
