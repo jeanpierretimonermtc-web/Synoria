@@ -4,6 +4,7 @@ import type { AppSettings, BackupInfo, GoogleCalendarInfo, GCalCalendar } from '
 import type { PluginDefinition } from '../../shared/pluginTypes'
 import { ToastContext } from '../App'
 import { showConfirm } from '../components/common/ConfirmDialog'
+import PluginBuilder from '../components/plugin/PluginBuilder'
 
 // ── Helpers ───────────────────────────────────────────────────────
 
@@ -72,6 +73,9 @@ export default function SettingsPage() {
   const [activePlugin,  setActivePlugin]  = useState<PluginDefinition | null>(null)
   const [pluginLoading, setPluginLoading] = useState(false)
   const [pluginError,   setPluginError]   = useState('')
+  const [showBuilder,     setShowBuilder]     = useState(false)
+  const [builderInitial,  setBuilderInitial]  = useState<PluginDefinition | undefined>(undefined)
+  const [library,         setLibrary]         = useState<{ plugin: PluginDefinition; savedAt: string; isNative?: boolean }[]>([])
 
   // Google Calendar
   const [gcalInfo,        setGcalInfo]        = useState<GoogleCalendarInfo | null>(null)
@@ -169,7 +173,7 @@ export default function SettingsPage() {
         }
       }
       setGcalImportState(importMap)
-    } catch { showToast('Erreur chargement calendriers', 'error') }
+    } catch (e: any) { showToast(`Erreur chargement calendriers : ${e?.message || e}`, 'error') }
     setGcalLoading(false)
   }
 
@@ -192,6 +196,11 @@ export default function SettingsPage() {
     window.mtcApi.pluginGet().then(p => setActivePlugin(p || null)).catch(() => {})
     loadGcalStatus()
   }, [])
+
+  useEffect(() => {
+    if (activeTab !== 'plugin') return
+    window.mtcApi.pluginLibraryGet().then(lib => setLibrary(lib)).catch(() => {})
+  }, [activeTab])
 
   // ── Helpers save ────────────────────────────────────────────────
   const save = async (partial: Partial<AppSettings>) => {
@@ -349,6 +358,12 @@ export default function SettingsPage() {
       const plugin = await window.mtcApi.pluginImport(path)
       await window.mtcApi.pluginSet(plugin)
       setActivePlugin(plugin)
+      // Sauvegarde automatique comme entrée native (ignorée si déjà présente)
+      await window.mtcApi.pluginLibrarySaveNative(plugin)
+      setLibrary(lib => {
+        if (lib.some(e => e.plugin.id === plugin.id && e.isNative)) return lib
+        return [...lib, { plugin, savedAt: new Date().toISOString(), isNative: true }]
+      })
       showToast(`Plugin "${plugin.name}" v${plugin.version} installé ✓`, 'success')
     } catch (e: any) { setPluginError(e?.message || 'Erreur import plugin.') }
     setPluginLoading(false)
@@ -359,6 +374,51 @@ export default function SettingsPage() {
     await window.mtcApi.pluginRemove()
     setActivePlugin(null)
     showToast('Plugin supprimé — formulaire MTC restauré', 'success')
+  }
+
+  const handleSaveBuiltPlugin = async (plugin: PluginDefinition) => {
+    await window.mtcApi.pluginSet(plugin)
+    setActivePlugin(plugin)
+    setShowBuilder(false)
+    showToast(`Formulaire "${plugin.name}" enregistré ✓`, 'success')
+  }
+
+  const handleSaveToLibrary = async (plugin: PluginDefinition) => {
+    await window.mtcApi.pluginLibrarySave(plugin)
+    setLibrary(lib => {
+      const idx = lib.findIndex(e => e.plugin.id === plugin.id)
+      const entry = { plugin, savedAt: new Date().toISOString() }
+      if (idx >= 0) { const n = [...lib]; n[idx] = entry; return n }
+      return [...lib, entry]
+    })
+    showToast(`"${plugin.name}" sauvegardé dans la bibliothèque ✓`, 'success')
+  }
+
+  const handleLoadFromLibrary = async (plugin: PluginDefinition) => {
+    await window.mtcApi.pluginSet(plugin)
+    setActivePlugin(plugin)
+    showToast(`Formulaire "${plugin.name}" activé ✓`, 'success')
+  }
+
+  const handleEditFromLibrary = (entry: { plugin: PluginDefinition; isNative?: boolean }) => {
+    if (entry.isNative) {
+      // Clone avec un nouvel ID pour ne jamais écraser le natif
+      setBuilderInitial({
+        ...entry.plugin,
+        id:   entry.plugin.id + '_custom',
+        name: entry.plugin.name + ' (personnalisé)',
+      })
+    } else {
+      setBuilderInitial(entry.plugin)
+    }
+    setShowBuilder(true)
+  }
+
+  const handleDeleteFromLibrary = async (pluginId: string, pluginName: string) => {
+    if (!await showConfirm({ message: `Supprimer "${pluginName}" de la bibliothèque ?`, title: 'Supprimer', confirmLabel: 'Supprimer', danger: true })) return
+    await window.mtcApi.pluginLibraryDelete(pluginId)
+    setLibrary(lib => lib.filter(e => e.plugin.id !== pluginId))
+    showToast('Formulaire supprimé de la bibliothèque', 'success')
   }
 
   const handleGenerateDiagnostic = async () => {
@@ -1192,82 +1252,166 @@ export default function SettingsPage() {
               <div className="settings-tab-desc">Formulaire d'anamnèse selon votre spécialité thérapeutique</div>
             </div>
             <div className="settings-card">
-              <div className="settings-card-title">
-                <span className="card-title-icon icon-blue">🔌</span>
-                Spécialité active
-              </div>
 
-              {activePlugin ? (
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-                    <div style={{ fontSize: 36 }}>{activePlugin.icon || '🔌'}</div>
-                    <div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: activePlugin.accentColor || 'var(--accent)' }}>
-                        {activePlugin.name}
-                      </div>
-                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                        {activePlugin.specialty} · v{activePlugin.version}
-                        {activePlugin.author && ` · ${activePlugin.author}`}
-                      </div>
-                      {activePlugin.description && (
-                        <div style={{ fontSize: 12, color: 'var(--text-hint)', marginTop: 2 }}>{activePlugin.description}</div>
-                      )}
-                    </div>
+              {showBuilder ? (
+                <PluginBuilder
+                  initial={builderInitial}
+                  onSave={handleSaveBuiltPlugin}
+                  onCancel={() => setShowBuilder(false)}
+                  onSaveToLibrary={handleSaveToLibrary}
+                />
+              ) : (
+                <>
+                  <div className="settings-card-title">
+                    <span className="card-title-icon icon-blue">🔌</span>
+                    Spécialité active
                   </div>
 
-                  {activePlugin.useBuiltinForm ? (
-                    <div style={{ background: 'var(--accent-light)', border: '1px solid var(--border-soft)', borderRadius: 8, padding: '10px 14px', marginBottom: 12, fontSize: 12, color: 'var(--accent)' }}>
-                      ✅ <strong>Formulaire MTC intégré complet actif</strong> — interrogatoire, langue, pouls, observation, diagnostic, traitement, barrage homéopathique, systèmes, tests énergétiques.
+                  {activePlugin ? (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+                        <div style={{ fontSize: 36 }}>{activePlugin.icon || '🔌'}</div>
+                        <div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: activePlugin.accentColor || 'var(--accent)' }}>
+                            {activePlugin.name}
+                          </div>
+                          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                            {activePlugin.specialty} · v{activePlugin.version}
+                            {activePlugin.author && ` · ${activePlugin.author}`}
+                          </div>
+                          {activePlugin.description && (
+                            <div style={{ fontSize: 12, color: 'var(--text-hint)', marginTop: 2 }}>{activePlugin.description}</div>
+                          )}
+                        </div>
+                      </div>
+
+                      {activePlugin.useBuiltinForm ? (
+                        <div style={{ background: 'var(--accent-light)', border: '1px solid var(--border-soft)', borderRadius: 8, padding: '10px 14px', marginBottom: 12, fontSize: 12, color: 'var(--accent)' }}>
+                          ✅ <strong>Formulaire MTC intégré complet actif</strong> — interrogatoire, langue, pouls, observation, diagnostic, traitement, barrage homéopathique, systèmes, tests énergétiques.
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
+                          <strong>{activePlugin.sections.length} section{activePlugin.sections.length > 1 ? 's' : ''}</strong> ·{' '}
+                          <strong>{activePlugin.sections.reduce((n, s) => n + s.fields.filter(f => f.type !== 'separator').length, 0)} champs</strong>
+                          <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                            {activePlugin.sections.map(s => (
+                              <span key={s.id} style={{ background: (s.accentColor || 'var(--accent)') + '22', border: `1px solid ${s.accentColor || 'var(--accent)'}44`, color: s.accentColor || 'var(--accent)', borderRadius: 10, padding: '2px 8px', fontSize: 11, fontWeight: 600 }}>
+                                {s.icon} {s.title}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="settings-actions">
+                        {!activePlugin.useBuiltinForm && (
+                          <button className="btn btn-secondary btn-sm" onClick={() => { setBuilderInitial(activePlugin!); setShowBuilder(true) }}>
+                            ✏️ Modifier le formulaire
+                          </button>
+                        )}
+                        <button className="btn btn-secondary btn-sm" onClick={handleImportPlugin} disabled={pluginLoading}>📥 Remplacer</button>
+                        <button className="btn btn-secondary btn-sm" style={{ color: 'var(--red)' }} onClick={handleRemovePlugin}>✕ Supprimer</button>
+                      </div>
                     </div>
                   ) : (
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
-                      <strong>{activePlugin.sections.length} section{activePlugin.sections.length > 1 ? 's' : ''}</strong> ·{' '}
-                      <strong>{activePlugin.sections.reduce((n, s) => n + s.fields.filter(f => f.type !== 'separator').length, 0)} champs</strong>
-                      <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                        {activePlugin.sections.map(s => (
-                          <span key={s.id} style={{ background: (s.accentColor || 'var(--accent)') + '22', border: `1px solid ${s.accentColor || 'var(--accent)'}44`, color: s.accentColor || 'var(--accent)', borderRadius: 10, padding: '2px 8px', fontSize: 11, fontWeight: 600 }}>
-                            {s.icon} {s.title}
-                          </span>
-                        ))}
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, padding: '10px 14px', background: 'var(--accent-light)', borderRadius: 8, border: '1px solid var(--border-soft)' }}>
+                        <span style={{ fontSize: 22 }}>🌿</span>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--accent)' }}>Formulaire générique simple actif</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Anamnèse · Traitement effectué · Résultats &amp; Réactions</div>
+                        </div>
+                      </div>
+                      <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.6 }}>
+                        Créez votre propre formulaire de spécialité, ou importez un fichier <code>.json</code> de plugin existant.
+                      </p>
+                      <div className="settings-actions">
+                        <button className="btn btn-primary btn-sm" onClick={() => { setBuilderInitial(undefined); setShowBuilder(true) }}>
+                          ✏️ Créer mon formulaire
+                        </button>
+                        <button className="btn btn-secondary btn-sm" onClick={handleImportPlugin} disabled={pluginLoading}>
+                          {pluginLoading ? '⏳ Import…' : '📥 Importer un plugin (.json)'}
+                        </button>
                       </div>
                     </div>
                   )}
 
-                  <div className="settings-actions">
-                    <button className="btn btn-secondary btn-sm" onClick={handleImportPlugin} disabled={pluginLoading}>📥 Remplacer le plugin</button>
-                    <button className="btn btn-secondary btn-sm" style={{ color: 'var(--red)' }} onClick={handleRemovePlugin}>✕ Supprimer le plugin</button>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, padding: '10px 14px', background: 'var(--accent-light)', borderRadius: 8, border: '1px solid var(--border-soft)' }}>
-                    <span style={{ fontSize: 22 }}>🌿</span>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--accent)' }}>Formulaire générique simple actif</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Anamnèse · Traitement effectué · Résultats &amp; Réactions</div>
+                  {pluginError && (
+                    <div style={{ color: 'var(--red)', fontSize: 13, marginTop: 10, padding: '8px 12px', background: '#FEF0F0', borderRadius: 8 }}>
+                      ⚠️ {pluginError}
                     </div>
+                  )}
+                  <div className="settings-enc-note">
+                    Le plugin ne modifie pas la base de données. Les données restent accessibles même si le plugin change.
                   </div>
-                  <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.6 }}>
-                    Importez un fichier <code>.json</code> de plugin pour adapter le formulaire de séance
-                    à votre spécialité (MTC, Kinésiologie, Ostéopathie, Naturopathie…).
-                  </p>
-                  <div className="settings-actions">
-                    <button className="btn btn-primary btn-sm" onClick={handleImportPlugin} disabled={pluginLoading}>
-                      {pluginLoading ? '⏳ Import…' : '📥 Importer un plugin (.json)'}
-                    </button>
-                  </div>
-                </div>
+                </>
               )}
-
-              {pluginError && (
-                <div style={{ color: 'var(--red)', fontSize: 13, marginTop: 10, padding: '8px 12px', background: '#FEF0F0', borderRadius: 8 }}>
-                  ⚠️ {pluginError}
-                </div>
-              )}
-              <div className="settings-enc-note">
-                Le plugin ne modifie pas la base de données. Les données restent accessibles même si le plugin change.
-              </div>
             </div>
+
+            {/* ── Bibliothèque de formulaires ── */}
+            {!showBuilder && library.length > 0 && (
+              <div className="settings-card" style={{ marginTop: 16 }}>
+                <div className="settings-card-title">
+                  <span className="card-title-icon" style={{ background: '#EEF2FF' }}>📚</span>
+                  Bibliothèque de formulaires
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {library.map(entry => {
+                    const p = entry.plugin
+                    const fieldCount = p.sections.reduce((n, s) => n + s.fields.filter(f => f.type !== 'separator').length, 0)
+                    return (
+                      <div key={p.id + (entry.isNative ? '_n' : '_c')} style={{
+                        display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
+                        background: entry.isNative ? 'var(--accent-light)' : 'var(--surface)',
+                        borderRadius: 8,
+                        border: entry.isNative ? '1px solid var(--border)' : '1px solid var(--border-soft)',
+                      }}>
+                        <div style={{ fontSize: 28, flexShrink: 0 }}>{p.icon || '📋'}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                            <span style={{ fontWeight: 700, fontSize: 13, color: p.accentColor || 'var(--accent)' }}>
+                              {p.name}
+                            </span>
+                            {entry.isNative ? (
+                              <span style={{ fontSize: 10, fontWeight: 700, background: 'var(--accent)', color: '#fff', borderRadius: 10, padding: '1px 7px' }}>
+                                🔒 Natif
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: 10, fontWeight: 700, background: 'var(--border)', color: 'var(--text-muted)', borderRadius: 10, padding: '1px 7px' }}>
+                                ✏️ Personnalisé
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                            {p.specialty} · {p.sections.length} section{p.sections.length > 1 ? 's' : ''} · {fieldCount} champ{fieldCount > 1 ? 's' : ''}
+                          </div>
+                          <div style={{ fontSize: 10, color: 'var(--text-hint)', marginTop: 2 }}>
+                            {entry.isNative ? 'Importé le' : 'Sauvegardé le'} {fmtDate(entry.savedAt)}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                          <button className="btn btn-secondary btn-sm" onClick={() => handleLoadFromLibrary(p)}>
+                            ✅ Charger
+                          </button>
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            title={entry.isNative ? 'Crée une copie personnalisée' : 'Modifier'}
+                            onClick={() => handleEditFromLibrary(entry)}
+                          >
+                            {entry.isNative ? '📋 Copier' : '✏️ Modifier'}
+                          </button>
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            style={{ color: 'var(--red)' }}
+                            onClick={() => handleDeleteFromLibrary(p.id, p.name)}
+                          >✕</button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

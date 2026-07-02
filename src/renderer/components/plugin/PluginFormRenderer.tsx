@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import type { PluginDefinition, PluginSection, PluginField } from '../../../shared/pluginTypes'
+import type { PluginCondition, PluginDefinition, PluginSection, PluginField } from '../../../shared/pluginTypes'
 import RichTextArea from '../common/RichTextArea'
 import {
   osteoAnatomyBackImage,
@@ -7,6 +7,36 @@ import {
   osteoAnatomyLeftImage,
   osteoAnatomyRightImage,
 } from '../../assets/bodycharts/bodychartImages.generated'
+
+function evaluateCondition(condition: PluginCondition, data: Record<string, any>): boolean {
+  const currentValue = data[condition.fieldId]
+  const operator = condition.operator || 'truthy'
+
+  switch (operator) {
+    case 'eq':
+      return currentValue === condition.value
+    case 'neq':
+      return currentValue !== condition.value
+    case 'includes':
+      if (Array.isArray(currentValue)) return currentValue.includes(condition.value)
+      if (typeof currentValue === 'string' && typeof condition.value === 'string') return currentValue.includes(condition.value)
+      return false
+    case 'excludes':
+      if (Array.isArray(currentValue)) return !currentValue.includes(condition.value)
+      if (typeof currentValue === 'string' && typeof condition.value === 'string') return !currentValue.includes(condition.value)
+      return false
+    case 'falsy':
+      return !currentValue
+    case 'truthy':
+    default:
+      return !!currentValue
+  }
+}
+
+function isVisible(conditions: PluginCondition[] | undefined, data: Record<string, any>): boolean {
+  if (!conditions || conditions.length === 0) return true
+  return conditions.every(condition => evaluateCondition(condition, data))
+}
 
 // ── COMPOSANT PRINCIPAL ────────────────────────────────────────────────────
 
@@ -42,14 +72,16 @@ export default function PluginFormRenderer({ plugin, data, onChange }: RendererP
         </div>
       </div>
 
-      {plugin.sections.map(section => (
-        <PluginSectionCard
-          key={section.id}
-          section={section}
-          data={data}
-          onChange={onChange}
-        />
-      ))}
+      {plugin.sections
+        .filter(section => isVisible(section.visibleWhen, data))
+        .map(section => (
+          <PluginSectionCard
+            key={section.id}
+            section={section}
+            data={data}
+            onChange={onChange}
+          />
+        ))}
     </div>
   )
 }
@@ -90,6 +122,8 @@ function FieldsGrid({ fields, data, onChange }: {
   data: Record<string, any>
   onChange: (id: string, value: any) => void
 }) {
+  const visibleFields = fields.filter(field => isVisible(field.visibleWhen, data))
+
   // ── Regroupement ─────────────────────────────────────────────────────────
   // Règles :
   //   "full" (défaut)  → rangée seule, largeur 100 %
@@ -105,7 +139,7 @@ function FieldsGrid({ fields, data, onChange }: {
     if (currentRow.length) { rows.push(currentRow); currentRow = []; currentWidth = null }
   }
 
-  for (const field of fields) {
+  for (const field of visibleFields) {
     if (field.type === 'separator') { flush(); rows.push([field]); continue }
 
     const w = field.width || 'full'

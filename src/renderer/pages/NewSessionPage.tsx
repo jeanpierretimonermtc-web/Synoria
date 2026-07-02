@@ -268,8 +268,11 @@ export default function NewSessionPage() {
   const showToast = useContext(ToastContext)
   const isEditing = !!editSessionId
 
+  const urlApptId = searchParams.get('apptId') || ''
+
   const [patients, setPatients] = useState<Patient[]>([])
   const [patientId, setPatientId] = useState(routePatientId || '')
+  const [currentApptId, setCurrentApptId] = useState(urlApptId)
   const [sessionNum, setSessionNum] = useState(1)
   const [date, setDate] = useState(() => searchParams.get('date') || new Date().toISOString().slice(0, 10))
   const [practitioner, setPractitioner] = useState('')
@@ -340,7 +343,7 @@ export default function NewSessionPage() {
   const [clotureTypes,     setClotureTypes]     = useState<ConsultationType[]>([])
   const [currentMonthNb,   setCurrentMonthNb]   = useState<number | null>(null)
   // Brouillon auto-sauvegardé
-  const [draftInfo, setDraftInfo] = useState<{ patientName: string; date: string } | null>(null)
+  const [draftInfo, setDraftInfo] = useState<{ patientName: string; date: string; autoRestored?: boolean } | null>(null)
   // Systèmes
   const [systemes, setSystemes] = useState<SystemesQuestionnaire>(defaultSystemes())
   // Tests énergétiques
@@ -400,6 +403,22 @@ export default function NewSessionPage() {
     if (routePatientId) setPatientId(routePatientId)
   }, [routePatientId])
 
+  // Si on arrive depuis un RDV (Dashboard ou Calendrier), charger le RDV pour
+  // remplir le patient et pré-cocher "Marquer comme réalisé"
+  useEffect(() => {
+    if (!urlApptId || isEditing) return
+    window.mtcApi.getAppointments().then(all => {
+      const appt = all.find(a => a.id === urlApptId)
+      if (!appt) return
+      setCurrentApptId(appt.id)
+      setMarkRdvDone(true)
+      // Remplir le patient si l'URL ne le contenait pas
+      if (!routePatientId && appt.patient_id) {
+        setPatientId(appt.patient_id)
+      }
+    }).catch(() => {})
+  }, [urlApptId, isEditing, routePatientId])
+
   // Charge les RDV calendrier du patient (non réalisés, à venir)
   useEffect(() => {
     if (!patientId) { setPatientAppts([]); return }
@@ -427,46 +446,158 @@ export default function NewSessionPage() {
     })
   }, [patientId, isEditing, editSessionId])
 
-  // ─── DÉTECTION DU BROUILLON AU DÉMARRAGE ──────────────────────
+  // ─── AUTO-SAUVEGARDE ──────────────────────────────────────────
   const DRAFT_KEY = 'mtc_session_draft'
+
+  // Ref toujours à jour — évite les stale closures dans blur/unmount
+  const draftRef = useRef<Record<string, unknown>>({})
   useEffect(() => {
-    if (isEditing) return // pas de brouillon en mode édition
+    if (isEditing) return
+    draftRef.current = {
+      patientId, date, practitioner, motif, evolutionTags, evolution, problematiques,
+      anamnese, simpleContextVie, simpleTraitementsEnCours, simpleObjectifs, simpleNotesEntretien,
+      langue, langueNote, pouls, poulsNote, poulsPos, constitution, typeCorps, teint, observation,
+      diagnostic, cinqElements, causes, analyse, principes,
+      points, ptsOreille, techniques, plantes, reactions, traitementNotes,
+      conseils, plan, surveiller,
+      nextSession, nextSessionHeure, nextSessionFin, nextSessionNote, nextSessionApptId,
+      barrageNiv1, barrageNiv2, barrageNiv3, barrageNiv4,
+      systemes, energy, pluginData,
+      _savedAt: Date.now(),
+    }
+  }, [isEditing, patientId, date, practitioner, motif, evolutionTags, evolution, problematiques,
+      anamnese, simpleContextVie, simpleTraitementsEnCours, simpleObjectifs, simpleNotesEntretien,
+      langue, langueNote, pouls, poulsNote, poulsPos, constitution, typeCorps, teint, observation,
+      diagnostic, cinqElements, causes, analyse, principes,
+      points, ptsOreille, techniques, plantes, reactions, traitementNotes,
+      conseils, plan, surveiller,
+      nextSession, nextSessionHeure, nextSessionFin, nextSessionNote, nextSessionApptId,
+      barrageNiv1, barrageNiv2, barrageNiv3, barrageNiv4,
+      systemes, energy, pluginData])
+
+  const saveDraftNow = useCallback(() => {
+    const d = draftRef.current
+    if (!d?.patientId) return
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)) } catch {}
+  }, [])
+
+  // 1. Sauvegarde synchrone au DÉMONTAGE du composant
+  //    C'est la seule garantie pour le verrou inactif (pas de blur OS, pas de visibilitychange)
+  //    isEditing est stable pendant le cycle de vie → safe dans un [] cleanup
+  useEffect(() => {
+    return () => {
+      if (isEditing) return
+      const d = draftRef.current
+      if (!d?.patientId) return
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)) } catch {}
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // [] → cleanup uniquement au démontage final
+
+  // 2. Debounce 4 s après chaque changement (frappe normale sans lock)
+  useEffect(() => {
+    if (isEditing || !patientId) return
+    const t = setTimeout(saveDraftNow, 4_000)
+    return () => clearTimeout(t)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditing, patientId, date, practitioner, motif, evolutionTags, evolution, problematiques,
+      anamnese, simpleContextVie, simpleTraitementsEnCours, simpleObjectifs, simpleNotesEntretien,
+      langue, langueNote, pouls, poulsNote, poulsPos, constitution, typeCorps, teint, observation,
+      diagnostic, cinqElements, causes, analyse, principes,
+      points, ptsOreille, techniques, plantes, reactions, traitementNotes,
+      conseils, plan, surveiller,
+      nextSession, nextSessionHeure, nextSessionFin, nextSessionNote, nextSessionApptId,
+      barrageNiv1, barrageNiv2, barrageNiv3, barrageNiv4,
+      systemes, energy, pluginData, saveDraftNow])
+
+  // 3. Perte de focus OS (alt-tab, minimiser) → sauvegarde immédiate
+  useEffect(() => {
+    if (isEditing) return
+    const onHide = () => saveDraftNow()
+    window.addEventListener('blur', onHide)
+    document.addEventListener('visibilitychange', onHide)
+    return () => {
+      window.removeEventListener('blur', onHide)
+      document.removeEventListener('visibilitychange', onHide)
+    }
+  }, [isEditing, saveDraftNow])
+
+  // 4. Filet de sécurité : intervalle toutes les 30 s
+  useEffect(() => {
+    if (isEditing) return
+    const id = setInterval(saveDraftNow, 30_000)
+    return () => clearInterval(id)
+  }, [isEditing, saveDraftNow])
+
+  // ─── DÉTECTION DU BROUILLON AU DÉMARRAGE ──────────────────────
+  useEffect(() => {
+    if (isEditing) return
     try {
       const raw = localStorage.getItem(DRAFT_KEY)
       if (!raw) return
       const d = JSON.parse(raw)
-      if (d.patientId) {
+      if (!d.patientId) return
+      const savedAt = d._savedAt ? Date.now() - d._savedAt : Infinity
+      const isRecent = savedAt < 4 * 60 * 60 * 1000 // moins de 4 heures
+      // Auto-restaure si : même patient que l'URL, ou retour après verrou (pas de patient dans l'URL)
+      const samePatient = d.patientId === routePatientId
+      const freshStart  = !routePatientId && !urlApptId
+      if (isRecent && (samePatient || freshStart)) {
+        // Restauration silencieuse — pas de bannière, pas de question
+        setPatientId(d.patientId || '')
+        setDate(d.date || new Date().toISOString().slice(0, 10))
+        setPractitioner(d.practitioner || '')
+        setMotif(d.motif || '')
+        setEvolutionTags(d.evolutionTags || [])
+        setEvolution(d.evolution || '')
+        setLangue(d.langue || [])
+        setLangueNote(d.langueNote || '')
+        setPouls(d.pouls || [])
+        setPoulsNote(d.poulsNote || '')
+        if (d.poulsPos) setPoulsPos(prev => ({ ...prev, ...d.poulsPos }))
+        setConstitution(d.constitution || '')
+        setTypeCorps(d.typeCorps || '')
+        setTeint(d.teint || '')
+        setObservation(d.observation || '')
+        setDiagnostic(d.diagnostic || '')
+        setCinqElements(d.cinqElements || '')
+        setCauses(d.causes || '')
+        setAnalyse(d.analyse || '')
+        setPrincipes(d.principes || '')
+        setPoints(d.points || '')
+        setPtsOreille(d.ptsOreille || '')
+        setTechniques(d.techniques || [])
+        setPlantes(d.plantes || '')
+        setReactions(d.reactions || '')
+        setTraitementNotes(d.traitementNotes || '')
+        setConseils(d.conseils || '')
+        setPlan(d.plan || '')
+        setSurveiller(d.surveiller || '')
+        setNextSession(d.nextSession || '')
+        setNextSessionHeure(d.nextSessionHeure || '09:00')
+        setNextSessionFin(d.nextSessionFin || '')
+        setNextSessionNote(d.nextSessionNote || '')
+        setNextSessionApptId(d.nextSessionApptId || '')
+        setPluginData(d.pluginData || {})
+        setAnamnese(d.anamnese || '')
+        setSimpleContextVie(d.simpleContextVie || '')
+        setSimpleTraitementsEnCours(d.simpleTraitementsEnCours || '')
+        setSimpleObjectifs(d.simpleObjectifs || '')
+        setSimpleNotesEntretien(d.simpleNotesEntretien || '')
+        setBarrageNiv1(d.barrageNiv1 || '')
+        setBarrageNiv2(d.barrageNiv2 || '')
+        setBarrageNiv3(d.barrageNiv3 || '')
+        setBarrageNiv4(d.barrageNiv4 || '')
+        if (d.systemes) setSystemes(migrateSystemes(d.systemes))
+        if (d.energy)   setEnergy({ ...defaultEnergyTests(), ...d.energy })
+        setDraftInfo({ patientName: d.patientId, date: d.date || '', autoRestored: true })
+      } else if (d.patientId) {
+        // Brouillon d'un autre patient ou trop ancien → bannière manuelle
         setDraftInfo({ patientName: d.patientId, date: d.date || '' })
       }
     } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  // ─── AUTO-SAUVEGARDE TOUTES LES 60 SECONDES ───────────────────
-  useEffect(() => {
-    if (isEditing) return
-    const interval = setInterval(() => {
-      if (!patientId) return
-      try {
-        localStorage.setItem(DRAFT_KEY, JSON.stringify({
-          patientId, date, practitioner, motif, evolutionTags, evolution, problematiques,
-          anamnese,
-          langue, langueNote, pouls, poulsNote, poulsPos, constitution, typeCorps, teint, observation,
-          diagnostic, cinqElements, causes, analyse, principes,
-          points, ptsOreille, techniques, plantes, reactions, traitementNotes,
-          conseils, plan, surveiller, nextSession,
-          barrageNiv1, barrageNiv2, barrageNiv3, barrageNiv4,
-          systemes, energy
-        }))
-      } catch {}
-    }, 60_000)
-    return () => clearInterval(interval)
-  }, [isEditing, patientId, date, practitioner, motif, evolutionTags, evolution, problematiques,
-      anamnese,
-      langue, langueNote, pouls, poulsNote, poulsPos, constitution, typeCorps, teint, observation,
-      diagnostic, cinqElements, causes, analyse, principes,
-      points, ptsOreille, techniques, plantes, reactions, traitementNotes,
-      conseils, plan, surveiller, nextSession,
-      barrageNiv1, barrageNiv2, barrageNiv3, barrageNiv4])
 
   // ─── CHARGEMENT SÉANCE EXISTANTE (mode édition) ────────────────
   useEffect(() => {
@@ -682,10 +813,12 @@ export default function NewSessionPage() {
 
       // ── Clôture séance : marquer RDV réalisé + comptabilité ───────
       if (markRdvDone) {
-        // Cherche le RDV lié ou un RDV de ce patient à la date de la séance
+        // Priorité : RDV venant du Dashboard/Calendrier (currentApptId),
+        // sinon RDV du patient à la même date, sinon le RDV du nextSession
         const rdvToClose =
-          patientAppts.find(a => a.id === resolvedApptId) ??
-          patientAppts.find(a => a.date === date && !a.is_done)
+          (currentApptId ? patientAppts.find(a => a.id === currentApptId) : null) ??
+          patientAppts.find(a => a.date === date && !a.is_done) ??
+          patientAppts.find(a => a.id === resolvedApptId)
         if (rdvToClose) {
           try { await window.mtcApi.updateAppointment(rdvToClose.id, { is_done: 1 }) }
           catch { /* silencieux */ }
@@ -860,14 +993,26 @@ export default function NewSessionPage() {
         {/* BANDEAU BROUILLON */}
         {draftInfo && !isEditing && (
           <div className="draft-banner">
-            <span>💾 Brouillon trouvé — séance du {draftInfo.date || '?'}</span>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-primary btn-sm" onClick={restoreDraft}>Restaurer</button>
-              <button className="btn btn-secondary btn-sm" onClick={() => {
-                try { localStorage.removeItem(DRAFT_KEY) } catch {}
-                setDraftInfo(null)
-              }}>Ignorer</button>
-            </div>
+            {draftInfo.autoRestored ? (
+              <>
+                <span>✅ Brouillon restauré automatiquement — séance du {draftInfo.date || '?'}</span>
+                <button className="btn btn-secondary btn-sm" onClick={() => {
+                  try { localStorage.removeItem(DRAFT_KEY) } catch {}
+                  setDraftInfo(null)
+                }}>Ignorer</button>
+              </>
+            ) : (
+              <>
+                <span>💾 Brouillon trouvé — séance du {draftInfo.date || '?'}</span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn btn-primary btn-sm" onClick={restoreDraft}>Restaurer</button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => {
+                    try { localStorage.removeItem(DRAFT_KEY) } catch {}
+                    setDraftInfo(null)
+                  }}>Ignorer</button>
+                </div>
+              </>
+            )}
           </div>
         )}
         {/* TOP ACTIONS */}

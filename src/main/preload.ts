@@ -99,10 +99,14 @@ const api: IpcApi = {
   getRgpdAlerts:            ()                    => ipcRenderer.invoke('rgpd:getAlerts'),
   exportTraitementRegister: ()                    => ipcRenderer.invoke('rgpd:exportRegister'),
   // Plugin
-  pluginGet:    ()       => ipcRenderer.invoke('plugin:get'),
-  pluginSet:    (def)    => ipcRenderer.invoke('plugin:set', def),
-  pluginRemove: ()       => ipcRenderer.invoke('plugin:remove'),
-  pluginImport: (path)   => ipcRenderer.invoke('plugin:import', path),
+  pluginGet:           ()         => ipcRenderer.invoke('plugin:get'),
+  pluginSet:           (def)      => ipcRenderer.invoke('plugin:set', def),
+  pluginRemove:        ()         => ipcRenderer.invoke('plugin:remove'),
+  pluginImport:        (path)     => ipcRenderer.invoke('plugin:import', path),
+  pluginLibraryGet:        ()       => ipcRenderer.invoke('plugin:libraryGet'),
+  pluginLibrarySave:       (plugin) => ipcRenderer.invoke('plugin:librarySave', plugin),
+  pluginLibrarySaveNative: (plugin) => ipcRenderer.invoke('plugin:librarySaveNative', plugin),
+  pluginLibraryDelete:     (id)     => ipcRenderer.invoke('plugin:libraryDelete', id),
   getDataPath:       ()          => ipcRenderer.invoke('app:dataPath'),
   setMenuBarVisible: (v: boolean)=> ipcRenderer.invoke('win:setMenuBarVisible', v),
   onFormatPopup: (cb: (pos: { x: number; y: number }) => void) => {

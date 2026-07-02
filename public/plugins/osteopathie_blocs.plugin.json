@@ -1,0 +1,213 @@
+{
+  "id": "osteopathie_blocs",
+  "name": "Ostéopathie — Blocs sélectionnables",
+  "specialty": "Ostéopathie",
+  "version": "1.0.0",
+  "description": "Anamnèse ostéopathique avec sélection de blocs cliniques. Seules les sections choisies sont affichées.",
+  "icon": "🦴",
+  "accentColor": "#6F7F8F",
+
+  "sections": [
+    {
+      "id": "choix_blocs",
+      "title": "1. Choisissez les blocs à remplir",
+      "icon": "✅",
+      "accentColor": "#6F7F8F",
+      "fields": [
+        {
+          "id": "selectedBlocs",
+          "type": "checkboxgroup",
+          "label": "Blocs cliniques",
+          "options": [
+            "Cou",
+            "Dorsal",
+            "Pelvis",
+            "Cranien"
+          ],
+          "width": "full",
+          "hint": "Cochez uniquement les blocs pertinents pour cette séance."
+        }
+      ]
+    },
+
+    {
+      "id": "bloc_cou",
+      "title": "Bloc : Cou",
+      "icon": "🧠",
+      "accentColor": "#8A5A5A",
+      "visibleWhen": [
+        {
+          "fieldId": "selectedBlocs",
+          "operator": "includes",
+          "value": "Cou"
+        }
+      ],
+      "fields": [
+        {
+          "id": "cou_historique",
+          "type": "richtext",
+          "label": "Historique du cou",
+          "placeholder": "Description des douleurs cervicales, torticolis, traumatisme ou posture...",
+          "width": "full",
+          "minHeight": 100
+        },
+        {
+          "id": "cou_douleur",
+          "type": "rating",
+          "label": "Intensité de la douleur cervicale",
+          "min": 0,
+          "max": 10,
+          "width": "third",
+          "hint": "0 = aucune, 10 = maximale"
+        },
+        {
+          "id": "cou_restriction",
+          "type": "checkboxgroup",
+          "label": "Restrictions de mobilité",
+          "options": [
+            "Rotation droite",
+            "Rotation gauche",
+            "Inclinaison droite",
+            "Inclinaison gauche",
+            "Flexion",
+            "Extension"
+          ],
+          "width": "full"
+        }
+      ]
+    },
+
+    {
+      "id": "bloc_dorsal",
+      "title": "Bloc : Dorsal",
+      "icon": "🫀",
+      "accentColor": "#5F8A9B",
+      "visibleWhen": [
+        {
+          "fieldId": "selectedBlocs",
+          "operator": "includes",
+          "value": "Dorsal"
+        }
+      ],
+      "fields": [
+        {
+          "id": "dorsal_localisation",
+          "type": "richtext",
+          "label": "Localisation et trajet",
+          "placeholder": "Segment dorsal, irradiation, douleur intercostale, relation avec la respiration...",
+          "width": "full",
+          "minHeight": 100
+        },
+        {
+          "id": "dorsal_facteurs",
+          "type": "richtext",
+          "label": "Facteurs aggravants / soulageants",
+          "placeholder": "Position assise, charge, respiration, mouvement, repos...",
+          "width": "full",
+          "minHeight": 90
+        }
+      ]
+    },
+
+    {
+      "id": "bloc_pelvis",
+      "title": "Bloc : Pelvis",
+      "icon": "🦴",
+      "accentColor": "#7A9E7E",
+      "visibleWhen": [
+        {
+          "fieldId": "selectedBlocs",
+          "operator": "includes",
+          "value": "Pelvis"
+        }
+      ],
+      "fields": [
+        {
+          "id": "pelvis_symptomes",
+          "type": "richtext",
+          "label": "Symptomatologie pelvienne",
+          "placeholder": "Douleur sacro-iliaque, pubienne, lombaire, troubles digestifs, urinaires...",
+          "width": "full",
+          "minHeight": 100
+        },
+        {
+          "id": "pelvis_stabilite",
+          "type": "radio",
+          "label": "Stabilité pelvienne",
+          "options": [
+            "Stable",
+            "Instable",
+            "Sensibilité seulement",
+            "Impression de blocage"
+          ],
+          "width": "full"
+        }
+      ]
+    },
+
+    {
+      "id": "bloc_cranien",
+      "title": "Bloc : Crânien",
+      "icon": "🧠",
+      "accentColor": "#B18F5A",
+      "visibleWhen": [
+        {
+          "fieldId": "selectedBlocs",
+          "operator": "includes",
+          "value": "Cranien"
+        }
+      ],
+      "fields": [
+        {
+          "id": "cranien_observations",
+          "type": "richtext",
+          "label": "Observations crâniennes",
+          "placeholder": "Sensations de pression, maux de tête, acouphènes, vertiges, visage, mâchoire...",
+          "width": "full",
+          "minHeight": 100
+        },
+        {
+          "id": "cranien_bilan",
+          "type": "richtext",
+          "label": "Bilan fonctionnel crânien",
+          "placeholder": "Réactivité, asymétrie, mobilité des sutures, relation occiput/atlas...",
+          "width": "full",
+          "minHeight": 90
+        }
+      ]
+    },
+
+    {
+      "id": "analyse_traitement",
+      "title": "Analyse et traitement",
+      "icon": "🩺",
+      "accentColor": "#6F7F8F",
+      "fields": [
+        {
+          "id": "analyse_osteopathique",
+          "type": "richtext",
+          "label": "Analyse ostéopathique",
+          "placeholder": "Points clés diagnostiques, lien structure-fonction, tensions préférentielles...",
+          "width": "full",
+          "minHeight": 100
+        },
+        {
+          "id": "traitement_propose",
+          "type": "richtext",
+          "label": "Traitement proposé",
+          "placeholder": "Techniques utilisées, manipulations, mobilisations, conseils posturaux...",
+          "width": "full",
+          "minHeight": 100
+        },
+        {
+          "id": "suivi_recommandations",
+          "type": "richtext",
+          "label": "Recommandations et suivi",
+          "placeholder": "Conseils, exercices, modalités de suivi, rendez-vous recommandé...",
+          "width": "full",
+          "minHeight": 80
+        }
+      ]
+    }
+  ]
+}

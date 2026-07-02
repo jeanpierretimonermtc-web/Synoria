@@ -622,10 +622,14 @@ export function registerAllHandlers(): void {
   // ─────────────────────────────────────────────────────────────────────────
 
   // ── Plugin spécialité ──────────────────────────────────────────────────
-  ipcMain.handle('plugin:get',    ()            => pluginSvc.getActivePlugin())
-  ipcMain.handle('plugin:set',    (_e, def)     => pluginSvc.setActivePlugin(def))
-  ipcMain.handle('plugin:remove', ()            => pluginSvc.removePlugin())
-  ipcMain.handle('plugin:import', (_e, path)    => pluginSvc.importPluginFromFile(path))
+  ipcMain.handle('plugin:get',           ()           => pluginSvc.getActivePlugin())
+  ipcMain.handle('plugin:set',           (_e, def)    => pluginSvc.setActivePlugin(def))
+  ipcMain.handle('plugin:remove',        ()           => pluginSvc.removePlugin())
+  ipcMain.handle('plugin:import',        (_e, path)   => pluginSvc.importPluginFromFile(path))
+  ipcMain.handle('plugin:libraryGet',        ()           => pluginSvc.getPluginLibrary())
+  ipcMain.handle('plugin:librarySave',       (_e, plugin) => pluginSvc.savePluginToLibrary(plugin))
+  ipcMain.handle('plugin:librarySaveNative', (_e, plugin) => pluginSvc.saveNativePluginToLibrary(plugin))
+  ipcMain.handle('plugin:libraryDelete',     (_e, id)     => pluginSvc.deletePluginFromLibrary(id))
   // ─────────────────────────────────────────────────────────────────────────
 
   ipcMain.handle('shell:openPath',      (_e, path)    => shell.openPath(path))

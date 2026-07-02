@@ -457,10 +457,14 @@ export interface IpcApi {
   getRgpdAlerts:          () => Promise<{ nearRetention: Patient[]; overRetention: Patient[] }>
   exportTraitementRegister: () => Promise<string>
   // ── Plugin spécialité ──
-  pluginGet:    () => Promise<import('./pluginTypes').PluginDefinition | null>
-  pluginSet:    (def: import('./pluginTypes').PluginDefinition) => Promise<void>
-  pluginRemove: () => Promise<void>
-  pluginImport: (filePath: string) => Promise<import('./pluginTypes').PluginDefinition>
+  pluginGet:           () => Promise<import('./pluginTypes').PluginDefinition | null>
+  pluginSet:           (def: import('./pluginTypes').PluginDefinition) => Promise<void>
+  pluginRemove:        () => Promise<void>
+  pluginImport:        (filePath: string) => Promise<import('./pluginTypes').PluginDefinition>
+  pluginLibraryGet:        () => Promise<{ plugin: import('./pluginTypes').PluginDefinition; savedAt: string; isNative?: boolean }[]>
+  pluginLibrarySave:       (plugin: import('./pluginTypes').PluginDefinition) => Promise<void>
+  pluginLibrarySaveNative: (plugin: import('./pluginTypes').PluginDefinition) => Promise<void>
+  pluginLibraryDelete:     (id: string) => Promise<void>
   getDataPath: () => Promise<string>
   setMenuBarVisible: (visible: boolean) => Promise<void>
   onFormatPopup: (cb: (pos: { x: number; y: number }) => void) => void

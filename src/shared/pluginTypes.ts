@@ -36,6 +36,20 @@ export type PluginFieldType =
   | 'bodychart'
   | 'separator'
 
+export type PluginConditionOperator =
+  | 'eq'
+  | 'neq'
+  | 'includes'
+  | 'excludes'
+  | 'truthy'
+  | 'falsy'
+
+export interface PluginCondition {
+  fieldId: string
+  operator?: PluginConditionOperator
+  value?: string | number | boolean | Array<string | number | boolean>
+}
+
 export interface PluginField {
   id: string
   type: PluginFieldType
@@ -49,6 +63,7 @@ export interface PluginField {
   max?: number              // number / rating
   step?: number             // number (pas)
   width?: 'full' | 'half' | 'third'  // mise en page dans la grille
+  visibleWhen?: PluginCondition[]   // affiche ce champ seulement si la condition est satisfaite
 }
 
 export interface PluginSection {
@@ -57,6 +72,7 @@ export interface PluginSection {
   icon?: string             // emoji ou caractère affiché avant le titre
   accentColor?: string      // couleur de la barre gauche du card
   fields: PluginField[]
+  visibleWhen?: PluginCondition[]   // affiche cette section seulement si la condition est satisfaite
 }
 
 export interface PluginDefinition {

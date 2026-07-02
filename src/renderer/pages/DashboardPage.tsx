@@ -749,6 +749,7 @@ export default function DashboardPage() {
                         e.stopPropagation()
                         const params = new URLSearchParams()
                         params.set('date', appt.date)
+                        params.set('apptId', appt.id)
                         if (appt.note) params.set('motif', appt.note)
                         if (pat) {
                           navigate(`/nouvelle/${pat.id}?${params.toString()}`)

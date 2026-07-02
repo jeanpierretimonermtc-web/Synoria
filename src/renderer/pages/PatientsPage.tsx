@@ -555,9 +555,9 @@ function PatientCard({ patient, onEdit, onDelete, onNewSession, onViewSessions, 
             <button className="btn btn-secondary btn-sm" onClick={() => onBackup(patient.id)} title="Sauvegarder">💾</button>
             <button
               className={`btn btn-sm ${isArchived ? 'btn-primary' : 'btn-secondary'}`}
-              title={isArchived ? 'Réactiver' : 'Archiver'}
+              title={isArchived ? 'Réactiver ce patient' : 'Archiver ce patient'}
               onClick={() => onToggleActive(patient)}
-            >{isArchived ? '🔄' : '📁'}</button>
+            >{isArchived ? '🔄 Réactiver' : '📁 Archiver'}</button>
             <button className="btn btn-danger btn-sm" onClick={() => onDelete(patient)} title="Supprimer">🗑️</button>
           </div>
         </div>

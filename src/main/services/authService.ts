@@ -44,7 +44,7 @@ function aesEncrypt(data: Buffer, key: Buffer): string {
 }
 
 function aesDecrypt(payload: string, key: Buffer): Buffer {
-  const parts = payload.trim().split('\n')
+  const parts = payload.trim().split(/\r?\n/).map(p => p.trim())
   if (parts.length !== 3) throw new Error('Format chiffré invalide')
   const [ivHex, tagHex, ctHex] = parts
   const decipher = createDecipheriv(ALGORITHM, key, Buffer.from(ivHex, 'hex'))

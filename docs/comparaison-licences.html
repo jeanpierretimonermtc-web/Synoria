@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synoria — Comparaison modèles de licence et vente</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 11pt;
+    color: #1a1a2e;
+    background: #fff;
+    line-height: 1.5;
+  }
+
+  /* ── Page ── */
+  @page {
+    size: A4;
+    margin: 15mm 12mm;
+  }
+
+  @media print {
+    .page-break { page-break-before: always; }
+    body { font-size: 10pt; }
+    .no-print { display: none; }
+  }
+
+  /* ── En-tête ── */
+  .header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+    color: #fff;
+    padding: 28px 32px 22px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+  }
+  .header-logo {
+    font-size: 22pt;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #e8d5b7;
+  }
+  .header-subtitle {
+    font-size: 13pt;
+    font-weight: 400;
+    color: #c8b89a;
+    margin-top: 4px;
+  }
+  .header-meta {
+    margin-top: 14px;
+    font-size: 9pt;
+    color: #9aa3b0;
+    display: flex;
+    gap: 24px;
+  }
+
+  /* ── Résumé exécutif ── */
+  .exec-summary {
+    background: #f8f4ef;
+    border-left: 4px solid #c8a96e;
+    padding: 14px 18px;
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 24px;
+    font-size: 10.5pt;
+    color: #3a3028;
+  }
+  .exec-summary strong { color: #1a1a2e; }
+
+  /* ── Section titre ── */
+  h2 {
+    font-size: 14pt;
+    font-weight: 700;
+    color: #1a1a2e;
+    border-bottom: 2px solid #c8a96e;
+    padding-bottom: 6px;
+    margin-bottom: 16px;
+    margin-top: 28px;
+  }
+  h3 {
+    font-size: 11.5pt;
+    font-weight: 600;
+    color: #0f3460;
+    margin-bottom: 8px;
+    margin-top: 16px;
+  }
+
+  /* ── Cartes option ── */
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .option-card {
+    border: 1.5px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .option-card.recommended {
+    border-color: #0f3460;
+    box-shadow: 0 2px 10px rgba(15,52,96,0.15);
+  }
+  .option-header {
+    padding: 12px 14px;
+    color: #fff;
+    font-weight: 700;
+    font-size: 10.5pt;
+  }
+  .opt-a .option-header { background: #6c757d; }
+  .opt-b .option-header { background: #0f3460; }
+  .opt-c .option-header { background: #2d6a4f; }
+  .option-badge {
+    font-size: 8pt;
+    font-weight: 400;
+    background: rgba(255,255,255,0.2);
+    border-radius: 3px;
+    padding: 1px 6px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .option-body { padding: 12px 14px; }
+  .option-price {
+    font-size: 18pt;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 4px;
+  }
+  .option-price span { font-size: 10pt; font-weight: 400; color: #666; }
+  .option-desc {
+    font-size: 9.5pt;
+    color: #555;
+    margin-bottom: 10px;
+    min-height: 36px;
+  }
+  .tag-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+  .tag {
+    font-size: 8pt;
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-weight: 500;
+  }
+  .tag-green { background: #d4edda; color: #155724; }
+  .tag-red   { background: #f8d7da; color: #721c24; }
+  .tag-blue  { background: #d1ecf1; color: #0c5460; }
+  .tag-amber { background: #fff3cd; color: #856404; }
+
+  /* ── Tableau comparatif ── */
+  .comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.5pt;
+    margin-bottom: 24px;
+  }
+  .comparison-table thead tr {
+    background: #1a1a2e;
+    color: #fff;
+  }
+  .comparison-table thead th {
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 9pt;
+  }
+  .comparison-table thead th:first-child { border-radius: 6px 0 0 0; }
+  .comparison-table thead th:last-child  { border-radius: 0 6px 0 0; }
+  .comparison-table thead th.col-rec { background: #0f3460; }
+
+  .comparison-table tbody tr:nth-child(even) { background: #f8f9fa; }
+  .comparison-table tbody tr:hover { background: #eef2f7; }
+  .comparison-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #e8e8e8;
+    vertical-align: top;
+  }
+  .comparison-table td:first-child {
+    font-weight: 600;
+    color: #333;
+    white-space: nowrap;
+    width: 20%;
+  }
+  .comparison-table td.col-rec { background: rgba(15,52,96,0.04); }
+
+  .cat-row td {
+    background: #e8edf5 !important;
+    font-weight: 700;
+    font-size: 9pt;
+    color: #0f3460;
+    padding: 6px 12px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-size: 8pt;
+  }
+
+  .check { color: #28a745; font-weight: 700; }
+  .cross { color: #dc3545; font-weight: 700; }
+  .dash  { color: #999; }
+  .warn  { color: #e67e22; font-weight: 600; }
+
+  /* ── Détail par option ── */
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .detail-card {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 14px;
+    font-size: 9.5pt;
+  }
+  .detail-card h4 {
+    font-size: 10pt;
+    font-weight: 700;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid;
+  }
+  .opt-a h4 { color: #6c757d; border-color: #6c757d; }
+  .opt-b h4 { color: #0f3460; border-color: #0f3460; }
+  .opt-c h4 { color: #2d6a4f; border-color: #2d6a4f; }
+
+  .pros-cons { margin-top: 8px; }
+  .pros-cons li {
+    list-style: none;
+    padding: 3px 0;
+    padding-left: 18px;
+    position: relative;
+  }
+  .pros-cons li.pro::before  { content: '✓'; position: absolute; left: 0; color: #28a745; font-weight: 700; }
+  .pros-cons li.con::before  { content: '✗'; position: absolute; left: 0; color: #dc3545; font-weight: 700; }
+  .pros-cons li.warn::before { content: '⚠'; position: absolute; left: 0; color: #e67e22; }
+
+  /* ── Coûts ── */
+  .cost-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.5pt;
+    margin-bottom: 24px;
+  }
+  .cost-table th {
+    background: #f0f0f0;
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 9pt;
+    color: #333;
+  }
+  .cost-table td { padding: 8px 12px; border-bottom: 1px solid #eee; }
+  .cost-table tr.total td { font-weight: 700; background: #fafafa; border-top: 2px solid #ddd; }
+  .cost-table tr.total td.highlight { color: #0f3460; font-size: 11pt; }
+
+  /* ── Simulation revenus ── */
+  .revenue-box {
+    background: #f0f4f8;
+    border: 1px solid #c8d8e8;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+  }
+  .revenue-box h3 { color: #0f3460; margin-bottom: 12px; margin-top: 0; }
+  .revenue-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+  .rev-col { background: #fff; border-radius: 6px; padding: 12px; border: 1px solid #ddd; }
+  .rev-col.best { border-color: #0f3460; border-width: 2px; }
+  .rev-col h5 { font-size: 9pt; font-weight: 700; color: #555; margin-bottom: 8px; }
+  .rev-col .rev-net { font-size: 16pt; font-weight: 700; color: #0f3460; }
+  .rev-col .rev-detail { font-size: 8.5pt; color: #666; margin-top: 4px; }
+
+  /* ── Implémentation ── */
+  .impl-timeline {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .impl-card {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-size: 9pt;
+  }
+  .impl-card h4 { font-size: 9.5pt; font-weight: 700; margin-bottom: 8px; }
+  .impl-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .step-num {
+    background: #1a1a2e;
+    color: #fff;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 8pt;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ── Recommandation ── */
+  .reco-box {
+    background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%);
+    color: #fff;
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+  .reco-box h2 { color: #e8d5b7; border-color: #c8a96e; margin-top: 0; }
+  .reco-box p { color: #c8d8e8; line-height: 1.7; margin-bottom: 10px; }
+  .reco-box strong { color: #fff; }
+  .reco-phases {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 14px;
+  }
+  .reco-phase {
+    background: rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  .reco-phase h4 { color: #e8d5b7; font-size: 10pt; margin-bottom: 6px; }
+  .reco-phase p { color: #a8b8c8; font-size: 9pt; margin-bottom: 0; }
+
+  /* ── Note RGPD ── */
+  .rgpd-note {
+    background: #fff8e6;
+    border: 1px solid #f0c040;
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 9.5pt;
+    color: #5a4010;
+    margin-bottom: 20px;
+  }
+  .rgpd-note strong { color: #3a2a00; }
+
+  /* ── Pied de page ── */
+  .footer {
+    border-top: 1px solid #ddd;
+    padding-top: 12px;
+    margin-top: 20px;
+    font-size: 8pt;
+    color: #999;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* ── Bouton imprimer ── */
+  .print-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #0f3460;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 11pt;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 100;
+  }
+  .print-btn:hover { background: #1a4a80; }
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">⬇ Enregistrer en PDF</button>
+
+<!-- ══ EN-TÊTE ══════════════════════════════════════════════════════ -->
+<div class="header">
+  <div class="header-logo">Synoria</div>
+  <div class="header-subtitle">Comparaison des modèles de licence et de vente</div>
+  <div class="header-meta">
+    <span>Document confidentiel — Jean-Pierre Timoner</span>
+    <span>Juin 2026</span>
+    <span>v1.2 — tarifs Keygen et Stripe corrigés</span>
+  </div>
+</div>
+
+<!-- ══ RÉSUMÉ EXÉCUTIF ══════════════════════════════════════════════ -->
+<div class="exec-summary">
+  <strong>Objet :</strong> Ce document compare trois approches pour gérer la licence et la vente de Synoria (logiciel desktop Electron pour praticiens de santé) :
+  l'<strong>Option A</strong> — licence manuelle (email + clé artisanale),
+  l'<strong>Option B</strong> — Keygen.sh + Stripe (gestion automatisée, recommandée),
+  et l'<strong>Option C</strong> — Stripe + RevenueCat (conçu plutôt pour le mobile).
+  L'objectif est de choisir le modèle qui maximise les revenus nets tout en restant conforme RGPD et adapté au marché des praticiens de santé français.
+  <br><br>
+  <strong>⚠ Points importants sur les tarifs :</strong>
+  <strong>Stripe</strong> : 0 € fixe/mois — mais <strong>1,5 % + 0,25 €</strong> par transaction carte UE dès la première vente (+ 0,7 % Stripe Billing pour les abonnements récurrents). Pas de tier gratuit basé sur un nombre de clients.
+  <strong>Keygen</strong> : <strong>plan Dev gratuit jusqu'à 100 clients actifs</strong> (ALU = active licensed user ayant validé sa licence dans les 90 derniers jours). Limite : 2 000 appels API/jour et 10 releases. Au-delà de 100 ALU : plan payant à ~49 $/mois.
+  <strong>RevenueCat</strong> : gratuit jusqu'à 2 500 $/MRR (~86 clients à 29 €/mois), puis 119 $/mois.
+</div>
+
+<!-- ══ VUE D'ENSEMBLE DES OPTIONS ═══════════════════════════════════ -->
+<h2>1. Vue d'ensemble des trois options</h2>
+
+<div class="options-grid">
+  <!-- Option A -->
+  <div class="option-card opt-a">
+    <div class="option-header">Option A — Licence Manuelle</div>
+    <div class="option-body">
+      <div class="option-price">0 € <span>/ mois fixe</span></div>
+      <div class="option-desc">Vous gérez tout manuellement : vente par email, virement ou PayPal, envoi de clé à la main.</div>
+      <div class="tag-list">
+        <span class="tag tag-green">Coût zéro</span>
+        <span class="tag tag-red">Chronophage</span>
+        <span class="tag tag-red">Non scalable</span>
+        <span class="tag tag-amber">Contrôle total</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B -->
+  <div class="option-card opt-b recommended">
+    <div class="option-header">Option B — Keygen + Stripe <span class="option-badge">★ RECOMMANDÉ</span></div>
+    <div class="option-body">
+      <div class="option-price">0 € <span>/ mois jusqu'à 100 clients</span></div>
+      <div class="option-desc">Keygen plan Dev <strong>gratuit jusqu'à 100 clients actifs</strong>. Stripe sans abonnement fixe : 1,5 % + 0,25 € par transaction UE (+ 0,7 % Stripe Billing). Keygen payant (~49 $/mois) uniquement au-delà de 100 clients.</div>
+      <div class="tag-list">
+        <span class="tag tag-green">Gratuit ≤ 100 clients</span>
+        <span class="tag tag-green">Desktop natif</span>
+        <span class="tag tag-blue">API complète</span>
+        <span class="tag tag-amber">Intégration ~2 sem.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option C -->
+  <div class="option-card opt-c">
+    <div class="option-header">Option C — Stripe + RevenueCat</div>
+    <div class="option-body">
+      <div class="option-price">0–119 $ <span>/ mois</span></div>
+      <div class="option-desc">RevenueCat gratuit jusqu'à 2 500 $/MRR (~86 clients à 29 €). Stripe sans abonnement mensuel : 1,5 % + 0,25 €/transaction. Conçu pour mobile (iOS/Android).</div>
+      <div class="tag-list">
+        <span class="tag tag-amber">Mobile-first</span>
+        <span class="tag tag-red">Inadapté desktop</span>
+        <span class="tag tag-green">Analytics avancés</span>
+        <span class="tag tag-red">Intégration complexe</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TABLEAU COMPARATIF COMPLET ═══════════════════════════════════ -->
+<h2>2. Tableau comparatif détaillé</h2>
+
+<table class="comparison-table">
+  <thead>
+    <tr>
+      <th>Critère</th>
+      <th>A — Licence Manuelle</th>
+      <th class="col-rec">B — Keygen + Stripe ★</th>
+      <th>C — Stripe + RevenueCat</th>
+    </tr>
+  </thead>
+  <tbody>
+
+    <tr class="cat-row"><td colspan="4">Coûts et tarification</td></tr>
+
+    <tr>
+      <td>Frais fixes mensuels</td>
+      <td><span class="check">0 €</span></td>
+      <td class="col-rec"><span class="check">Keygen : 0 € (plan Dev gratuit ≤ 100 clients)</span><br>Keygen ~49 $/mois au-delà — Stripe : 0 € fixe</td>
+      <td>RevenueCat : 0 $ (≤ 2 500 $/MRR ≈ 86 clients) puis 119 $/mois — Stripe : 0 € fixe</td>
+    </tr>
+    <tr>
+      <td>Frais par transaction</td>
+      <td>0 % (virement IBAN) ou 3–5 % (PayPal)</td>
+      <td class="col-rec">Stripe : <strong>1,5 % + 0,25 €</strong> (cartes UE) + <strong>0,7 %</strong> Stripe Billing (abonnements)</td>
+      <td>Stripe : idem — RevenueCat ne prélève aucune commission</td>
+    </tr>
+    <tr>
+      <td>Coût total pour 10 clients/mois<br><small>(10 × 29 € = 290 € brut)</small></td>
+      <td>0–10 € (PayPal)</td>
+      <td class="col-rec"><span class="check">Stripe ~8 € + Keygen 0 € = <strong>~8 €</strong></span></td>
+      <td>Stripe ~8 € + RevenueCat 0 € = <strong>~8 €</strong></td>
+    </tr>
+    <tr>
+      <td>Coût total pour 50 clients/mois<br><small>(50 × 29 € = 1 450 € brut)</small></td>
+      <td>0–50 € (PayPal)</td>
+      <td class="col-rec"><span class="check">Stripe ~43 € + Keygen 0 € = <strong>~43 €</strong></span></td>
+      <td>Stripe ~43 € + RevenueCat 0 € = <strong>~43 €</strong></td>
+    </tr>
+    <tr>
+      <td>Coût total pour 100 clients/mois<br><small>(100 × 29 € = 2 900 € brut)</small></td>
+      <td>0–100 € (PayPal)</td>
+      <td class="col-rec"><span class="check">Stripe ~88 € + Keygen 0 € = <strong>~88 €</strong></span></td>
+      <td>Stripe ~88 € + RevenueCat ~110 € = <strong>~198 €</strong></td>
+    </tr>
+    <tr>
+      <td>Coût total pour 150 clients/mois<br><small>(150 × 29 € = 4 350 € brut)</small></td>
+      <td>0–150 € (PayPal)</td>
+      <td class="col-rec">Stripe ~132 € + Keygen ~46 € = <strong>~178 €</strong></td>
+      <td>Stripe ~132 € + RevenueCat ~110 € = <strong>~242 €</strong></td>
+    </tr>
+
+    <tr class="cat-row"><td colspan="4">Gestion des licences</td></tr>
+
+    <tr>
+      <td>Génération des clés</td>
+      <td><span class="cross">Manuelle</span> (copier-coller)</td>
+      <td class="col-rec"><span class="check">Automatique</span> via webhook Stripe → Keygen API</td>
+      <td><span class="warn">Partielle</span> — RevenueCat gère l'abonnement, pas les clés desktop</td>
+    </tr>
+    <tr>
+      <td>Validation dans l'app</td>
+      <td><span class="warn">Basique</span> — vérification locale fragile</td>
+      <td class="col-rec"><span class="check">API Keygen</span> — validation serveur à chaque lancement</td>
+      <td><span class="cross">Non natif</span> — nécessite développement custom</td>
+    </tr>
+    <tr>
+      <td>Révocation de licence</td>
+      <td><span class="cross">Impossible</span> sans modifier l'app</td>
+      <td class="col-rec"><span class="check">Tableau de bord</span> — révocation immédiate</td>
+      <td><span class="warn">Via Stripe</span> — annulation abonnement uniquement</td>
+    </tr>
+    <tr>
+      <td>Limite d'appareils</td>
+      <td><span class="cross">Non gérable</span></td>
+      <td class="col-rec"><span class="check">Configurable</span> — 1 ou N machines par licence</td>
+      <td><span class="cross">Non natif</span> pour desktop</td>
+    </tr>
+    <tr>
+      <td>Période d'essai</td>
+      <td><span class="warn">Manuelle</span> (confiance)</td>
+      <td class="col-rec"><span class="check">Automatique</span> — 14/30 jours configurables</td>
+      <td><span class="check">Automatique</span> via Stripe</td>
+    </tr>
+    <tr>
+      <td>Licences perpétuelles</td>
+      <td><span class="check">Possible</span></td>
+      <td class="col-rec"><span class="check">Possible</span> — licences one-shot ou abonnement</td>
+      <td><span class="cross">Non</span> — abonnement uniquement</td>
+    </tr>
+
+    <tr class="cat-row"><td colspan="4">Expérience client</td></tr>
+
+    <tr>
+      <td>Achat en libre-service</td>
+      <td><span class="cross">Non</span> — contact email obligatoire</td>
+      <td class="col-rec"><span class="check">Oui</span> — page Stripe Checkout + clé par email auto</td>
+      <td><span class="check">Oui</span> — page Stripe Checkout</td>
+    </tr>
+    <tr>
+      <td>Délai de livraison clé</td>
+      <td><span class="cross">Heures / jours</span> (manuel)</td>
+      <td class="col-rec"><span class="check">Instantané</span> — webhook < 30 secondes</td>
+      <td><span class="warn">Instantané</span> mais sans clé native desktop</td>
+    </tr>
+    <tr>
+      <td>Portail client</td>
+      <td><span class="cross">Aucun</span></td>
+      <td class="col-rec"><span class="check">Stripe Customer Portal</span> — factures, annulation</td>
+      <td><span class="check">Stripe Customer Portal</span> — idem</td>
+    </tr>
+    <tr>
+      <td>Paiement CB français</td>
+      <td><span class="warn">Partiel</span> (virement IBAN ou PayPal)</td>
+      <td class="col-rec"><span class="check">Oui</span> — CB, SEPA, Apple Pay, Google Pay</td>
+      <td><span class="check">Oui</span> — CB, SEPA, Apple Pay, Google Pay</td>
+    </tr>
+
+    <tr class="cat-row"><td colspan="4">Gestion et analytiques</td></tr>
+
+    <tr>
+      <td>Tableau de bord revenus</td>
+      <td><span class="cross">Aucun</span></td>
+      <td class="col-rec"><span class="check">Stripe Dashboard</span> — MRR, churns, paiements</td>
+      <td><span class="check">RevenueCat + Stripe</span> — très complet</td>
+    </tr>
+    <tr>
+      <td>Suivi abonnements (MRR)</td>
+      <td><span class="cross">Manuel</span></td>
+      <td class="col-rec"><span class="check">Automatique</span> via Stripe</td>
+      <td><span class="check">Très avancé</span> (RevenueCat spécialité)</td>
+    </tr>
+    <tr>
+      <td>Relances paiements échoués</td>
+      <td><span class="cross">Manuelle</span></td>
+      <td class="col-rec"><span class="check">Automatique</span> — Smart Retries Stripe</td>
+      <td><span class="check">Automatique</span></td>
+    </tr>
+    <tr>
+      <td>Génération de factures</td>
+      <td><span class="cross">Manuelle</span></td>
+      <td class="col-rec"><span class="check">Automatique</span> — Stripe Invoicing (conforme)</td>
+      <td><span class="check">Automatique</span> — Stripe Invoicing</td>
+    </tr>
+
+    <tr class="cat-row"><td colspan="4">Technique et conformité</td></tr>
+
+    <tr>
+      <td>Adapté à Electron desktop</td>
+      <td><span class="check">Oui</span></td>
+      <td class="col-rec"><span class="check">Oui</span> — conçu pour apps desktop/server-side</td>
+      <td><span class="cross">Non</span> — SDK orienté iOS/Android/React Native</td>
+    </tr>
+    <tr>
+      <td>Hébergement données clients</td>
+      <td><span class="warn">Vous</span> (email, tableur)</td>
+      <td class="col-rec"><span class="check">Stripe (EU) + Keygen (US)</span></td>
+      <td><span class="warn">Stripe (EU) + RevenueCat (US)</span></td>
+    </tr>
+    <tr>
+      <td>Conformité RGPD</td>
+      <td><span class="check">Total</span> — vous contrôlez tout</td>
+      <td class="col-rec"><span class="warn">Partiel</span> — Stripe RGPD OK, Keygen DPA disponible</td>
+      <td><span class="warn">Partiel</span> — Stripe RGPD OK, RevenueCat DPA disponible</td>
+    </tr>
+    <tr>
+      <td>Complexité d'intégration</td>
+      <td><span class="check">Nulle</span></td>
+      <td class="col-rec"><span class="warn">Moyenne</span> — ~2 semaines de dev</td>
+      <td><span class="cross">Élevée</span> — SDK non adapté desktop + dev custom</td>
+    </tr>
+    <tr>
+      <td>Anti-piratage</td>
+      <td><span class="cross">Très faible</span></td>
+      <td class="col-rec"><span class="check">Bon</span> — validation serveur + fingerprinting machine</td>
+      <td><span class="warn">Faible</span> sur desktop (pas de mécanisme natif)</td>
+    </tr>
+
+    <tr class="cat-row"><td colspan="4">Évaluation globale</td></tr>
+
+    <tr>
+      <td>Note globale</td>
+      <td>⭐⭐ — acceptable pour démarrer</td>
+      <td class="col-rec">⭐⭐⭐⭐⭐ — solution professionnelle complète</td>
+      <td>⭐⭐ — inadapté au contexte desktop</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ══ ANALYSE FINANCIÈRE ═══════════════════════════════════════════ -->
+<h2>3. Analyse financière — Simulation revenus nets</h2>
+
+<p style="font-size:9.5pt; color:#555; margin-bottom:14px;">
+  Hypothèse : <strong>abonnement mensuel à 29 €/mois par praticien</strong>.
+  Frais Stripe Europe : 1,5 % + 0,25 € par transaction. TVA non incluse (micro-entreprise ou auto-liquidation).
+</p>
+
+<div class="revenue-box">
+  <h3>Scénario : 20 clients actifs → 580 €/mois de revenus bruts</h3>
+  <p style="font-size:9pt; color:#445; margin-bottom:12px;">
+    Stripe : 0 € fixe/mois + <strong>1,5 % + 0,25 €</strong>/transaction (cartes UE) + <strong>0,7 %</strong> Stripe Billing.<br>
+    Calcul Stripe pour 20 transactions : (1,5 % × 580 €) + (20 × 0,25 €) + (0,7 % × 580 €) = 8,70 € + 5,00 € + 4,06 € = <strong>~17,76 €</strong><br>
+    Keygen : <strong>0 € jusqu'à 100 clients actifs</strong> (plan Dev gratuit).
+  </p>
+  <div class="revenue-grid">
+    <div class="rev-col">
+      <h5>Option A — Licence Manuelle</h5>
+      <div class="rev-net">560–580 €</div>
+      <div class="rev-detail">
+        Virement IBAN : 0 € → <strong>580 €</strong><br>
+        PayPal : ~3,5 % → ~560 €<br>
+        <br>
+        Temps : ~5–10 h/mois (tout manuel)
+      </div>
+    </div>
+    <div class="rev-col best">
+      <h5>Option B — Keygen + Stripe ★</h5>
+      <div class="rev-net">562 €</div>
+      <div class="rev-detail">
+        Stripe : −17,76 €<br>
+        Keygen plan Dev : <strong>0 €</strong> (≤ 100 clients)<br>
+        <strong>Net : 580 − 17,76 = 562 €</strong><br>
+        <br>
+        Temps : &lt; 30 min/mois (automatisé)
+      </div>
+    </div>
+    <div class="rev-col">
+      <h5>Option C — Stripe + RevenueCat</h5>
+      <div class="rev-net">562 €</div>
+      <div class="rev-detail">
+        Stripe : −17,76 €<br>
+        RevenueCat : 0 € (MRR ~580 € &lt; seuil 2 500 $)<br>
+        <strong>Net : 580 − 17,76 = 562 €</strong><br>
+        Mais : intégration desktop non native
+      </div>
+    </div>
+  </div>
+</div>
+
+<table class="cost-table">
+  <thead>
+    <tr>
+      <th>Volume (clients)</th>
+      <th>Revenus bruts</th>
+      <th>A — Manuelle (virement)</th>
+      <th>B — Keygen + Stripe ★</th>
+      <th>C — Stripe + RevenueCat</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>5 clients</td>
+      <td>145 €</td>
+      <td>145 €</td>
+      <td>~141 € <small>(−4 € Stripe, Keygen gratuit)</small></td>
+      <td>~141 € <small>(−4 € Stripe, RevenueCat gratuit)</small></td>
+    </tr>
+    <tr>
+      <td>20 clients</td>
+      <td>580 €</td>
+      <td>580 €</td>
+      <td>~562 € <small>(−18 € Stripe, Keygen gratuit)</small></td>
+      <td>~562 € <small>(−18 € Stripe, RevenueCat gratuit)</small></td>
+    </tr>
+    <tr>
+      <td>50 clients</td>
+      <td>1 450 €</td>
+      <td>1 450 €</td>
+      <td><strong>~1 406 €</strong> <small>(−44 € Stripe, Keygen gratuit)</small></td>
+      <td>~1 406 € <small>(−44 € Stripe, RevenueCat gratuit)</small></td>
+    </tr>
+    <tr>
+      <td>86 clients <small>(seuil RevenueCat)</small></td>
+      <td>2 494 €</td>
+      <td>2 494 €</td>
+      <td><strong>~2 419 €</strong> <small>(−75 € Stripe, Keygen gratuit)</small></td>
+      <td>~2 419 € <small>(−75 € Stripe, RevenueCat encore gratuit)</small></td>
+    </tr>
+    <tr>
+      <td>100 clients <small>(seuil Keygen)</small></td>
+      <td>2 900 €</td>
+      <td>2 900 €</td>
+      <td><strong>~2 812 €</strong> <small>(−88 € Stripe, Keygen encore gratuit)</small></td>
+      <td>~2 594 € <small>(−88 € Stripe − 110 € + 108 € RevenueCat)</small></td>
+    </tr>
+    <tr>
+      <td>150 clients</td>
+      <td>4 350 €</td>
+      <td>4 350 €</td>
+      <td>~4 172 € <small>(−132 € Stripe − 46 € Keygen payant)</small></td>
+      <td>~4 108 € <small>(−132 € Stripe − 110 € RevenueCat)</small></td>
+    </tr>
+    <tr class="total">
+      <td colspan="2">Temps de gestion / mois</td>
+      <td>8–20 h (croît avec le volume)</td>
+      <td class="highlight">&lt; 1 h (entièrement automatisé)</td>
+      <td>&lt; 1 h (si intégration réussie)</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ══ PROS / CONS PAR OPTION ════════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>4. Points forts et limites de chaque option</h2>
+
+<div class="detail-grid">
+  <!-- Option A -->
+  <div class="detail-card opt-a">
+    <h4>A — Licence Manuelle</h4>
+    <ul class="pros-cons">
+      <li class="pro">Zéro coût fixe mensuel</li>
+      <li class="pro">Contrôle total des données clients</li>
+      <li class="pro">Conformité RGPD maximale</li>
+      <li class="pro">Simple à démarrer immédiatement</li>
+      <li class="pro">Pas de dépendance à un tiers</li>
+    </ul>
+    <ul class="pros-cons" style="margin-top:8px">
+      <li class="con">Non scalable : 1 h par nouveau client</li>
+      <li class="con">Impossible de révoquer une licence</li>
+      <li class="con">Aucune protection anti-piratage</li>
+      <li class="con">Aucune relance automatique impayé</li>
+      <li class="con">Facturation manuelle (risque fiscal)</li>
+      <li class="con">Pas de gestion d'essai gratuit fiable</li>
+      <li class="warn">Viable uniquement en dessous de 15 clients</li>
+    </ul>
+  </div>
+
+  <!-- Option B -->
+  <div class="detail-card opt-b">
+    <h4>B — Keygen + Stripe ★ Recommandé</h4>
+    <ul class="pros-cons">
+      <li class="pro">Conçu pour les apps desktop (Electron, macOS, Windows)</li>
+      <li class="pro">Validation en temps réel côté serveur</li>
+      <li class="pro">Révocation immédiate si impayé ou fraude</li>
+      <li class="pro">Limite machines par licence (anti-partage)</li>
+      <li class="pro">Essai gratuit automatisé et sécurisé</li>
+      <li class="pro">Facturation Stripe conforme (mentions légales FR)</li>
+      <li class="pro">Paiements SEPA, CB, Apple Pay</li>
+      <li class="pro">Relances automatiques en cas d'échec CB</li>
+      <li class="pro">SDK officiel Node.js pour Electron</li>
+    </ul>
+    <ul class="pros-cons" style="margin-top:8px">
+      <li class="pro">Keygen plan Dev gratuit jusqu'à 100 clients actifs (ALU)</li>
+      <li class="con">Keygen : ~49 $/mois au-delà de 100 clients actifs</li>
+      <li class="con">Stripe : 1,5 % + 0,25 €/transaction + 0,7 % Stripe Billing (0 € fixe)</li>
+      <li class="con">Limite : 2 000 appels API Keygen/jour et 10 releases (suffisant en pratique)</li>
+      <li class="con">~2 semaines de développement pour l'intégration</li>
+      <li class="warn">Données licences hébergées aux USA (Keygen) — DPA disponible</li>
+    </ul>
+  </div>
+
+  <!-- Option C -->
+  <div class="detail-card opt-c">
+    <h4>C — Stripe + RevenueCat</h4>
+    <ul class="pros-cons">
+      <li class="pro">Analytics abonnements très avancés</li>
+      <li class="pro">Excellent pour apps iOS/Android</li>
+      <li class="pro">Gratuit jusqu'à 2 500 $/MRR</li>
+      <li class="pro">Portail client Stripe intégré</li>
+    </ul>
+    <ul class="pros-cons" style="margin-top:8px">
+      <li class="con">SDK non disponible pour Electron/desktop</li>
+      <li class="con">Aucune gestion native de clés de licence</li>
+      <li class="con">Développement custom important nécessaire</li>
+      <li class="con">Validation d'abonnement offline impossible</li>
+      <li class="con">119 $/mois dès 2 500 $ de MRR</li>
+      <li class="warn">Inadapté au cas d'usage desktop</li>
+      <li class="warn">Pertinent seulement si extension mobile planifiée</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══ IMPLÉMENTATION TECHNIQUE ══════════════════════════════════════ -->
+<h2>5. Étapes d'implémentation — Option B (Keygen + Stripe)</h2>
+
+<div class="impl-timeline">
+  <div class="impl-card">
+    <h4>Phase 1 — Semaine 1 : Backend</h4>
+    <div class="impl-step">
+      <div class="step-num">1</div>
+      <div>Créer compte Keygen.sh (plan Solo) + compte Stripe</div>
+    </div>
+    <div class="impl-step">
+      <div class="step-num">2</div>
+      <div>Créer un produit Synoria dans Keygen avec politique de licence (1 machine, durée 1 an)</div>
+    </div>
+    <div class="impl-step">
+      <div class="step-num">3</div>
+      <div>Configurer produit et prix dans Stripe (29 €/mois ou 290 €/an)</div>
+    </div>
+    <div class="impl-step">
+      <div class="step-num">4</div>
+      <div>Webhook Stripe → serveur léger (Vercel/Netlify function) → appel API Keygen pour créer licence</div>
+    </div>
+    <div class="impl-step">
+      <div class="step-num">5</div>
+      <div>Email automatique avec la clé via Stripe ou SendGrid</div>
+    </div>
+  </div>
+
+  <div class="impl-card">
+    <h4>Phase 2 — Semaine 2 : Application</h4>
+    <div class="impl-step">
+      <div class="step-num">6</div>
+      <div>Écran de saisie de clé au premier lancement (remplace ou complète l'écran mot de passe)</div>
+    </div>
+    <div class="impl-step">
+      <div class="step-num">7</div>
+      <div>Appel API Keygen depuis le main process Electron (validate + activate machine)</div>
+    </div>
+    <div class="impl-step">
+      <div class="step-num">8</div>
+      <div>Mise en cache locale chiffrée de la validation (grace period offline : 7 jours)</div>
+    </div>
+    <div class="impl-step">
+      <div class="step-num">9</div>
+      <div>Vérification périodique en arrière-plan (toutes les 24 h)</div>
+    </div>
+    <div class="impl-step">
+      <div class="step-num">10</div>
+      <div>Page vente (landing page ou lien direct Stripe Checkout)</div>
+    </div>
+  </div>
+
+  <div class="impl-card">
+    <h4>Phase 3 — Validation et lancement</h4>
+    <div class="impl-step">
+      <div class="step-num">11</div>
+      <div>Test parcours complet : achat → réception clé → activation → validation offline</div>
+    </div>
+    <div class="impl-step">
+      <div class="step-num">12</div>
+      <div>Test révocation : suspendre licence dans Keygen → vérifier blocage dans l'app</div>
+    </div>
+    <div class="impl-step">
+      <div class="step-num">13</div>
+      <div>Test essai gratuit : créer licence d'essai 30 jours, vérifier expiration</div>
+    </div>
+    <div class="impl-step">
+      <div class="step-num">14</div>
+      <div>Configurer Stripe Customer Portal (portail de gestion abonnement client)</div>
+    </div>
+    <div class="impl-step">
+      <div class="step-num">15</div>
+      <div>Mise à jour des CGU et politique de confidentialité (DPA Keygen + DPA Stripe)</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RGPD ══════════════════════════════════════════════════════════ -->
+<h2>6. Conformité RGPD</h2>
+
+<div class="rgpd-note">
+  <strong>⚠ Important — Sous-traitants et transferts hors UE :</strong>
+  Stripe dispose d'un siège européen (Dublin) et de clauses contractuelles standard RGPD (DPA disponible).
+  Keygen est hébergé aux USA — un DPA (Data Processing Agreement) est disponible et doit être signé.
+  RevenueCat est également aux USA avec DPA disponible. Dans tous les cas, votre politique de confidentialité
+  doit mentionner ces sous-traitants conformément à l'Art. 13 RGPD.
+</div>
+
+<table class="comparison-table">
+  <thead>
+    <tr>
+      <th>Obligation RGPD</th>
+      <th>A — Manuelle</th>
+      <th class="col-rec">B — Keygen + Stripe ★</th>
+      <th>C — Stripe + RevenueCat</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Données stockées chez tiers</td>
+      <td><span class="check">Aucune</span></td>
+      <td class="col-rec">Stripe (Dublin) + Keygen (USA)</td>
+      <td>Stripe (Dublin) + RevenueCat (USA)</td>
+    </tr>
+    <tr>
+      <td>DPA signable</td>
+      <td><span class="dash">—</span></td>
+      <td class="col-rec"><span class="check">Oui</span> — Stripe et Keygen</td>
+      <td><span class="check">Oui</span> — Stripe et RevenueCat</td>
+    </tr>
+    <tr>
+      <td>Droit à l'effacement client</td>
+      <td><span class="warn">Manuel</span></td>
+      <td class="col-rec"><span class="check">API Keygen + Stripe</span></td>
+      <td><span class="check">API RevenueCat + Stripe</span></td>
+    </tr>
+    <tr>
+      <td>Facturation légale (mentions FR)</td>
+      <td><span class="cross">À gérer vous-même</span></td>
+      <td class="col-rec"><span class="check">Stripe Invoicing</span> — conforme</td>
+      <td><span class="check">Stripe Invoicing</span> — conforme</td>
+    </tr>
+    <tr>
+      <td>Registre des traitements Art. 30</td>
+      <td>À rédiger manuellement</td>
+      <td class="col-rec">À rédiger (2 sous-traitants à déclarer)</td>
+      <td>À rédiger (2 sous-traitants à déclarer)</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ══ RECOMMANDATION FINALE ══════════════════════════════════════════ -->
+<div class="reco-box">
+  <h2>7. Recommandation</h2>
+  <p>
+    Pour Synoria, la recommandation est l'<strong>Option B — Keygen + Stripe</strong>.
+    C'est la seule option conçue nativement pour les applications desktop (Electron compris),
+    qui offre une vraie gestion des licences (validation serveur, révocation, limite d'appareils, période d'essai)
+    tout en restant raisonnablement simple à intégrer et financièrement prévisible.
+  </p>
+  <p>
+    L'Option A (manuelle) est valide pour les <strong>3–6 premiers mois</strong> avec moins de 15 clients,
+    le temps de valider le produit. Au-delà, le temps de gestion devient un frein à la croissance.
+    L'Option C (RevenueCat) est à considérer uniquement si une <strong>version mobile</strong> de Synoria
+    est planifiée, ce qui n'est pas le cas actuellement.
+  </p>
+
+  <div class="reco-phases">
+    <div class="reco-phase">
+      <h4>Phase courte — Maintenant (0–6 mois)</h4>
+      <p>Option A manuelle pour valider le marché avec vos premiers clients, sans investissement développement. Facturation par virement ou PayPal, clé d'activation simple dans l'app.</p>
+    </div>
+    <div class="reco-phase">
+      <h4>Phase croissance — Dès 10+ clients</h4>
+      <p>Migrer vers Option B (Keygen + Stripe). 2 semaines de développement pour une infrastructure qui gère 1 000 clients aussi facilement que 10, avec protection anti-piratage et facturation automatique.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TARIFICATION SUGGÉRÉE ══════════════════════════════════════════ -->
+<h2>8. Suggestions de tarification pour le marché praticiens de santé</h2>
+
+<table class="cost-table">
+  <thead>
+    <tr>
+      <th>Formule</th>
+      <th>Prix</th>
+      <th>Cible</th>
+      <th>Avantage</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Essai gratuit</strong></td>
+      <td>0 € — 30 jours</td>
+      <td>Tous les nouveaux praticiens</td>
+      <td>Réduction de la friction à l'adoption</td>
+    </tr>
+    <tr>
+      <td><strong>Mensuel</strong></td>
+      <td>29 €/mois</td>
+      <td>Praticiens qui veulent tester sans engagement</td>
+      <td>Entrée basse, MRR visible</td>
+    </tr>
+    <tr>
+      <td><strong>Annuel</strong></td>
+      <td>249 €/an (~21 €/mois)</td>
+      <td>Praticiens convaincus (−14 % vs mensuel)</td>
+      <td>Cash-flow, fidélisation, moins de churn</td>
+    </tr>
+    <tr>
+      <td><strong>Perpétuelle + MAJ 1 an</strong></td>
+      <td>490 € one-shot</td>
+      <td>Praticiens réticents aux abonnements</td>
+      <td>Paiement unique apprécié en libéral</td>
+    </tr>
+    <tr>
+      <td><strong>Multi-praticiens (cabinet)</strong></td>
+      <td>Sur devis</td>
+      <td>Cabinets groupés (2–5 praticiens)</td>
+      <td>Revenu plus élevé par compte</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ══ PIED DE PAGE ══════════════════════════════════════════════════ -->
+<div class="footer">
+  <span>Synoria — Document confidentiel — Jean-Pierre Timoner — jeanpierre.timoner.mtc@gmail.com</span>
+  <span>Juin 2026 — v1.1</span>
+</div>
+
+</body>
+</html>

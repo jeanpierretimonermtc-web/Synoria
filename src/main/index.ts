@@ -15,7 +15,8 @@ if (portableDir) {
   app.setPath('userData', join(portableDir, 'data'))
 } else if (!app.isPackaged) {
   // MODE DÉVELOPPEMENT : dossier dédié pour ne jamais toucher les données du cabinet
-  const appData = process.env.APPDATA || ''
+  // Sur macOS, use `app.getPath('appData')` si APPDATA n'est pas défini.
+  const appData = process.env.APPDATA || app.getPath('appData') || ''
   if (appData) app.setPath('userData', join(appData, 'Synoria Dev'))
 } else {
   // MODE PRODUCTION : s'assurer que le userData pointe vers le bon dossier
@@ -44,6 +45,7 @@ function migrateUserDataIfNeeded(): void {
 
   // Chemins alternatifs connus — inclut 'Synoria Dev' (anciens builds Mac défectueux)
   const candidates = [
+    join(appData, app.getName()),
     join(appData, 'Synoria'),
     join(appData, 'Synoria Dev'),        // anciens builds Mac avec mauvais productName
     join(appData, 'Dossier Patient MTC'), // très ancienne version

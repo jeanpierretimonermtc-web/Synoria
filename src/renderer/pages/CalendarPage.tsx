@@ -363,6 +363,7 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
     const params = new URLSearchParams()
     if (note) params.set('motif', note)
     params.set('date', localDate)
+    if (appointment?.id) params.set('apptId', appointment.id)
     onClose()
     navigate(`/nouvelle/${patientId}?${params.toString()}`)
   }

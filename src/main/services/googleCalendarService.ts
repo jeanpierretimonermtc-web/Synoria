@@ -166,23 +166,30 @@ function httpsReq(method: string, url: string, token: string, body?: any): Promi
 
 async function getAccessToken(): Promise<string> {
   const cfg = loadConfig()
-  if (!cfg?.tokens?.refresh_token) throw new Error('Non connecte a Google Calendar')
+  if (!cfg?.tokens?.refresh_token) throw new Error('Non connecté à Google Calendar')
 
   if (cfg.tokens.expiry_date > Date.now() + 60_000) {
     return cfg.tokens.access_token
   }
 
-  const res = await httpsPostForm(TOKEN_URL, {
-    client_id: cfg.client_id,
-    client_secret: cfg.client_secret,
-    refresh_token: cfg.tokens.refresh_token,
-    grant_type: 'refresh_token',
-  })
-
-  cfg.tokens.access_token = res.access_token
-  cfg.tokens.expiry_date = Date.now() + (res.expires_in as number) * 1000
-  saveConfig(cfg)
-  return res.access_token
+  try {
+    const res = await httpsPostForm(TOKEN_URL, {
+      client_id: cfg.client_id,
+      client_secret: cfg.client_secret,
+      refresh_token: cfg.tokens.refresh_token,
+      grant_type: 'refresh_token',
+    })
+    cfg.tokens.access_token = res.access_token
+    cfg.tokens.expiry_date = Date.now() + (res.expires_in as number) * 1000
+    saveConfig(cfg)
+    return res.access_token
+  } catch (e: any) {
+    const msg = (e?.message || String(e)).toLowerCase()
+    if (msg.includes('invalid_grant') || msg.includes('token has been expired') || msg.includes('token_expired')) {
+      throw new Error('Session Google expirée — déconnectez puis reconnectez Google Calendar dans les paramètres.')
+    }
+    throw e
+  }
 }
 
 async function ensureSynoriaCalendar(tokenOverride?: string): Promise<GCalConfig> {
