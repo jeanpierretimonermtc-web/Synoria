@@ -1,0 +1,25 @@
+{
+  "buildCommand": "echo done",
+  "installCommand": "echo done",
+  "outputDirectory": ".",
+  "framework": null,
+  "rewrites": [
+    { "source": "/assets/:path*", "destination": "/assets/:path*" },
+    { "source": "/merci", "destination": "/merci.html" },
+    { "source": "/paiement-annule", "destination": "/paiement-annule.html" },
+    { "source": "/abonnement", "destination": "/abonnement.html" },
+    { "source": "/telechargement", "destination": "/telechargement.html" },
+    { "source": "/confidentialite", "destination": "/confidentialite.html" },
+    { "source": "/cgv", "destination": "/cgv.html" },
+    { "source": "/support", "destination": "/support.html" },
+    { "source": "/tarifs", "destination": "/tarifs.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
+    }
+  ]
+}
