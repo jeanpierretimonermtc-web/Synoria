@@ -1021,7 +1021,12 @@ function SubscriptionGate({ onDone, theme }: { onDone: () => void; theme: 'light
       // S'ouvre dans le navigateur système (géré par setWindowOpenHandler dans index.ts)
       window.open(url, '_blank')
     } catch (e: any) {
-      setError(e?.message ?? 'Erreur lors de l\'ouverture du paiement. Réessayez.')
+      const msg: string = e?.message ?? ''
+      if (msg.includes('ALREADY_SUBSCRIBED') || msg.includes('409')) {
+        setError('Vous avez déjà un abonnement actif. Cliquez sur "J\'ai finalisé mon abonnement →" ci-dessous pour accéder à Synoria.')
+      } else {
+        setError(msg || 'Erreur lors de l\'ouverture du paiement. Réessayez.')
+      }
     } finally {
       setCheckoutLoading(null)
     }

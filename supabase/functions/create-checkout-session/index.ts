@@ -101,7 +101,25 @@ Deno.serve(async (req) => {
   }
   const organizationId = orgResult.organizationId
 
-  // 4. Créer (ou récupérer) le customer Stripe
+  // 4. Vérifier qu'il n'existe pas déjà un abonnement actif ou en essai
+  //    → protège contre les doubles paiements accidentels
+  const { data: existingActiveSub } = await supabaseAdmin
+    .from('subscriptions')
+    .select('status, stripe_subscription_id')
+    .eq('organization_id', organizationId)
+    .in('status', ['active', 'trialing', 'past_due'])
+    .maybeSingle()
+
+  if (existingActiveSub) {
+    console.log(`[create-checkout-session] Abonnement déjà actif (${existingActiveSub.status}) pour org ${organizationId}`)
+    return json({
+      error:  'ALREADY_SUBSCRIBED',
+      status: existingActiveSub.status,
+      message: 'Vous avez déjà un abonnement actif. Cliquez sur "J\'ai finalisé mon abonnement" pour accéder à Synoria.',
+    }, 409)
+  }
+
+  // 5. Créer (ou récupérer) le customer Stripe
   const customerResult = await ensureStripeCustomer(organizationId, user.id, user.email ?? '')
   if (customerResult.error) {
     console.error('[create-checkout-session] Customer Stripe :', customerResult.error)
@@ -109,7 +127,7 @@ Deno.serve(async (req) => {
   }
   const customerId = customerResult.customerId
 
-  // 5. Créer la session Stripe Checkout
+  // 6. Créer la session Stripe Checkout
   let session
   try {
     session = await stripe.checkout.sessions.create({
