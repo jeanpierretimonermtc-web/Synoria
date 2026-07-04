@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build && electron-builder",
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "dev:fresh": "node scripts/reset-dev-data.mjs && concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:build": "vite build && electron-builder",
     "build:portable": "vite build && electron-builder --win portable",
     "postinstall": "electron-rebuild -f -w better-sqlite3"
@@ -14,11 +15,13 @@
   "dependencies": {
     "@fontsource/dm-sans": "^5.2.8",
     "@fontsource/dm-serif-display": "^5.2.8",
+    "@supabase/supabase-js": "^2.110.0",
     "better-sqlite3": "^11.10.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.21.3",
     "uuid": "^9.0.1",
+    "ws": "^8.21.0",
     "xlsx": "^0.18.5",
     "xlsx-js-style": "^1.2.0"
   },
@@ -84,7 +87,14 @@
       "icon": "build/icons/icon.ico"
     },
     "mac": {
-      "target": [{ "target": "dmg", "arch": ["universal"] }],
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
       "icon": "build/icons/icon.png",
       "category": "public.app-category.medical",
       "darkModeSupport": true
@@ -95,4 +105,3 @@
     }
   }
 }
-

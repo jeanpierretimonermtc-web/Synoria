@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paiement annulé — Synoria</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="Le paiement a été annulé, aucun montant n'a été prélevé.">
+<link rel="icon" type="image/png" href="assets/Synoria.png">
+<link rel="apple-touch-icon" href="assets/Synoria.png">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/" aria-label="Accueil Synoria">
+      <img class="brand-logo" src="assets/Synoria.png" alt="">
+      <span class="brand-name">SYNORIA</span>
+    </a>
+    <nav class="nav-links" aria-label="Navigation principale">
+      <a href="/#fonctionnalites">Fonctions</a>
+      <a href="/tarifs">Tarifs</a>
+      <a href="/telechargement">Télécharger</a>
+      <a href="/support">Support</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-outline" href="/abonnement">Mon compte</a>
+    </div>
+  </div>
+</nav>
+
+<style>
+.cancel-reasons{background:var(--soft);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;margin:20px 0;text-align:left}
+.cancel-reason-label{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:block}
+.cancel-reason-item{font-size:13.5px;color:var(--muted);padding:8px 0;border-bottom:1px solid var(--border);line-height:1.55}
+.cancel-reason-item:last-child{border-bottom:none;padding-bottom:0}
+</style>
+
+<main class="result-page">
+  <div class="result-card" style="max-width:520px">
+    <div class="result-icon cancel">
+      <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </div>
+    <h1 style="font-size:clamp(26px,4vw,36px)">Votre inscription a été interrompue.</h1>
+    <p class="section-text" style="margin:0 auto 8px">Aucun prélèvement n'a été effectué et aucun compte n'a été créé. Vous pouvez réessayer quand vous le souhaitez.</p>
+
+    <div class="cancel-reasons">
+      <span class="cancel-reason-label">Cela arrive parfois pour ces raisons</span>
+      <div class="cancel-reason-item">La carte a été refusée par votre banque — essayez une autre carte ou contactez votre conseiller.</div>
+      <div class="cancel-reason-item">Vous avez fermé la fenêtre de paiement par inadvertance — relancez simplement l'inscription.</div>
+      <div class="cancel-reason-item">Vous souhaitez en savoir davantage avant de vous engager — consultez la <a href="/tarifs#faq" style="color:var(--accent);font-weight:700">FAQ</a> ou <a href="/support" style="color:var(--accent);font-weight:700">contactez-nous</a>.</div>
+    </div>
+
+    <div class="result-actions">
+      <a class="btn btn-primary" href="/tarifs">Réessayer l'inscription</a>
+      <a class="btn btn-outline" href="/support">Contacter le support</a>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">
+        <img class="footer-brand-logo" src="assets/Synoria.png" alt="">
+        <span class="footer-brand-name">SYNORIA</span>
+      </div>
+      <p class="footer-desc">Logiciel de gestion de dossiers patients pour praticiens indépendants. Données locales, chiffrées et maîtrisées.</p>
+    </div>
+    <div>
+      <h4>Logiciel</h4>
+      <ul>
+        <li><a href="/#fonctionnalites">Fonctionnalités</a></li>
+        <li><a href="/tarifs">Tarifs</a></li>
+        <li><a href="/#securite">Sécurité &amp; RGPD</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Ressources</h4>
+      <ul>
+        <li><a href="../documentation_synoria_html/index.html">Documentation</a></li>
+        <li><a href="../GUIDE_INSTALLATION_CLIENT.html">Guide d'installation</a></li>
+        <li><a href="/telechargement">Télécharger</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Compte</h4>
+      <ul>
+        <li><a href="/abonnement">Mon abonnement</a></li>
+        <li><a href="/support">Support</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Légal</h4>
+      <ul>
+        <li><a href="/confidentialite">Confidentialité</a></li>
+        <li><a href="/cgv">CGV</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Synoria — Jean-Pierre Timoner (auto-entrepreneur) — SIRET 929 311 496 00012</span>
+    <span>Local · Chiffré · RGPD</span>
+  </div>
+</footer>
+
+</body>
+</html>

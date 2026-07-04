@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useContext } from 'react'
 import type { InvoiceLog } from '../../shared/types'
 import { ToastContext } from '../App'
+import { useRestriction } from '../hooks/useRestriction'
 import { EditIcon, TrashIcon } from '../components/common/Icon'
 import { showConfirm } from '../components/common/ConfirmDialog'
 
@@ -219,7 +220,8 @@ function DeleteModal({ inv, onClose, onDeleted }: {
 // ── Page principale ──────────────────────────────────────────────────────────
 
 export default function FacturesListPage() {
-  const showToast = useContext(ToastContext)
+  const showToast   = useContext(ToastContext)
+  const restriction = useRestriction()
   const [year,     setYear]     = useState(new Date().getFullYear())
   const [invoices, setInvoices] = useState<InvoiceLog[]>([])
   const [loading,  setLoading]  = useState(true)
@@ -339,7 +341,8 @@ export default function FacturesListPage() {
                       <button
                         className="btn btn-secondary btn-sm factures-action-btn"
                         style={{ color: inv.is_paid ? 'var(--amber)' : 'var(--accent)', borderColor: inv.is_paid ? 'var(--amber)' : 'var(--accent-mid)' }}
-                        title={inv.is_paid ? 'Marquer comme non payée' : 'Marquer comme payée'}
+                        title={!restriction.canCreateInvoice ? 'Mode restreint — abonnement requis' : inv.is_paid ? 'Marquer comme non payée' : 'Marquer comme payée'}
+                        disabled={!restriction.canCreateInvoice}
                         onClick={async () => {
                           await window.mtcApi.markInvoicePaid(inv.id, !inv.is_paid)
                           load(year)
@@ -355,11 +358,15 @@ export default function FacturesListPage() {
                         </button>
                       )}
                       <button className="btn btn-secondary btn-sm factures-action-btn factures-action-blue"
-                        title="Modifier" onClick={() => setEditInv(inv)}>
+                        title={!restriction.canCreateInvoice ? 'Mode restreint — abonnement requis' : 'Modifier'}
+                        disabled={!restriction.canCreateInvoice}
+                        onClick={() => setEditInv(inv)}>
                         <EditIcon size={12} />
                       </button>
                       <button className="btn btn-secondary btn-sm factures-action-btn factures-action-red"
-                        title="Supprimer" onClick={() => setDeleteInv(inv)}>
+                        title={!restriction.canCreateInvoice ? 'Mode restreint — abonnement requis' : 'Supprimer'}
+                        disabled={!restriction.canCreateInvoice}
+                        onClick={() => setDeleteInv(inv)}>
                         <TrashIcon size={12} />
                       </button>
                     </div>

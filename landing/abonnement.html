@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon abonnement — Synoria</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="Connectez-vous pour gérer votre abonnement Synoria.">
+<link rel="icon" type="image/png" href="assets/Synoria.png">
+<link rel="apple-touch-icon" href="assets/Synoria.png">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/" aria-label="Accueil Synoria">
+      <img class="brand-logo" src="assets/Synoria.png" alt="">
+      <span class="brand-name">SYNORIA</span>
+    </a>
+    <nav class="nav-links" aria-label="Navigation principale">
+      <a href="/#fonctionnalites">Fonctions</a>
+      <a href="/tarifs">Tarifs</a>
+      <a href="/telechargement">Télécharger</a>
+      <a href="/support">Support</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-primary" href="/tarifs">Essai gratuit 14 jours</a>
+    </div>
+  </div>
+</nav>
+
+<header class="page-hero">
+  <div class="inner">
+    <div class="section-label">Espace abonné</div>
+    <h1>Mon abonnement</h1>
+    <p class="section-text">Connectez-vous avec l'adresse email utilisée lors de votre souscription pour consulter et gérer votre abonnement Synoria.</p>
+  </div>
+</header>
+
+<main>
+<section class="section tight">
+  <div class="inner">
+
+    <!-- Formulaire de connexion / creation de compte -->
+    <div class="auth-card" id="auth-view">
+      <div class="form-msg" id="auth-msg"></div>
+
+      <form id="login-form">
+        <div class="field-group">
+          <label for="login-email">Adresse email</label>
+          <input type="email" id="login-email" required autocomplete="email">
+        </div>
+        <div class="field-group">
+          <label for="login-password">Mot de passe</label>
+          <input type="password" id="login-password" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="login-btn">Se connecter</button>
+        <p class="auth-switch"><button type="button" class="auth-link" id="forgot-btn">Mot de passe oublié ?</button></p>
+      </form>
+
+      <form id="signup-form" style="display:none">
+        <div class="field-group">
+          <label for="signup-email">Adresse email</label>
+          <input type="email" id="signup-email" required autocomplete="email">
+        </div>
+        <div class="field-group">
+          <label for="signup-password">Choisir un mot de passe</label>
+          <input type="password" id="signup-password" required minlength="6" autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="signup-btn">Créer mon compte</button>
+      </form>
+
+      <p class="auth-switch">
+        <span id="switch-to-signup-wrap">Pas encore de compte ? <button type="button" class="auth-link" id="switch-to-signup">Créer un compte</button></span>
+        <span id="switch-to-login-wrap" style="display:none">Déjà un compte ? <button type="button" class="auth-link" id="switch-to-login">Se connecter</button></span>
+      </p>
+    </div>
+
+    <!-- Espace connecte -->
+    <div class="account-panel" id="account-view" style="display:none">
+      <div class="form-msg" id="account-msg"></div>
+      <div class="account-row">
+        <span>Compte</span>
+        <strong id="account-email">-</strong>
+      </div>
+      <div class="account-row">
+        <span>Statut de l'abonnement</span>
+        <span class="status-pill pending" id="account-status">Chargement...</span>
+      </div>
+      <div class="account-row">
+        <span>Offre</span>
+        <span id="account-plan">-</span>
+      </div>
+      <div class="account-row">
+        <span>Prochaine échéance</span>
+        <span id="account-renew">-</span>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:24px;flex-wrap:wrap">
+        <a class="btn btn-outline" href="/tarifs">Changer d'offre</a>
+        <button class="btn btn-outline" id="logout-btn">Se déconnecter</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);opacity:.8;margin-top:20px">
+        La gestion complète du moyen de paiement et la résiliation se feront depuis le portail client Stripe (lien ajouté prochainement dans cet espace).
+      </p>
+    </div>
+
+  </div>
+</section>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">
+        <img class="footer-brand-logo" src="assets/Synoria.png" alt="">
+        <span class="footer-brand-name">SYNORIA</span>
+      </div>
+      <p class="footer-desc">Logiciel de gestion de dossiers patients pour praticiens indépendants. Données locales, chiffrées et maîtrisées.</p>
+    </div>
+    <div>
+      <h4>Logiciel</h4>
+      <ul>
+        <li><a href="/#fonctionnalites">Fonctionnalités</a></li>
+        <li><a href="/tarifs">Tarifs</a></li>
+        <li><a href="/#securite">Sécurité &amp; RGPD</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Ressources</h4>
+      <ul>
+        <li><a href="../documentation_synoria_html/index.html">Documentation</a></li>
+        <li><a href="../GUIDE_INSTALLATION_CLIENT.html">Guide d'installation</a></li>
+        <li><a href="/telechargement">Télécharger</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Compte</h4>
+      <ul>
+        <li><a href="/abonnement">Mon abonnement</a></li>
+        <li><a href="/support">Support</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Légal</h4>
+      <ul>
+        <li><a href="/confidentialite">Confidentialité</a></li>
+        <li><a href="/cgv">CGV</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Synoria — Jean-Pierre Timoner (auto-entrepreneur) — SIRET 929 311 496 00012</span>
+    <span>Local · Chiffré · RGPD</span>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  var SUPABASE_URL = 'https://nicyxynczjvoyxaernbr.supabase.co';
+  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pY3l4eW5jemp2b3l4YWVybmJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5OTg0MDMsImV4cCI6MjA5ODU3NDQwM30.qySY7jGN-kme3K72VFCMsYZ2YyiQ1UUutmB7qZPbKOg';
+  // La cle "anon" est concue pour etre publique cote client (securite assuree par les policies RLS Supabase).
+  // Ne jamais mettre la cle "service_role" ici.
+  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  var authView = document.getElementById('auth-view');
+  var accountView = document.getElementById('account-view');
+  var authMsg = document.getElementById('auth-msg');
+  var accountMsg = document.getElementById('account-msg');
+
+  var loginForm = document.getElementById('login-form');
+  var signupForm = document.getElementById('signup-form');
+
+  function showAuthMsg(text, isError) {
+    authMsg.textContent = text;
+    authMsg.className = 'form-msg ' + (isError ? 'error' : 'success');
+  }
+  function clearAuthMsg() {
+    authMsg.textContent = '';
+    authMsg.className = 'form-msg';
+  }
+
+  document.getElementById('switch-to-signup').addEventListener('click', function () {
+    loginForm.style.display = 'none';
+    signupForm.style.display = 'block';
+    document.getElementById('switch-to-signup-wrap').style.display = 'none';
+    document.getElementById('switch-to-login-wrap').style.display = 'inline';
+    clearAuthMsg();
+  });
+  document.getElementById('switch-to-login').addEventListener('click', function () {
+    signupForm.style.display = 'none';
+    loginForm.style.display = 'block';
+    document.getElementById('switch-to-login-wrap').style.display = 'none';
+    document.getElementById('switch-to-signup-wrap').style.display = 'inline';
+    clearAuthMsg();
+  });
+
+  loginForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    clearAuthMsg();
+    var email = document.getElementById('login-email').value.trim();
+    var password = document.getElementById('login-password').value;
+    var btn = document.getElementById('login-btn');
+    btn.disabled = true;
+    sb.auth.signInWithPassword({ email: email, password: password }).then(function (res) {
+      btn.disabled = false;
+      if (res.error) {
+        showAuthMsg(res.error.message === 'Invalid login credentials' ? 'Email ou mot de passe incorrect.' : res.error.message, true);
+      }
+      // Si succes, onAuthStateChange bascule automatiquement vers l'espace connecte.
+    });
+  });
+
+  signupForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    clearAuthMsg();
+    var email = document.getElementById('signup-email').value.trim();
+    var password = document.getElementById('signup-password').value;
+    var btn = document.getElementById('signup-btn');
+    btn.disabled = true;
+    sb.auth.signUp({ email: email, password: password }).then(function (res) {
+      btn.disabled = false;
+      if (res.error) {
+        showAuthMsg(res.error.message, true);
+      } else {
+        showAuthMsg('Compte créé. Vérifiez votre boîte mail pour confirmer votre adresse avant de vous connecter.', false);
+      }
+    });
+  });
+
+  document.getElementById('forgot-btn').addEventListener('click', function () {
+    var email = document.getElementById('login-email').value.trim();
+    if (!email) {
+      showAuthMsg('Renseignez votre email ci-dessus puis cliquez à nouveau sur "Mot de passe oublié".', true);
+      return;
+    }
+    sb.auth.resetPasswordForEmail(email).then(function (res) {
+      if (res.error) {
+        showAuthMsg(res.error.message, true);
+      } else {
+        showAuthMsg('Un email de réinitialisation vient de vous être envoyé.', false);
+      }
+    });
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', function () {
+    sb.auth.signOut();
+  });
+
+  function loadAccount(user) {
+    document.getElementById('account-email').textContent = user.email;
+    accountMsg.className = 'form-msg';
+    accountMsg.textContent = '';
+
+    // TODO: la table "licenses"/"subscriptions" est deja creee cote Supabase
+    // (supabase/migrations/20260703120000_licensing_schema.sql) mais alimentee
+    // uniquement par les Edge Functions restant a ecrire (stripe-webhook,
+    // verify-license). Tant qu'aucune souscription n'existe, cette requete
+    // renverra "restricted" (statut par defaut a la creation du compte).
+    sb.from('licenses').select('status, plan:subscription_id(plan_name, current_period_end)').maybeSingle().then(function (res) {
+      if (res.error || !res.data) {
+        document.getElementById('account-status').textContent = 'Bientôt disponible';
+        document.getElementById('account-status').className = 'status-pill pending';
+        document.getElementById('account-plan').textContent = 'Informations bientôt disponibles';
+        document.getElementById('account-renew').textContent = '-';
+        return;
+      }
+      var lic = res.data;
+      var statusEl = document.getElementById('account-status');
+      statusEl.textContent = lic.status === 'active' ? 'Actif' : lic.status;
+      statusEl.className = 'status-pill ' + (lic.status === 'active' ? 'active' : 'pending');
+      document.getElementById('account-plan').textContent = (lic.plan && lic.plan.plan_name) || '-';
+      document.getElementById('account-renew').textContent = (lic.plan && lic.plan.current_period_end)
+        ? new Date(lic.plan.current_period_end).toLocaleDateString('fr-FR')
+        : '-';
+    });
+  }
+
+  sb.auth.onAuthStateChange(function (event, session) {
+    if (session && session.user) {
+      authView.style.display = 'none';
+      accountView.style.display = 'block';
+      loadAccount(session.user);
+    } else {
+      authView.style.display = 'block';
+      accountView.style.display = 'none';
+    }
+  });
+
+  sb.auth.getSession().then(function (res) {
+    var session = res.data && res.data.session;
+    if (session && session.user) {
+      authView.style.display = 'none';
+      accountView.style.display = 'block';
+      loadAccount(session.user);
+    }
+  });
+})();
+</script>
+</body>
+</html>

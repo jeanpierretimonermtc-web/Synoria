@@ -4,7 +4,16 @@
   "outputDirectory": ".",
   "framework": null,
   "rewrites": [
-    { "source": "/", "destination": "/release/landing_synoria.html" }
+    { "source": "/assets/:path*", "destination": "/landing/assets/:path*" },
+    { "source": "/", "destination": "/landing/index.html" },
+    { "source": "/tarifs", "destination": "/landing/tarifs.html" },
+    { "source": "/merci", "destination": "/landing/merci.html" },
+    { "source": "/paiement-annule", "destination": "/landing/paiement-annule.html" },
+    { "source": "/abonnement", "destination": "/landing/abonnement.html" },
+    { "source": "/telechargement", "destination": "/landing/telechargement.html" },
+    { "source": "/confidentialite", "destination": "/landing/confidentialite.html" },
+    { "source": "/cgv", "destination": "/landing/cgv.html" },
+    { "source": "/support", "destination": "/landing/support.html" }
   ],
   "headers": [
     {

@@ -5,6 +5,7 @@ import type { PluginDefinition } from '../../shared/pluginTypes'
 import PluginFormRenderer from '../components/plugin/PluginFormRenderer'
 import { showConfirm } from '../components/common/ConfirmDialog'
 import { ToastContext } from '../App'
+import { useRestriction } from '../hooks/useRestriction'
 import RichTextArea from '../components/common/RichTextArea'
 import { defaultSystemes, defaultEnergyTests, migrateSystemes, MV_LIST, RECHAUFFEURS, FOYERS, POINTS_MU, SYNDROMES_BASE, SYNDROMES_CLIMAT, PENETRATION_LEVELS } from '../utils/sessionData'
 import SystemesForm from '../components/forms/SystemesForm'
@@ -267,6 +268,9 @@ export default function NewSessionPage() {
   const navigate = useNavigate()
   const showToast = useContext(ToastContext)
   const isEditing = !!editSessionId
+  const restriction = useRestriction()
+  const canSave = isEditing ? restriction.canModifySession : restriction.canCreateSession
+  const R_TIP = 'Mode restreint — abonnement requis'
 
   const urlApptId = searchParams.get('apptId') || ''
 
@@ -979,7 +983,8 @@ export default function NewSessionPage() {
           <div style={{ fontSize: 11, color: 'var(--text-hint)', marginTop: 4, textAlign: 'right' }}>{progress}%</div>
         </div>
         <div style={{ padding: '8px 4px 2px' }}>
-          <button className="session-toc-save-btn" onClick={handleSave}>
+          <button className="session-toc-save-btn" onClick={handleSave}
+            disabled={!canSave} title={!canSave ? R_TIP : undefined}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
               <polyline points="20 6 9 17 4 12" />
             </svg>
@@ -1023,7 +1028,8 @@ export default function NewSessionPage() {
                 ✏️ Mode modification
               </span>
             )}
-            <button className="btn btn-primary" onClick={handleSave}>
+            <button className="btn btn-primary" onClick={handleSave}
+              disabled={!canSave} title={!canSave ? R_TIP : undefined}>
               {isEditing ? '💾 Mettre à jour la séance' : '💾 Enregistrer la séance'}
             </button>
             {!isEditing && <button className="btn btn-secondary" onClick={handleClear}>↺ Vider le formulaire</button>}
@@ -1502,7 +1508,8 @@ export default function NewSessionPage() {
 
         {/* BOUTONS BAS */}
         <div className="row-btns" style={{ marginBottom: '3rem' }}>
-          <button className="btn btn-primary" onClick={handleSave}>
+          <button className="btn btn-primary" onClick={handleSave}
+            disabled={!canSave} title={!canSave ? R_TIP : undefined}>
             {isEditing ? '💾 Mettre à jour la séance' : '💾 Enregistrer la séance'}
           </button>
           {!isEditing && <button className="btn btn-secondary" onClick={handleClear}>↺ Vider le formulaire</button>}

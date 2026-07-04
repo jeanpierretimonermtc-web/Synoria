@@ -1,6 +1,6 @@
 import { app, BrowserWindow, shell, Menu, ipcMain, session, Notification } from 'electron'
 import { join }                             from 'path'
-import { existsSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'fs'
 import { initDatabase, closeDatabase, getDb } from './database/connection'
 import { registerAllHandlers }              from './ipc/handlers'
 import { getSettings }                      from './services/settingsService'
@@ -8,6 +8,9 @@ import { exportBackupEncrypted }            from './services/backupService'
 import * as auth                            from './services/authService'
 import { seedDevDataIfEmpty }               from './database/seedDevData'
 import { checkJ1Reminders, checkUpcomingAppointments } from './services/notificationService'
+import { initSupabaseAuth, getAccessToken }            from './services/supabaseAuthService'
+import { verifyLicenseOnline, getCurrentLicenseState, setCachedLicenseState } from './services/licenseService'
+import { startUpdateCheckScheduler } from './services/updateService'
 
 // ── Mode portable / clé USB ────────────────────────────────────────
 const portableDir = process.env.PORTABLE_EXECUTABLE_DIR
@@ -123,6 +126,31 @@ function buildMacMenu(): void {
     },
   ]
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+}
+
+// ── Vérification périodique de licence (toutes les 24h) ───────────
+function startLicenseVerificationScheduler(): void {
+  // Charger l'état depuis le jeton local au démarrage
+  const localState = getCurrentLicenseState()
+  setCachedLicenseState(localState)
+
+  // Vérifier en ligne au démarrage (best-effort — ne bloque pas l'app)
+  const tryOnlineVerify = async () => {
+    const token = getAccessToken()
+    if (!token) return
+    try {
+      const state = await verifyLicenseOnline(token)
+      setCachedLicenseState(state)
+    } catch (e) {
+      console.warn('[License] Vérification en ligne échouée (mode hors-ligne) :', e)
+    }
+  }
+
+  // Délai de 5s au démarrage pour laisser le réseau s'initialiser
+  setTimeout(tryOnlineVerify, 5000)
+
+  // Puis toutes les 24h
+  setInterval(tryOnlineVerify, 24 * 60 * 60 * 1000)
 }
 
 // ── Sauvegarde automatique ─────────────────────────────────────────
@@ -344,12 +372,26 @@ app.whenReady().then(async () => {
   // Correcteur orthographique en français
   session.defaultSession.setSpellCheckerLanguages(['fr-FR', 'fr'])
 
+  // Initialiser l'auth Supabase (restaure la session précédente si elle existe)
+  try {
+    await initSupabaseAuth()
+  } catch (e) {
+    console.warn('[Supabase] Erreur init auth :', e)
+  }
+
   try {
     if (!auth.hasPassword()) {
       initDatabase()
-      // En mode dev, peupler la base avec des données de test si elle est vide
+      // En mode dev, peupler la base avec des données de test si elle est vide.
+      // Ignoré si dev.skip-seed existe (créé par `npm run dev:fresh` pour simuler un nouvel utilisateur).
       if (!app.isPackaged) {
-        try { seedDevDataIfEmpty() } catch (e) { console.error('[DEV] Erreur seed:', e) }
+        const skipSeedPath = join(app.getPath('userData'), 'dev.skip-seed')
+        if (existsSync(skipSeedPath)) {
+          unlinkSync(skipSeedPath)
+          console.log('[DEV] dev.skip-seed trouvé — seeder désactivé pour ce démarrage.')
+        } else {
+          try { seedDevDataIfEmpty() } catch (e) { console.error('[DEV] Erreur seed:', e) }
+        }
       }
     }
   } catch (e) {
@@ -371,6 +413,8 @@ app.whenReady().then(async () => {
 
   startDailyBackupScheduler()
   startAutoSaveEncrypted()
+  startLicenseVerificationScheduler()
+  startUpdateCheckScheduler()
   setInterval(checkUpcomingAppointments, 60 * 1000)  // vérifie toutes les minutes
 
   // Mac : clic sur l'icône Dock — affiche la fenêtre si elle est cachée

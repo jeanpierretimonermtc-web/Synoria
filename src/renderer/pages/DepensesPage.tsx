@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useContext } from 'react'
 import type { ConsultationType, ExpenseConfig } from '../../shared/types'
 import { ToastContext } from '../App'
+import { useRestriction } from '../hooks/useRestriction'
 import { showConfirm } from '../components/common/ConfirmDialog'
 
 // ── Helpers mois ──────────────────────────────────────────────────
@@ -60,6 +61,7 @@ interface ExpenseModalProps {
 }
 
 function ExpenseModal({ config, onSave, onClose }: ExpenseModalProps) {
+  const restriction = useRestriction()
   const labelRef                   = useRef<HTMLInputElement>(null)
   const [label,      setLabel]     = useState(config.label)
   const [amountStr,  setAmountStr] = useState(String(config.monthly_amount ?? 0))
@@ -235,7 +237,8 @@ function ExpenseModal({ config, onSave, onClose }: ExpenseModalProps) {
           <button
             className="btn btn-primary"
             onClick={handleSave}
-            disabled={!label.trim() || selMonths.length === 0}
+            disabled={!label.trim() || selMonths.length === 0 || !restriction.canCreateSession}
+            title={!restriction.canCreateSession ? 'Mode restreint — abonnement requis' : undefined}
           >
             💾 {config.label ? 'Enregistrer les modifications' : 'Ajouter la charge'}
           </button>
@@ -248,7 +251,9 @@ function ExpenseModal({ config, onSave, onClose }: ExpenseModalProps) {
 // ── PAGE PRINCIPALE ───────────────────────────────────────────────
 
 export default function DepensesPage() {
-  const showToast = useContext(ToastContext)
+  const showToast   = useContext(ToastContext)
+  const restriction = useRestriction()
+  const R_TIP = 'Mode restreint — abonnement requis'
   const [types,   setTypes]   = useState<ConsultationType[]>([])
   const [configs, setConfigs] = useState<ExpenseConfig[]>([])
   const [loading, setLoading] = useState(true)
@@ -373,7 +378,8 @@ export default function DepensesPage() {
                     className="btn btn-secondary btn-sm"
                     style={{ color: 'var(--red)', borderColor: 'rgba(168,50,50,.3)' }}
                     onClick={() => handleDeleteType(t.id, t.name)}
-                    title={`Supprimer "${t.name}"`}
+                    disabled={!restriction.canCreateSession}
+                    title={!restriction.canCreateSession ? R_TIP : `Supprimer "${t.name}"`}
                   >✕</button>
                 </td>
               </tr>
@@ -381,8 +387,11 @@ export default function DepensesPage() {
           </tbody>
         </table>
         <div className="row-btns" style={{ marginTop: 14 }}>
-          <button className="btn btn-secondary btn-sm" onClick={addType}>+ Ajouter un type</button>
-          <button className="btn btn-primary btn-sm" onClick={() => saveTypes(types)} disabled={saving}>💾 Enregistrer</button>
+          <button className="btn btn-secondary btn-sm" onClick={addType}
+            disabled={!restriction.canCreateSession} title={!restriction.canCreateSession ? R_TIP : undefined}>+ Ajouter un type</button>
+          <button className="btn btn-primary btn-sm" onClick={() => saveTypes(types)}
+            disabled={saving || !restriction.canCreateSession}
+            title={!restriction.canCreateSession ? R_TIP : undefined}>💾 Enregistrer</button>
         </div>
       </div>
 
@@ -447,8 +456,10 @@ export default function DepensesPage() {
                       {isCurrent ? `${eff.toFixed(2)} €` : '—'}
                     </td>
                     <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
-                      <button className="btn btn-secondary btn-sm" style={{ marginRight: 4 }} onClick={() => openEdit(c)}>✏️</button>
-                      <button className="btn btn-secondary btn-sm" style={{ color: 'var(--red)' }} onClick={() => handleDelete(c.id)}>✕</button>
+                      <button className="btn btn-secondary btn-sm" style={{ marginRight: 4 }} onClick={() => openEdit(c)}
+                        disabled={!restriction.canCreateSession} title={!restriction.canCreateSession ? R_TIP : 'Modifier'}>✏️</button>
+                      <button className="btn btn-secondary btn-sm" style={{ color: 'var(--red)' }} onClick={() => handleDelete(c.id)}
+                        disabled={!restriction.canCreateSession} title={!restriction.canCreateSession ? R_TIP : 'Supprimer'}>✕</button>
                     </td>
                   </tr>
                 )
@@ -458,7 +469,8 @@ export default function DepensesPage() {
         )}
 
         <div className="row-btns" style={{ marginTop: 14 }}>
-          <button className="btn btn-secondary btn-sm" onClick={openAdd}>+ Ajouter une charge</button>
+          <button className="btn btn-secondary btn-sm" onClick={openAdd}
+            disabled={!restriction.canCreateSession} title={!restriction.canCreateSession ? R_TIP : undefined}>+ Ajouter une charge</button>
         </div>
 
         <div style={{ marginTop: 12, padding: '10px 14px', background: 'var(--bg)', borderRadius: 'var(--radius)', fontSize: 12, color: 'var(--text-muted)' }}>

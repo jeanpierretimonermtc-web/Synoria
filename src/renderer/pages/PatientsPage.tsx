@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Patient } from '../../shared/types'
 import { ToastContext } from '../App'
+import { useRestriction } from '../hooks/useRestriction'
 import { showConfirm } from '../components/common/ConfirmDialog'
 import { fmtDate, getInitials, calcAge } from '../utils/format'
 import PageHeader from '../components/common/PageHeader'
@@ -194,6 +195,8 @@ export default function PatientsPage() {
   const [invoicePatient, setInvoicePatient] = useState<Patient | null>(null)
   const showToast = useContext(ToastContext)
   const navigate = useNavigate()
+  const restriction = useRestriction()
+  const R_TIP = 'Mode restreint — abonnement requis'
 
   const load = async () => {
     try { setPatients(await window.mtcApi.getPatients()) }
@@ -301,7 +304,7 @@ export default function PatientsPage() {
         title="Patients"
         count={counts.active}
         subtitle={counts.active === 0 ? 'Aucun patient actif' : `${counts.active} patient${counts.active > 1 ? 's' : ''} actif${counts.active > 1 ? 's' : ''}`}
-        action={<button className="btn btn-primary" onClick={openCreate}>+ Nouveau patient</button>}
+        action={<button className="btn btn-primary" onClick={openCreate} disabled={!restriction.canCreatePatient} title={!restriction.canCreatePatient ? R_TIP : undefined}>+ Nouveau patient</button>}
       />
 
       {/* Barre de recherche */}
@@ -351,7 +354,7 @@ export default function PatientsPage() {
             icon={<UsersIcon size={30} />}
             title="Aucun patient enregistré"
             description="Ajoutez votre premier patient pour commencer à gérer vos dossiers."
-            action={<button className="btn btn-primary" onClick={openCreate}>+ Nouveau patient</button>}
+            action={<button className="btn btn-primary" onClick={openCreate} disabled={!restriction.canCreatePatient} title={!restriction.canCreatePatient ? R_TIP : undefined}>+ Nouveau patient</button>}
           />
         ) : (
           <EmptyState
@@ -471,7 +474,9 @@ export default function PatientsPage() {
 
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowModal(false)}>Annuler</button>
-              <button className="btn btn-primary" onClick={handleSave}>Enregistrer</button>
+              <button className="btn btn-primary" onClick={handleSave}
+                disabled={editPatient ? !restriction.canModifyPatient : !restriction.canCreatePatient}
+                title={editPatient ? (!restriction.canModifyPatient ? R_TIP : undefined) : (!restriction.canCreatePatient ? R_TIP : undefined)}>Enregistrer</button>
             </div>
           </div>
         </div>
@@ -491,6 +496,8 @@ function PatientCard({ patient, onEdit, onDelete, onNewSession, onViewSessions, 
   onInvoice: (p: Patient) => void
 }) {
   const isArchived = patient.is_active === 0
+  const restriction = useRestriction()
+  const R_TIP = 'Mode restreint — abonnement requis'
 
   return (
     <div className={`patient-card ${isArchived ? 'patient-card-archived' : ''}`}>
@@ -544,21 +551,26 @@ function PatientCard({ patient, onEdit, onDelete, onNewSession, onViewSessions, 
           {/* Primaires — toujours visibles */}
           <div className="patient-card-actions-primary">
             {!isArchived && (
-              <button className="btn btn-primary btn-sm" onClick={() => onNewSession(patient.id)}>+ Séance</button>
+              <button className="btn btn-primary btn-sm" onClick={() => onNewSession(patient.id)}
+                disabled={!restriction.canCreateSession} title={!restriction.canCreateSession ? R_TIP : undefined}>+ Séance</button>
             )}
             <button className="btn btn-secondary btn-sm" onClick={() => onViewSessions(patient.id)}>📋 Séances</button>
-            <button className="btn btn-amber btn-sm" onClick={() => onInvoice(patient)} title="Générer une facture PDF">🧾 Facture</button>
+            <button className="btn btn-amber btn-sm" onClick={() => onInvoice(patient)}
+              disabled={!restriction.canCreateInvoice} title={!restriction.canCreateInvoice ? R_TIP : 'Générer une facture PDF'}>🧾 Facture</button>
           </div>
           {/* Secondaires — apparaissent au survol */}
           <div className="patient-card-actions-secondary">
-            <button className="btn btn-secondary btn-sm" onClick={() => onEdit(patient)}>✏️ Modifier</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => onEdit(patient)}
+              disabled={!restriction.canModifyPatient} title={!restriction.canModifyPatient ? R_TIP : undefined}>✏️ Modifier</button>
             <button className="btn btn-secondary btn-sm" onClick={() => onBackup(patient.id)} title="Sauvegarder">💾</button>
             <button
               className={`btn btn-sm ${isArchived ? 'btn-primary' : 'btn-secondary'}`}
-              title={isArchived ? 'Réactiver ce patient' : 'Archiver ce patient'}
+              title={!restriction.canModifyPatient ? R_TIP : isArchived ? 'Réactiver ce patient' : 'Archiver ce patient'}
               onClick={() => onToggleActive(patient)}
+              disabled={!restriction.canModifyPatient}
             >{isArchived ? '🔄 Réactiver' : '📁 Archiver'}</button>
-            <button className="btn btn-danger btn-sm" onClick={() => onDelete(patient)} title="Supprimer">🗑️</button>
+            <button className="btn btn-danger btn-sm" onClick={() => onDelete(patient)}
+              disabled={!restriction.canModifyPatient} title={!restriction.canModifyPatient ? R_TIP : 'Supprimer'}>🗑️</button>
           </div>
         </div>
 

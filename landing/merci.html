@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Merci — Synoria</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="Confirmation de votre abonnement Synoria.">
+<link rel="icon" type="image/png" href="assets/Synoria.png">
+<link rel="apple-touch-icon" href="assets/Synoria.png">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/" aria-label="Accueil Synoria">
+      <img class="brand-logo" src="assets/Synoria.png" alt="">
+      <span class="brand-name">SYNORIA</span>
+    </a>
+    <nav class="nav-links" aria-label="Navigation principale">
+      <a href="/#fonctionnalites">Fonctions</a>
+      <a href="/tarifs">Tarifs</a>
+      <a href="/telechargement">Télécharger</a>
+      <a href="/support">Support</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-outline" href="/abonnement">Mon compte</a>
+    </div>
+  </div>
+</nav>
+
+<style>
+.merci-card{max-width:600px;width:100%}
+.merci-steps{text-align:left;border-top:1px solid var(--border);margin:28px 0 0;padding-top:4px}
+.merci-step{display:grid;grid-template-columns:28px 1fr;gap:12px;padding:14px 0;border-bottom:1px solid var(--border)}
+.merci-step:last-child{border-bottom:none}
+.merci-step-n{font-family:Georgia,"Times New Roman",serif;font-size:16px;color:var(--accent);line-height:1.4}
+.merci-step-body{font-size:14px;line-height:1.62;color:var(--ink)}
+.merci-step-body strong{font-weight:700}
+.merci-step-body em{display:block;font-style:normal;color:var(--muted);font-size:13px;margin-top:2px}
+.merci-notice{background:var(--accent-light);border:1px solid rgba(74,123,60,.22);border-radius:var(--r);padding:14px 16px;font-size:13px;color:var(--accent-dark);text-align:left;margin-top:20px;line-height:1.65}
+</style>
+
+<main class="result-page">
+  <div class="result-card merci-card">
+    <div class="result-icon success">
+      <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+    </div>
+    <h1 style="font-size:clamp(26px,4vw,38px);text-align:center">Votre essai est activé — bienvenue dans Synoria.</h1>
+    <p class="section-text" style="margin:0 auto 4px;text-align:center">Aucune somme n'a été prélevée. Votre période d'essai de 14 jours commence maintenant.</p>
+    <p class="section-text" style="margin:0 auto;font-size:13px;color:var(--muted);opacity:.8;text-align:center" id="ref-line"></p>
+
+    <div class="merci-steps">
+      <div class="merci-step">
+        <span class="merci-step-n">1</span>
+        <div class="merci-step-body">
+          <strong>Vérifiez votre boîte email</strong>
+          <em>Un email avec le lien de téléchargement vient d'être envoyé à l'adresse indiquée. Vérifiez également les courriers indésirables si vous ne le recevez pas dans les prochaines minutes.</em>
+        </div>
+      </div>
+      <div class="merci-step">
+        <span class="merci-step-n">2</span>
+        <div class="merci-step-body">
+          <strong>Téléchargez et installez Synoria</strong>
+          <em>Compatible Windows 10 et 11, 64 bits. L'installation prend moins de deux minutes.</em>
+        </div>
+      </div>
+      <div class="merci-step">
+        <span class="merci-step-n">3</span>
+        <div class="merci-step-body">
+          <strong>Connectez-vous avec votre compte Synoria</strong>
+          <em>Utilisez l'email et le mot de passe que vous venez de créer. Synoria activera automatiquement votre licence.</em>
+        </div>
+      </div>
+      <div class="merci-step">
+        <span class="merci-step-n">4</span>
+        <div class="merci-step-body">
+          <strong>Explorez à votre rythme</strong>
+          <em>La documentation est accessible depuis le menu Aide dans le logiciel. Notre support est disponible à <a href="mailto:contact@logiciel-synoria.fr" style="color:var(--accent)">contact@logiciel-synoria.fr</a>.</em>
+        </div>
+      </div>
+    </div>
+
+    <div class="merci-notice">
+      <strong>Rappel :</strong> à l'issue de vos 14 jours d'essai, votre abonnement s'activera automatiquement et votre carte sera débitée. Pour annuler sans frais, rendez-vous dans Synoria → <strong>Mon abonnement → Gérer l'abonnement</strong> avant l'échéance.
+    </div>
+
+    <div class="result-actions" style="margin-top:24px">
+      <a class="btn btn-primary" href="/telechargement">Page de téléchargement</a>
+      <a class="btn btn-outline" href="/abonnement">Accéder à mon compte</a>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">
+        <img class="footer-brand-logo" src="assets/Synoria.png" alt="">
+        <span class="footer-brand-name">SYNORIA</span>
+      </div>
+      <p class="footer-desc">Logiciel de gestion de dossiers patients pour praticiens indépendants. Données locales, chiffrées et maîtrisées.</p>
+    </div>
+    <div>
+      <h4>Logiciel</h4>
+      <ul>
+        <li><a href="/#fonctionnalites">Fonctionnalités</a></li>
+        <li><a href="/tarifs">Tarifs</a></li>
+        <li><a href="/#securite">Sécurité &amp; RGPD</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Ressources</h4>
+      <ul>
+        <li><a href="../documentation_synoria_html/index.html">Documentation</a></li>
+        <li><a href="../GUIDE_INSTALLATION_CLIENT.html">Guide d'installation</a></li>
+        <li><a href="/telechargement">Télécharger</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Compte</h4>
+      <ul>
+        <li><a href="/abonnement">Mon abonnement</a></li>
+        <li><a href="/support">Support</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Légal</h4>
+      <ul>
+        <li><a href="/confidentialite">Confidentialité</a></li>
+        <li><a href="/cgv">CGV</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Synoria — Jean-Pierre Timoner (auto-entrepreneur) — SIRET 929 311 496 00012</span>
+    <span>Local · Chiffré · RGPD</span>
+  </div>
+</footer>
+
+<script>
+  // Stripe redirige vers /merci?session_id={CHECKOUT_SESSION_ID}
+  // TODO: une fois le backend en place, verifier la session cote serveur (Edge Function)
+  // et afficher le recapitulatif reel (offre, montant, date de fin d'essai).
+  var params = new URLSearchParams(window.location.search);
+  var sessionId = params.get('session_id');
+  if (sessionId) {
+    document.getElementById('ref-line').textContent = 'Référence de paiement : ' + sessionId.slice(0, 24) + '...';
+  }
+</script>
+</body>
+</html>

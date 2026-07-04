@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useContext, useCallback, useRef } from 'react'
 import type { ComptaYearData, ConsultationType } from '../../shared/types'
 import { ToastContext } from '../App'
+import { useRestriction } from '../hooks/useRestriction'
 
 const MONTHS_SHORT = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc']
 const VAR_CATS = [
@@ -16,11 +17,12 @@ const pct = (r: number) => (r * 100).toFixed(1) + ' %'
 
 // ── Cellule éditable légère ────────────────────────────────────────
 
-function EditCell({ value, onChange, isRate = false, isCurrency = false }: {
+function EditCell({ value, onChange, isRate = false, isCurrency = false, readonly = false }: {
   value: number
   onChange: (v: number) => void
   isRate?: boolean
   isCurrency?: boolean
+  readonly?: boolean
 }) {
   const [editing, setEditing] = useState(false)
   const [raw, setRaw]         = useState('')
@@ -67,19 +69,20 @@ function EditCell({ value, onChange, isRate = false, isCurrency = false }: {
   return (
     <div
       className={`compta-cell-val${isRate ? ' compta-cell-rate' : ''}${isCurrency ? ' compta-cell-eur' : ''}`}
-      onClick={() => {
+      onClick={readonly ? undefined : () => {
         setRaw(isRate ? String((value * 100).toFixed(1)) : (value > 0 ? String(value) : ''))
         setEditing(true)
       }}
-      onKeyDown={e => {
+      onKeyDown={readonly ? undefined : e => {
         if (e.key === 'Enter' || e.key === ' ') {
           setRaw(isRate ? String((value * 100).toFixed(1)) : (value > 0 ? String(value) : ''))
           setEditing(true)
         }
       }}
-      tabIndex={0}
-      title="Cliquer pour modifier"
-      role="button"
+      tabIndex={readonly ? -1 : 0}
+      title={readonly ? 'Mode restreint — abonnement requis' : 'Cliquer pour modifier'}
+      role={readonly ? undefined : 'button'}
+      style={readonly ? { cursor: 'not-allowed', opacity: 0.55 } : undefined}
     >
       {value ? display : <span className="compta-cell-zero">—</span>}
     </div>
@@ -89,7 +92,9 @@ function EditCell({ value, onChange, isRate = false, isCurrency = false }: {
 // ── Page ──────────────────────────────────────────────────────────
 
 export default function ComptaPage() {
-  const showToast = useContext(ToastContext)
+  const showToast   = useContext(ToastContext)
+  const restriction = useRestriction()
+  const ro          = restriction.mode === 'restricted'
   const [year,    setYear]    = useState(new Date().getFullYear())
   const [data,    setData]    = useState<ComptaYearData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -278,7 +283,7 @@ export default function ComptaPage() {
                   const rev = nb * t.price
                   return (
                     <td key={m} className="compta-td">
-                      <EditCell value={nb} onChange={v => setNb(m, t.id, Math.round(v))} />
+                      <EditCell value={nb} onChange={v => setNb(m, t.id, Math.round(v))} readonly={ro} />
                       {nb > 0 && <div className="compta-sub-rev">{rev.toFixed(0)} €</div>}
                     </td>
                   )
@@ -329,6 +334,7 @@ export default function ComptaPage() {
                       value={getVar(m, vc.key)}
                       onChange={v => setVarExp(m, vc.key, vc.label, v)}
                       isCurrency
+                      readonly={ro}
                     />
                   </td>
                 ))}
@@ -356,7 +362,7 @@ export default function ComptaPage() {
               <td />
               {Array.from({length:12},(_,i)=>i+1).map(m => (
                 <td key={m} className="compta-td">
-                  <EditCell value={getRate(m)} onChange={v => setRate(m, v)} isRate />
+                  <EditCell value={getRate(m)} onChange={v => setRate(m, v)} isRate readonly={ro} />
                 </td>
               ))}
               <td />

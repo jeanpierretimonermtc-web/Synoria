@@ -1,5 +1,11 @@
 # Dossier Patient MTC — Documentation projet Claude
 
+> **⚠️ Travail en cours (à supprimer une fois terminé) :** un système de
+> licence Stripe + Supabase est en cours d'implémentation sur la branche
+> `feature/synoria-licensing-stripe-supabase`. **Lis `LICENSING_HANDOFF.md`
+> à la racine avant de répondre à toute question liée à la licence, Stripe,
+> Supabase ou aux pages `landing/`.**
+
 ## Vue d'ensemble
 
 Application desktop **Electron + React + TypeScript** de gestion de dossiers patients pour praticiens de santé (MTC, Kinésiologie, Ostéopathie, etc.).

@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import type { Session, Patient, ConsultationType } from '../../shared/types'
 import type { PluginDefinition } from '../../shared/pluginTypes'
 import { ToastContext } from '../App'
+import { useRestriction } from '../hooks/useRestriction'
 import { showConfirm } from '../components/common/ConfirmDialog'
 import { fmtDate, getInitials, getEvolBadgeClass } from '../utils/format'
 import { SummaryContent } from './SummaryPage'
@@ -26,6 +27,7 @@ function ComptaModal({ session, patient, types, onClose, onDone }: {
   onDone: (typeId: string | null) => void  // null = suppression
 }) {
   const showToast    = useContext(ToastContext)
+  const restriction  = useRestriction()
   const existing     = getSessionCompta(session)
   const alreadyDone  = !!existing.comptaTypeId
   const existingType = types.find(t => t.id === existing.comptaTypeId)
@@ -129,7 +131,8 @@ function ComptaModal({ session, patient, types, onClose, onDone }: {
               </button>
               <button className="btn btn-secondary btn-sm"
                 style={{ color: 'var(--red)', borderColor: 'var(--red)' }}
-                onClick={handleDelete} disabled={saving}>
+                onClick={handleDelete} disabled={saving || !restriction.canModifySession}
+                title={!restriction.canModifySession ? 'Mode restreint — abonnement requis' : undefined}>
                 {saving ? '⏳…' : '🗑 Supprimer l\'entrée'}
               </button>
             </div>
@@ -156,7 +159,8 @@ function ComptaModal({ session, patient, types, onClose, onDone }: {
             </div>
             <div className="modal-footer">
               <button className="btn btn-primary" onClick={handleChange}
-                disabled={!newTypeId || saving || newTypeId === existing.comptaTypeId}
+                disabled={!newTypeId || saving || newTypeId === existing.comptaTypeId || !restriction.canModifySession}
+                title={!restriction.canModifySession ? 'Mode restreint — abonnement requis' : undefined}
                 style={{ background: 'var(--accent)', borderColor: 'var(--accent)' }}>
                 {saving ? '⏳…' : '✓ Modifier'}
               </button>
@@ -190,7 +194,9 @@ function ComptaModal({ session, patient, types, onClose, onDone }: {
               </div>
             )}
             <div className="modal-footer">
-              <button className="btn btn-primary" onClick={handleNew} disabled={!newTypeId || saving}
+              <button className="btn btn-primary" onClick={handleNew}
+                disabled={!newTypeId || saving || !restriction.canModifySession}
+                title={!restriction.canModifySession ? 'Mode restreint — abonnement requis' : undefined}
                 style={{ background: 'var(--accent)', borderColor: 'var(--accent)' }}>
                 {saving ? '⏳…' : '✓ Enregistrer'}
               </button>
@@ -208,6 +214,7 @@ export default function SeancesPage() {
   const navigate       = useNavigate()
   const location       = useLocation()
   const showToast      = useContext(ToastContext)
+  const restriction    = useRestriction()
 
   const presetPatient  = (location.state as any)?.patientId || ''
 
@@ -495,10 +502,14 @@ export default function SeancesPage() {
               <button
                 className="btn btn-secondary btn-sm"
                 onClick={() => handleDuplicate(selectedSession.id)}
+                disabled={!restriction.canModifySession}
+                title={!restriction.canModifySession ? 'Mode restreint — abonnement requis' : undefined}
               >Dupliquer</button>
               <button
                 className="btn btn-danger btn-sm"
                 onClick={() => handleDelete(selectedSession.id)}
+                disabled={!restriction.canModifySession}
+                title={!restriction.canModifySession ? 'Mode restreint — abonnement requis' : undefined}
               >Supprimer</button>
             </div>
 

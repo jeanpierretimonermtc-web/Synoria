@@ -19,18 +19,35 @@ import ComptaPage        from './pages/ComptaPage'
 import DepensesPage      from './pages/DepensesPage'
 import FacturesListPage  from './pages/FacturesListPage'
 import ProfilePage       from './pages/ProfilePage'
+import AccountPage      from './pages/AccountPage'
+import AbonnementPage   from './pages/AbonnementPage'
 import { useInactivityLock } from './hooks/useInactivityLock'
 import GlobalSearch from './components/common/GlobalSearch'
 import AdminPanel from './components/admin/AdminPanel'
 
+import type { RestrictionState } from '../shared/types'
+
 export const ToastContext = React.createContext<(msg: string, type?: 'success' | 'error') => void>(() => {})
 
-type AuthState = 'splash' | 'checking' | 'setup' | 'locked' | 'unlocked'
+const DEFAULT_RESTRICTION: RestrictionState = {
+  mode: 'restricted', status: 'unknown',
+  canReadData: true, canExportData: true, canBackupData: true,
+  canCreatePatient: false, canModifyPatient: false,
+  canCreateSession: false, canModifySession: false,
+  canCreateInvoice: false, canCreateAppointment: false,
+  canUsePremiumFeatures: false,
+}
+export const RestrictionContext = React.createContext<RestrictionState>(DEFAULT_RESTRICTION)
+
+type AuthState = 'splash' | 'checking' | 'account-login' | 'subscription' | 'setup' | 'locked' | 'unlocked'
 
 export default function App() {
   const { toast, showToast } = useToast()
   const [authState,   setAuthState]   = useState<AuthState>('splash')
   const [showWizard,  setShowWizard]  = useState(false)
+  const [licenseStatus, setLicenseStatus] = useState<string>('unknown')
+  const [restriction,   setRestriction]   = useState<RestrictionState>(DEFAULT_RESTRICTION)
+  const [updateResult,  setUpdateResult]  = useState<import('../shared/types').ReleaseCheckResult | null>(null)
   const navigate = useNavigate()
 
   type ThemeMode = 'light' | 'dark' | 'system'
@@ -155,6 +172,22 @@ export default function App() {
     return () => window.removeEventListener('keydown', handler)
   }, [authState, navigate])
 
+  // Vérifier le statut de licence quand l'app est déverrouillée
+  useEffect(() => {
+    if (authState !== 'unlocked') return
+    window.mtcApi.licenseGetState()
+      .then(s => setLicenseStatus(s.status))
+      .catch(() => {})
+    window.mtcApi.licenseGetRestrictionState()
+      .then(setRestriction)
+      .catch(() => {})
+  }, [authState])
+
+  // Écouter les notifications de mise à jour depuis le main process
+  useEffect(() => {
+    window.mtcApi.onUpdateAvailable(result => setUpdateResult(result))
+  }, [])
+
   // Verrou automatique après 20 min d'inactivité
   const handleInactivityLock = useCallback(async () => {
     await window.mtcApi.authLock()
@@ -162,16 +195,37 @@ export default function App() {
   }, [])
   useInactivityLock(handleInactivityLock, authState === 'unlocked')
 
-  // Vérifie le statut auth après le splash
+  // ── Flux de démarrage complet ──────────────────────────────────────
+  // Ordre obligatoire : compte Supabase → licence active → mot de passe DB
   const checkAuth = async () => {
     setAuthState('checking')
     try {
+      // 1. Compte Supabase obligatoire
+      const acc = await window.mtcApi.accountGetState()
+      if (!acc.isLoggedIn) {
+        setAuthState('account-login')
+        return
+      }
+
+      // 2. Licence : utiliser le jeton local d'abord
+      let lic = await window.mtcApi.licenseGetState()
+      const hasLocalLicense = lic.status === 'active' || lic.status === 'trialing' || lic.status === 'past_due_grace'
+      if (!hasLocalLicense) {
+        // Pas de jeton local valide — vérifier en ligne (peut être un compte déjà abonné)
+        try { lic = await window.mtcApi.licenseVerifyOnline() } catch {}
+      }
+      if (lic.status === 'unknown' || lic.status === 'restricted') {
+        setAuthState('subscription')
+        return
+      }
+
+      // 3. Auth base de données locale
       const { hasPassword, isUnlocked } = await window.mtcApi.authStatus()
       if (!hasPassword) setAuthState('setup')
       else if (isUnlocked) setAuthState('unlocked')
       else setAuthState('locked')
     } catch {
-      setAuthState('locked')  // fallback sécurisé : forcer le verrou si IPC échoue
+      setAuthState('locked')
     }
   }
 
@@ -181,10 +235,20 @@ export default function App() {
 
   if (authState === 'checking') {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#F5F2ED' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg, #F5F2ED)' }}>
         <div className="loading-dots"><span /><span /><span /></div>
       </div>
     )
+  }
+
+  // ── Gate 1 : connexion au compte Synoria ───────────────────────────
+  if (authState === 'account-login') {
+    return <AccountGate onDone={checkAuth} theme={theme} />
+  }
+
+  // ── Gate 2 : choix de l'abonnement (14 jours d'essai) ────────────
+  if (authState === 'subscription') {
+    return <SubscriptionGate onDone={checkAuth} theme={theme} />
   }
 
   if (authState === 'setup' || authState === 'locked') {
@@ -209,6 +273,7 @@ export default function App() {
   }
 
   return (
+    <RestrictionContext.Provider value={restriction}>
     <ToastContext.Provider value={showToast}>
       <FormattingPopup />
       {searchOpen && <GlobalSearch onClose={() => setSearchOpen(false)} />}
@@ -344,6 +409,15 @@ export default function App() {
                 <span className="sidebar-icon" style={{ background: '#8E8E93' }}><SettingsIcon size={14} /></span>
                 Paramètres
               </NavLink>
+              <NavLink to="/abonnement" className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
+                <span className="sidebar-icon" style={{ background: '#FF9F0A' }}>
+                  <span style={{ fontSize: 11 }}>🔑</span>
+                </span>
+                {licenseStatus === 'restricted' || licenseStatus === 'unknown'
+                  ? <span>Abonnement <span style={{ color: 'var(--red)', fontWeight: 700, fontSize: 10 }}>!</span></span>
+                  : 'Mon abonnement'
+                }
+              </NavLink>
 
             </nav>
 
@@ -367,6 +441,68 @@ export default function App() {
           {/* ── CONTENU ── */}
           <div className="app-content">
             <FormattingToolbar />
+            {(licenseStatus === 'restricted') && (
+              <div style={{
+                background: 'rgba(255,59,48,.12)', borderBottom: '1px solid rgba(255,59,48,.3)',
+                padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 12,
+                fontSize: 13, color: '#C00',
+              }}>
+                <span style={{ fontWeight: 700 }}>Mode restreint</span>
+                — Votre licence est expirée. Lecture et export toujours disponibles.
+                <button
+                  className="btn btn-sm"
+                  style={{ marginLeft: 'auto', background: '#C00', color: '#fff', border: 'none', padding: '4px 14px' }}
+                  onClick={() => navigate('/abonnement')}
+                >
+                  Renouveler →
+                </button>
+              </div>
+            )}
+            {(licenseStatus === 'past_due_grace') && (
+              <div style={{
+                background: 'rgba(255,159,10,.1)', borderBottom: '1px solid rgba(255,159,10,.3)',
+                padding: '8px 20px', fontSize: 12, color: '#A86800',
+              }}>
+                Paiement en attente — Synoria continuera à fonctionner normalement pendant la période de grâce.
+                <button className="btn btn-sm" style={{ marginLeft: 12, padding: '2px 10px' }} onClick={() => navigate('/compte')}>
+                  Gérer →
+                </button>
+              </div>
+            )}
+            {updateResult && (
+              <div style={{
+                background: 'rgba(91,140,247,.1)', borderBottom: '1px solid rgba(91,140,247,.3)',
+                padding: '8px 20px', display: 'flex', alignItems: 'center', gap: 10,
+                fontSize: 12, color: 'var(--text)',
+              }}>
+                <span style={{ fontWeight: 600 }}>
+                  {updateResult.is_required ? '⚠️ Mise à jour requise' : '⬆️ Mise à jour disponible'}
+                </span>
+                — v{updateResult.latest_version}
+                {updateResult.title && <span style={{ color: 'var(--text-muted)' }}>· {updateResult.title}</span>}
+                {updateResult.download_url && (
+                  <button
+                    className="btn btn-sm"
+                    style={{ marginLeft: 4, padding: '2px 10px', background: '#5B8CF7', color: '#fff', border: 'none' }}
+                    onClick={() => window.open(updateResult!.download_url!, '_blank')}
+                  >
+                    Télécharger
+                  </button>
+                )}
+                {!updateResult.is_required && (
+                  <button
+                    className="btn btn-sm"
+                    style={{ padding: '2px 10px' }}
+                    onClick={() => {
+                      window.mtcApi.dismissUpdateNotification(updateResult.latest_version).catch(() => {})
+                      setUpdateResult(null)
+                    }}
+                  >
+                    Ignorer
+                  </button>
+                )}
+              </div>
+            )}
             <main className="app-main">
               <PageErrorBoundary>
               <Routes>
@@ -387,6 +523,8 @@ export default function App() {
                 <Route path="/parametres"          element={<SettingsPage />} />
                 <Route path="/rgpd"                element={<RgpdPage />} />
                 <Route path="/profil"              element={<ProfilePage />} />
+                <Route path="/compte"             element={<AccountPage />} />
+                <Route path="/abonnement"        element={<AbonnementPage />} />
               </Routes>
               </PageErrorBoundary>
             </main>
@@ -398,6 +536,7 @@ export default function App() {
         <ConfirmDialog />
       </div>
     </ToastContext.Provider>
+    </RestrictionContext.Provider>
   )
 }
 
@@ -703,6 +842,294 @@ function BackupButton({ showToast }: { showToast: (msg: string, type?: 'success'
           </button>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Gate 1 : Connexion au compte Synoria ─────────────────────────────────────
+
+function AccountGate({ onDone, theme }: { onDone: () => void; theme: 'light' | 'dark' }) {
+  const [view, setView]         = useState<'login' | 'signup' | 'reset'>('login')
+  const [email, setEmail]       = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState('')
+  const [message, setMessage]   = useState('')
+  const [emailExists, setEmailExists] = useState(false)
+
+  const switchToLogin = () => { setView('login'); setError(''); setMessage(''); setEmailExists(false) }
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault(); setLoading(true); setError('')
+    try {
+      const { ok, error: err } = await window.mtcApi.accountSignIn(email, password)
+      if (!ok) { setError(err ?? 'Connexion échouée'); return }
+      onDone()
+    } finally { setLoading(false) }
+  }
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault(); setLoading(true); setError(''); setEmailExists(false)
+    try {
+      const { ok, error: err } = await window.mtcApi.accountSignUp(email, password)
+      if (!ok) {
+        if (err === 'EMAIL_EXISTS') {
+          setEmailExists(true)
+          setError('Un compte existe déjà avec cette adresse email.')
+        } else {
+          setError(err ?? 'Inscription échouée')
+        }
+        return
+      }
+      setMessage('Compte créé ! Vérifiez votre email pour confirmer votre adresse, puis revenez vous connecter.')
+      setView('login')
+      setPassword('')
+    } finally { setLoading(false) }
+  }
+
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault(); setLoading(true); setError('')
+    try {
+      const { ok, error: err } = await window.mtcApi.accountResetPassword(email)
+      if (!ok) { setError(err ?? 'Erreur'); return }
+      setMessage('Email envoyé. Consultez votre boîte mail.')
+      setView('login')
+    } finally { setLoading(false) }
+  }
+
+  const bg = theme === 'dark' ? '#141814' : '#f4f7f4'
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: bg, flexDirection: 'column', gap: 24 }}>
+      <div style={{ textAlign: 'center' }}>
+        <img src="./Synoria.png" alt="Synoria" style={{ width: 56, height: 56, objectFit: 'contain', marginBottom: 10 }} />
+        <div style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 22, fontWeight: 700, color: 'var(--accent, #4a7b3c)' }}>Synoria</div>
+        <div style={{ fontSize: 13, color: 'var(--text-muted, #888)', marginTop: 4 }}>Logiciel de gestion de dossiers patients</div>
+      </div>
+
+      <div className="card" style={{ width: 400, padding: 32 }}>
+        {message && (
+          <div style={{ background: '#e8f5e9', color: '#2d6e4a', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, lineHeight: 1.5 }}>
+            {message}
+          </div>
+        )}
+        {error && (
+          <div style={{ background: '#fdf1f0', color: '#b83c2c', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13 }}>
+            {error}
+          </div>
+        )}
+
+        {view === 'login' && (
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ fontSize: 17, fontWeight: 600, color: 'var(--accent, #4a7b3c)', marginBottom: 4 }}>Connexion à votre compte</div>
+            <div className="field">
+              <label>Email</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus autoComplete="email" />
+            </div>
+            <div className="field">
+              <label>Mot de passe</label>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required autoComplete="current-password" />
+            </div>
+            <button className="btn btn-primary" type="submit" disabled={loading}>
+              {loading ? 'Connexion…' : 'Se connecter'}
+            </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+              <button type="button" style={{ background: 'none', border: 'none', color: 'var(--accent, #4a7b3c)', cursor: 'pointer', padding: 0, fontSize: 13 }}
+                onClick={() => { setView('signup'); setError(''); setMessage(''); setEmailExists(false) }}>
+                Créer un compte
+              </button>
+              <button type="button" style={{ background: 'none', border: 'none', color: 'var(--text-muted, #888)', cursor: 'pointer', padding: 0, fontSize: 13 }}
+                onClick={() => { setView('reset'); setError(''); setMessage(''); setEmailExists(false) }}>
+                Mot de passe oublié
+              </button>
+            </div>
+          </form>
+        )}
+
+        {view === 'signup' && (
+          <form onSubmit={handleSignUp} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ fontSize: 17, fontWeight: 600, color: 'var(--accent, #4a7b3c)', marginBottom: 4 }}>Créer votre compte Synoria</div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted, #888)', background: 'var(--bg, #f4f7f4)', borderRadius: 8, padding: '10px 14px' }}>
+              14 jours d'essai gratuit · Carte bancaire requise à l'inscription · Aucun prélèvement avant J+14
+            </div>
+            <div className="field">
+              <label>Email professionnel</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus autoComplete="email" />
+            </div>
+            <div className="field">
+              <label>Mot de passe (8 caractères minimum)</label>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={8} autoComplete="new-password" />
+            </div>
+            <div style={{ background: '#fff8e1', border: '1px solid #f9a825', borderRadius: 8, padding: '10px 14px', fontSize: 12, color: '#7a5c00', lineHeight: 1.55 }}>
+              ⚠️ <strong>Conservez ce mot de passe précieusement.</strong> Il chiffre également vos sauvegardes locales. En cas de perte, les données de sauvegarde seront inaccessibles. Notez-le dans un endroit sûr.
+            </div>
+            <button className="btn btn-primary" type="submit" disabled={loading}>
+              {loading ? 'Création…' : 'Créer le compte'}
+            </button>
+            {emailExists && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={switchToLogin}
+                style={{ fontWeight: 600 }}
+              >
+                → Se connecter avec cet email
+              </button>
+            )}
+            <button type="button" style={{ background: 'none', border: 'none', color: 'var(--accent, #4a7b3c)', cursor: 'pointer', fontSize: 13 }}
+              onClick={switchToLogin}>
+              ← Déjà un compte ? Se connecter
+            </button>
+          </form>
+        )}
+
+        {view === 'reset' && (
+          <form onSubmit={handleReset} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ fontSize: 17, fontWeight: 600, color: 'var(--accent, #4a7b3c)', marginBottom: 4 }}>Réinitialiser le mot de passe</div>
+            <div className="field">
+              <label>Votre email</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus autoComplete="email" />
+            </div>
+            <button className="btn btn-primary" type="submit" disabled={loading}>
+              {loading ? 'Envoi…' : 'Envoyer le lien de réinitialisation'}
+            </button>
+            <button type="button" style={{ background: 'none', border: 'none', color: 'var(--accent, #4a7b3c)', cursor: 'pointer', fontSize: 13 }}
+              onClick={() => { setView('login'); setError(''); setMessage('') }}>
+              ← Retour à la connexion
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Gate 2 : Choix d'abonnement (essai 14 jours) ─────────────────────────────
+
+const PLAN_ANNUAL  = 'synoria_annual'
+const PLAN_6MONTHS = 'synoria_6_months'
+
+function SubscriptionGate({ onDone, theme }: { onDone: () => void; theme: 'light' | 'dark' }) {
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
+  const [verifying, setVerifying]             = useState(false)
+  const [error, setError]                     = useState('')
+
+  const handleSubscribe = async (plan: string) => {
+    setCheckoutLoading(plan); setError('')
+    try {
+      const url = await window.mtcApi.accountCreateCheckout(plan)
+      // S'ouvre dans le navigateur système (géré par setWindowOpenHandler dans index.ts)
+      window.open(url, '_blank')
+    } catch (e: any) {
+      setError(e?.message ?? 'Erreur lors de l\'ouverture du paiement. Réessayez.')
+    } finally {
+      setCheckoutLoading(null)
+    }
+  }
+
+  const handleVerify = async () => {
+    setVerifying(true); setError('')
+    try {
+      const lic = await window.mtcApi.licenseVerifyOnline()
+      if (lic.status === 'active' || lic.status === 'trialing' || lic.status === 'past_due_grace') {
+        onDone()
+      } else {
+        setError('Abonnement non encore actif. Finalisez le paiement dans votre navigateur, attendez quelques secondes, puis réessayez.')
+      }
+    } catch {
+      setError('Impossible de vérifier en ligne. Vérifiez votre connexion et réessayez.')
+    } finally {
+      setVerifying(false)
+    }
+  }
+
+  const handleSignOut = async () => {
+    await window.mtcApi.accountSignOut().catch(() => {})
+    onDone()
+  }
+
+  const bg = theme === 'dark' ? '#141814' : '#f4f7f4'
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: bg, flexDirection: 'column', gap: 28, padding: '40px 20px' }}>
+      {/* En-tête */}
+      <div style={{ textAlign: 'center' }}>
+        <img src="./Synoria.png" alt="Synoria" style={{ width: 56, height: 56, objectFit: 'contain', marginBottom: 10 }} />
+        <div style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 22, fontWeight: 700, color: 'var(--accent, #4a7b3c)' }}>Synoria</div>
+        <div style={{ fontSize: 15, color: 'var(--text-muted, #888)', marginTop: 6 }}>Choisissez votre formule pour commencer</div>
+        <div style={{
+          display: 'inline-block', marginTop: 10,
+          background: '#e8f5e9', color: '#2d6e4a',
+          borderRadius: 20, padding: '5px 16px',
+          fontSize: 13, fontWeight: 600,
+        }}>
+          14 jours d'essai gratuit — carte bancaire requise, aucun prélèvement avant J+14
+        </div>
+      </div>
+
+      {error && (
+        <div style={{ background: '#fdf1f0', color: '#b83c2c', borderRadius: 8, padding: '12px 18px', fontSize: 13, maxWidth: 500, textAlign: 'center', lineHeight: 1.5 }}>
+          {error}
+        </div>
+      )}
+
+      {/* Cartes tarifaires */}
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 560 }}>
+        {/* 6 mois */}
+        <div className="card" style={{ flex: '1 1 220px', minWidth: 200, padding: 28, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-muted, #888)', marginBottom: 8 }}>
+              Synoria 6 mois
+            </div>
+            <div style={{ fontSize: 30, fontWeight: 700, color: 'var(--text, #1a221a)' }}>
+              63 €<span style={{ fontSize: 14, fontWeight: 400, color: 'var(--text-muted, #888)' }}> / 6 mois</span>
+            </div>
+          </div>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: 13, color: 'var(--text-muted, #888)', display: 'flex', flexDirection: 'column', gap: 6, flexGrow: 1 }}>
+            <li>✓ Toutes les fonctionnalités</li>
+            <li>✓ 2 appareils simultanés</li>
+            <li>✓ Support par email</li>
+          </ul>
+          <button className="btn btn-secondary" disabled={!!checkoutLoading} onClick={() => handleSubscribe(PLAN_6MONTHS)}>
+            {checkoutLoading === PLAN_6MONTHS ? 'Ouverture…' : 'Commencer l\'essai gratuit'}
+          </button>
+        </div>
+
+        {/* Annuel — recommandé */}
+        <div className="card" style={{ flex: '1 1 220px', minWidth: 200, padding: 28, display: 'flex', flexDirection: 'column', gap: 14, outline: '2px solid var(--accent, #4a7b3c)' }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--accent, #4a7b3c)', marginBottom: 8 }}>
+              Synoria Annuel ★ Recommandé
+            </div>
+            <div style={{ fontSize: 30, fontWeight: 700, color: 'var(--text, #1a221a)' }}>
+              123 €<span style={{ fontSize: 14, fontWeight: 400, color: 'var(--text-muted, #888)' }}> / an</span>
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--accent, #4a7b3c)', marginTop: 4 }}>Soit 10,25 € / mois — économisez vs l'offre 6 mois</div>
+          </div>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: 13, color: 'var(--text-muted, #888)', display: 'flex', flexDirection: 'column', gap: 6, flexGrow: 1 }}>
+            <li>✓ Toutes les fonctionnalités</li>
+            <li>✓ 2 appareils simultanés</li>
+            <li>✓ Support prioritaire par email</li>
+          </ul>
+          <button className="btn btn-primary" disabled={!!checkoutLoading} onClick={() => handleSubscribe(PLAN_ANNUAL)}>
+            {checkoutLoading === PLAN_ANNUAL ? 'Ouverture…' : 'Commencer l\'essai gratuit'}
+          </button>
+        </div>
+      </div>
+
+      {/* Actions secondaires */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+        <button className="btn btn-secondary" disabled={verifying} onClick={handleVerify} style={{ minWidth: 240 }}>
+          {verifying ? 'Vérification de votre abonnement…' : 'J\'ai finalisé mon abonnement →'}
+        </button>
+        <div style={{ fontSize: 12, color: 'var(--text-muted, #888)', textAlign: 'center', maxWidth: 320 }}>
+          Après le paiement Stripe, cliquez ici pour activer l'accès.
+        </div>
+        <button style={{ background: 'none', border: 'none', color: 'var(--text-muted, #888)', cursor: 'pointer', fontSize: 12, marginTop: 4 }}
+          onClick={handleSignOut}>
+          Se déconnecter
+        </button>
+      </div>
     </div>
   )
 }

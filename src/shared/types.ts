@@ -401,6 +401,115 @@ export interface BackupInfo {
   patient: BackupFolderInfo & { patientFolderCount: number }
 }
 
+// ─── LICENCE & COMPTE ─────────────────────────────────────────────────────────
+
+export type LicenseStatus = 'active' | 'trialing' | 'past_due_grace' | 'restricted' | 'unknown'
+export type LicenseMode   = 'full' | 'restricted'
+export type LicensePlanCode = 'synoria_annual' | 'synoria_6_months'
+export type DeviceDeactivationReason = DeactivationReason   // alias nominal
+
+export interface LicenseState {
+  status:         LicenseStatus
+  mode:           'full' | 'restricted'
+  organizationId: string | null
+  licenseId:      string | null
+  deviceId:       string | null   // devices.id UUID (pour identifier l'appareil courant)
+  planCode:       string | null
+  features:       string[]
+  maxDevices:     number
+  graceUntil:     string | null   // ISO date
+  tokenExpiry:    string | null   // ISO date
+  isOffline:      boolean
+}
+
+export interface AccountInfo {
+  userId:    string
+  email:     string
+  createdAt: string
+}
+
+export interface SubscriptionInfo {
+  status:            string
+  currentPeriodEnd:  string | null
+  cancelAtPeriodEnd: boolean
+  trialEnd:          string | null
+  priceId:           string | null
+}
+
+export interface FullAccountState {
+  isLoggedIn:    boolean
+  account:       AccountInfo | null
+  subscription:  SubscriptionInfo | null
+  licenseStatus: string
+}
+
+export interface DeviceInfo {
+  id:           string
+  label:        string        // nom affiché (ex: "PC Bureau (Windows 11)")
+  platform:     string
+  app_version:  string
+  is_active:    boolean
+  last_seen_at: string
+  first_seen_at: string
+}
+
+export type DeactivationReason =
+  | 'changement_ordinateur'
+  | 'ancien_appareil'
+  | 'erreur_activation'
+  | 'autre'
+
+// LicenseDevice est un alias de DeviceInfo pour la clarté du spec
+export type LicenseDevice = DeviceInfo
+
+export interface DeactivateDeviceResult {
+  activeDevices:              DeviceInfo[]
+  deactivationsRemaining30d:  number
+}
+
+export interface LicenseCheckResponse {
+  state:    LicenseState
+  isOnline: boolean
+}
+
+export interface CheckoutSessionResponse {
+  url: string
+}
+
+export interface CustomerPortalResponse {
+  url: string
+}
+
+export interface UpdateCheckResponse {
+  result:    ReleaseCheckResult | null
+  checkedAt: string
+}
+
+export interface ReleaseCheckResult {
+  update_available:      boolean
+  latest_version:        string
+  is_required:           boolean
+  min_supported_version: string | null
+  title:                 string | null
+  release_notes:         string | null
+  download_url:          string | null
+}
+
+export interface RestrictionState {
+  mode:                   'full' | 'restricted'
+  status:                 LicenseStatus
+  canReadData:            boolean
+  canExportData:          boolean
+  canBackupData:          boolean
+  canCreatePatient:       boolean
+  canModifyPatient:       boolean
+  canCreateSession:       boolean
+  canModifySession:       boolean
+  canCreateInvoice:       boolean
+  canCreateAppointment:   boolean
+  canUsePremiumFeatures:  boolean
+}
+
 // ─── IPC API ──────────────────────────────────────────────────────────────────
 export interface IpcApi {
   // Appointments (RDV)
@@ -441,7 +550,8 @@ export interface IpcApi {
   // File dialogs
   showSaveDialog: (opts: { defaultPath?: string; filters?: Array<{ name: string; extensions: string[] }> }) => Promise<string | null>
   showOpenDialog: (opts: { filters?: Array<{ name: string; extensions: string[] }>; properties?: string[]; defaultPath?: string; title?: string }) => Promise<string | null>
-  openPath: (path: string) => Promise<void>
+  openPath:     (path: string) => Promise<void>
+  openExternal: (url: string)  => Promise<void>
   getAppVersion: () => Promise<string>
   relaunchApp:   () => Promise<void>
   launchInstaller: (exePath: string) => Promise<void>
@@ -538,6 +648,29 @@ export interface IpcApi {
   adminDbStats:       () => Promise<Record<string, number>>
   adminGetSettings:   () => Promise<string>
   adminForceBackup:   () => Promise<string>
+  // ── Compte & Licence ──
+  accountSignUp:         (email: string, password: string) => Promise<{ ok: boolean; error?: string }>
+  accountSignIn:         (email: string, password: string) => Promise<{ ok: boolean; error?: string }>
+  accountSignOut:        () => Promise<void>
+  accountResetPassword:  (email: string) => Promise<{ ok: boolean; error?: string }>
+  accountGetState:       () => Promise<FullAccountState>
+  accountCreateCheckout: (priceId: string) => Promise<string>
+  accountBillingPortal:  () => Promise<string>
+  licenseGetState:            () => Promise<LicenseState>
+  licenseVerifyOnline:        () => Promise<LicenseState>
+  licenseGetDeviceId:         () => Promise<string>
+  licenseGetDevices:          () => Promise<DeviceInfo[]>
+  licenseDeactivateDevice:    (deviceId: string, reason: DeactivationReason) => Promise<DeactivateDeviceResult>
+  licenseGetRestrictionState:     () => Promise<RestrictionState>
+  licenseGetLastCheck:            () => Promise<{ checkedAt: string; status: string } | null>
+  licenseDetectClockRollback:     () => Promise<boolean>
+  licenseRefresh:                 () => Promise<LicenseState>
+  licenseDeactivateCurrentDevice: () => Promise<DeactivateDeviceResult>
+  releaseCheck:                   (currentVersion: string) => Promise<ReleaseCheckResult | null>
+  checkForUpdates:                () => Promise<ReleaseCheckResult | null>
+  dismissUpdateNotification:      (version: string) => Promise<void>
+  getLastUpdateNotification:      () => Promise<{ version: string; dismissedAt: string } | null>
+  onUpdateAvailable:              (cb: (result: ReleaseCheckResult) => void) => void
 }
 
 declare global {

@@ -3,6 +3,11 @@ import { spawn }                         from 'child_process'
 import { mkdirSync, writeFileSync, unlinkSync, readFileSync, existsSync } from 'fs'
 import { join, extname }               from 'path'
 import * as patientRepo               from '../database/repositories/patientRepository'
+import * as supabaseAuth              from '../services/supabaseAuthService'
+import * as licenseSvc               from '../services/licenseService'
+import * as restrictionGuard         from '../services/restrictedModeGuard'
+import * as updateSvc                from '../services/updateService'
+import * as localStore               from '../services/localLicenseStore'
 
 import * as sessionRepo               from '../database/repositories/sessionRepository'
 import * as appointmentRepo           from '../database/repositories/appointmentRepository'
@@ -50,6 +55,7 @@ export function registerAllHandlers(): void {
   ipcMain.handle('appointments:byPatient', (_e, pid)    => appointmentRepo.getAppointmentsByPatient(pid))
 
   ipcMain.handle('appointments:create', async (_e, data) => {
+    licenseSvc.assertNotRestricted()
     const appt = appointmentRepo.createAppointment(data)
     if (gcalSvc.isExternalGCalEventId(appt.google_event_id)) return appt
     // Sync Google Calendar en arrière-plan (erreurs silencieuses)
@@ -63,6 +69,7 @@ export function registerAllHandlers(): void {
   })
 
   ipcMain.handle('appointments:update', async (_e, id, d) => {
+    licenseSvc.assertNotRestricted()
     const appt = appointmentRepo.updateAppointment(id, d)
     if (gcalSvc.isExternalGCalEventId(appt.google_event_id)) return appt
     if (appt.google_event_id) {
@@ -89,6 +96,7 @@ export function registerAllHandlers(): void {
   })
 
   ipcMain.handle('appointments:delete', async (_e, id) => {
+    licenseSvc.assertNotRestricted()
     const existing = appointmentRepo.getAppointmentById(id)
     appointmentRepo.deleteAppointment(id)
     if (existing?.google_event_id && !gcalSvc.isExternalGCalEventId(existing.google_event_id)) {
@@ -99,18 +107,18 @@ export function registerAllHandlers(): void {
   // ─── PATIENTS ──────────────────────────────────────────────────────────────
   ipcMain.handle('patients:getAll',    ()           => patientRepo.getAllPatients())
   ipcMain.handle('patients:getById',   (_e, id)     => patientRepo.getPatientById(id))
-  ipcMain.handle('patients:create',    (_e, data)   => patientRepo.createPatient(data))
-  ipcMain.handle('patients:update',    (_e, id, d)  => patientRepo.updatePatient(id, d))
-  ipcMain.handle('patients:delete',    (_e, id)     => patientRepo.deletePatient(id))
+  ipcMain.handle('patients:create',    (_e, data)   => { licenseSvc.assertNotRestricted(); return patientRepo.createPatient(data) })
+  ipcMain.handle('patients:update',    (_e, id, d)  => { licenseSvc.assertNotRestricted(); return patientRepo.updatePatient(id, d) })
+  ipcMain.handle('patients:delete',    (_e, id)     => { licenseSvc.assertNotRestricted(); return patientRepo.deletePatient(id) })
   ipcMain.handle('patients:followUp',  (_e, days)   => patientRepo.getPatientsToFollowUp(days))
 
   // ─── SESSIONS ──────────────────────────────────────────────────────────────
   ipcMain.handle('sessions:getAll',        (_e, pid)    => sessionRepo.getAllSessions(pid))
   ipcMain.handle('sessions:getById',       (_e, id)     => sessionRepo.getSessionById(id))
-  ipcMain.handle('sessions:create',        (_e, data)   => sessionRepo.createSession(data))
-  ipcMain.handle('sessions:update',        (_e, id, d)  => sessionRepo.updateSession(id, d))
-  ipcMain.handle('sessions:delete',        (_e, id)     => sessionRepo.deleteSession(id))
-  ipcMain.handle('sessions:duplicate',     (_e, id)     => sessionRepo.duplicateSession(id))
+  ipcMain.handle('sessions:create',        (_e, data)   => { licenseSvc.assertNotRestricted(); return sessionRepo.createSession(data) })
+  ipcMain.handle('sessions:update',        (_e, id, d)  => { licenseSvc.assertNotRestricted(); return sessionRepo.updateSession(id, d) })
+  ipcMain.handle('sessions:delete',        (_e, id)     => { licenseSvc.assertNotRestricted(); return sessionRepo.deleteSession(id) })
+  ipcMain.handle('sessions:duplicate',     (_e, id)     => { licenseSvc.assertNotRestricted(); return sessionRepo.duplicateSession(id) })
   ipcMain.handle('sessions:byMonth',       (_e, y, m)   => sessionRepo.getSessionsByMonth(y, m))
   ipcMain.handle('sessions:dashboardStats',()           => sessionRepo.getDashboardStats())
   ipcMain.handle('sessions:upcoming',      ()           => sessionRepo.getUpcomingSessions())
@@ -239,6 +247,7 @@ export function registerAllHandlers(): void {
   ipcMain.handle('exports:backupJson',   ()             => exportBackupEncrypted())
   // Import backup — signale au renderer quel type d'aide est nécessaire
   ipcMain.handle('exports:importJson', async (_e, filePath) => {
+    licenseSvc.assertNotRestricted()
     try {
       return importBackupJson(filePath)
     } catch (e: any) {
@@ -249,11 +258,13 @@ export function registerAllHandlers(): void {
   })
 
   ipcMain.handle('exports:importJsonWithPassword', (_e, filePath: string, password: string) => {
+    licenseSvc.assertNotRestricted()
     return importBackupJson(filePath, { password })
   })
 
   // Import avec fichier clé sélectionné par le renderer
   ipcMain.handle('exports:importJsonWithKey', async (_e, filePath: string) => {
+    licenseSvc.assertNotRestricted()
     const result = await dialog.showOpenDialog({
       title:       'Sélectionner votre fichier encryption.key',
       defaultPath: app.getPath('userData'),
@@ -291,10 +302,11 @@ export function registerAllHandlers(): void {
   })
 
   // ─── FACTURATION ───────────────────────────────────────────────────────────
-  ipcMain.handle('invoice:generate', (_e, data)       => generateInvoice(data))
-  ipcMain.handle('invoice:update',   (_e, id, data)   => comptaRepo.updateInvoiceLog(id, data))
-  ipcMain.handle('invoice:delete',   (_e, id)         => comptaRepo.deleteInvoiceLog(id))
+  ipcMain.handle('invoice:generate', (_e, data)       => { licenseSvc.assertNotRestricted(); return generateInvoice(data) })
+  ipcMain.handle('invoice:update',   (_e, id, data)   => { licenseSvc.assertNotRestricted(); return comptaRepo.updateInvoiceLog(id, data) })
+  ipcMain.handle('invoice:delete',   (_e, id)         => { licenseSvc.assertNotRestricted(); return comptaRepo.deleteInvoiceLog(id) })
   ipcMain.handle('invoice:markPaid', (_e, id: string, paid: boolean) => {
+    licenseSvc.assertNotRestricted()
     const now = new Date().toISOString().slice(0, 10)
     comptaRepo.updateInvoiceLog(id, { is_paid: paid ? 1 : 0, paid_date: paid ? now : undefined } as any)
   })
@@ -515,14 +527,14 @@ export function registerAllHandlers(): void {
     ]
     return { consultationTypes, monthlyRevenue, ursafRates, expenseConfig, monthlyVarExpenses, years }
   })
-  ipcMain.handle('compta:setMonthlyRevenue',    (_e, y, m, tid, nb)       => comptaRepo.setMonthlyRevenue(y, m, tid, nb))
-  ipcMain.handle('compta:incrementRevenue',     (_e, y, m, tid)           => comptaRepo.incrementMonthlyRevenue(y, m, tid))
-  ipcMain.handle('compta:setUrsafRate',         (_e, y, m, rate)          => comptaRepo.setUrsafRate(y, m, rate))
-  ipcMain.handle('compta:setMonthlyVarExpense', (_e, y, m, cat, lbl, amt) => comptaRepo.setMonthlyVarExpense(y, m, cat, lbl, amt))
+  ipcMain.handle('compta:setMonthlyRevenue',    (_e, y, m, tid, nb)       => { licenseSvc.assertNotRestricted(); return comptaRepo.setMonthlyRevenue(y, m, tid, nb) })
+  ipcMain.handle('compta:incrementRevenue',     (_e, y, m, tid)           => { licenseSvc.assertNotRestricted(); return comptaRepo.incrementMonthlyRevenue(y, m, tid) })
+  ipcMain.handle('compta:setUrsafRate',         (_e, y, m, rate)          => { licenseSvc.assertNotRestricted(); return comptaRepo.setUrsafRate(y, m, rate) })
+  ipcMain.handle('compta:setMonthlyVarExpense', (_e, y, m, cat, lbl, amt) => { licenseSvc.assertNotRestricted(); return comptaRepo.setMonthlyVarExpense(y, m, cat, lbl, amt) })
   ipcMain.handle('compta:getConsultTypes',      ()                        => comptaRepo.getConsultationTypes())
-  ipcMain.handle('compta:saveConsultTypes',     (_e, types)               => comptaRepo.saveConsultationTypes(types))
+  ipcMain.handle('compta:saveConsultTypes',     (_e, types)               => { licenseSvc.assertNotRestricted(); return comptaRepo.saveConsultationTypes(types) })
   ipcMain.handle('compta:getExpenseConfig',     ()                        => comptaRepo.getExpenseConfig())
-  ipcMain.handle('compta:saveExpenseConfig',    (_e, configs)             => comptaRepo.saveExpenseConfig(configs))
+  ipcMain.handle('compta:saveExpenseConfig',    (_e, configs)             => { licenseSvc.assertNotRestricted(); return comptaRepo.saveExpenseConfig(configs) })
   ipcMain.handle('compta:getInvoicesLog',       (_e, year)                => comptaRepo.getInvoicesLog(year))
   ipcMain.handle('compta:exportExcel',          (_e, year)                => exportComptaExcel(year))
 
@@ -633,6 +645,7 @@ export function registerAllHandlers(): void {
   // ─────────────────────────────────────────────────────────────────────────
 
   ipcMain.handle('shell:openPath',      (_e, path)    => shell.openPath(path))
+  ipcMain.handle('shell:openExternal', (_e, url: string) => shell.openExternal(url))
 
   // Lit un fichier local et retourne un data URL base64 (pour les aperçus dans le renderer)
   ipcMain.handle('fs:readDataUrl', (_e, filePath: string): string | null => {
@@ -1031,9 +1044,9 @@ export function registerAllHandlers(): void {
   // ── Blocs calendrier ─────────────────────────────────────────────
   ipcMain.handle('blocks:getAll',     ()              => getAllBlocks())
   ipcMain.handle('blocks:byMonth',    (_e, y, m)      => getBlocksByMonth(y, m))
-  ipcMain.handle('blocks:create',     (_e, data)      => createBlock(data))
-  ipcMain.handle('blocks:update',     (_e, id, data)  => updateBlock(id, data))
-  ipcMain.handle('blocks:delete',     (_e, id)        => deleteBlock(id))
+  ipcMain.handle('blocks:create',     (_e, data)      => { licenseSvc.assertNotRestricted(); return createBlock(data) })
+  ipcMain.handle('blocks:update',     (_e, id, data)  => { licenseSvc.assertNotRestricted(); return updateBlock(id, data) })
+  ipcMain.handle('blocks:delete',     (_e, id)        => { licenseSvc.assertNotRestricted(); return deleteBlock(id) })
 
   // ── Rapport de diagnostic ─────────────────────────────────────────
   ipcMain.handle('diagnostic:generate',    () => generateDiagnosticReport())
@@ -1050,5 +1063,56 @@ export function registerAllHandlers(): void {
   ipcMain.handle('admin:dbStats',       ()         => adminDbStats())
   ipcMain.handle('admin:getSettings',   ()         => adminGetSettings())
   ipcMain.handle('admin:forceBackup',   ()         => adminForceBackup())
+
+  // ── Compte Supabase ───────────────────────────────────────────────
+  ipcMain.handle('account:signUp',         (_e, email, pwd)  => supabaseAuth.signUp(email, pwd))
+  ipcMain.handle('account:signIn',         (_e, email, pwd)  => supabaseAuth.signIn(email, pwd))
+  ipcMain.handle('account:signOut',        ()                => supabaseAuth.signOut())
+  ipcMain.handle('account:resetPassword',  (_e, email)       => supabaseAuth.resetPassword(email))
+  ipcMain.handle('account:getState',       ()                => supabaseAuth.getFullAccountState())
+  ipcMain.handle('account:createCheckout', (_e, priceId)     => supabaseAuth.createCheckoutUrl(priceId))
+  ipcMain.handle('account:billingPortal',  ()                => supabaseAuth.createBillingPortalUrl())
+
+  // ── Licence locale ────────────────────────────────────────────────
+  ipcMain.handle('license:getState',       () => licenseSvc.getCurrentLicenseState())
+  ipcMain.handle('license:verifyOnline',   async () => {
+    const token = supabaseAuth.getAccessToken()
+    if (!token) throw new Error('Non connecté — impossible de vérifier la licence en ligne')
+    return licenseSvc.verifyLicenseOnline(token)
+  })
+  ipcMain.handle('license:getDeviceId',    () => licenseSvc.getDeviceIdHash())
+  ipcMain.handle('license:getDevices',     () => supabaseAuth.getDevices())
+  ipcMain.handle('license:deactivateDevice', (_e, deviceId, reason) => supabaseAuth.deactivateDevice(deviceId, reason))
+  ipcMain.handle('license:getRestrictionState',   () => restrictionGuard.getRestrictionState())
+  ipcMain.handle('license:getLastCheck',          () => localStore.loadLastSuccessfulCheck())
+  ipcMain.handle('license:detectClockRollback',   () => localStore.detectClockRollback())
+
+  // license:refresh = alias de license:verifyOnline (même logique, nom du spec)
+  ipcMain.handle('license:refresh', async () => {
+    const token = supabaseAuth.getAccessToken()
+    if (!token) throw new Error('Non connecté — impossible de rafraîchir la licence en ligne')
+    const state = await licenseSvc.verifyLicenseOnline(token)
+    licenseSvc.setCachedLicenseState(state)
+    return state
+  })
+
+  // Désactiver l'appareil courant (UUID issu du jeton JWT, champ duid)
+  ipcMain.handle('license:deactivateCurrentDevice', async () => {
+    const state = licenseSvc.getCachedLicenseState()
+    if (!state.deviceId) throw new Error('Aucun appareil identifié dans le jeton actif')
+    const result = await supabaseAuth.deactivateDevice(state.deviceId, 'ancien_appareil')
+    // Effacer le jeton local — l'appareil n'est plus actif
+    licenseSvc.clearToken()
+    licenseSvc.setCachedLicenseState(licenseSvc.getCurrentLicenseState())
+    return result
+  })
+
+  // ── Mise à jour ───────────────────────────────────────────────────────
+  ipcMain.handle('release:check', (_e, currentVersion: string) =>
+    supabaseAuth.checkRelease(currentVersion),
+  )
+  ipcMain.handle('app:checkForUpdates',           () => updateSvc.checkForUpdates())
+  ipcMain.handle('update:dismissNotification',    (_e, version: string) => updateSvc.dismissUpdateNotification(version))
+  ipcMain.handle('update:getLastNotification',    () => updateSvc.getLastUpdateNotification())
 
 }

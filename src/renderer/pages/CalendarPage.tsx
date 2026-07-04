@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext, useCallback, useRef } from 'rea
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { Session, Patient, Appointment, CalendarBlock, GCalCalendar } from '../../shared/types'
 import { ToastContext } from '../App'
+import { useRestriction } from '../hooks/useRestriction'
 import { showConfirm } from '../components/common/ConfirmDialog'
 import { fmtDate, getInitials } from '../utils/format'
 
@@ -322,7 +323,8 @@ interface ApptModalProps {
 }
 
 function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, onClose, onPatientCreated }: ApptModalProps) {
-  const showToast = useContext(ToastContext)
+  const showToast   = useContext(ToastContext)
+  const restriction = useRestriction()
   const [localDate,      setLocalDate]      = useState(appointment?.date || date)
   const [patientId,      setPatientId]      = useState(appointment?.patient_id   || '')
   const [heureD,         setHeureD]         = useState(appointment?.heure_debut  || slotTime || '09:00')
@@ -514,7 +516,9 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
         </label>
 
         <div className="modal-footer" style={{ flexWrap: 'wrap', justifyContent: 'flex-start' }}>
-          <button className="btn btn-primary" onClick={handleSave}>
+          <button className="btn btn-primary" onClick={handleSave}
+            disabled={!restriction.canCreateAppointment}
+            title={!restriction.canCreateAppointment ? 'Mode restreint — abonnement requis' : undefined}>
             {appointment ? '💾 Mettre à jour' : '+ Créer le RDV'}
           </button>
           {patientId && !appointment?.is_done && (
@@ -546,7 +550,9 @@ function ApptModal({ date, slotTime, appointment, patients, onSave, onDelete, on
             </button>
           )}
           {appointment && onDelete && (
-            <button className="btn btn-secondary" style={{ color: 'var(--red)' }} onClick={onDelete}>Supprimer</button>
+            <button className="btn btn-secondary" style={{ color: 'var(--red)' }} onClick={onDelete}
+              disabled={!restriction.canCreateAppointment}
+              title={!restriction.canCreateAppointment ? 'Mode restreint — abonnement requis' : undefined}>Supprimer</button>
           )}
           <button className="btn btn-secondary" onClick={onClose}>Annuler</button>
         </div>
@@ -567,6 +573,7 @@ interface BlockModalProps {
 }
 
 function BlockModal({ date, slotTime, block, onSave, onDelete, onClose }: BlockModalProps) {
+  const restriction = useRestriction()
   const [localDate, setLocalDate] = useState(block?.date || date)
   const [isDay,     setIsDay]     = useState(block ? block.is_day === 1 : false)
   const [heureD,    setHeureD]    = useState(block?.heure_debut || slotTime || '09:00')
@@ -643,11 +650,15 @@ function BlockModal({ date, slotTime, block, onSave, onDelete, onClose }: BlockM
 
         <div className="modal-footer">
           <button className="btn btn-primary" onClick={handleSave}
-            style={{ background: BLOCK_COLOR.border, borderColor: BLOCK_COLOR.border }}>
+            style={{ background: BLOCK_COLOR.border, borderColor: BLOCK_COLOR.border }}
+            disabled={!restriction.canCreateAppointment}
+            title={!restriction.canCreateAppointment ? 'Mode restreint — abonnement requis' : undefined}>
             {block ? '💾 Mettre à jour' : '⊘ Enregistrer'}
           </button>
           {block && onDelete && (
-            <button className="btn btn-secondary" style={{ color: 'var(--red)' }} onClick={onDelete}>
+            <button className="btn btn-secondary" style={{ color: 'var(--red)' }} onClick={onDelete}
+              disabled={!restriction.canCreateAppointment}
+              title={!restriction.canCreateAppointment ? 'Mode restreint — abonnement requis' : undefined}>
               Supprimer
             </button>
           )}
@@ -957,9 +968,10 @@ export default function CalendarPage() {
   const [gcalImportCalendars, setGcalImportCalendars] = useState<GCalCalendar[]>([])
   const [syncing,        setSyncing]        = useState(false)
 
-  const showToast = useContext(ToastContext)
-  const navigate  = useNavigate()
-  const location  = useLocation()
+  const showToast   = useContext(ToastContext)
+  const navigate    = useNavigate()
+  const location    = useLocation()
+  const restriction = useRestriction()
 
   const load = useCallback(async (skipBackfill = false) => {
     // Rattrapage silencieux : crée les RDV manquants depuis les séances existantes
@@ -1245,6 +1257,8 @@ export default function CalendarPage() {
               view === 'week' ? toDateStr(weekDays[0]) :
               view === 'day'  ? selectedDay : selectedDay || todayStr
             )}
+            disabled={!restriction.canCreateAppointment}
+            title={!restriction.canCreateAppointment ? 'Mode restreint — abonnement requis' : undefined}
           >
             + Nouveau RDV
           </button>
@@ -1255,6 +1269,8 @@ export default function CalendarPage() {
               view === 'week' ? toDateStr(weekDays[0]) :
               view === 'day'  ? selectedDay : selectedDay || todayStr
             )}
+            disabled={!restriction.canCreateAppointment}
+            title={!restriction.canCreateAppointment ? 'Mode restreint — abonnement requis' : undefined}
           >
             ⊘ Perso / Indispo
           </button>
