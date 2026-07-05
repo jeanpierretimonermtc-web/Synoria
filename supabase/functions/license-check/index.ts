@@ -120,7 +120,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return json({ error: 'Invalid JSON body' }, 400)
   }
 
-  // 3. Récupérer le profil → organization_id
+  // 3. Récupérer l'organization_id
+  //    Source principale : profiles (mis à jour par le trigger handle_new_user).
+  //    Fallback : organization_members (toujours en cascade avec organizations).
+  //    La divergence peut arriver si l'org originale a été supprimée manuellement
+  //    (profiles.organization_id passe à null via ON DELETE SET NULL).
   const { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles')
     .select('organization_id')
@@ -131,14 +135,27 @@ Deno.serve(async (req: Request): Promise<Response> => {
     console.error('[license-check] Lecture profil :', profileError.message)
     return json({ error: 'Internal error', message: 'Impossible de lire le profil utilisateur.' }, 500)
   }
-  if (!profile?.organization_id) {
+
+  let organizationId: string | null = profile?.organization_id ?? null
+
+  if (!organizationId) {
+    const { data: members } = await supabaseAdmin
+      .from('organization_members')
+      .select('organization_id')
+      .eq('user_id', user.id)
+      .limit(1)
+    organizationId = members?.[0]?.organization_id ?? null
+    if (organizationId) {
+      console.warn(`[license-check] org résolu via organization_members (profiles.organization_id était null) user=${user.id}`)
+    }
+  }
+
+  if (!organizationId) {
     return json({
       error:   'Profile not found',
       message: 'Aucune organisation associée à ce compte. Contactez le support.',
     }, 404)
   }
-
-  const organizationId = profile.organization_id
 
   // 4. Récupérer la licence (source de vérité pour l'accès)
   const { data: license, error: licError } = await supabaseAdmin

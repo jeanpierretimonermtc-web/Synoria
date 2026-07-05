@@ -152,6 +152,24 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
   const customerId  = session.customer as string
   const stripeSubId = session.subscription as string
 
+  // Vérifier que l'organisation existe avant tout upsert (protection FK)
+  // Si l'org a été supprimée après la création de la session, on logue et on abandonne
+  // plutôt que de laisser l'erreur FK être catchée silencieusement.
+  const { data: orgExists } = await supabaseAdmin
+    .from('organizations')
+    .select('id')
+    .eq('id', organizationId)
+    .maybeSingle()
+
+  if (!orgExists) {
+    console.error(
+      `[checkout.completed] ✗ Organisation ${organizationId} introuvable — ` +
+      `metadata corrompues ou organisation supprimée. ` +
+      `session=${session.id} customer=${customerId} — aucune action effectuée.`
+    )
+    return
+  }
+
   // Récupérer l'abonnement Stripe complet pour avoir les dates de période
   const stripeSub = await stripe.subscriptions.retrieve(stripeSubId)
   const priceId   = stripeSub.items.data[0]?.price.id ?? null

@@ -188,6 +188,16 @@ export default function App() {
     window.mtcApi.onUpdateAvailable(result => setUpdateResult(result))
   }, [])
 
+  // Rafraîchir le RestrictionContext quand AbonnementPage signale une vérification réussie
+  useEffect(() => {
+    const handler = () => {
+      window.mtcApi.licenseGetRestrictionState().then(setRestriction).catch(() => {})
+      window.mtcApi.licenseGetState().then(s => setLicenseStatus(s.status)).catch(() => {})
+    }
+    window.addEventListener('synoria-license-refreshed', handler)
+    return () => window.removeEventListener('synoria-license-refreshed', handler)
+  }, [])
+
   // Verrou automatique après 20 min d'inactivité
   const handleInactivityLock = useCallback(async () => {
     await window.mtcApi.authLock()

@@ -325,6 +325,7 @@ export async function verifyLicenseOnline(supabaseAccessToken: string): Promise<
   }
 
   const state = getCurrentLicenseState()
+  _cachedState = state
 
   // Mémoriser le dernier contrôle réussi et l'empreinte d'horloge
   saveLastSuccessfulCheck(state.status)

@@ -43,6 +43,7 @@ const STATUS_STYLE: Record<string, { label: string; dot: string; bg: string; fg:
   active:         { label: 'Actif',         dot: '#22A850', bg: 'rgba(34,168,80,.13)',   fg: '#1A6635' },
   trialing:       { label: 'Essai gratuit', dot: '#3B7EF5', bg: 'rgba(59,126,245,.13)',  fg: '#1A3E8C' },
   past_due_grace: { label: 'Paiement dû',   dot: '#D48A00', bg: 'rgba(212,138,0,.13)',   fg: '#7A5000' },
+  cancelled:      { label: 'Annulé',        dot: '#D48A00', bg: 'rgba(212,138,0,.13)',   fg: '#7A5000' },
   restricted:     { label: 'Restreint',     dot: '#C03030', bg: 'rgba(192,48,48,.12)',    fg: '#8C0000' },
   unknown:        { label: 'Non vérifié',   dot: '#999',    bg: 'rgba(153,153,153,.13)', fg: '#555' },
 }
@@ -63,16 +64,48 @@ function StatusBadge({ status }: { status: string }) {
 
 // ── Bannière contextuelle ─────────────────────────────────────────────────────
 
-function StatusBanner({ status, mode }: { status: string; mode: string }) {
+function StatusBanner({ status, mode, sub }: {
+  status: string
+  mode: string
+  sub?: { cancelAtPeriodEnd: boolean; currentPeriodEnd: string | null } | null
+}) {
+  if (status === 'active' && sub?.cancelAtPeriodEnd) return (
+    <Banner color="amber">
+      <strong>Résiliation programmée.</strong> Votre abonnement sera annulé le{' '}
+      <strong>{fmtDate(sub.currentPeriodEnd)}</strong>. Vous continuez à bénéficier de l'accès complet
+      jusqu'à cette date. Aucun paiement ne sera prélevé après cette date.
+      Pour conserver l'accès, réactivez votre abonnement via «&nbsp;Gérer mon abonnement Stripe&nbsp;».
+    </Banner>
+  )
   if (status === 'active') return (
     <Banner color="green">
       Votre licence Synoria est active. Vos données patients restent stockées localement sur cet ordinateur.
+    </Banner>
+  )
+  if (status === 'trialing' && sub?.cancelAtPeriodEnd) return (
+    <Banner color="amber">
+      <strong>Résiliation programmée.</strong> Vous avez annulé pendant l'essai gratuit. L'accès complet
+      est maintenu jusqu'au <strong>{fmtDate(sub.currentPeriodEnd)}</strong>, sans aucun prélèvement.
+      Pour souscrire, réactivez votre abonnement via «&nbsp;Gérer mon abonnement Stripe&nbsp;».
     </Banner>
   )
   if (status === 'trialing') return (
     <Banner color="blue">
       Votre essai gratuit Synoria est actif. Aucun paiement n'est prélevé pendant les 14 premiers jours.
       Sans annulation avant la fin de l'essai, l'abonnement choisi démarre automatiquement.
+    </Banner>
+  )
+  if (status === 'cancelled') return (
+    <Banner color="amber">
+      <strong>Abonnement annulé.</strong>{' '}
+      {sub?.currentPeriodEnd
+        ? <>Vous conservez l'accès complet à Synoria jusqu'au <strong>{fmtDate(sub.currentPeriodEnd)}</strong>.
+          Après cette date, l'application passera en mode restreint — vos données resteront consultables
+          et exportables, mais la création de nouveaux dossiers sera suspendue.</>
+        : <>L'accès à Synoria est maintenu jusqu'à la fin de la période payée.
+          Après cette date, l'application passera en mode restreint.</>
+      }
+      {' '}Pour réactiver, cliquez sur «&nbsp;Gérer mon abonnement Stripe&nbsp;».
     </Banner>
   )
   if (status === 'past_due_grace') return (
@@ -325,6 +358,8 @@ export default function AbonnementPage() {
         window.mtcApi.licenseGetLastCheck(),
       ])
       setRestriction(rst); setLastCheck(lc)
+      // Propager le nouvel état de restriction à toute l'app (nav, boutons, etc.)
+      window.dispatchEvent(new CustomEvent('synoria-license-refreshed'))
       showToast('Licence vérifiée', 'success')
     } catch (e: any) {
       showToast(`Erreur : ${e?.message ?? e}`, 'error')
@@ -457,7 +492,7 @@ export default function AbonnementPage() {
       </div>
 
       {/* ── Bannière statut ── */}
-      <StatusBanner status={licStatus} mode={licMode} />
+      <StatusBanner status={licStatus} mode={licMode} sub={sub} />
 
       {/* ── Rappel local ── */}
       <div style={{
