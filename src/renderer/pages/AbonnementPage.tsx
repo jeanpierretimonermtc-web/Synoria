@@ -7,7 +7,7 @@ import type {
 
 const PLAN_ANNUAL  = 'synoria_annual'
 const PLAN_6M      = 'synoria_6_months'
-const SUPPORT_EMAIL = 'SUPPORT_EMAIL'
+const SUPPORT_EMAIL = 'contact@logiciel-synoria.fr'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

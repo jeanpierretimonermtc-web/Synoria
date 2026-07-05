@@ -326,7 +326,7 @@ export default function App() {
             <div style={{ fontSize:12,color:'var(--text-muted)',marginBottom:20 }}>v{appVersion} · Logiciel de gestion de dossiers patients</div>
             <div style={{ fontSize:13,color:'var(--text)',lineHeight:1.8,marginBottom:20,textAlign:'left',background:'var(--bg)',borderRadius:10,padding:'14px 18px' }}>
               <div><strong>Auteur :</strong> Jean-Pierre Timoner</div>
-              <div><strong>Contact :</strong> jeanpierre.timoner.mtc@gmail.com</div>
+              <div><strong>Contact :</strong> contact@logiciel-synoria.fr</div>
               <div><strong>Données :</strong> 100% locales — chiffrement AES-256-GCM</div>
               <div><strong>RGPD :</strong> aucune donnée transmise à des tiers</div>
               <div style={{ marginTop:8,paddingTop:8,borderTop:'1px solid var(--border-soft)',fontSize:12,color:'var(--text-muted)' }}>
