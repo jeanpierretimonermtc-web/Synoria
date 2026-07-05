@@ -1016,7 +1016,7 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
   animation: splashLogoIn .6s cubic-bezier(.34,1.56,.64,1) forwards;
   mix-blend-mode: multiply;
 }
-[data-theme="dark"] .splash-logo { mix-blend-mode: screen; filter: invert(1) hue-rotate(180deg); }
+[data-theme="dark"] .splash-logo { mix-blend-mode: screen; }
 @keyframes splashLogoIn { from { opacity: 0; transform: scale(.7) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
 .splash-title-img {

@@ -321,7 +321,7 @@ export default function App() {
       {aboutOpen && (
         <div style={{ position:'fixed',inset:0,zIndex:9000,background:'rgba(0,0,0,.5)',display:'flex',alignItems:'center',justifyContent:'center' }} onClick={() => setAboutOpen(false)}>
           <div style={{ background:'var(--surface)',borderRadius:16,padding:'36px 44px',maxWidth:460,width:'100%',boxShadow:'0 32px 80px rgba(0,0,0,.28)',border:'1px solid var(--border)',textAlign:'center' }} onClick={e=>e.stopPropagation()}>
-            <img src="./Synoria.png" alt="Synoria" style={{ width:80,height:80,objectFit:'contain',marginBottom:16 }} />
+            <img src={theme === 'dark' ? './Synoria fond noir.png' : './Synoria.png'} alt="Synoria" style={{ width:80,height:80,objectFit:'contain',marginBottom:16,mixBlendMode:theme==='dark'?'screen':'multiply' }} />
             <div style={{ fontFamily:'var(--font-serif)',fontSize:24,fontWeight:700,color:'var(--accent)',marginBottom:4 }}>Synoria</div>
             <div style={{ fontSize:12,color:'var(--text-muted)',marginBottom:20 }}>v{appVersion} · Logiciel de gestion de dossiers patients</div>
             <div style={{ fontSize:13,color:'var(--text)',lineHeight:1.8,marginBottom:20,textAlign:'left',background:'var(--bg)',borderRadius:10,padding:'14px 18px' }}>
@@ -343,7 +343,7 @@ export default function App() {
         {/* ── HEADER compact ── */}
         <header className="app-header">
           <div className="logo">
-            <img src="./Synoria.png" alt="Logo" className="logo-img" />
+            <img src={theme === 'dark' ? './Synoria fond noir.png' : './Synoria.png'} alt="Logo" className="logo-img" />
             <img
               src={theme === 'dark' ? './Synoria-text-sombre.png' : './Synoria-text-jour.png'}
               alt="SYNORIA"
@@ -912,7 +912,7 @@ function AccountGate({ onDone, theme }: { onDone: () => void; theme: 'light' | '
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: bg, flexDirection: 'column', gap: 24 }}>
       <div style={{ textAlign: 'center' }}>
-        <img src="./Synoria.png" alt="Synoria" style={{ width: 56, height: 56, objectFit: 'contain', marginBottom: 10 }} />
+        <img src={theme === 'dark' ? './Synoria fond noir.png' : './Synoria.png'} alt="Synoria" style={{ width: 56, height: 56, objectFit: 'contain', marginBottom: 10, mixBlendMode: theme === 'dark' ? 'screen' : 'multiply' }} />
         <div style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 22, fontWeight: 700, color: 'var(--accent, #4a7b3c)' }}>Synoria</div>
         <div style={{ fontSize: 13, color: 'var(--text-muted, #888)', marginTop: 4 }}>Logiciel de gestion de dossiers patients</div>
       </div>
@@ -1069,7 +1069,7 @@ function SubscriptionGate({ onDone, theme }: { onDone: () => void; theme: 'light
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: bg, flexDirection: 'column', gap: 28, padding: '40px 20px' }}>
       {/* En-tête */}
       <div style={{ textAlign: 'center' }}>
-        <img src="./Synoria.png" alt="Synoria" style={{ width: 56, height: 56, objectFit: 'contain', marginBottom: 10 }} />
+        <img src={theme === 'dark' ? './Synoria fond noir.png' : './Synoria.png'} alt="Synoria" style={{ width: 56, height: 56, objectFit: 'contain', marginBottom: 10, mixBlendMode: theme === 'dark' ? 'screen' : 'multiply' }} />
         <div style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 22, fontWeight: 700, color: 'var(--accent, #4a7b3c)' }}>Synoria</div>
         <div style={{ fontSize: 15, color: 'var(--text-muted, #888)', marginTop: 6 }}>Choisissez votre formule pour commencer</div>
         <div style={{

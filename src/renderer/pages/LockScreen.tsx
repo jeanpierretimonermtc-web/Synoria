@@ -118,9 +118,9 @@ export default function LockScreen({ mode, onUnlock, theme = 'light' }: Props) {
 
         {/* Logo — version adaptée au thème */}
         <img
-          src="./Synoria.png"
+          src={dark ? './Synoria fond noir.png' : './Synoria.png'}
           alt="Logo Synoria"
-          style={{ width: 150, height: 150, objectFit: 'contain', marginBottom: 28 }}
+          style={{ width: 150, height: 150, objectFit: 'contain', marginBottom: 28, mixBlendMode: dark ? 'screen' : 'multiply' }}
         />
 
         {/* Texte SYNORIA */}
