@@ -36,6 +36,7 @@ const FEATURES_RESTRICTED = ['read', 'export']
 const OWNER_EMAILS = [
   'jeanpierre.timoner.mtc@gmail.com',
   'jean-pierre.timoner@wanadoo.fr',
+  'charlotte.therapie09@gmail.com',
 ]
 
 // ── Types ──────────────────────────────────────────────────────────────────
