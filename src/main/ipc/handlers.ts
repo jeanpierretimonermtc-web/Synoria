@@ -482,7 +482,11 @@ export function registerAllHandlers(): void {
   // ─── PARAMÈTRES ────────────────────────────────────────────────────────────
   ipcMain.handle('settings:get',  ()             => getSettings())
   ipcMain.handle('settings:save', (_e, partial)  => saveSettings(partial))
-  ipcMain.handle('owner:check',   ()             => checkOwnerFromSettings())
+  ipcMain.handle('owner:check',   ()             => {
+    if (checkOwnerFromSettings()) return true
+    const user = supabaseAuth.getCurrentUser()
+    return isOwner(user?.email)
+  })
 
   // ─── DIALOGS ───────────────────────────────────────────────────────────────
   ipcMain.handle('dialog:save', async (_e, opts) => {
