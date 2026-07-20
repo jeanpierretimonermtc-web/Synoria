@@ -101,6 +101,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return json({ error: 'Unauthorized', message: 'Session expirée ou invalide.' }, 401)
   }
 
+  // 2. Lire le body une seule fois (avant le bypass propriétaire pour récupérer device_id_hash)
+  let parsedBody: Record<string, unknown>
+  try {
+    parsedBody = await req.json() as Record<string, unknown>
+  } catch {
+    parsedBody = {}
+  }
+
   // ── Bypass propriétaire ────────────────────────────────────────────────────
   // Les comptes listés dans OWNER_EMAILS ont un accès illimité permanent,
   // indépendamment de tout abonnement Stripe ou statut de licence.
@@ -110,12 +118,16 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return json({ error: 'Server configuration error', message: 'Clé de licence non configurée.' }, 500)
     }
     const nowSec = Math.floor(Date.now() / 1000)
+    // Utiliser le vrai device_id_hash si fourni (pour que la validation locale du client réussisse)
+    const ownerDeviceHash = typeof parsedBody.device_id_hash === 'string' && parsedBody.device_id_hash.length >= 8
+      ? parsedBody.device_id_hash
+      : 'owner'
     const ownerToken = await signLicenseToken({
       userId:         user.id,
       organizationId: 'owner',
       licenseId:      'owner',
       deviceId:       'owner',
-      deviceIdHash:   'owner',
+      deviceIdHash:   ownerDeviceHash,
       planCode:       'synoria_owner',
       status:         'active',
       mode:           'full',
@@ -145,10 +157,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
   }
   // ── Fin bypass propriétaire ────────────────────────────────────────────────
 
-  // 2. Valider et normaliser le body
+  // 3. Valider et normaliser le body (déjà parsé, pas de second req.json())
   let input: DeviceInput
   try {
-    const body = await req.json() as Record<string, unknown>
+    const body = parsedBody
     if (!body?.device_id_hash || typeof body.device_id_hash !== 'string') {
       return json({ error: 'Missing device_id_hash', message: 'device_id_hash est requis.' }, 400)
     }
@@ -170,7 +182,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return json({ error: 'Invalid JSON body' }, 400)
   }
 
-  // 3. Récupérer l'organization_id
+  // 4. Récupérer l'organization_id
   //    Source principale : profiles (mis à jour par le trigger handle_new_user).
   //    Fallback : organization_members (toujours en cascade avec organizations).
   //    La divergence peut arriver si l'org originale a été supprimée manuellement
@@ -207,7 +219,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }, 404)
   }
 
-  // 4. Récupérer la licence (source de vérité pour l'accès)
+  // 5. Récupérer la licence (source de vérité pour l'accès)
   const { data: license, error: licError } = await supabaseAdmin
     .from('licenses')
     .select('id, status, max_devices, grace_until, subscription_id')
@@ -225,19 +237,19 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }, 404)
   }
 
-  // 5. Récupérer l'abonnement Stripe (pour trial_end et plan_name)
+  // 6. Récupérer l'abonnement Stripe (pour trial_end et plan_name)
   const { data: subscription } = await supabaseAdmin
     .from('subscriptions')
     .select('plan_name, trial_end, status')
     .eq('organization_id', organizationId)
     .maybeSingle()
 
-  // 6. Évaluer le statut de la licence (règles métier)
+  // 7. Évaluer le statut de la licence (règles métier)
   const evaluation = evaluateLicense(license, subscription)
 
   const now = new Date()
 
-  // 7. Vérifier et gérer l'appareil
+  // 8. Vérifier et gérer l'appareil
   const { data: existingDevice } = await supabaseAdmin
     .from('devices')
     .select('id, is_active, label')
@@ -344,7 +356,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
   }
 
-  // 8. Compter les appareils actifs et les désactivations restantes (pour la réponse)
+  // 9. Compter les appareils actifs et les désactivations restantes (pour la réponse)
   const { count: activeDevices } = await supabaseAdmin
     .from('devices')
     .select('id', { count: 'exact', head: true })
@@ -360,7 +372,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
   const deactivationsRemaining = Math.max(0, MAX_DEACTIVATIONS_PER_30_DAYS - (recentDeactivations ?? 0))
 
-  // 9. Journaliser la vérification
+  // 10. Journaliser la vérification
   await logCheck(license.id, input, evaluation.checkResult, deviceId)
 
   // 10. Réponse restriction (pas de jeton généré)

@@ -219,8 +219,9 @@ export function validateLocalToken(jwt: string): TokenValidationResult {
   }
 
   // Vérifier que ce jeton est bien pour cet appareil
+  // Exception : les jetons propriétaires utilisent 'owner' comme device hash (pas de restriction par appareil)
   const deviceIdHash = getDeviceIdHash()
-  if (payload.did !== deviceIdHash) {
+  if (payload.did !== 'owner' && payload.did !== deviceIdHash) {
     return { valid: false, payload, reason: 'wrong_device' }
   }
 
