@@ -919,6 +919,7 @@ function AccountGate({ onDone, theme }: { onDone: () => void; theme: 'light' | '
   const [emailExists, setEmailExists]   = useState(false)
   const [emailNotConfirmed, setEmailNotConfirmed] = useState(false)
   const [cguAccepted, setCguAccepted]   = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const switchToLogin = () => { setView('login'); setError(''); setMessage(''); setEmailExists(false); setEmailNotConfirmed(false) }
 
@@ -1019,7 +1020,15 @@ function AccountGate({ onDone, theme }: { onDone: () => void; theme: 'light' | '
             </div>
             <div className="field">
               <label>Mot de passe</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required autoComplete="current-password" />
+              <div style={{ position: 'relative' }}>
+                <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required autoComplete="current-password"
+                  style={{ width: '100%', paddingRight: 40, boxSizing: 'border-box' }} />
+                <button type="button" onClick={() => setShowPassword(v => !v)}
+                  title={showPassword ? 'Masquer' : 'Afficher'}
+                  style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 2, display: 'flex', alignItems: 'center' }}>
+                  <AccountEyeIcon open={showPassword} />
+                </button>
+              </div>
             </div>
             <button className="btn btn-primary" type="submit" disabled={loading}>
               {loading ? 'Connexion…' : 'Se connecter'}
@@ -1060,7 +1069,15 @@ function AccountGate({ onDone, theme }: { onDone: () => void; theme: 'light' | '
             </div>
             <div className="field">
               <label>Mot de passe (8 caractères minimum)</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={8} autoComplete="new-password" />
+              <div style={{ position: 'relative' }}>
+                <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required minLength={8} autoComplete="new-password"
+                  style={{ width: '100%', paddingRight: 40, boxSizing: 'border-box' }} />
+                <button type="button" onClick={() => setShowPassword(v => !v)}
+                  title={showPassword ? 'Masquer' : 'Afficher'}
+                  style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 2, display: 'flex', alignItems: 'center' }}>
+                  <AccountEyeIcon open={showPassword} />
+                </button>
+              </div>
             </div>
             <div style={{ background: '#fff8e1', border: '1px solid #f9a825', borderRadius: 8, padding: '10px 14px', fontSize: 12, color: '#7a5c00', lineHeight: 1.55 }}>
               ⚠️ <strong>Conservez ce mot de passe précieusement.</strong> Il chiffre également vos sauvegardes locales. En cas de perte, les données de sauvegarde seront inaccessibles. Notez-le dans un endroit sûr.
@@ -1258,5 +1275,23 @@ function SubscriptionGate({ onDone, theme }: { onDone: () => void; theme: 'light
         </button>
       </div>
     </div>
+  )
+}
+
+function AccountEyeIcon({ open }: { open: boolean }) {
+  return open ? (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+      <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  ) : (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
   )
 }
