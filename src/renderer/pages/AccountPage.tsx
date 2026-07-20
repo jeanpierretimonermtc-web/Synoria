@@ -64,7 +64,13 @@ export default function AccountPage() {
     setAuthLoading(true)
     try {
       const { ok, error } = await window.mtcApi.accountSignUp(email, password)
-      if (!ok) { showToast(error ?? 'Inscription échouée', 'error'); return }
+      if (!ok) {
+        const msg = error === 'EMAIL_EXISTS'
+          ? 'Cet email est déjà utilisé. Connectez-vous ou utilisez « Mot de passe oublié ».'
+          : (error ?? 'Inscription échouée')
+        showToast(msg, 'error')
+        return
+      }
       showToast('Compte créé ! Vérifiez votre email pour confirmer.', 'success')
       setAuthView('login')
     } finally {

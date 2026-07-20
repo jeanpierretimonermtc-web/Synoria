@@ -81,11 +81,14 @@ function SysCard({ title, icon, accentColor, colSpan, defaultOpen = false, child
   return (
     <div
       className={`sys-card${open ? '' : ' collapsed'}`}
-      style={{ borderTop: `3px solid ${accentColor}`, gridColumn: colSpan ? '1 / -1' : undefined }}
+      style={{ borderLeft: `3px solid ${accentColor}`, gridColumn: colSpan ? '1 / -1' : undefined }}
     >
       <button className="sys-card-toggle" onClick={() => setOpen(o => !o)}>
-        <div className="sys-card-title" style={{ color: accentColor, marginBottom: 0, borderBottom: 'none', paddingBottom: 0 }}>
-          {icon} {title}
+        <div className="sys-card-title">
+          <span className="card-title-icon" style={{ background: `color-mix(in srgb, ${accentColor} 15%, transparent)`, color: accentColor }}>
+            {icon}
+          </span>
+          {title}
         </div>
         <span className="sys-card-toggle-icon">▼</span>
       </button>

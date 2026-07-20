@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synoria — Guide RGPD praticien</title>
+<style>
+:root {
+  --accent:#2c5f8a;--accent-light:#e8f1f8;--green:#3a7d5a;--green-light:#e8f4ed;
+  --amber:#b5661a;--amber-light:#fdf3e3;--red:#c0392b;--red-light:#fdecea;
+  --text:#1a2330;--text-muted:#546478;--surface:#fff;--bg:#f4f7fa;
+  --border:#cbd5e0;--sidebar-bg:#eef2f7;--sidebar-w:240px;--nav-h:56px;--radius:8px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --accent:#5b92c4;--accent-light:#172030;--green:#52a875;--green-light:#1b3228;
+  --amber:#d4893a;--amber-light:#2a1c0a;--red:#e05a4d;--red-light:#2a1010;
+  --text:#d8e6f0;--text-muted:#8aaabb;--surface:#1a2535;--bg:#111b28;
+  --border:#243348;--sidebar-bg:#152035;
+}}
+:root[data-theme="dark"]{--accent:#5b92c4;--accent-light:#172030;--green:#52a875;--green-light:#1b3228;--amber:#d4893a;--amber-light:#2a1c0a;--red:#e05a4d;--red-light:#2a1010;--text:#d8e6f0;--text-muted:#8aaabb;--surface:#1a2535;--bg:#111b28;--border:#243348;--sidebar-bg:#152035;}
+:root[data-theme="light"]{--accent:#2c5f8a;--accent-light:#e8f1f8;--green:#3a7d5a;--green-light:#e8f4ed;--amber:#b5661a;--amber-light:#fdf3e3;--red:#c0392b;--red-light:#fdecea;--text:#1a2330;--text-muted:#546478;--surface:#fff;--bg:#f4f7fa;--border:#cbd5e0;--sidebar-bg:#eef2f7;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:15px;line-height:1.7;color:var(--text);background:var(--bg);display:flex;flex-direction:column;min-height:100vh;}
+a{color:var(--accent);text-decoration:none;}a:hover{text-decoration:underline;}
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;z-index:100;}
+.topbar-brand{display:flex;align-items:center;gap:10px;font-family:Georgia,serif;font-size:17px;font-weight:700;color:var(--accent);}
+.topbar-title{font-size:13px;font-weight:500;color:var(--text-muted);margin-left:4px;padding-left:12px;border-left:1px solid var(--border);}
+.topbar-badge{margin-left:auto;font-size:11px;font-weight:700;background:var(--accent-light);color:var(--accent);padding:3px 10px;border-radius:20px;}
+.theme-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px;color:var(--text-muted);cursor:pointer;margin-left:8px;}
+.theme-btn:hover{background:var(--accent-light);color:var(--accent);}
+.layout{display:flex;padding-top:var(--nav-h);min-height:100vh;}
+.sidebar{position:fixed;top:var(--nav-h);left:0;bottom:0;width:var(--sidebar-w);background:var(--sidebar-bg);border-right:1px solid var(--border);overflow-y:auto;padding:20px 0 40px;z-index:50;}
+.sidebar::-webkit-scrollbar{width:4px;}.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.nav-group-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);padding:14px 20px 4px;}
+.nav-link{display:flex;align-items:center;gap:8px;padding:7px 20px;font-size:13.5px;color:var(--text);border-left:3px solid transparent;transition:background .12s,color .12s,border-color .12s;}
+.nav-link:hover,.nav-link.active{background:var(--accent-light);color:var(--accent);text-decoration:none;border-left-color:var(--accent);}
+.nav-link.active{font-weight:600;}
+.main{margin-left:var(--sidebar-w);flex:1;padding:48px 56px 80px;max-width:calc(var(--sidebar-w) + 800px);}
+.content{max-width:760px;}
+h1{font-family:Georgia,serif;font-size:30px;font-weight:700;color:var(--text);line-height:1.25;text-wrap:balance;margin-bottom:12px;}
+h2{font-family:Georgia,serif;font-size:22px;font-weight:700;color:var(--text);margin-top:56px;margin-bottom:16px;padding-bottom:10px;border-bottom:1.5px solid var(--border);text-wrap:balance;}
+h3{font-size:16px;font-weight:700;color:var(--text);margin-top:32px;margin-bottom:10px;}
+p{margin-bottom:14px;}ul,ol{padding-left:22px;margin-bottom:14px;}li{margin-bottom:5px;}li::marker{color:var(--accent);}
+strong{font-weight:700;color:var(--text);}
+code{font-family:'Courier New',monospace;font-size:13px;background:var(--accent-light);color:var(--accent);padding:1px 6px;border-radius:4px;}
+.section-intro{font-size:16px;color:var(--text-muted);margin-bottom:32px;line-height:1.65;}
+.legal-ref{font-size:12px;font-style:italic;color:var(--text-muted);margin-top:4px;}
+.adm{display:flex;gap:14px;padding:14px 16px;border-radius:var(--radius);margin:20px 0;border-left:4px solid;}
+.adm-icon{flex-shrink:0;margin-top:1px;}.adm-body{flex:1;}.adm-body strong{display:block;margin-bottom:4px;font-size:14px;}.adm-body p{margin-bottom:0;font-size:14px;}
+.adm.info{background:var(--accent-light);border-color:var(--accent);}.adm.tip{background:var(--green-light);border-color:var(--green);}.adm.warn{background:var(--amber-light);border-color:var(--amber);}.adm.danger{background:var(--red-light);border-color:var(--red);}
+.adm.info .adm-icon{color:var(--accent);}.adm.tip .adm-icon{color:var(--green);}.adm.warn .adm-icon{color:var(--amber);}.adm.danger .adm-icon{color:var(--red);}
+.steps{counter-reset:step;list-style:none;padding:0;}
+.steps li{counter-increment:step;display:flex;gap:16px;align-items:flex-start;margin-bottom:18px;}
+.steps li::before{content:counter(step);flex-shrink:0;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px;}
+.steps li p{margin:0;}
+.checklist{list-style:none;padding:0;}
+.checklist li{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;font-size:14px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;}
+.checklist li::before{content:"☐";flex-shrink:0;font-size:16px;color:var(--accent);}
+.doc-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+.doc-table th{background:var(--accent-light);color:var(--accent);text-align:left;padding:9px 14px;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.06em;}
+.doc-table td{padding:9px 14px;border-bottom:1px solid var(--border);}
+.doc-table tr:last-child td{border-bottom:none;}
+.doc-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);margin:16px 0;}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:20px;vertical-align:middle;}
+.badge-green{background:var(--green-light);color:var(--green);}.badge-blue{background:var(--accent-light);color:var(--accent);}.badge-amber{background:var(--amber-light);color:var(--amber);}.badge-red{background:var(--red-light);color:var(--red);}
+.sample-doc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin:20px 0;font-size:13px;line-height:1.8;}
+.sample-doc-header{font-weight:700;font-size:14px;margin-bottom:4px;color:var(--accent);}
+.sample-doc-sub{font-size:12px;color:var(--text-muted);margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.anchor{scroll-margin-top:calc(var(--nav-h) + 24px);}
+.doc-footer{text-align:center;padding:40px;font-size:13px;color:var(--text-muted);border-top:1px solid var(--border);margin-top:60px;}
+@media(max-width:860px){.sidebar{display:none;}.main{margin-left:0;padding:32px 20px;}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-brand">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#2c5f8a"/><path d="M12 3l1.5 4.5H18l-3.75 2.7 1.5 4.5L12 12l-3.75 2.7 1.5-4.5L6 7.5h4.5L12 3z" fill="none" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></svg>
+    Synoria
+  </div>
+  <span class="topbar-title">Guide RGPD praticien</span>
+  <span class="topbar-badge">⚖️ RGPD Art. 9</span>
+  <button type="button" class="theme-btn" onclick="toggleTheme()">☀ / ☾</button>
+</header>
+
+<div class="layout">
+<nav class="sidebar">
+  <div class="nav-group-label">Cadre légal</div>
+  <a href="#introduction"    class="nav-link">Pourquoi ce guide</a>
+  <a href="#cadre"           class="nav-link">Cadre juridique</a>
+  <a href="#donnees"         class="nav-link">Données traitées</a>
+  <a href="#base-legale"     class="nav-link">Base légale</a>
+  <div class="nav-group-label">Obligations</div>
+  <a href="#consentement"    class="nav-link">Consentement patient</a>
+  <a href="#notice"          class="nav-link">Notice d'information</a>
+  <a href="#droits"          class="nav-link">Droits des patients</a>
+  <a href="#conservation"    class="nav-link">Durée de conservation</a>
+  <a href="#securite"        class="nav-link">Sécurité des données</a>
+  <a href="#registre"        class="nav-link">Registre Art. 30</a>
+  <div class="nav-group-label">Incidents</div>
+  <a href="#violation"       class="nav-link">Violation de données</a>
+  <a href="#audit"           class="nav-link">Audit CNIL</a>
+  <div class="nav-group-label">Synoria &amp; RGPD</div>
+  <a href="#synoria-rgpd"    class="nav-link">Ce que fait Synoria</a>
+  <a href="#checklist"       class="nav-link">Checklist praticien</a>
+</nav>
+
+<main class="main"><div class="content">
+
+<section id="introduction" class="anchor">
+  <h1>Guide RGPD — Praticien de santé</h1>
+  <p class="section-intro">Ce guide explique vos obligations légales en matière de protection des données patients, et comment Synoria vous aide à les respecter. Il est rédigé pour les praticiens indépendants (MTC, kinésiologie, ostéopathie, naturopathie…) traitant des données de santé.</p>
+  <div class="adm warn">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8.982 1.566a1.13 1.13 0 00-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 01-1.1 0L7.1 5.995A.905.905 0 018 5zm.002 6a1 1 0 110 2 1 1 0 010-2z"/></svg></span>
+    <div class="adm-body"><strong>Ce guide est informatif, pas un avis juridique</strong><p>Ce document présente les obligations générales du RGPD dans le contexte d'un cabinet de praticien indépendant. Pour des situations spécifiques ou complexes, consultez un délégué à la protection des données (DPO) ou un juriste spécialisé.</p></div>
+  </div>
+</section>
+
+<!-- CADRE JURIDIQUE -->
+<section id="cadre" class="anchor">
+  <h2>Cadre juridique</h2>
+  <p>En tant que praticien de santé, vous traitez des <strong>données de santé</strong>, considérées comme des <strong>données sensibles de catégorie particulière</strong> par le RGPD. Leur traitement est soumis à des règles renforcées.</p>
+
+  <div class="doc-table-wrap"><table class="doc-table">
+    <thead><tr><th>Texte</th><th>Ce qu'il impose</th></tr></thead>
+    <tbody>
+      <tr><td><strong>RGPD (UE) 2016/679</strong></td><td>Cadre général de protection des données personnelles en Europe</td></tr>
+      <tr><td><strong>Art. 9 RGPD</strong></td><td>Interdit le traitement de données de santé, sauf exceptions listées</td></tr>
+      <tr><td><strong>Art. 9(2)(h) RGPD</strong></td><td>Autorise le traitement pour la médecine préventive, diagnostic, soins ou gestion des systèmes de santé</td></tr>
+      <tr><td><strong>Loi Informatique et Libertés (modifiée)</strong></td><td>Transposition française du RGPD, précisions pour les professionnels de santé</td></tr>
+      <tr><td><strong>Code de la santé publique</strong></td><td>Secret professionnel, durées de conservation</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="adm info">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 16A8 8 0 108 0a8 8 0 000 16zm.93-9.412l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM8 5.5a1 1 0 110-2 1 1 0 010 2z"/></svg></span>
+    <div class="adm-body"><strong>Vous êtes "responsable de traitement"</strong><p>En tant que praticien indépendant, vous êtes le <strong>responsable de traitement</strong> au sens du RGPD. Vous décidez des finalités et des moyens du traitement des données de vos patients. Synoria est un <strong>outil</strong> que vous utilisez — la responsabilité juridique vous incombe.</p></div>
+  </div>
+</section>
+
+<!-- DONNÉES TRAITÉES -->
+<section id="donnees" class="anchor">
+  <h2>Données traitées dans Synoria</h2>
+  <p>Synoria vous permet de collecter et traiter les catégories de données suivantes :</p>
+  <div class="doc-table-wrap"><table class="doc-table">
+    <thead><tr><th>Catégorie</th><th>Données</th><th>Nature</th></tr></thead>
+    <tbody>
+      <tr><td>Identification</td><td>Nom, prénom, date de naissance, adresse, téléphone, email, profession</td><td><span class="badge badge-blue">Personnelles</span></td></tr>
+      <tr><td>Santé</td><td>Motif de consultation, antécédents, traitements, diagnostic, notes de séance, évolution</td><td><span class="badge badge-red">Sensibles</span></td></tr>
+      <tr><td>Financières</td><td>Honoraires, factures</td><td><span class="badge badge-blue">Personnelles</span></td></tr>
+      <tr><td>Administratives</td><td>Consentement RGPD, dates de consultation, journal d'accès</td><td><span class="badge badge-blue">Personnelles</span></td></tr>
+    </tbody>
+  </table></div>
+  <p class="legal-ref">Les données de santé sont soumises aux dispositions renforcées de l'Art. 9 RGPD.</p>
+</section>
+
+<!-- BASE LÉGALE -->
+<section id="base-legale" class="anchor">
+  <h2>Base légale du traitement</h2>
+  <p>Pour traiter légalement des données de santé, vous devez vous appuyer sur une base légale. Pour les praticiens de santé indépendants, la base applicable est :</p>
+
+  <div style="background:var(--accent-light);border:2px solid var(--accent);border-radius:var(--radius);padding:18px 20px;margin:20px 0;">
+    <div style="font-weight:700;font-size:15px;color:var(--accent);margin-bottom:6px">Art. 9(2)(h) RGPD</div>
+    <p style="margin:0;font-size:14px;line-height:1.7">Le traitement est nécessaire aux fins de la <strong>médecine préventive ou de la médecine du travail, de l'appréciation de la capacité de travail du travailleur, de diagnostics médicaux, de la prise en charge sanitaire ou sociale, ou de la gestion des systèmes et des services de soins de santé ou de protection sociale</strong>, sur la base du droit de l'Union ou d'un État membre.</p>
+  </div>
+
+  <p>Cette base légale vous <strong>dispense de recueillir un consentement explicite</strong> pour traiter les données de santé dans le cadre de votre activité thérapeutique. Vous devez néanmoins :</p>
+  <ul>
+    <li>Informer vos patients (notice Art. 13)</li>
+    <li>Respecter le secret professionnel</li>
+    <li>Garantir la sécurité des données</li>
+    <li>Respecter les durées de conservation</li>
+  </ul>
+
+  <div class="adm tip">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 16A8 8 0 108 0a8 8 0 000 16zm.93-9.412l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM8 5.5a1 1 0 110-2 1 1 0 010 2z"/></svg></span>
+    <div class="adm-body"><strong>Consentement dans Synoria</strong><p>La case à cocher "Consentement RGPD" dans Synoria ne correspond pas au consentement de l'Art. 9 (non requis pour votre base légale). Elle sert à tracer que vous avez bien <strong>remis et expliqué votre notice d'information</strong> Art. 13 au patient. C'est une bonne pratique documentaire, pas une obligation légale stricte.</p></div>
+  </div>
+</section>
+
+<!-- CONSENTEMENT -->
+<section id="consentement" class="anchor">
+  <h2>Recueil du consentement patient</h2>
+  <p>Bien que le consentement de l'Art. 9 ne soit pas votre base légale principale, il est fortement recommandé de <strong>documenter que vous avez informé vos patients</strong> de vos pratiques.</p>
+
+  <h3>Procédure recommandée</h3>
+  <ol class="steps">
+    <li><p>Lors du premier rendez-vous, remettez au patient votre <strong>notice d'information</strong> (voir section suivante). Expliquez-lui oralement les points essentiels.</p></li>
+    <li><p>Faites signer un formulaire de consentement papier (ou numérique) attestant que le patient a bien reçu et compris la notice. Conservez ce document.</p></li>
+    <li><p>Dans Synoria, ouvrez la fiche patient, cochez <strong>Consentement RGPD recueilli</strong> et indiquez la date.</p></li>
+  </ol>
+
+  <h3>Mineurs et personnes sous tutelle</h3>
+  <p>Pour les patients mineurs (moins de 15 ans), le consentement doit être recueilli auprès des <strong>titulaires de l'autorité parentale</strong>. Pour les majeurs sous tutelle, le tuteur légal doit être impliqué.</p>
+
+  <h3>Modèle de formulaire de consentement</h3>
+  <div class="sample-doc">
+    <div class="sample-doc-header">Formulaire de recueil d'information — Cabinet [Nom du praticien]</div>
+    <div class="sample-doc-sub">À compléter et signer lors du premier rendez-vous</div>
+    <p>Je, soussigné(e) <strong>[Nom Prénom]</strong>, né(e) le <strong>[date]</strong>, atteste avoir reçu et lu la notice d'information relative à la protection de mes données personnelles dans le cadre de mes consultations auprès de <strong>[Nom du praticien]</strong>.</p>
+    <p>J'ai été informé(e) de mes droits (accès, rectification, effacement, limitation, opposition) et des coordonnées du praticien pour exercer ces droits.</p>
+    <div style="margin-top:20px;display:flex;gap:40px;">
+      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Date</div><div style="width:140px;border-bottom:1px solid var(--border);height:24px;"></div></div>
+      <div><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Signature</div><div style="width:180px;border-bottom:1px solid var(--border);height:24px;"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- NOTICE D'INFORMATION -->
+<section id="notice" class="anchor">
+  <h2>Notice d'information (Art. 13 RGPD)</h2>
+  <p>Vous avez l'obligation d'informer vos patients sur le traitement de leurs données. Cette information doit être fournie <strong>au moment de la collecte des données</strong> (premier rendez-vous).</p>
+
+  <h3>Éléments obligatoires (Art. 13)</h3>
+  <ul>
+    <li>Identité et coordonnées du responsable de traitement (vous)</li>
+    <li>Finalités et base légale du traitement</li>
+    <li>Catégories de données collectées</li>
+    <li>Durée de conservation</li>
+    <li>Droits des personnes (accès, rectification, effacement, portabilité, opposition)</li>
+    <li>Droit de réclamation auprès de la CNIL</li>
+    <li>Coordonnées pour exercer les droits</li>
+  </ul>
+
+  <h3>Générer votre notice avec Synoria</h3>
+  <ol class="steps">
+    <li><p>Dans <strong>Paramètres → RGPD</strong>, renseignez vos coordonnées (nom, email, adresse du cabinet).</p></li>
+    <li><p>Personnalisez si nécessaire le texte de la notice dans le champ dédié.</p></li>
+    <li><p>Depuis la page <strong>RGPD</strong>, utilisez le bouton <strong>Imprimer la notice</strong> pour générer un document prêt à remettre à vos patients.</p></li>
+  </ol>
+
+  <h3>Exemple de notice (modèle Synoria)</h3>
+  <div class="sample-doc">
+    <div class="sample-doc-header">Notice d'information — Protection des données personnelles</div>
+    <div class="sample-doc-sub">Conformément au Règlement (UE) 2016/679 (RGPD) — Art. 13</div>
+    <p><strong>Responsable de traitement :</strong> [Votre Nom], praticien [spécialité], [Adresse cabinet], [Email].</p>
+    <p><strong>Finalités :</strong> La tenue de votre dossier patient est nécessaire à la prise en charge de votre santé dans le cadre de nos consultations (Art. 9(2)(h) RGPD).</p>
+    <p><strong>Données collectées :</strong> État civil, coordonnées, informations de santé (motifs de consultation, antécédents, traitements, notes de séances), données financières liées aux honoraires.</p>
+    <p><strong>Durée de conservation :</strong> Votre dossier est conservé pendant 10 ans après votre dernière consultation, conformément aux recommandations de la CNIL pour les professionnels de santé.</p>
+    <p><strong>Vos droits :</strong> Vous pouvez à tout moment exercer votre droit d'accès, de rectification, d'effacement, de limitation ou d'opposition en me contactant à [email]. Vous avez également le droit d'introduire une réclamation auprès de la CNIL (cnil.fr).</p>
+    <p><strong>Sécurité :</strong> Vos données sont stockées localement sur mon poste, chiffrées par un algorithme AES-256, et ne sont jamais transmises à des tiers sans votre accord.</p>
+  </div>
+</section>
+
+<!-- DROITS DES PATIENTS -->
+<section id="droits" class="anchor">
+  <h2>Droits des patients</h2>
+  <p>Vos patients disposent des droits suivants qu'ils peuvent exercer à tout moment :</p>
+
+  <div class="doc-table-wrap"><table class="doc-table">
+    <thead><tr><th>Droit</th><th>Ce que le patient peut demander</th><th>Délai de réponse</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Accès (Art. 15)</strong></td><td>Obtenir une copie de toutes ses données</td><td>1 mois</td></tr>
+      <tr><td><strong>Rectification (Art. 16)</strong></td><td>Corriger des données inexactes ou incomplètes</td><td>1 mois</td></tr>
+      <tr><td><strong>Effacement (Art. 17)</strong></td><td>Supprimer ses données (sous conditions)</td><td>1 mois</td></tr>
+      <tr><td><strong>Limitation (Art. 18)</strong></td><td>Suspendre le traitement sans effacer</td><td>1 mois</td></tr>
+      <tr><td><strong>Portabilité (Art. 20)</strong></td><td>Recevoir ses données dans un format réutilisable</td><td>1 mois</td></tr>
+      <tr><td><strong>Opposition (Art. 21)</strong></td><td>S'opposer à certains traitements</td><td>1 mois</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Comment répondre à une demande d'accès</h3>
+  <ol class="steps">
+    <li><p>Vérifiez l'identité du demandeur (une pièce d'identité peut être demandée).</p></li>
+    <li><p>Dans Synoria, exportez les données du patient concerné : <strong>Résumé de séance → Export JSON</strong> pour chaque séance, ou <strong>Paramètres → Sauvegardes → Sauvegarde patient</strong> pour l'ensemble du dossier.</p></li>
+    <li><p>Transmettez les données de façon sécurisée (courrier recommandé, email chiffré).</p></li>
+    <li><p>Notez la demande et votre réponse (date, nature de la demande, action prise).</p></li>
+  </ol>
+
+  <h3>Droit à l'effacement</h3>
+  <p>Ce droit n'est pas absolu en matière de santé. Vous pouvez refuser l'effacement lorsque les données sont nécessaires à :</p>
+  <ul>
+    <li>La continuité des soins (obligation légale de conservation)</li>
+    <li>La défense de vos droits en justice</li>
+    <li>L'exécution d'une mission d'intérêt public</li>
+  </ul>
+  <p>Si vous supprimez un patient dans Synoria, toutes ses données sont définitivement effacées.</p>
+</section>
+
+<!-- DURÉE DE CONSERVATION -->
+<section id="conservation" class="anchor">
+  <h2>Durée de conservation</h2>
+  <p>La durée de conservation des dossiers médicaux est encadrée par la loi. Pour les praticiens de santé indépendants non médecins, les recommandations sont :</p>
+
+  <div class="doc-table-wrap"><table class="doc-table">
+    <thead><tr><th>Catégorie</th><th>Durée recommandée</th><th>Référence</th></tr></thead>
+    <tbody>
+      <tr><td>Dossier patient (adulte)</td><td><strong>10 ans</strong> après la dernière consultation</td><td>Recommandation CNIL, Art. 5(1)(e) RGPD</td></tr>
+      <tr><td>Dossier patient (mineur)</td><td><strong>Jusqu'aux 28 ans</strong> du patient (majorité + 10 ans)</td><td>Adaptation de la recommandation</td></tr>
+      <tr><td>Factures</td><td><strong>10 ans</strong> à compter de la clôture de l'exercice</td><td>Code de commerce Art. L123-22</td></tr>
+      <tr><td>Journal d'accès RGPD</td><td><strong>3 ans</strong></td><td>Recommandation CNIL</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Alertes de conservation dans Synoria</h3>
+  <p>Synoria surveille automatiquement la durée de conservation de vos dossiers. La page <strong>RGPD → Alertes</strong> liste :</p>
+  <ul>
+    <li><span class="badge badge-amber">Approche</span> — Dossiers dont la durée de conservation approche</li>
+    <li><span class="badge badge-red">Dépassé</span> — Dossiers dont la durée légale est dépassée et qui doivent être traités</li>
+  </ul>
+  <p>Vous pouvez configurer la durée de conservation dans <strong>Paramètres → RGPD → Durée de conservation</strong>.</p>
+
+  <div class="adm warn">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8.982 1.566a1.13 1.13 0 00-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 01-1.1 0L7.1 5.995A.905.905 0 018 5zm.002 6a1 1 0 110 2 1 1 0 010-2z"/></svg></span>
+    <div class="adm-body"><strong>Dossiers "à conserver" ne signifie pas "à partager"</strong><p>La durée de conservation concerne votre obligation de garder les données disponibles. Elle ne vous autorise pas à les partager librement — le secret professionnel et les droits des patients s'appliquent pendant toute cette durée.</p></div>
+  </div>
+</section>
+
+<!-- SÉCURITÉ -->
+<section id="securite" class="anchor">
+  <h2>Sécurité des données</h2>
+  <p>Le RGPD impose des <strong>mesures techniques et organisationnelles appropriées</strong> pour protéger les données de santé (Art. 32). Voici ce que Synoria fait et ce que vous devez faire.</p>
+
+  <h3>Ce que Synoria fait pour vous</h3>
+  <ul>
+    <li>Chiffrement AES-256-GCM de la base de données</li>
+    <li>Clé dérivée par PBKDF2 (600 000 itérations) — votre mot de passe n'est jamais stocké</li>
+    <li>Verrouillage automatique après 20 minutes d'inactivité</li>
+    <li>Rechiffrement automatique toutes les 3 minutes et à la fermeture</li>
+    <li>Aucune transmission de données patients via Internet</li>
+    <li>Journal d'accès RGPD automatique</li>
+  </ul>
+
+  <h3>Vos obligations complémentaires</h3>
+  <ul>
+    <li><strong>Mot de passe solide</strong> : au moins 12 caractères, non partagé</li>
+    <li><strong>Sauvegardes régulières</strong> sur un support hors du cabinet (clé USB chiffrée, coffre-fort numérique)</li>
+    <li><strong>Accès physique</strong> : ordinateur dans un local fermé à clé, écran non visible des patients</li>
+    <li><strong>Antivirus à jour</strong> sur le poste utilisé</li>
+    <li><strong>Système d'exploitation à jour</strong> (correctifs de sécurité Windows)</li>
+    <li><strong>Réseau sécurisé</strong> : ne travaillez pas sur un Wi-Fi public sans VPN</li>
+    <li>En cas de vol ou perte de l'ordinateur : <strong>notifiez immédiatement</strong> la CNIL si les données sont potentiellement compromises</li>
+  </ul>
+</section>
+
+<!-- REGISTRE ART. 30 -->
+<section id="registre" class="anchor">
+  <h2>Registre des activités de traitement (Art. 30)</h2>
+  <p>Tout responsable de traitement doit tenir un registre documentant ses activités de traitement. En tant que praticien indépendant, vous devez donc tenir ce registre.</p>
+
+  <h3>Générer le registre avec Synoria</h3>
+  <ol class="steps">
+    <li><p>Dans <strong>Paramètres → RGPD</strong>, vérifiez que vos coordonnées de responsable sont complètes.</p></li>
+    <li><p>Depuis la page <strong>RGPD → Registre</strong>, cliquez sur <strong>Exporter le registre Art. 30</strong>.</p></li>
+    <li><p>Synoria génère un fichier HTML complet avec toutes les informations requises. Ouvrez-le dans votre navigateur pour l'imprimer ou l'archiver.</p></li>
+  </ol>
+
+  <h3>Contenu du registre généré</h3>
+  <ul>
+    <li>Identité du responsable de traitement</li>
+    <li>Finalités du traitement (suivi thérapeutique)</li>
+    <li>Base légale (Art. 9(2)(h))</li>
+    <li>Catégories de données traitées</li>
+    <li>Catégories de personnes concernées</li>
+    <li>Durées de conservation appliquées</li>
+    <li>Mesures de sécurité (chiffrement AES-256, accès restreint)</li>
+    <li>Statistiques anonymes (nombre de patients actifs)</li>
+  </ul>
+
+  <div class="adm info">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 16A8 8 0 108 0a8 8 0 000 16zm.93-9.412l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM8 5.5a1 1 0 110-2 1 1 0 010 2z"/></svg></span>
+    <div class="adm-body"><strong>Fréquence de mise à jour</strong><p>Mettez à jour et archivez votre registre au minimum une fois par an, ou à chaque modification significative de vos pratiques (nouveau logiciel, nouveau type de données collectées, changement de sous-traitant).</p></div>
+  </div>
+</section>
+
+<!-- VIOLATION DE DONNÉES -->
+<section id="violation" class="anchor">
+  <h2>Violation de données — Que faire ?</h2>
+  <p>Une violation de données est tout incident compromettant la confidentialité, l'intégrité ou la disponibilité de données personnelles : vol d'ordinateur, ransomware, accès non autorisé, perte de clé USB…</p>
+
+  <h3>Procédure en cas d'incident</h3>
+  <ol class="steps">
+    <li><p><strong>Constatez et documentez</strong> l'incident : date, nature, données potentiellement touchées, nombre de patients concernés.</p></li>
+    <li><p><strong>Évaluez le risque</strong> : Les données chiffrées par Synoria (AES-256) ne sont pas lisibles sans le mot de passe. Un ordinateur volé avec Synoria fermé ne constitue pas une violation "à risque élevé" si le mot de passe est solide.</p></li>
+    <li><p><strong>Notifiez la CNIL dans les 72 heures</strong> si la violation est susceptible d'engendrer un risque pour les droits et libertés des personnes. Notification via notifications.cnil.fr.</p></li>
+    <li><p><strong>Informez les patients concernés</strong> sans délai si la violation est susceptible d'engendrer un <em>risque élevé</em> (données non chiffrées, accès avéré par un tiers).</p></li>
+    <li><p><strong>Documentez</strong> l'incident dans votre registre de violations, même si vous ne notifiez pas (Art. 33(5) RGPD).</p></li>
+  </ol>
+
+  <div class="adm tip">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 16A8 8 0 108 0a8 8 0 000 16zm.93-9.412l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM8 5.5a1 1 0 110-2 1 1 0 010 2z"/></svg></span>
+    <div class="adm-body"><strong>Chiffrement = protection forte</strong><p>Les données Synoria étant chiffrées avec AES-256, un vol d'ordinateur ne constitue généralement pas une violation "à risque élevé" si votre mot de passe est solide et unique. Documentez quand même l'incident.</p></div>
+  </div>
+</section>
+
+<!-- AUDIT CNIL -->
+<section id="audit" class="anchor">
+  <h2>En cas d'audit ou de contrôle CNIL</h2>
+  <p>La CNIL peut procéder à des contrôles, notamment sur plainte d'un patient. Voici ce que vous devez être en mesure de présenter :</p>
+  <ul>
+    <li>Votre <strong>registre des activités de traitement</strong> Art. 30 (générable via Synoria)</li>
+    <li>Votre <strong>notice d'information</strong> remise aux patients</li>
+    <li>Preuve du recueil d'information des patients (formulaires signés)</li>
+    <li>Documentation sur les mesures de sécurité (chiffrement, sauvegardes)</li>
+    <li>Journal des violations éventuelles</li>
+  </ul>
+
+  <div class="adm warn">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8.982 1.566a1.13 1.13 0 00-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 01-1.1 0L7.1 5.995A.905.905 0 018 5zm.002 6a1 1 0 110 2 1 1 0 010-2z"/></svg></span>
+    <div class="adm-body"><strong>Sanctions</strong><p>Les manquements au RGPD peuvent être sanctionnés jusqu'à 20 millions d'euros ou 4 % du chiffre d'affaires annuel mondial. Pour un praticien indépendant, les sanctions courantes sont des mises en demeure et des avertissements, mais les amendes existent pour les cas graves ou répétés.</p></div>
+  </div>
+</section>
+
+<!-- CE QUE FAIT SYNORIA -->
+<section id="synoria-rgpd" class="anchor">
+  <h2>Ce que Synoria fait pour votre conformité RGPD</h2>
+
+  <div class="doc-table-wrap"><table class="doc-table">
+    <thead><tr><th>Obligation RGPD</th><th>Fonctionnalité Synoria</th></tr></thead>
+    <tbody>
+      <tr><td>Sécurité des données (Art. 32)</td><td>Chiffrement AES-256, mot de passe, verrouillage auto</td></tr>
+      <tr><td>Information des personnes (Art. 13)</td><td>Génération de notice d'information personnalisée</td></tr>
+      <tr><td>Traçabilité des accès</td><td>Journal d'accès automatique (fiches ouvertes, séances consultées)</td></tr>
+      <tr><td>Suivi des consentements</td><td>Champ consentement + date sur chaque fiche patient</td></tr>
+      <tr><td>Durée de conservation (Art. 5)</td><td>Alertes automatiques pour dossiers approchant la limite</td></tr>
+      <tr><td>Registre Art. 30</td><td>Export HTML du registre des activités de traitement</td></tr>
+      <tr><td>Droit d'accès (Art. 15)</td><td>Export JSON/Excel de toutes les données d'un patient</td></tr>
+      <tr><td>Droit à l'effacement (Art. 17)</td><td>Suppression définitive d'un patient et de toutes ses données</td></tr>
+      <tr><td>Minimisation des données</td><td>Aucune donnée collectée sans votre saisie explicite</td></tr>
+      <tr><td>Stockage local</td><td>Aucune donnée patient transmise à des serveurs tiers — données stockées uniquement sur votre ordinateur</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- CHECKLIST -->
+<section id="checklist" class="anchor">
+  <h2>Checklist praticien</h2>
+  <p>Utilisez cette checklist pour vérifier votre conformité RGPD.</p>
+
+  <h3>Mise en place initiale</h3>
+  <ul class="checklist">
+    <li>J'ai renseigné mes coordonnées dans Paramètres → RGPD</li>
+    <li>J'ai personnalisé et imprimé ma notice d'information Art. 13</li>
+    <li>Je remets la notice à chaque nouveau patient et je fais signer un formulaire de consentement</li>
+    <li>Je coche "Consentement recueilli" dans Synoria après chaque nouveau patient informé</li>
+    <li>J'ai généré et archivé mon registre Art. 30</li>
+    <li>Mon mot de passe Synoria est solide (12+ caractères) et noté en lieu sûr</li>
+    <li>Mon ordinateur est sécurisé (antivirus, OS à jour, écran non visible des patients)</li>
+  </ul>
+
+  <h3>Suivi régulier</h3>
+  <ul class="checklist">
+    <li>Je fais une sauvegarde générale chaque semaine et la stocke hors du cabinet</li>
+    <li>Je consulte régulièrement les alertes RGPD (dossiers approchant la durée limite)</li>
+    <li>Je mets à jour mon registre Art. 30 une fois par an</li>
+    <li>Je réponds aux demandes d'exercice des droits dans le délai d'un mois</li>
+    <li>Je documente tout incident de sécurité, même mineur</li>
+  </ul>
+
+  <h3>En cas d'incident</h3>
+  <ul class="checklist">
+    <li>J'ai documenté l'incident (date, nature, périmètre)</li>
+    <li>J'ai évalué si la notification CNIL est requise (72h pour les risques)</li>
+    <li>J'ai informé les patients concernés si risque élevé avéré</li>
+    <li>J'ai archivé l'incident dans mon registre de violations</li>
+  </ul>
+</section>
+
+<div class="doc-footer">
+  <p>Synoria v1.3 · <a href="mailto:support@synoria.fr">support@synoria.fr</a> · <a href="documentation.html">Guide d'utilisation</a> · <a href="guide-installation.html">Guide d'installation</a></p>
+  <p style="margin-top:6px;font-size:12px">Ce guide est fourni à titre informatif. Pour des situations juridiques spécifiques, consultez un professionnel du droit.</p>
+</div>
+
+</div></main>
+</div>
+<script>
+function getTheme(){return localStorage.getItem('doc-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}
+function applyTheme(t){document.documentElement.setAttribute('data-theme',t);localStorage.setItem('doc-theme',t);}
+function toggleTheme(){applyTheme(getTheme()==='dark'?'light':'dark');}
+applyTheme(getTheme());
+const sections=document.querySelectorAll('section[id]');
+const navLinks=document.querySelectorAll('.nav-link[href^="#"]');
+const observer=new IntersectionObserver(e=>{e.forEach(e=>{if(e.isIntersecting){navLinks.forEach(l=>l.classList.remove('active'));const a=document.querySelector(`.nav-link[href="#${e.target.id}"]`);if(a)a.classList.add('active');}});},{rootMargin:'-20% 0px -70% 0px'});
+sections.forEach(s=>observer.observe(s));
+</script>
+</body>
+</html>

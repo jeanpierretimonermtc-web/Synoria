@@ -5,6 +5,7 @@ import type { PluginDefinition } from '../../shared/pluginTypes'
 import { ToastContext } from '../App'
 import { showConfirm } from '../components/common/ConfirmDialog'
 import PluginBuilder from '../components/plugin/PluginBuilder'
+import PluginFormRenderer from '../components/plugin/PluginFormRenderer'
 
 // ── Helpers ───────────────────────────────────────────────────────
 
@@ -33,7 +34,7 @@ const TABS: { id: Tab; icon: string; label: string; desc: string }[] = [
   { id: 'facturation', icon: '🧾', label: 'Facturation', desc: 'Factures, numérotation'       },
   { id: 'rgpd',        icon: '🔒', label: 'RGPD',        desc: 'Notice, consentements'        },
   { id: 'securite',    icon: '🔐', label: 'Sécurité',    desc: 'Mot de passe, mise à jour'    },
-  { id: 'plugin',      icon: '🔌', label: 'Plugin',      desc: 'Formulaire de spécialité'     },
+  { id: 'plugin',      icon: '📋', label: 'Formulaire métier', desc: 'Spécialité thérapeutique'  },
   { id: 'gcal',        icon: '📅', label: 'Google Cal.', desc: 'Sync calendrier téléphone'    },
   { id: 'support',     icon: '🔧', label: 'Support',     desc: 'Diagnostic, assistance'       },
 ]
@@ -69,18 +70,27 @@ export default function SettingsPage() {
   const [pwdOk,      setPwdOk]      = useState(false)
   const [pwdLoading, setPwdLoading] = useState(false)
 
+  // Profils de séance (Phase 3)
+  const [profiles,        setProfiles]        = useState<import('../../shared/sessionProfileTypes').SessionFormProfile[]>([])
+  const [profilesLoading, setProfilesLoading] = useState(false)
+
+  // Owner
+  const [isOwner, setIsOwner] = useState(false)
+
   // Plugin
-  const [activePlugin,  setActivePlugin]  = useState<PluginDefinition | null>(null)
-  const [pluginLoading, setPluginLoading] = useState(false)
-  const [pluginError,   setPluginError]   = useState('')
-  const [showBuilder,     setShowBuilder]     = useState(false)
-  const [builderInitial,  setBuilderInitial]  = useState<PluginDefinition | undefined>(undefined)
-  const [library,         setLibrary]         = useState<{ plugin: PluginDefinition; savedAt: string; isNative?: boolean }[]>([])
+  const [activePlugin,     setActivePlugin]     = useState<PluginDefinition | null>(null)
+  const [availablePlugins, setAvailablePlugins] = useState<PluginDefinition[]>([])
+  const [pluginLoading,    setPluginLoading]    = useState(false)
+  const [pluginError,      setPluginError]      = useState('')
+  const [showBuilder,        setShowBuilder]        = useState(false)
+  const [builderInitial,     setBuilderInitial]     = useState<PluginDefinition | undefined>(undefined)
+  const [library,            setLibrary]            = useState<{ plugin: PluginDefinition; savedAt: string; isNative?: boolean }[]>([])
+  const [previewPlugin,      setPreviewPlugin]      = useState<PluginDefinition | null>(null)
+  const [builderLivePreview, setBuilderLivePreview] = useState<PluginDefinition | null>(null)
+  const [previewZoom,        setPreviewZoom]        = useState(0.48)
 
   // Google Calendar
   const [gcalInfo,        setGcalInfo]        = useState<GoogleCalendarInfo | null>(null)
-  const [gcalClientId,    setGcalClientId]    = useState('')
-  const [gcalClientSec,   setGcalClientSec]   = useState('')
   const [gcalCalendars,   setGcalCalendars]   = useState<GCalCalendar[]>([])
   const [gcalLoading,     setGcalLoading]     = useState(false)
   // Calendriers à importer — état local (id → { selected, color })
@@ -91,6 +101,14 @@ export default function SettingsPage() {
   const [localThemeMode, setLocalThemeMode] = useState<'light'|'dark'|'system'>(
     () => (localStorage.getItem('synoria-theme-mode') || 'light') as 'light'|'dark'|'system'
   )
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const mode = (e as CustomEvent<'light'|'dark'|'system'>).detail
+      if (mode) setLocalThemeMode(mode)
+    }
+    window.addEventListener('synoria-theme-change', handler)
+    return () => window.removeEventListener('synoria-theme-change', handler)
+  }, [])
   const applyThemeMode = (mode: 'light'|'dark'|'system') => {
     setLocalThemeMode(mode)
     localStorage.setItem('synoria-theme-mode', mode)
@@ -115,16 +133,11 @@ export default function SettingsPage() {
   }
 
   const handleGcalConnect = async () => {
-    if (!gcalClientId.trim() || !gcalClientSec.trim()) {
-      showToast('Renseignez Client ID et Client Secret', 'error'); return
-    }
     setGcalLoading(true)
     try {
-      await window.mtcApi.gcalConnect(gcalClientId.trim(), gcalClientSec.trim())
+      await window.mtcApi.gcalConnect()
       await loadGcalStatus()
-      setGcalClientId(''); setGcalClientSec('')
       showToast('Connecté à Google Calendar ✓', 'success')
-      // Charge la liste des calendriers
       const cals = await window.mtcApi.gcalListCalendars()
       setGcalCalendars(cals)
     } catch (e: any) {
@@ -193,14 +206,46 @@ export default function SettingsPage() {
   useEffect(() => {
     load()
     window.mtcApi.getAppVersion().then(setAppVersion).catch(() => {})
-    window.mtcApi.pluginGet().then(p => setActivePlugin(p || null)).catch(() => {})
+    window.mtcApi.pluginGet().then(p => setActivePlugin(p || null)).catch(() => { showToast("Impossible de charger le formulaire actif", "error") })
+    window.mtcApi.ownerCheck().then(setIsOwner).catch(() => {})
     loadGcalStatus()
   }, [])
 
   useEffect(() => {
     if (activeTab !== 'plugin') return
-    window.mtcApi.pluginLibraryGet().then(lib => setLibrary(lib)).catch(() => {})
+    window.mtcApi.pluginListAvailable().then(setAvailablePlugins).catch(() => {})
+    window.mtcApi.pluginGet().then(p => setActivePlugin(p || null)).catch(() => {})
+    window.mtcApi.pluginLibraryGet().then(lib => setLibrary(lib)).catch(() => { showToast("Erreur chargement bibliothèque de formulaires", "error") })
+    window.mtcApi.profilesGetAll().then(list => setProfiles(list || [])).catch(() => {})
   }, [activeTab])
+
+  // ── Profils de séance (Phase 3) ─────────────────────────────────
+  const loadProfiles = async () => {
+    try { setProfiles(await window.mtcApi.profilesGetAll()) }
+    catch { showToast('Erreur chargement des profils de séance', 'error') }
+  }
+  const handleSetDefaultProfile = async (id: string) => {
+    try { await window.mtcApi.profilesSetDefault(id); await loadProfiles(); showToast('Profil par défaut mis à jour ✓', 'success') }
+    catch { showToast('Impossible de définir ce profil par défaut', 'error') }
+  }
+  const handleDuplicateProfile = async (p: import('../../shared/sessionProfileTypes').SessionFormProfile) => {
+    try { await window.mtcApi.profilesDuplicate(p.id, `${p.name} (copie)`); await loadProfiles(); showToast('Profil dupliqué ✓', 'success') }
+    catch { showToast('Impossible de dupliquer le profil', 'error') }
+  }
+  const handleArchiveProfile = async (p: import('../../shared/sessionProfileTypes').SessionFormProfile) => {
+    if (!await showConfirm({ message: `Archiver le profil « ${p.name} » ? Il n'apparaîtra plus dans le sélecteur de séance.`, title: 'Archiver le profil', confirmLabel: 'Archiver' })) return
+    try { await window.mtcApi.profilesArchive(p.id); await loadProfiles(); showToast('Profil archivé', 'success') }
+    catch (e) { showToast(e instanceof Error ? e.message : 'Impossible d\'archiver le profil', 'error') }
+  }
+  const handleMigrateProfiles = async () => {
+    setProfilesLoading(true)
+    try {
+      const res = await window.mtcApi.profilesMigrate()
+      await loadProfiles()
+      showToast(res.migrated ? `Profil migré depuis le formulaire actif ✓` : (res.reason || 'Aucune migration nécessaire'), 'success')
+    } catch { showToast('Erreur migration des profils', 'error') }
+    setProfilesLoading(false)
+  }
 
   // ── Helpers save ────────────────────────────────────────────────
   const save = async (partial: Partial<AppSettings>) => {
@@ -241,17 +286,28 @@ export default function SettingsPage() {
     setBackingUp(false)
   }
 
-  const finishImport = (result: { patientsUpserted: number; sessionsUpserted: number; errors: string[] }) => {
-    showToast(`Import terminé ✓ — ${result.patientsUpserted} patient(s), ${result.sessionsUpserted} séance(s)`, 'success')
+  const finishImport = (result: { patientsUpserted: number; sessionsUpserted: number; sessionsSkipped?: number; errors: string[] }) => {
+    const skipped = result.sessionsSkipped ?? 0
+    showToast(
+      `Import terminé ✓ — ${result.patientsUpserted} patient(s), ${result.sessionsUpserted} séance(s)${skipped > 0 ? ` · ${skipped} doublon(s) ignoré(s)` : ''}`,
+      skipped > 0 ? 'warning' : 'success',
+    )
+    if (skipped > 0) {
+      setTimeout(() => window.alert(
+        `⚠️ ${skipped} séance${skipped > 1 ? 's' : ''} ignorée${skipped > 1 ? 's' : ''}\n\nCes séances existent déjà dans la base et n'ont pas été réimportées.`
+      ), 400)
+    }
     setBkpModal(null)
-    // Naviguer vers le tableau de bord — les données sont déjà dans la BDD ouverte,
-    // pas besoin de redémarrer l'app (ce qui causait un écran blanc).
     setTimeout(() => navigate('/'), 800)
   }
 
   const handleImport = async () => {
-    const path = await window.mtcApi.showOpenDialog({ filters: [{ name: 'Sauvegarde Synoria', extensions: ['enc', 'json'] }] })
+    const path = await window.mtcApi.showOpenDialog({ filters: [{ name: 'Sauvegarde / Dossier patient', extensions: ['enc', 'json'] }] })
     if (!path) return
+    // Ouvre le fichier JSON dans l'éditeur système pour lecture visuelle
+    if (path.endsWith('.json')) {
+      window.mtcApi.openPath(path).catch(() => {})
+    }
     try {
       const result = await window.mtcApi.importBackupJson(path)
       if ('__needsPassword' in result) {
@@ -351,7 +407,7 @@ export default function SettingsPage() {
 
   const handleImportPlugin = async () => {
     setPluginError('')
-    const path = await window.mtcApi.showOpenDialog({ filters: [{ name: 'Plugin Synoria', extensions: ['json'] }] })
+    const path = await window.mtcApi.showOpenDialog({ filters: [{ name: 'Formulaire Synoria', extensions: ['json'] }] })
     if (!path) return
     setPluginLoading(true)
     try {
@@ -364,16 +420,16 @@ export default function SettingsPage() {
         if (lib.some(e => e.plugin.id === plugin.id && e.isNative)) return lib
         return [...lib, { plugin, savedAt: new Date().toISOString(), isNative: true }]
       })
-      showToast(`Plugin "${plugin.name}" v${plugin.version} installé ✓`, 'success')
-    } catch (e: any) { setPluginError(e?.message || 'Erreur import plugin.') }
+      showToast(`Formulaire "${plugin.name}" v${plugin.version} activé ✓`, 'success')
+    } catch (e: any) { setPluginError(e?.message || 'Erreur import formulaire.') }
     setPluginLoading(false)
   }
 
   const handleRemovePlugin = async () => {
-    if (!await showConfirm({ message: 'Supprimer le plugin et revenir au formulaire intégré ?', title: 'Supprimer le plugin', confirmLabel: 'Supprimer', danger: true })) return
+    if (!await showConfirm({ message: 'Supprimer le formulaire métier et revenir au formulaire intégré ?', title: 'Supprimer le formulaire métier', confirmLabel: 'Supprimer', danger: true })) return
     await window.mtcApi.pluginRemove()
     setActivePlugin(null)
-    showToast('Plugin supprimé — formulaire MTC restauré', 'success')
+    showToast('Formulaire supprimé — formulaire MTC restauré', 'success')
   }
 
   const handleSaveBuiltPlugin = async (plugin: PluginDefinition) => {
@@ -419,6 +475,27 @@ export default function SettingsPage() {
     await window.mtcApi.pluginLibraryDelete(pluginId)
     setLibrary(lib => lib.filter(e => e.plugin.id !== pluginId))
     showToast('Formulaire supprimé de la bibliothèque', 'success')
+  }
+
+  const handleExportLibrary = async () => {
+    const dest = await window.mtcApi.showSaveDialog({ defaultPath: 'synoria-bibliotheque-formulaires.json', filters: [{ name: 'JSON', extensions: ['json'] }] })
+    if (!dest) return
+    try {
+      await window.mtcApi.pluginLibraryExport(dest)
+      showToast('Bibliothèque exportée ✓', 'success')
+      await window.mtcApi.openPath(dest)
+    } catch (e: any) { showToast(e?.message || 'Erreur export', 'error') }
+  }
+
+  const handleImportLibrary = async () => {
+    const src = await window.mtcApi.showOpenDialog({ filters: [{ name: 'JSON', extensions: ['json'] }], title: 'Importer une bibliothèque de formulaires' })
+    if (!src) return
+    try {
+      const result = await window.mtcApi.pluginLibraryImport(src)
+      const updated = await window.mtcApi.pluginLibraryGet()
+      setLibrary(updated)
+      showToast(`Bibliothèque importée — ${result.added} ajouté(s), ${result.updated} mis à jour`, 'success')
+    } catch (e: any) { showToast(e?.message || 'Erreur import', 'error') }
   }
 
   const handleGenerateDiagnostic = async () => {
@@ -476,6 +553,87 @@ export default function SettingsPage() {
             </div>
           </button>
         ))}
+
+        {isOwner && (
+          <div style={{
+            margin: '12px 8px 4px',
+            padding: '7px 10px',
+            borderRadius: 8,
+            background: 'color-mix(in srgb, var(--accent) 14%, var(--surface))',
+            border: '1px solid color-mix(in srgb, var(--accent) 35%, transparent)',
+            display: 'flex', alignItems: 'center', gap: 7,
+          }}>
+            <span style={{ fontSize: 15 }}>👑</span>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)' }}>Mode propriétaire</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Accès complet sans abonnement</div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Mini aperçu live du formulaire en cours d'édition ── */}
+        {showBuilder && builderLivePreview && builderLivePreview.sections.some(s => s.fields.length > 0) && (
+          <div style={{
+            margin: '16px 8px 20px',
+            borderRadius: 10,
+            border: '1px solid var(--border-soft)',
+            background: 'var(--surface)',
+            boxShadow: [
+              '0 1px 2px rgba(0,0,0,.06)',
+              '0 4px 12px rgba(0,0,0,.12)',
+              '0 16px 40px rgba(0,0,0,.10)',
+              '-6px 0 20px rgba(0,0,0,.05)',
+              '6px 0 20px rgba(0,0,0,.05)',
+            ].join(', '),
+            transform: 'translateY(-1px)',
+            overflow: 'hidden',
+          }}>
+            {/* En-tête : icône + nom + contrôles zoom */}
+            <div style={{
+              padding: '7px 8px',
+              background: `color-mix(in srgb, ${builderLivePreview.accentColor || 'var(--accent)'} 12%, var(--surface))`,
+              borderBottom: `2px solid ${builderLivePreview.accentColor || 'var(--accent)'}`,
+              display: 'flex', alignItems: 'center', gap: 5,
+            }}>
+              <span style={{ fontSize: 14, flexShrink: 0 }}>{builderLivePreview.icon || '📋'}</span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: builderLivePreview.accentColor || 'var(--accent)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {builderLivePreview.name || 'Mon formulaire'}
+              </span>
+              {/* Contrôles zoom */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+                <button
+                  onClick={() => setPreviewZoom(z => Math.max(0.28, parseFloat((z - 0.06).toFixed(2))))}
+                  style={{ width: 18, height: 18, borderRadius: 4, border: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer', fontSize: 12, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', padding: 0 }}
+                  title="Zoom arrière"
+                >−</button>
+                <span style={{ fontSize: 9, color: 'var(--text-muted)', minWidth: 26, textAlign: 'center' }}>
+                  {Math.round(previewZoom * 100)}%
+                </span>
+                <button
+                  onClick={() => setPreviewZoom(z => Math.min(0.85, parseFloat((z + 0.06).toFixed(2))))}
+                  style={{ width: 18, height: 18, borderRadius: 4, border: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer', fontSize: 12, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', padding: 0 }}
+                  title="Zoom avant"
+                >+</button>
+              </div>
+            </div>
+
+            {/* Formulaire complet — zoom CSS affecte le layout, on voit tout sans clip */}
+            <div style={{ overflowY: 'auto' }}>
+              <div style={{
+                zoom: previewZoom,
+                pointerEvents: 'none',
+                userSelect: 'none',
+                padding: 6,
+              }}>
+                <PluginFormRenderer
+                  plugin={builderLivePreview}
+                  data={{}}
+                  onChange={() => {}}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </aside>
 
       {/* ── CONTENU ── */}
@@ -645,6 +803,9 @@ export default function SettingsPage() {
               <div className="settings-actions">
                 <button className="btn btn-secondary btn-sm" onClick={() => window.mtcApi.openBackupFolder('patient')}>
                   📂 Ouvrir le dossier
+                </button>
+                <button className="btn btn-secondary btn-sm" onClick={handleImport}>
+                  📥 Importer une sauvegarde patient
                 </button>
               </div>
               <div className="settings-enc-note">
@@ -979,7 +1140,7 @@ export default function SettingsPage() {
               <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.6 }}>
                 {isMac
                   ? <>Sélectionnez le fichier <code>.dmg</code> de la nouvelle version. Il s'ouvrira dans le Finder — glissez l'app dans Applications pour remplacer l'ancienne version.</>
-                  : <>Sélectionnez le fichier <code>.exe</code> de la nouvelle version (clé USB ou téléchargements). L'application se fermera pour lancer l'installation — <strong>vos données ne sont pas supprimées</strong>.</>
+                  : <>Sélectionnez le fichier <code>.exe</code> de la nouvelle version. L'application se fermera pour lancer l'installation — <strong>vos données ne sont pas supprimées</strong>.</>
                 }
               </p>
               {updatePath && (
@@ -1020,43 +1181,14 @@ export default function SettingsPage() {
             {/* ── Non connecté ── */}
             {!gcalInfo?.connected && (
               <div>
-                <div className="settings-section-title">Configuration Google Cloud</div>
-                <div className="settings-enc-note" style={{ marginBottom: 16 }}>
-                  <strong>Étapes préalables (une seule fois) :</strong>
-                  <ol style={{ paddingLeft: 18, marginTop: 8, lineHeight: 1.8 }}>
-                    <li>Aller sur <strong>console.cloud.google.com</strong> → Créer un projet</li>
-                    <li>Activer l'API <strong>Google Calendar API</strong></li>
-                    <li>Identifiants → Créer → <strong>ID client OAuth 2.0</strong> → Application de bureau</li>
-                    <li>Ajouter l'URI de redirection : <code style={{ background: 'var(--bg)', padding: '1px 6px', borderRadius: 4 }}>http://127.0.0.1:42813/oauth2callback</code></li>
-                    <li>Copier le <strong>Client ID</strong> et <strong>Client Secret</strong> ci-dessous</li>
-                  </ol>
-                </div>
-
-                <div className="grid2" style={{ marginBottom: 14 }}>
-                  <div className="field">
-                    <label>Client ID</label>
-                    <input
-                      type="text"
-                      value={gcalClientId}
-                      onChange={e => setGcalClientId(e.target.value)}
-                      placeholder="xxxxxxxx.apps.googleusercontent.com"
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Client Secret</label>
-                    <input
-                      type="password"
-                      value={gcalClientSec}
-                      onChange={e => setGcalClientSec(e.target.value)}
-                      placeholder="GOCSPX-xxxxxxxxxxxxxxxxxx"
-                    />
-                  </div>
-                </div>
-
+                <p style={{ marginBottom: 16, color: 'var(--text-muted)', fontSize: 13 }}>
+                  Cliquez sur le bouton ci-dessous pour connecter votre compte Google.
+                  Votre navigateur s'ouvrira pour vous demander d'autoriser l'accès à Google Calendar.
+                </p>
                 <button
                   className="btn btn-primary"
                   onClick={handleGcalConnect}
-                  disabled={gcalLoading || !gcalClientId.trim() || !gcalClientSec.trim()}
+                  disabled={gcalLoading}
                 >
                   {gcalLoading ? '⏳ Connexion…' : '🔗 Connecter Google Calendar'}
                 </button>
@@ -1245,175 +1377,158 @@ export default function SettingsPage() {
         )}
 
         {/* ════ PLUGIN ════ */}
-        {activeTab === 'plugin' && (
-          <div>
-            <div className="settings-tab-header">
-              <div className="settings-tab-title">🔌 Plugin de spécialité</div>
-              <div className="settings-tab-desc">Formulaire d'anamnèse selon votre spécialité thérapeutique</div>
-            </div>
-            <div className="settings-card">
+        {activeTab === 'plugin' && (() => {
+          // Seul "basique" est gratuit et inclus dans l'application.
+          // Tous les autres formulaires sont payants et importés séparément.
+          // Exception : le propriétaire (isOwner) a accès à tous les formulaires bundlés.
+          const FREE_FORM_IDS = ['basique']
+          const officialForms = isOwner
+            ? availablePlugins
+            : FREE_FORM_IDS
+                .map(id => availablePlugins.find(p => p.id === id))
+                .filter((p): p is PluginDefinition => Boolean(p))
 
-              {showBuilder ? (
-                <PluginBuilder
-                  initial={builderInitial}
-                  onSave={handleSaveBuiltPlugin}
-                  onCancel={() => setShowBuilder(false)}
-                  onSaveToLibrary={handleSaveToLibrary}
-                />
-              ) : (
-                <>
-                  <div className="settings-card-title">
-                    <span className="card-title-icon icon-blue">🔌</span>
-                    Spécialité active
-                  </div>
+          const handleSetDefault = async (form: PluginDefinition) => {
+            setPluginError('')
+            setPluginLoading(true)
+            try {
+              await window.mtcApi.pluginSet(form)
+              setActivePlugin(form)
+              showToast(`Formulaire « ${form.name} » défini par défaut ✓`, 'success')
+            } catch (e: any) { setPluginError(e?.message || 'Erreur.') }
+            setPluginLoading(false)
+          }
 
-                  {activePlugin ? (
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-                        <div style={{ fontSize: 36 }}>{activePlugin.icon || '🔌'}</div>
-                        <div>
-                          <div style={{ fontSize: 16, fontWeight: 700, color: activePlugin.accentColor || 'var(--accent)' }}>
-                            {activePlugin.name}
+          const importedActive = !isOwner && activePlugin && !FREE_FORM_IDS.includes(activePlugin.id) ? activePlugin : null
+
+          return (
+            <div>
+              <div className="settings-tab-header">
+                <div className="settings-tab-title">📋 Formulaire métier</div>
+                <div className="settings-tab-desc">Choisissez le formulaire utilisé par défaut à la création d'une nouvelle séance. Vous pouvez toujours en changer directement dans la page « Nouvelle séance ».</div>
+              </div>
+
+              {/* ── Formulaire gratuit ── */}
+              <div className="settings-card">
+                <div className="settings-card-title">
+                  <span className="card-title-icon icon-blue">📋</span>
+                  Formulaire gratuit — inclus
+                </div>
+                {officialForms.length === 0 ? (
+                  <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Chargement des formulaires…</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {officialForms.map(form => {
+                      const isActive = activePlugin?.id === form.id || (!activePlugin && form.id === 'basique')
+                      return (
+                        <div key={form.id} style={{
+                          display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px',
+                          borderRadius: 10, border: isActive ? `2px solid ${form.accentColor || 'var(--accent)'}` : '1.5px solid var(--border-soft)',
+                          background: isActive ? (form.accentColor || 'var(--accent)') + '0D' : 'var(--surface)',
+                          transition: 'border-color .15s',
+                        }}>
+                          <div style={{ fontSize: 30, flexShrink: 0 }}>{form.icon || '📋'}</div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span style={{ fontWeight: 700, fontSize: 14, color: form.accentColor || 'var(--accent)' }}>{form.name}</span>
+                              {isActive && (
+                                <span style={{ fontSize: 10, fontWeight: 700, background: form.accentColor || 'var(--accent)', color: '#fff', borderRadius: 10, padding: '2px 8px' }}>
+                                  Actif
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                              {form.specialty}
+                              {form.description && <span> — {form.description}</span>}
+                            </div>
                           </div>
-                          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                            {activePlugin.specialty} · v{activePlugin.version}
-                            {activePlugin.author && ` · ${activePlugin.author}`}
-                          </div>
-                          {activePlugin.description && (
-                            <div style={{ fontSize: 12, color: 'var(--text-hint)', marginTop: 2 }}>{activePlugin.description}</div>
+                          {!isActive && (
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              onClick={() => handleSetDefault(form)}
+                              disabled={pluginLoading}
+                              style={{ flexShrink: 0 }}
+                            >
+                              Définir par défaut
+                            </button>
                           )}
                         </div>
-                      </div>
-
-                      {activePlugin.useBuiltinForm ? (
-                        <div style={{ background: 'var(--accent-light)', border: '1px solid var(--border-soft)', borderRadius: 8, padding: '10px 14px', marginBottom: 12, fontSize: 12, color: 'var(--accent)' }}>
-                          ✅ <strong>Formulaire MTC intégré complet actif</strong> — interrogatoire, langue, pouls, observation, diagnostic, traitement, barrage homéopathique, systèmes, tests énergétiques.
-                        </div>
-                      ) : (
-                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
-                          <strong>{activePlugin.sections.length} section{activePlugin.sections.length > 1 ? 's' : ''}</strong> ·{' '}
-                          <strong>{activePlugin.sections.reduce((n, s) => n + s.fields.filter(f => f.type !== 'separator').length, 0)} champs</strong>
-                          <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                            {activePlugin.sections.map(s => (
-                              <span key={s.id} style={{ background: (s.accentColor || 'var(--accent)') + '22', border: `1px solid ${s.accentColor || 'var(--accent)'}44`, color: s.accentColor || 'var(--accent)', borderRadius: 10, padding: '2px 8px', fontSize: 11, fontWeight: 600 }}>
-                                {s.icon} {s.title}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="settings-actions">
-                        {!activePlugin.useBuiltinForm && (
-                          <button className="btn btn-secondary btn-sm" onClick={() => { setBuilderInitial(activePlugin!); setShowBuilder(true) }}>
-                            ✏️ Modifier le formulaire
-                          </button>
-                        )}
-                        <button className="btn btn-secondary btn-sm" onClick={handleImportPlugin} disabled={pluginLoading}>📥 Remplacer</button>
-                        <button className="btn btn-secondary btn-sm" style={{ color: 'var(--red)' }} onClick={handleRemovePlugin}>✕ Supprimer</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, padding: '10px 14px', background: 'var(--accent-light)', borderRadius: 8, border: '1px solid var(--border-soft)' }}>
-                        <span style={{ fontSize: 22 }}>🌿</span>
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--accent)' }}>Formulaire générique simple actif</div>
-                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Anamnèse · Traitement effectué · Résultats &amp; Réactions</div>
-                        </div>
-                      </div>
-                      <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.6 }}>
-                        Créez votre propre formulaire de spécialité, ou importez un fichier <code>.json</code> de plugin existant.
-                      </p>
-                      <div className="settings-actions">
-                        <button className="btn btn-primary btn-sm" onClick={() => { setBuilderInitial(undefined); setShowBuilder(true) }}>
-                          ✏️ Créer mon formulaire
-                        </button>
-                        <button className="btn btn-secondary btn-sm" onClick={handleImportPlugin} disabled={pluginLoading}>
-                          {pluginLoading ? '⏳ Import…' : '📥 Importer un plugin (.json)'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {pluginError && (
-                    <div style={{ color: 'var(--red)', fontSize: 13, marginTop: 10, padding: '8px 12px', background: '#FEF0F0', borderRadius: 8 }}>
-                      ⚠️ {pluginError}
-                    </div>
-                  )}
-                  <div className="settings-enc-note">
-                    Le plugin ne modifie pas la base de données. Les données restent accessibles même si le plugin change.
+                      )
+                    })}
                   </div>
-                </>
-              )}
-            </div>
-
-            {/* ── Bibliothèque de formulaires ── */}
-            {!showBuilder && library.length > 0 && (
-              <div className="settings-card" style={{ marginTop: 16 }}>
-                <div className="settings-card-title">
-                  <span className="card-title-icon" style={{ background: '#EEF2FF' }}>📚</span>
-                  Bibliothèque de formulaires
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {library.map(entry => {
-                    const p = entry.plugin
-                    const fieldCount = p.sections.reduce((n, s) => n + s.fields.filter(f => f.type !== 'separator').length, 0)
-                    return (
-                      <div key={p.id + (entry.isNative ? '_n' : '_c')} style={{
-                        display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
-                        background: entry.isNative ? 'var(--accent-light)' : 'var(--surface)',
-                        borderRadius: 8,
-                        border: entry.isNative ? '1px solid var(--border)' : '1px solid var(--border-soft)',
-                      }}>
-                        <div style={{ fontSize: 28, flexShrink: 0 }}>{p.icon || '📋'}</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                            <span style={{ fontWeight: 700, fontSize: 13, color: p.accentColor || 'var(--accent)' }}>
-                              {p.name}
-                            </span>
-                            {entry.isNative ? (
-                              <span style={{ fontSize: 10, fontWeight: 700, background: 'var(--accent)', color: '#fff', borderRadius: 10, padding: '1px 7px' }}>
-                                🔒 Natif
-                              </span>
-                            ) : (
-                              <span style={{ fontSize: 10, fontWeight: 700, background: 'var(--border)', color: 'var(--text-muted)', borderRadius: 10, padding: '1px 7px' }}>
-                                ✏️ Personnalisé
-                              </span>
-                            )}
-                          </div>
-                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                            {p.specialty} · {p.sections.length} section{p.sections.length > 1 ? 's' : ''} · {fieldCount} champ{fieldCount > 1 ? 's' : ''}
-                          </div>
-                          <div style={{ fontSize: 10, color: 'var(--text-hint)', marginTop: 2 }}>
-                            {entry.isNative ? 'Importé le' : 'Sauvegardé le'} {fmtDate(entry.savedAt)}
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                          <button className="btn btn-secondary btn-sm" onClick={() => handleLoadFromLibrary(p)}>
-                            ✅ Charger
-                          </button>
-                          <button
-                            className="btn btn-secondary btn-sm"
-                            title={entry.isNative ? 'Crée une copie personnalisée' : 'Modifier'}
-                            onClick={() => handleEditFromLibrary(entry)}
-                          >
-                            {entry.isNative ? '📋 Copier' : '✏️ Modifier'}
-                          </button>
-                          <button
-                            className="btn btn-secondary btn-sm"
-                            style={{ color: 'var(--red)' }}
-                            onClick={() => handleDeleteFromLibrary(p.id, p.name)}
-                          >✕</button>
-                        </div>
-                      </div>
-                    )
-                  })}
+                )}
+                <div className="settings-enc-note" style={{ marginTop: 14 }}>
+                  Le choix du formulaire ne modifie pas les données existantes. Toutes les séances restent accessibles quel que soit le formulaire actif.
                 </div>
               </div>
-            )}
-          </div>
-        )}
+
+              {/* ── Formulaire acheté ── */}
+              <div className="settings-card" style={{ marginTop: 16 }}>
+                <div className="settings-card-title">
+                  <span className="card-title-icon icon-amber">📥</span>
+                  Formulaire acheté
+                </div>
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.6 }}>
+                  Si vous avez acheté un formulaire Synoria, vous avez reçu un fichier <strong>.json</strong>.
+                  Sélectionnez-le ci-dessous pour l'activer sur votre poste.
+                </p>
+
+                {importedActive && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', marginBottom: 14,
+                    borderRadius: 10, border: `2px solid ${importedActive.accentColor || 'var(--accent)'}`,
+                    background: (importedActive.accentColor || 'var(--accent)') + '0D',
+                  }}>
+                    <div style={{ fontSize: 28, flexShrink: 0 }}>{importedActive.icon || '📋'}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontWeight: 700, fontSize: 14, color: importedActive.accentColor || 'var(--accent)' }}>
+                          {importedActive.name}
+                        </span>
+                        <span style={{ fontSize: 10, fontWeight: 700, background: importedActive.accentColor || 'var(--accent)', color: '#fff', borderRadius: 10, padding: '2px 8px' }}>
+                          Actif
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                        {importedActive.specialty} — v{importedActive.version}
+                        {importedActive.author && <span> · {importedActive.author}</span>}
+                      </div>
+                    </div>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={handleRemovePlugin}
+                      disabled={pluginLoading}
+                      style={{ flexShrink: 0, color: 'var(--red)', borderColor: 'var(--red)' }}
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={handleImportPlugin}
+                    disabled={pluginLoading}
+                  >
+                    {pluginLoading ? '⏳ Import…' : '📂 Sélectionner un formulaire…'}
+                  </button>
+                  {importedActive && (
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                      Sélectionner un nouveau fichier remplacera le formulaire actif.
+                    </span>
+                  )}
+                </div>
+
+                {pluginError && (
+                  <div style={{ color: 'var(--red)', fontSize: 13, marginTop: 10, padding: '8px 12px', background: '#FEF0F0', borderRadius: 8 }}>
+                    ⚠️ {pluginError}
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })()}
 
         {/* ════ SUPPORT TECHNIQUE ════ */}
         {activeTab === 'support' && (
@@ -1425,12 +1540,66 @@ export default function SettingsPage() {
 
             <div className="settings-card">
               <div className="settings-card-title">
+                <span className="card-title-icon icon-green">📖</span>
+                Documentation d'utilisation
+              </div>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.6 }}>
+                Guide complet du logiciel : patients, séances, calendrier, comptabilité, sauvegardes, RGPD et plugins.
+              </p>
+              <div className="settings-actions">
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => window.mtcApi.openDocumentation()}
+                >
+                  📖 Ouvrir la documentation
+                </button>
+              </div>
+            </div>
+
+            <div className="settings-card">
+              <div className="settings-card-title">
+                <span className="card-title-icon icon-blue">💿</span>
+                Guide d'installation
+              </div>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.6 }}>
+                Installation Windows, transfert vers un autre poste, mises à jour et désinstallation.
+              </p>
+              <div className="settings-actions">
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => window.mtcApi.openInstallGuide()}
+                >
+                  💿 Ouvrir le guide d'installation
+                </button>
+              </div>
+            </div>
+
+            <div className="settings-card">
+              <div className="settings-card-title">
+                <span className="card-title-icon icon-purple">⚖️</span>
+                Guide RGPD praticien
+              </div>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.6 }}>
+                Obligations légales, base juridique, consentement patient, durée de conservation, registre Art. 30 et marche à suivre en cas d'incident.
+              </p>
+              <div className="settings-actions">
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => window.mtcApi.openRgpdGuide()}
+                >
+                  ⚖️ Ouvrir le guide RGPD
+                </button>
+              </div>
+            </div>
+
+            <div className="settings-card">
+              <div className="settings-card-title">
                 <span className="card-title-icon icon-blue">📋</span>
                 Rapport de diagnostic
               </div>
               <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.6 }}>
                 En cas de problème, générez un rapport de diagnostic et envoyez-le à&nbsp;
-                <strong>support@synoria.fr</strong>.
+                <strong>contact@logiciel-synoria.fr</strong>.
                 Le rapport sera ouvert automatiquement dans votre éditeur de texte.
               </p>
               <div style={{ background: 'var(--accent-light)', border: '1px solid var(--border-soft)', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
@@ -1455,53 +1624,11 @@ export default function SettingsPage() {
 
             <div className="settings-card">
               <div className="settings-card-title">
-                <span className="card-title-icon" style={{ background: '#FEF3C722', color: '#92400E' }}>🔑</span>
-                Mot de passe oublié
-              </div>
-
-              {/* Avertissement principal */}
-              <div style={{ background: '#FEF3C7', border: '1.5px solid #F59E0B', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 12.5, color: '#92400E', lineHeight: 1.7 }}>
-                <strong>⚠️ Il n'existe pas de récupération directe.</strong><br />
-                Le mot de passe est la seule clé de la base de données — même le support Synoria ne peut pas la déchiffrer sans lui.
-              </div>
-
-              {/* Chemin de récupération via sauvegarde */}
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)', marginBottom: 10 }}>
-                  ✅ Récupération possible si vous avez une sauvegarde
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {([
-                    ['1', 'Localisez votre dernière sauvegarde', 'Fichier .json.enc dans votre dossier de sauvegardes (Paramètres → Sauvegardes → Ouvrir le dossier)'],
-                    ['2', 'Supprimez les fichiers de verrouillage', 'Dans le dossier de données de l\'app, supprimez auth.json et mtc.sqlite.enc — l\'app reviendra en mode "première utilisation"'],
-                    ['3', 'Créez un nouveau mot de passe', 'Au prochain démarrage, l\'app vous proposera de créer un nouveau mot de passe'],
-                    ['4', 'Importez votre sauvegarde', 'Paramètres → Sauvegardes → Importer une sauvegarde — la sauvegarde est chiffrée avec une clé indépendante du mot de passe'],
-                  ] as [string, string, string][]).map(([num, title, desc]) => (
-                    <div key={num} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '8px 12px', background: 'var(--surface-alt, var(--bg))', borderRadius: 8, border: '1px solid var(--border-soft)' }}>
-                      <span style={{ background: 'var(--accent)', color: '#fff', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{num}</span>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 12.5, color: 'var(--text)', marginBottom: 2 }}>{title}</div>
-                        <div style={{ fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.5 }}>{desc}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Si pas de sauvegarde */}
-              <div style={{ background: 'var(--bg)', border: '1px solid var(--border-soft)', borderRadius: 8, padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 4 }}>
-                <strong style={{ color: 'var(--red)' }}>❌ Sans sauvegarde</strong>, les données sont définitivement inaccessibles.<br />
-                C'est pourquoi les sauvegardes automatiques doivent être activées dès la création du mot de passe.
-              </div>
-            </div>
-
-            <div className="settings-card">
-              <div className="settings-card-title">
                 <span className="card-title-icon icon-green">✉️</span>
                 Contact support
               </div>
               <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.8 }}>
-                <div><strong>Email :</strong> support@synoria.fr</div>
+                <div><strong>Email :</strong> contact@logiciel-synoria.fr</div>
                 <div style={{ marginTop: 8, fontSize: 12 }}>
                   Joignez le rapport de diagnostic à votre message pour accélérer le traitement.
                 </div>
@@ -1578,6 +1705,36 @@ export default function SettingsPage() {
             </div>
           </div>
         )}
+
+      {/* Modal prévisualisation plugin bibliothèque */}
+      {previewPlugin && (
+        <div className="modal-overlay" onClick={() => setPreviewPlugin(null)}>
+          <div className="modal" style={{ maxWidth: 800, width: '90vw', maxHeight: '85vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setPreviewPlugin(null)}>✕</button>
+            <h2 style={{ color: previewPlugin.accentColor || 'var(--accent)' }}>
+              {previewPlugin.icon || '📋'} Aperçu — {previewPlugin.name}
+            </h2>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
+              {previewPlugin.specialty} · v{previewPlugin.version}
+            </div>
+            {previewPlugin.useBuiltinForm ? (
+              <div style={{ background: 'var(--accent-light)', border: '1px solid var(--border)', borderRadius: 8, padding: 14, color: 'var(--accent)', fontSize: 13 }}>
+                ✅ Ce formulaire utilise le <strong>formulaire MTC intégré</strong> (non prévisualisable ici).
+              </div>
+            ) : (
+              <PluginFormRenderer
+                plugin={previewPlugin}
+                data={{}}
+                onChange={() => {}}
+              />
+            )}
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setPreviewPlugin(null)}>Fermer</button>
+              <button className="btn btn-primary" onClick={() => { handleLoadFromLibrary(previewPlugin); setPreviewPlugin(null) }}>✅ Activer ce formulaire</button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   )

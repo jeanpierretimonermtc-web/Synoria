@@ -8,15 +8,12 @@ import { exportBackupEncrypted }            from './services/backupService'
 import * as auth                            from './services/authService'
 import { seedDevDataIfEmpty }               from './database/seedDevData'
 import { checkJ1Reminders, checkUpcomingAppointments } from './services/notificationService'
-import { initSupabaseAuth, getAccessToken }            from './services/supabaseAuthService'
+import { initSupabaseAuth, getAccessToken, getCurrentUser } from './services/supabaseAuthService'
 import { verifyLicenseOnline, getCurrentLicenseState, setCachedLicenseState } from './services/licenseService'
+import { isOwner } from './services/ownerService'
 import { startUpdateCheckScheduler } from './services/updateService'
 
-// ── Mode portable / clé USB ────────────────────────────────────────
-const portableDir = process.env.PORTABLE_EXECUTABLE_DIR
-if (portableDir) {
-  app.setPath('userData', join(portableDir, 'data'))
-} else if (!app.isPackaged) {
+if (!app.isPackaged) {
   // MODE DÉVELOPPEMENT : dossier dédié pour ne jamais toucher les données du cabinet
   // Sur macOS, use `app.getPath('appData')` si APPDATA n'est pas défini.
   const appData = process.env.APPDATA || app.getPath('appData') || ''
@@ -59,11 +56,20 @@ function migrateUserDataIfNeeded(): void {
     if (existsSync(join(candidate, 'auth.json'))) {
       console.log(`[Migration] Données trouvées dans ${candidate}`)
       console.log(`[Migration] → Migration vers ${currentPath}`)
+      // Copie vers un dossier temporaire d'abord pour éviter la corruption
+      // si la copie échoue en cours de route (disque plein, droits insuffisants).
+      const { rmSync, renameSync } = require('fs')
+      const tmpPath = currentPath + '_migration_tmp'
       try {
-        cpSync(candidate, currentPath, { recursive: true, force: true })
+        if (existsSync(tmpPath)) rmSync(tmpPath, { recursive: true, force: true })
+        cpSync(candidate, tmpPath, { recursive: true, force: true })
+        // Copie complète → remplacer currentPath de manière quasi-atomique
+        if (existsSync(currentPath)) rmSync(currentPath, { recursive: true, force: true })
+        renameSync(tmpPath, currentPath)
         console.log('[Migration] ✓ Terminée — redémarrage recommandé')
       } catch (e) {
         console.error('[Migration] Erreur :', e)
+        try { if (existsSync(tmpPath)) rmSync(tmpPath, { recursive: true, force: true }) } catch {}
       }
       break
     }
@@ -377,6 +383,30 @@ app.whenReady().then(async () => {
     await initSupabaseAuth()
   } catch (e) {
     console.warn('[Supabase] Erreur init auth :', e)
+  }
+
+  // Bypass propriétaire : si le compte connecté est owner, activer la licence immédiatement.
+  // Ceci s'exécute avant registerAllHandlers() et createWindow() — aucun risque de race condition.
+  try {
+    const user = getCurrentUser()
+    if (isOwner(user?.email)) {
+      setCachedLicenseState({
+        status:         'active',
+        mode:           'full',
+        organizationId: 'owner',
+        licenseId:      'owner',
+        deviceId:       null,
+        planCode:       'synoria_owner',
+        features:       ['read', 'write', 'export', 'backup', 'calendar', 'billing'],
+        maxDevices:     99,
+        graceUntil:     null,
+        tokenExpiry:    new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        isOffline:      false,
+      })
+      console.log('[Startup] Bypass propriétaire activé pour', user?.email)
+    }
+  } catch (e) {
+    console.warn('[Startup] Erreur bypass propriétaire :', e)
   }
 
   try {

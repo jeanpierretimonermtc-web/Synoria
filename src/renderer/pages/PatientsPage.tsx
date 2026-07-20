@@ -9,171 +9,6 @@ import PageHeader from '../components/common/PageHeader'
 import EmptyState from '../components/common/EmptyState'
 import { UsersIcon, SearchIcon } from '../components/common/Icon'
 
-/* ─── Modal de facturation ─────────────────────────────────────── */
-function InvoiceModal({ patient, onClose, showToast }: {
-  patient: Patient
-  onClose: () => void
-  showToast: (msg: string, type?: 'success' | 'error') => void
-}) {
-  const navigate  = useNavigate()
-  const today     = new Date().toISOString().slice(0, 10)
-
-  // null = chargement en cours
-  const [profileEmpty, setProfileEmpty] = useState<boolean | null>(null)
-
-  const [sessionDate, setSessionDate] = useState(today)
-  const [invoiceDate, setInvoiceDate] = useState(today)
-  const [description, setDescription] = useState('')
-  const [montantStr,  setMontantStr]  = useState('')
-  const [generating,  setGenerating]  = useState(false)
-
-  useEffect(() => {
-    window.mtcApi.getSettings().then(s => {
-      const hasName = !!(s.practitionerFirstName?.trim() || s.practitionerLastName?.trim())
-      setProfileEmpty(!hasName)
-      if (hasName) setDescription(s.practitionerActivity?.trim() || '')
-    })
-  }, [])
-
-  const montant = parseFloat(montantStr.replace(',', '.')) || 0
-  const euro = (n: number) => n.toFixed(2).replace('.', ',') + ' €'
-
-  const handleGenerate = async () => {
-    if (!montantStr || montant <= 0) { showToast('Veuillez saisir un montant', 'error'); return }
-    setGenerating(true)
-    try {
-      const result = await window.mtcApi.generateInvoice({
-        patientFirstName: patient.first_name,
-        patientLastName:  patient.last_name,
-        patientAddress:   patient.address || '',
-        email:            patient.email || '',
-        phone:            patient.phone || '',
-        sessionDate, description, invoiceDate, montant,
-      })
-      showToast(`Facture ${result.invoiceNumber} créée ✓`, 'success')
-      await window.mtcApi.openPath(result.filePath)
-      onClose()
-    } catch (e: any) {
-      showToast(`Erreur génération facture : ${e?.message || e}`, 'error')
-    }
-    setGenerating(false)
-  }
-
-  /* ── Chargement ── */
-  if (profileEmpty === null) {
-    return (
-      <div className="modal-overlay">
-        <div className="modal" style={{ maxWidth: 480, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 120 }}>
-          <div className="loading-dots"><span /><span /><span /></div>
-        </div>
-      </div>
-    )
-  }
-
-  /* ── Profil vide : avertissement ── */
-  if (profileEmpty) {
-    return (
-      <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-        <div className="modal" style={{ maxWidth: 440 }}>
-          <div style={{ textAlign: 'center', padding: '8px 0 20px' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>👤</div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 12, color: 'var(--text)' }}>
-              Profil praticien requis
-            </h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.75, marginBottom: 24 }}>
-              Pour générer une facture, vous devez d'abord renseigner votre <strong>profil praticien</strong>
-              (nom, activité, SIRET…).<br />
-              Ces informations apparaissent en en-tête de chaque facture.
-            </p>
-            <div style={{
-              background: 'var(--amber-light)',
-              border: '1px solid rgba(193,123,42,.25)',
-              borderRadius: 10, padding: '10px 16px',
-              fontSize: 12, color: 'var(--amber)', marginBottom: 24, textAlign: 'left',
-            }}>
-              ⚠️ Aucune facture ne peut être émise sans les données du praticien.
-            </div>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-              <button
-                className="btn btn-primary"
-                onClick={() => { onClose(); navigate('/profil') }}
-                style={{ gap: 8 }}
-              >
-                Compléter mon profil →
-              </button>
-              <button className="btn btn-secondary" onClick={onClose}>Fermer</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  /* ── Formulaire facture ── */
-  return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 480 }}>
-        <h2 style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-          <span>🧾</span><span>Générer une facture</span>
-        </h2>
-
-        {/* Destinataire */}
-        <div style={{ background: 'var(--blue-light)', border: '1px solid rgba(42,90,138,.2)', borderRadius: 'var(--radius)', padding: '10px 14px', marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, color: 'var(--blue)', fontSize: 14 }}>
-            {patient.first_name} {patient.last_name}
-          </div>
-          {patient.address && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{patient.address}</div>}
-        </div>
-
-        <div className="grid2" style={{ marginBottom: 12 }}>
-          <div className="field">
-            <label>Date de la séance *</label>
-            <input type="date" value={sessionDate} onChange={e => setSessionDate(e.target.value)} />
-          </div>
-          <div className="field">
-            <label>Date d'émission</label>
-            <input type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} />
-          </div>
-        </div>
-
-        <div className="field" style={{ marginBottom: 16 }}>
-          <label>Désignation</label>
-          <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Prestation de soin" />
-        </div>
-
-        <div className="field" style={{ marginBottom: 16 }}>
-          <label>Montant * (€)</label>
-          <input
-            type="text" inputMode="decimal"
-            value={montantStr}
-            onChange={e => setMontantStr(e.target.value)}
-            placeholder="Ex : 70,00"
-            style={{ fontSize: 22, fontWeight: 800, textAlign: 'right', color: 'var(--blue)' }}
-          />
-        </div>
-
-        {montant > 0 && (
-          <div className="invoice-recap">
-            <div className="invoice-recap-ttc" style={{ justifyContent: 'space-between', display: 'flex' }}>
-              <span>TOTAL À PAYER</span>
-              <span>{euro(montant)}</span>
-            </div>
-          </div>
-        )}
-
-        <div className="row-btns" style={{ marginTop: 20 }}>
-          <button
-            className="btn btn-primary" onClick={handleGenerate} disabled={generating}
-            style={{ flex: 1, justifyContent: 'center', background: '#1A3A6B', borderColor: '#1A3A6B' }}
-          >
-            {generating ? '⏳ Génération…' : '🧾 Générer le PDF'}
-          </button>
-          <button className="btn btn-secondary" onClick={onClose}>Annuler</button>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 type FilterTab = 'active' | 'all' | 'archived'
 
@@ -192,7 +27,6 @@ export default function PatientsPage() {
   const [editPatient, setEditPatient] = useState<Patient | null>(null)
   const [form, setForm] = useState({ ...EMPTY_PATIENT })
   const [backingUp, setBackingUp] = useState<string | null>(null)
-  const [invoicePatient, setInvoicePatient] = useState<Patient | null>(null)
   const showToast = useContext(ToastContext)
   const navigate = useNavigate()
   const restriction = useRestriction()
@@ -384,18 +218,9 @@ export default function PatientsPage() {
             onViewSessions={id => navigate('/seances', { state: { patientId: id } })}
             onToggleActive={handleToggleActive}
             onBackup={handlePatientBackup}
-            onInvoice={setInvoicePatient}
+            onInvoice={p => navigate('/factures-liste', { state: { patientName: `${p.first_name} ${p.last_name}` } })}
           />
         ))}
-
-      {/* Modal facturation */}
-      {invoicePatient && (
-        <InvoiceModal
-          patient={invoicePatient}
-          onClose={() => setInvoicePatient(null)}
-          showToast={showToast}
-        />
-      )}
 
       {/* Modal création / modification */}
       {showModal && (
@@ -556,7 +381,7 @@ function PatientCard({ patient, onEdit, onDelete, onNewSession, onViewSessions, 
             )}
             <button className="btn btn-secondary btn-sm" onClick={() => onViewSessions(patient.id)}>📋 Séances</button>
             <button className="btn btn-amber btn-sm" onClick={() => onInvoice(patient)}
-              disabled={!restriction.canCreateInvoice} title={!restriction.canCreateInvoice ? R_TIP : 'Générer une facture PDF'}>🧾 Facture</button>
+              title="Voir les factures de ce patient">🧾 Factures</button>
           </div>
           {/* Secondaires — apparaissent au survol */}
           <div className="patient-card-actions-secondary">

@@ -251,7 +251,7 @@ export default function ProfilePage() {
               width: 64, height: 64, flexShrink: 0,
               borderRadius: 10,
               border: '1px solid var(--border)',
-              background: '#fff',
+              background: 'var(--surface)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               overflow: 'hidden',
             }}>
@@ -329,7 +329,7 @@ function ProfileSection({ icon, title, children }: {
 }) {
   return (
     <div style={{
-      background: 'white',
+      background: 'var(--surface)',
       borderRadius: 14,
       border: '1px solid var(--border-soft)',
       overflow: 'hidden',

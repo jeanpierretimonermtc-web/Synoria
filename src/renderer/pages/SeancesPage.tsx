@@ -6,7 +6,7 @@ import { ToastContext } from '../App'
 import { useRestriction } from '../hooks/useRestriction'
 import { showConfirm } from '../components/common/ConfirmDialog'
 import { fmtDate, getInitials, getEvolBadgeClass } from '../utils/format'
-import { SummaryContent } from './SummaryPage'
+import { SummaryContent, InvoiceModal } from './SummaryPage'
 import EmptyState from '../components/common/EmptyState'
 import { ClipboardIcon, SearchIcon } from '../components/common/Icon'
 
@@ -230,6 +230,7 @@ export default function SeancesPage() {
   const [filterMonth,    setFilterMonth]    = useState('')
   const [comptaOpen,     setComptaOpen]     = useState(false)
   const [comptaTypes,    setComptaTypes]    = useState<ConsultationType[]>([])
+  const [showInvoice,    setShowInvoice]    = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -511,6 +512,25 @@ export default function SeancesPage() {
                 disabled={!restriction.canModifySession}
                 title={!restriction.canModifySession ? 'Mode restreint — abonnement requis' : undefined}
               >Supprimer</button>
+              {(() => {
+                const fd = (() => { try { return JSON.parse(selectedSession.full_data_json || '{}') } catch { return {} } })()
+                const existingInvoice: string | undefined = fd.invoiceNumber
+                return existingInvoice ? (
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    style={{ color: 'var(--accent)', borderColor: 'var(--accent-mid)' }}
+                    title={`Facture ${existingInvoice} déjà créée — voir toutes les factures`}
+                    onClick={() => navigate('/factures-liste', { state: { patientName: selectedPatient ? `${selectedPatient.first_name} ${selectedPatient.last_name}` : '' } })}
+                  >✅ Facture {existingInvoice}</button>
+                ) : (
+                  <button
+                    className="btn btn-amber btn-sm"
+                    onClick={() => setShowInvoice(true)}
+                    disabled={!restriction.canCreateInvoice}
+                    title={!restriction.canCreateInvoice ? 'Fonctionnalité non disponible dans votre abonnement' : 'Générer une facture pour cette séance'}
+                  >🧾 Facture</button>
+                )
+              })()}
             </div>
 
             {/* Contenu complet de la séance */}
@@ -548,6 +568,31 @@ export default function SeancesPage() {
             } catch (e: any) {
               console.error('[Compta] Erreur mise à jour flag session:', e)
             }
+          }}
+        />
+      )}
+
+      {showInvoice && selectedSession && selectedPatient && (
+        <InvoiceModal
+          patient={selectedPatient}
+          sessionDate={selectedSession.date}
+          description={(() => {
+            const tmp = document.createElement('div')
+            tmp.innerHTML = selectedSession.motif || ''
+            return tmp.textContent?.trim() || ''
+          })()}
+          onClose={() => setShowInvoice(false)}
+          showToast={showToast}
+          onGenerated={async (invoiceNumber) => {
+            try {
+              const base = JSON.parse(selectedSession.full_data_json || '{}')
+              const updated = { ...base, invoiceNumber }
+              await window.mtcApi.updateSession(selectedSession.id, { full_data_json: JSON.stringify(updated) })
+              setSessions(prev => prev.map(s => s.id === selectedSession.id
+                ? { ...s, full_data_json: JSON.stringify(updated) }
+                : s
+              ))
+            } catch {}
           }}
         />
       )}

@@ -12,12 +12,8 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { join }                        from 'node:path'
 import { app }                         from 'electron'
 
-// ── Chemin userData (portable ou standard) ─────────────────────────────────
-
 function getUserDataPath(): string {
-  return process.env.PORTABLE_EXECUTABLE_DIR
-    ? join(process.env.PORTABLE_EXECUTABLE_DIR, 'data')
-    : app.getPath('userData')
+  return app.getPath('userData')
 }
 
 // ── Dernier contrôle en ligne réussi ──────────────────────────────────────

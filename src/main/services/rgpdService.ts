@@ -115,7 +115,7 @@ export function exportTraitementRegister(): string {
     <strong>Données de consentement :</strong> date et confirmation du consentement éclairé.
   </td></tr>
   <tr><td>Destinataires</td><td>Praticien uniquement. Aucune transmission à des tiers sans accord explicite du patient.</td></tr>
-  <tr><td>Transferts hors UE</td><td>Aucun. Données stockées localement sur le poste du praticien ou clé USB personnelle.</td></tr>
+  <tr><td>Transferts hors UE</td><td>Aucun. Données stockées localement sur le poste du praticien.</td></tr>
   <tr><td>Durée de conservation</td><td>${retention} ans après la dernière consultation (configurable dans Paramètres RGPD).</td></tr>
 </table>
 

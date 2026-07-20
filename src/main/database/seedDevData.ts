@@ -60,7 +60,7 @@ const SESSION_KINESIO_FD = JSON.stringify({
   },
   pluginSchema: {
     id: KINESIO_PLUGIN_ID,
-    name: 'Kinésiologie — Charlotte DECAENS',
+    name: 'Kinésiologie',
     specialty: 'Kinésiologie',
     sections: [],
   },

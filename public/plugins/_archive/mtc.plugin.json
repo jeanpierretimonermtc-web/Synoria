@@ -6,9 +6,7 @@
   "description": "Fiche d'anamnèse MTC complète : interrogatoire, inspection, pouls, diagnostic énergétique et traitement. Pour praticiens d'acupuncture et de MTC.",
   "icon": "☯",
   "accentColor": "#B04040",
-
   "sections": [
-
     {
       "id": "interrogatoire",
       "title": "Interrogatoire et anamnèse",
@@ -27,7 +25,13 @@
           "id": "dureeSymptomes",
           "type": "radio",
           "label": "Ancienneté des symptômes",
-          "options": ["Aigu (< 1 semaine)", "Récent (< 1 mois)", "Sub-aigu (1–3 mois)", "Chronique (3–6 mois)", "Chronique ancien (> 6 mois)"],
+          "options": [
+            "Aigu (< 1 semaine)",
+            "Récent (< 1 mois)",
+            "Sub-aigu (1–3 mois)",
+            "Chronique (3–6 mois)",
+            "Chronique ancien (> 6 mois)"
+          ],
           "width": "half"
         },
         {
@@ -64,7 +68,6 @@
         }
       ]
     },
-
     {
       "id": "dix_questions",
       "title": "Les dix questions (Shi Wen)",
@@ -75,14 +78,30 @@
           "id": "sensationThermique",
           "type": "checkboxgroup",
           "label": "1. Sensations thermiques",
-          "options": ["Frissons", "Aversion au froid", "Aversion à la chaleur", "Fièvre", "Sensation de froid interne", "Chaleur des paumes / plantes / thorax", "Bouffées de chaleur", "Mains et pieds froids"],
+          "options": [
+            "Frissons",
+            "Aversion au froid",
+            "Aversion à la chaleur",
+            "Fièvre",
+            "Sensation de froid interne",
+            "Chaleur des paumes / plantes / thorax",
+            "Bouffées de chaleur",
+            "Mains et pieds froids"
+          ],
           "width": "full"
         },
         {
           "id": "transpiration",
           "type": "checkboxgroup",
           "label": "2. Transpiration",
-          "options": ["Transpiration spontanée (diurne)", "Sueurs nocturnes", "Absence de transpiration", "Transpiration abondante", "Transpiration lors des repas", "Transpiration des paumes"],
+          "options": [
+            "Transpiration spontanée (diurne)",
+            "Sueurs nocturnes",
+            "Absence de transpiration",
+            "Transpiration abondante",
+            "Transpiration lors des repas",
+            "Transpiration des paumes"
+          ],
           "width": "full"
         },
         {
@@ -94,71 +113,148 @@
           "minHeight": 80
         },
         {
-          "id": "sep1", "type": "separator", "label": ""
+          "id": "sep1",
+          "type": "separator",
+          "label": ""
         },
         {
           "id": "urinaires",
           "type": "checkboxgroup",
           "label": "4. Urines",
-          "options": ["Normales", "Abondantes / pâles", "Peu abondantes / foncées", "Fréquentes", "Nycturie", "Difficultés à uriner", "Brûlures à la miction"],
+          "options": [
+            "Normales",
+            "Abondantes / pâles",
+            "Peu abondantes / foncées",
+            "Fréquentes",
+            "Nycturie",
+            "Difficultés à uriner",
+            "Brûlures à la miction"
+          ],
           "width": "half"
         },
         {
           "id": "selles",
           "type": "checkboxgroup",
           "label": "4. Selles",
-          "options": ["Normales", "Constipation", "Diarrhée", "Selles molles", "Selles alternées", "Urgences à la défécation", "Douleurs à la défécation", "Présence de mucus"],
+          "options": [
+            "Normales",
+            "Constipation",
+            "Diarrhée",
+            "Selles molles",
+            "Selles alternées",
+            "Urgences à la défécation",
+            "Douleurs à la défécation",
+            "Présence de mucus"
+          ],
           "width": "half"
         },
         {
-          "id": "sep2", "type": "separator", "label": ""
+          "id": "sep2",
+          "type": "separator",
+          "label": ""
         },
         {
           "id": "appetit",
           "type": "checkboxgroup",
           "label": "5. Appétit et alimentation",
-          "options": ["Appétit normal", "Manque d'appétit", "Appétit excessif", "Faim sans envie de manger", "Goût acide en bouche", "Goût amer en bouche", "Goût sucré en bouche", "Bouche sèche", "Nausées", "Vomissements", "Reflux / renvois"],
+          "options": [
+            "Appétit normal",
+            "Manque d'appétit",
+            "Appétit excessif",
+            "Faim sans envie de manger",
+            "Goût acide en bouche",
+            "Goût amer en bouche",
+            "Goût sucré en bouche",
+            "Bouche sèche",
+            "Nausées",
+            "Vomissements",
+            "Reflux / renvois"
+          ],
           "width": "full"
         },
         {
           "id": "soif",
           "type": "radio",
           "label": "5. Soif",
-          "options": ["Normale", "Absence de soif", "Soif intense — préférence froide", "Soif modérée — préférence chaude", "Soif sans désir de boire"],
+          "options": [
+            "Normale",
+            "Absence de soif",
+            "Soif intense — préférence froide",
+            "Soif modérée — préférence chaude",
+            "Soif sans désir de boire"
+          ],
           "width": "half"
         },
         {
-          "id": "sep3", "type": "separator", "label": ""
+          "id": "sep3",
+          "type": "separator",
+          "label": ""
         },
         {
           "id": "sommeil",
           "type": "checkboxgroup",
           "label": "6. Sommeil",
-          "options": ["Normal", "Insomnie d'endormissement", "Réveils nocturnes", "Réveil matinal précoce", "Sommeil agité", "Rêves abondants / agités", "Cauchemars", "Somnolence diurne", "Hypersomnie"],
+          "options": [
+            "Normal",
+            "Insomnie d'endormissement",
+            "Réveils nocturnes",
+            "Réveil matinal précoce",
+            "Sommeil agité",
+            "Rêves abondants / agités",
+            "Cauchemars",
+            "Somnolence diurne",
+            "Hypersomnie"
+          ],
           "width": "full"
         },
         {
-          "id": "sep4", "type": "separator", "label": ""
+          "id": "sep4",
+          "type": "separator",
+          "label": ""
         },
         {
           "id": "teteCou",
           "type": "checkboxgroup",
           "label": "7. Tête, cou et sens",
-          "options": ["Céphalées", "Vertiges", "Acouphènes", "Hypoacousie", "Troubles visuels", "Yeux secs / rouges", "Nez bouché", "Epistaxis", "Gorge sèche / irritée", "Sécheresse buccale"],
+          "options": [
+            "Céphalées",
+            "Vertiges",
+            "Acouphènes",
+            "Hypoacousie",
+            "Troubles visuels",
+            "Yeux secs / rouges",
+            "Nez bouché",
+            "Epistaxis",
+            "Gorge sèche / irritée",
+            "Sécheresse buccale"
+          ],
           "width": "full"
         },
         {
-          "id": "sep5", "type": "separator", "label": ""
+          "id": "sep5",
+          "type": "separator",
+          "label": ""
         },
         {
           "id": "energy",
           "type": "checkboxgroup",
           "label": "8. Énergie et vitalité",
-          "options": ["Fatigue générale", "Fatigue matinale", "Fatigue après les repas", "Fatigue en fin de journée", "Lassitude des membres", "Sensation de lourdeur", "Essoufflement à l'effort", "Palpitations"],
+          "options": [
+            "Fatigue générale",
+            "Fatigue matinale",
+            "Fatigue après les repas",
+            "Fatigue en fin de journée",
+            "Lassitude des membres",
+            "Sensation de lourdeur",
+            "Essoufflement à l'effort",
+            "Palpitations"
+          ],
           "width": "full"
         },
         {
-          "id": "sep6", "type": "separator", "label": ""
+          "id": "sep6",
+          "type": "separator",
+          "label": ""
         },
         {
           "id": "sphèreGyneco",
@@ -169,13 +265,24 @@
           "minHeight": 80
         },
         {
-          "id": "sep7", "type": "separator", "label": ""
+          "id": "sep7",
+          "type": "separator",
+          "label": ""
         },
         {
           "id": "emotions",
           "type": "checkboxgroup",
           "label": "10. État émotionnel et mental",
-          "options": ["Anxiété / inquiétude excessive", "Tristesse / mélancolie", "Colère / irritabilité", "Peur / frayeur", "Choc émotionnel récent", "Ruminations / obsessions", "Joie excessive / agitation", "Dépression / manque de motivation"],
+          "options": [
+            "Anxiété / inquiétude excessive",
+            "Tristesse / mélancolie",
+            "Colère / irritabilité",
+            "Peur / frayeur",
+            "Choc émotionnel récent",
+            "Ruminations / obsessions",
+            "Joie excessive / agitation",
+            "Dépression / manque de motivation"
+          ],
           "width": "full"
         },
         {
@@ -188,7 +295,6 @@
         }
       ]
     },
-
     {
       "id": "observation",
       "title": "Observation et inspection",
@@ -199,45 +305,96 @@
           "id": "constitutionType",
           "type": "radio",
           "label": "Constitution (morphologie dominante)",
-          "options": ["Mince / longiligne", "Normal / harmonieux", "Trapu / musclé", "Enrobé / adipeux", "Fragile / délicat"],
+          "options": [
+            "Mince / longiligne",
+            "Normal / harmonieux",
+            "Trapu / musclé",
+            "Enrobé / adipeux",
+            "Fragile / délicat"
+          ],
           "width": "half"
         },
         {
           "id": "teint",
           "type": "checkboxgroup",
           "label": "Teint et coloris du visage",
-          "options": ["Normal", "Pâle", "Blanc / terne", "Rouge / vermeil", "Jaune / terreux", "Verdâtre", "Grisâtre / sombre", "Brillant / huileux", "Mat / sans éclat"],
+          "options": [
+            "Normal",
+            "Pâle",
+            "Blanc / terne",
+            "Rouge / vermeil",
+            "Jaune / terreux",
+            "Verdâtre",
+            "Grisâtre / sombre",
+            "Brillant / huileux",
+            "Mat / sans éclat"
+          ],
           "width": "half"
         },
         {
-          "id": "sep1", "type": "separator", "label": ""
+          "id": "sep1",
+          "type": "separator",
+          "label": ""
         },
         {
           "id": "langueCouleur",
           "type": "radio",
           "label": "Langue — Couleur du corps",
-          "options": ["Rose normal", "Pâle", "Rouge clair", "Rouge vif", "Écarlate", "Violet / bleuâtre", "Violet pâle"],
+          "options": [
+            "Rose normal",
+            "Pâle",
+            "Rouge clair",
+            "Rouge vif",
+            "Écarlate",
+            "Violet / bleuâtre",
+            "Violet pâle"
+          ],
           "width": "third"
         },
         {
           "id": "langueEnduit",
           "type": "radio",
           "label": "Langue — Enduit",
-          "options": ["Mince blanc (normal)", "Blanc épais", "Jaune mince", "Jaune épais", "Grisâtre", "Noirâtre", "Sans enduit (miroir)", "Enduit pelant"],
+          "options": [
+            "Mince blanc (normal)",
+            "Blanc épais",
+            "Jaune mince",
+            "Jaune épais",
+            "Grisâtre",
+            "Noirâtre",
+            "Sans enduit (miroir)",
+            "Enduit pelant"
+          ],
           "width": "third"
         },
         {
           "id": "langueHumidite",
           "type": "radio",
           "label": "Langue — Humidité",
-          "options": ["Humide (normal)", "Sèche", "Collante / grasse", "Très humide / glissante"],
+          "options": [
+            "Humide (normal)",
+            "Sèche",
+            "Collante / grasse",
+            "Très humide / glissante"
+          ],
           "width": "third"
         },
         {
           "id": "langueCorps",
           "type": "checkboxgroup",
           "label": "Langue — Forme et signes particuliers",
-          "options": ["Normale", "Gonflée / boursouflée", "Fine / maigre", "Rigide / raide", "Tremblements", "Fissures longitudinales", "Fissures multiples", "Pointe rouge", "Indentations dentaires (bords)", "Déviation"],
+          "options": [
+            "Normale",
+            "Gonflée / boursouflée",
+            "Fine / maigre",
+            "Rigide / raide",
+            "Tremblements",
+            "Fissures longitudinales",
+            "Fissures multiples",
+            "Pointe rouge",
+            "Indentations dentaires (bords)",
+            "Déviation"
+          ],
           "width": "full"
         },
         {
@@ -249,13 +406,23 @@
           "minHeight": 65
         },
         {
-          "id": "sep2", "type": "separator", "label": ""
+          "id": "sep2",
+          "type": "separator",
+          "label": ""
         },
         {
           "id": "voix",
           "type": "radio",
           "label": "Voix et respiration",
-          "options": ["Voix forte et claire", "Voix faible / essoufflée", "Voix rauque / enrouée", "Voix plaintive", "Soupirs fréquents", "Toux sèche", "Toux grasse"],
+          "options": [
+            "Voix forte et claire",
+            "Voix faible / essoufflée",
+            "Voix rauque / enrouée",
+            "Voix plaintive",
+            "Soupirs fréquents",
+            "Toux sèche",
+            "Toux grasse"
+          ],
           "width": "half"
         },
         {
@@ -268,7 +435,6 @@
         }
       ]
     },
-
     {
       "id": "pouls",
       "title": "Prise des pouls",
@@ -279,32 +445,65 @@
           "id": "poulsRythme",
           "type": "radio",
           "label": "Rythme global",
-          "options": ["Normal (60–90 bpm)", "Lent (< 60 bpm)", "Rapide (> 90 bpm)", "Irrégulier", "Intermittent"],
+          "options": [
+            "Normal (60–90 bpm)",
+            "Lent (< 60 bpm)",
+            "Rapide (> 90 bpm)",
+            "Irrégulier",
+            "Intermittent"
+          ],
           "width": "third"
         },
         {
           "id": "poulsForce",
           "type": "radio",
           "label": "Force globale",
-          "options": ["Vide / faible (Xu)", "Normal", "Plein / fort (Shi)"],
+          "options": [
+            "Vide / faible (Xu)",
+            "Normal",
+            "Plein / fort (Shi)"
+          ],
           "width": "third"
         },
         {
           "id": "poulsProfondeur",
           "type": "radio",
           "label": "Profondeur globale",
-          "options": ["Superficiel (Fu)", "Moyen", "Profond (Chen)"],
+          "options": [
+            "Superficiel (Fu)",
+            "Moyen",
+            "Profond (Chen)"
+          ],
           "width": "third"
         },
         {
           "id": "poulsCaracteristiques",
           "type": "checkboxgroup",
           "label": "Qualités des pouls",
-          "options": ["Glissant (Hua)", "Rugueux (Se)", "En corde (Xian)", "En fil (Xi / Ru)", "En hamac (Hong)", "Bondissant (Dong)", "Serré (Jin)", "Ample (Da)", "Mou (Ruan)", "Faible (Ruo)", "Lent (Chi)", "Rapide (Shu)", "Flottant (Fu)", "Profond (Chen)", "Vide (Xu)", "Plein (Shi)"],
+          "options": [
+            "Glissant (Hua)",
+            "Rugueux (Se)",
+            "En corde (Xian)",
+            "En fil (Xi / Ru)",
+            "En hamac (Hong)",
+            "Bondissant (Dong)",
+            "Serré (Jin)",
+            "Ample (Da)",
+            "Mou (Ruan)",
+            "Faible (Ruo)",
+            "Lent (Chi)",
+            "Rapide (Shu)",
+            "Flottant (Fu)",
+            "Profond (Chen)",
+            "Vide (Xu)",
+            "Plein (Shi)"
+          ],
           "width": "full"
         },
         {
-          "id": "sep1", "type": "separator", "label": ""
+          "id": "sep1",
+          "type": "separator",
+          "label": ""
         },
         {
           "id": "poulsDroit",
@@ -332,7 +531,6 @@
         }
       ]
     },
-
     {
       "id": "diagnostic",
       "title": "Diagnostic énergétique",
@@ -343,7 +541,16 @@
           "id": "huitPrincipes",
           "type": "checkboxgroup",
           "label": "Huit Principes (Ba Gang)",
-          "options": ["Yin", "Yang", "Biao — Extérieur", "Li — Intérieur", "Han — Froid", "Re — Chaud", "Xu — Vide", "Shi — Plénitude"],
+          "options": [
+            "Yin",
+            "Yang",
+            "Biao — Extérieur",
+            "Li — Intérieur",
+            "Han — Froid",
+            "Re — Chaud",
+            "Xu — Vide",
+            "Shi — Plénitude"
+          ],
           "width": "full",
           "hint": "Sélectionner les principes dominants du tableau clinique"
         },
@@ -351,17 +558,51 @@
           "id": "causesMaladie",
           "type": "checkboxgroup",
           "label": "Causes et facteurs pathogènes",
-          "options": ["Vent (Feng)", "Froid (Han)", "Chaleur (Re)", "Humidité (Shi)", "Sécheresse (Zao)", "Feu (Huo)", "Chaleur-Été (Shu)", "Colère / Foie", "Joie excessive / Cœur", "Tristesse / Poumon", "Inquiétude / Rate-Poumon", "Peur / Rein", "Choc / Cœur-Rein", "Surmenage", "Alimentation déséquilibrée", "Traumatisme", "Stase de sang (Yu Xue)", "Mucosités (Tan)"],
+          "options": [
+            "Vent (Feng)",
+            "Froid (Han)",
+            "Chaleur (Re)",
+            "Humidité (Shi)",
+            "Sécheresse (Zao)",
+            "Feu (Huo)",
+            "Chaleur-Été (Shu)",
+            "Colère / Foie",
+            "Joie excessive / Cœur",
+            "Tristesse / Poumon",
+            "Inquiétude / Rate-Poumon",
+            "Peur / Rein",
+            "Choc / Cœur-Rein",
+            "Surmenage",
+            "Alimentation déséquilibrée",
+            "Traumatisme",
+            "Stase de sang (Yu Xue)",
+            "Mucosités (Tan)"
+          ],
           "width": "full"
         },
         {
-          "id": "sep1", "type": "separator", "label": ""
+          "id": "sep1",
+          "type": "separator",
+          "label": ""
         },
         {
           "id": "organesPrincipaux",
           "type": "checkboxgroup",
           "label": "Organes et entrailles concernés (Zang-Fu)",
-          "options": ["Foie (Gan)", "Vésicule Biliaire (Dan)", "Cœur (Xin)", "Intestin Grêle (Xiao Chang)", "Rate (Pi)", "Estomac (Wei)", "Poumon (Fei)", "Gros Intestin (Da Chang)", "Rein (Shen)", "Vessie (Pang Guang)", "Maître du Cœur (Xin Bao)", "Triple Réchauffeur (San Jiao)"],
+          "options": [
+            "Foie (Gan)",
+            "Vésicule Biliaire (Dan)",
+            "Cœur (Xin)",
+            "Intestin Grêle (Xiao Chang)",
+            "Rate (Pi)",
+            "Estomac (Wei)",
+            "Poumon (Fei)",
+            "Gros Intestin (Da Chang)",
+            "Rein (Shen)",
+            "Vessie (Pang Guang)",
+            "Maître du Cœur (Xin Bao)",
+            "Triple Réchauffeur (San Jiao)"
+          ],
           "width": "full"
         },
         {
@@ -376,7 +617,13 @@
           "id": "cinqElements",
           "type": "radio",
           "label": "Élément dominant (5 Éléments / Wu Xing)",
-          "options": ["Bois (Foie / VB)", "Feu (Cœur / IG)", "Terre (Rate / Estomac)", "Métal (Poumon / GI)", "Eau (Rein / Vessie)"],
+          "options": [
+            "Bois (Foie / VB)",
+            "Feu (Cœur / IG)",
+            "Terre (Rate / Estomac)",
+            "Métal (Poumon / GI)",
+            "Eau (Rein / Vessie)"
+          ],
           "width": "half"
         },
         {
@@ -397,7 +644,6 @@
         }
       ]
     },
-
     {
       "id": "traitement",
       "title": "Traitement",
@@ -432,7 +678,23 @@
           "id": "techniques",
           "type": "checkboxgroup",
           "label": "Techniques utilisées",
-          "options": ["Puncture (dispersion)", "Puncture (tonification)", "Puncture (neutre)", "Moxibustion directe", "Moxibustion indirecte (bâton)", "Moxibustion sur aiguille", "Ventouses (statiques)", "Ventouses (glissées)", "Tui Na / massage", "Electro-acupuncture", "Laser-acupuncture", "Guasha", "Auriculothérapie (aiguilles)", "Auriculothérapie (seeds/billes)", "Phytothérapie"],
+          "options": [
+            "Puncture (dispersion)",
+            "Puncture (tonification)",
+            "Puncture (neutre)",
+            "Moxibustion directe",
+            "Moxibustion indirecte (bâton)",
+            "Moxibustion sur aiguille",
+            "Ventouses (statiques)",
+            "Ventouses (glissées)",
+            "Tui Na / massage",
+            "Electro-acupuncture",
+            "Laser-acupuncture",
+            "Guasha",
+            "Auriculothérapie (aiguilles)",
+            "Auriculothérapie (seeds/billes)",
+            "Phytothérapie"
+          ],
           "width": "full"
         },
         {
@@ -447,7 +709,13 @@
           "id": "dureeSeance",
           "type": "radio",
           "label": "Durée de la séance",
-          "options": ["30 min", "45 min", "60 min", "75 min", "90 min"],
+          "options": [
+            "30 min",
+            "45 min",
+            "60 min",
+            "75 min",
+            "90 min"
+          ],
           "width": "third"
         },
         {
@@ -468,7 +736,6 @@
         }
       ]
     },
-
     {
       "id": "bilan_suivi",
       "title": "Bilan et conseils",
@@ -479,7 +746,14 @@
           "id": "evolutionDepuisDerniere",
           "type": "radio",
           "label": "Évolution depuis la dernière séance",
-          "options": ["Première séance", "Nette amélioration", "Amélioration modérée", "Stable — sans changement", "Légère aggravation", "Aggravation"],
+          "options": [
+            "Première séance",
+            "Nette amélioration",
+            "Amélioration modérée",
+            "Stable — sans changement",
+            "Légère aggravation",
+            "Aggravation"
+          ],
           "width": "half"
         },
         {
@@ -519,14 +793,26 @@
           "id": "frequencePreconisee",
           "type": "radio",
           "label": "Fréquence de traitement préconisée",
-          "options": ["Intensif — 2×/semaine", "Hebdomadaire", "Tous les 15 jours", "Mensuel", "À la demande"],
+          "options": [
+            "Intensif — 2×/semaine",
+            "Hebdomadaire",
+            "Tous les 15 jours",
+            "Mensuel",
+            "À la demande"
+          ],
           "width": "half"
         },
         {
           "id": "nombreSeancesEstimees",
           "type": "radio",
           "label": "Nombre de séances estimées",
-          "options": ["1–3 séances (aigu)", "4–6 séances", "7–10 séances", "10+ séances (chronique)", "Suivi à long terme"],
+          "options": [
+            "1–3 séances (aigu)",
+            "4–6 séances",
+            "7–10 séances",
+            "10+ séances (chronique)",
+            "Suivi à long terme"
+          ],
           "width": "half"
         },
         {
@@ -539,6 +825,6 @@
         }
       ]
     }
-
-  ]
+  ],
+  "isNative": true
 }

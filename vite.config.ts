@@ -21,14 +21,17 @@ export default defineConfig(({ mode }) => {
           entry: 'src/main/index.ts',
           vite: {
             define: {
-              'process.env.LICENSE_PUBLIC_KEY': JSON.stringify(env.LICENSE_PUBLIC_KEY ?? ''),
-              'process.env.SUPABASE_URL':       JSON.stringify(env.SUPABASE_URL       ?? ''),
-              'process.env.SUPABASE_ANON_KEY':  JSON.stringify(env.SUPABASE_ANON_KEY  ?? ''),
+              'process.env.LICENSE_PUBLIC_KEY':  JSON.stringify(env.LICENSE_PUBLIC_KEY  ?? ''),
+              'process.env.SUPABASE_URL':        JSON.stringify(env.SUPABASE_URL        ?? ''),
+              'process.env.SUPABASE_ANON_KEY':   JSON.stringify(env.SUPABASE_ANON_KEY   ?? ''),
+              'process.env.GCAL_CLIENT_ID':      JSON.stringify(env.GCAL_CLIENT_ID      ?? ''),
+              'process.env.GCAL_CLIENT_SECRET':  JSON.stringify(env.GCAL_CLIENT_SECRET  ?? ''),
+              'process.env.OWNER_EMAILS':        JSON.stringify(env.OWNER_EMAILS        ?? ''),
             },
             build: {
               outDir: 'dist-electron/main',
               rollupOptions: {
-                external: ['electron', 'better-sqlite3', 'xlsx-js-style'],
+                external: ['electron', 'better-sqlite3', 'xlsx-js-style', '@supabase/supabase-js'],
                 output: {
                   // Un seul fichier bundle pour le process principal.
                   // Evite les chunks séparés dont les require() relatifs échouent

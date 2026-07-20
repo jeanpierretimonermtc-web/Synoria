@@ -32,6 +32,12 @@ const MAX_DEACTIVATIONS_PER_30_DAYS = 3
 const FEATURES_FULL       = ['read', 'write', 'export', 'backup', 'calendar', 'billing']
 const FEATURES_RESTRICTED = ['read', 'export']
 
+// Comptes propriétaire — accès illimité permanent, bypass de toute vérification Stripe/licence.
+const OWNER_EMAILS = [
+  'jeanpierre.timoner.mtc@gmail.com',
+  'jean-pierre.timoner@wanadoo.fr',
+]
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 type Platform = 'windows' | 'macos' | 'linux' | 'unknown'
@@ -94,6 +100,50 @@ Deno.serve(async (req: Request): Promise<Response> => {
   if (authError || !user) {
     return json({ error: 'Unauthorized', message: 'Session expirée ou invalide.' }, 401)
   }
+
+  // ── Bypass propriétaire ────────────────────────────────────────────────────
+  // Les comptes listés dans OWNER_EMAILS ont un accès illimité permanent,
+  // indépendamment de tout abonnement Stripe ou statut de licence.
+  if (OWNER_EMAILS.includes(user.email ?? '')) {
+    const privateKeyPem = Deno.env.get('LICENSE_PRIVATE_KEY')
+    if (!privateKeyPem) {
+      return json({ error: 'Server configuration error', message: 'Clé de licence non configurée.' }, 500)
+    }
+    const nowSec = Math.floor(Date.now() / 1000)
+    const ownerToken = await signLicenseToken({
+      userId:         user.id,
+      organizationId: 'owner',
+      licenseId:      'owner',
+      deviceId:       'owner',
+      deviceIdHash:   'owner',
+      planCode:       'synoria_owner',
+      status:         'active',
+      mode:           'full',
+      features:       FEATURES_FULL,
+      maxDevices:     99,
+      graceUntil:     null,
+      iat:            nowSec,
+      exp:            nowSec + TOKEN_TTL_SECONDS,
+    }, privateKeyPem)
+    if (!ownerToken.ok) {
+      return json({ error: 'Token signing failed' }, 500)
+    }
+    console.log(`[license-check] ✓ OWNER bypass — user=${user.email}`)
+    return json({
+      allowed:       true,
+      mode:          'full',
+      license_token: ownerToken.token,
+      valid_until:   new Date((nowSec + TOKEN_TTL_SECONDS) * 1000).toISOString(),
+      license: {
+        status:                          'active',
+        plan_code:                       'synoria_owner',
+        max_active_devices:              99,
+        active_devices:                  1,
+        deactivations_remaining_30_days: 99,
+      },
+    })
+  }
+  // ── Fin bypass propriétaire ────────────────────────────────────────────────
 
   // 2. Valider et normaliser le body
   let input: DeviceInput

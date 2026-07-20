@@ -1,6 +1,6 @@
 {
   "name": "synoria",
-  "version": "1.5.7",
+  "version": "1.5.8",
   "description": "Synoria - Logiciel de gestion de dossiers patients",
   "main": "dist-electron/main/index.js",
   "scripts": {
@@ -9,8 +9,7 @@
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "dev:fresh": "node scripts/reset-dev-data.mjs && concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:build": "vite build && electron-builder",
-    "build:portable": "vite build && electron-builder --win portable",
-    "postinstall": "electron-rebuild -f -w better-sqlite3"
+"postinstall": "electron-rebuild -f -w better-sqlite3"
   },
   "dependencies": {
     "@fontsource/dm-sans": "^5.2.8",
@@ -43,8 +42,8 @@
     "wait-on": "^7.2.0"
   },
   "build": {
-    "appId": "com.synoria.dev",
-    "productName": "Synoria Dev",
+    "appId": "com.synoria.app",
+    "productName": "Synoria",
     "icon": "build/icons/icon",
     "directories": {
       "output": "release"
@@ -53,7 +52,9 @@
       "dist/**/*",
       "dist-electron/**/*",
       "node_modules/better-sqlite3/**/*",
-      "node_modules/xlsx-js-style/**/*"
+      "node_modules/xlsx-js-style/**/*",
+      "node_modules/@supabase/**/*",
+      "node_modules/ws/**/*"
     ],
     "asarUnpack": [
       "node_modules/better-sqlite3/**/*"
@@ -77,12 +78,6 @@
             "x64"
           ]
         },
-        {
-          "target": "portable",
-          "arch": [
-            "x64"
-          ]
-        }
       ],
       "icon": "build/icons/icon.ico"
     },

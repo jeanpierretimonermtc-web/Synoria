@@ -7,5 +7,6 @@
   "icon": "🌿",
   "accentColor": "#4A6741",
   "useBuiltinForm": true,
-  "sections": []
+  "sections": [],
+  "isNative": true
 }

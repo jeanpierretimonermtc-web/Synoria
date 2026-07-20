@@ -1,12 +1,20 @@
 import React, { useEffect, useState, useContext } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import type { Session, Patient } from '../../shared/types'
-import type { PluginDefinition, PluginSection, PluginField } from '../../shared/pluginTypes'
+import type { Session, Patient, SessionFullData } from '../../shared/types'
+import { useRestriction } from '../hooks/useRestriction'
+import type { PluginDefinition, PluginSection } from '../../shared/pluginTypes'
+import { PluginFieldSummary } from '../components/plugin/PluginFieldSummary'
 import { ToastContext } from '../App'
 import { fmtDate, calcAge } from '../utils/format'
+import { sanitizeRichTextHtml } from '../utils/sanitizeHtml'
 
 /* ─── TYPES ──────────────────────────────────────────────────────────────── */
 type AnyRec = Record<string, any>
+
+function parseFullData(raw?: string): SessionFullData {
+  if (!raw) return {}
+  try { return JSON.parse(raw) as SessionFullData } catch { return {} }
+}
 
 /* ─── HELPERS UI ─────────────────────────────────────────────────────────── */
 
@@ -57,7 +65,7 @@ function HtmlRow({ label, value }: { label: string; value?: string | null }) {
     <div>
       <div className="detail-label">{label}</div>
       {hasHtml
-        ? <div className="detail-value" dangerouslySetInnerHTML={{ __html: value }} />
+        ? <div className="detail-value" dangerouslySetInnerHTML={{ __html: sanitizeRichTextHtml(value) }} />
         : <div className="detail-value">{value}</div>
       }
     </div>
@@ -79,6 +87,151 @@ function SummaryBlock({ title, icon, color, children }: { title: string; icon?: 
   )
 }
 
+/* ─── Modal facturation (depuis séance) ─────────────────────────────────── */
+
+export function InvoiceModal({ patient, sessionDate: initSessionDate, description: initDesc, onClose, showToast, onGenerated }: {
+  patient: Patient
+  sessionDate: string
+  description: string
+  onClose: () => void
+  showToast: (msg: string, type?: 'success' | 'error') => void
+  onGenerated?: (invoiceNumber: string) => void
+}) {
+  const navigate = useNavigate()
+  const today    = new Date().toISOString().slice(0, 10)
+
+  const [profileEmpty, setProfileEmpty] = useState<boolean | null>(null)
+  const [sessionDate,  setSessionDate]  = useState(initSessionDate)
+  const [invoiceDate,  setInvoiceDate]  = useState(today)
+  const [description,  setDescription]  = useState(initDesc)
+  const [montantStr,   setMontantStr]   = useState('')
+  const [generating,   setGenerating]   = useState(false)
+
+  useEffect(() => {
+    window.mtcApi.getSettings().then(s => {
+      const hasName = !!(s.practitionerFirstName?.trim() || s.practitionerLastName?.trim())
+      setProfileEmpty(!hasName)
+      if (hasName && !initDesc) setDescription(s.practitionerActivity?.trim() || '')
+    })
+  }, [])
+
+  const montant = parseFloat(montantStr.replace(',', '.')) || 0
+  const euro = (n: number) => n.toFixed(2).replace('.', ',') + ' €'
+
+  const handleGenerate = async () => {
+    if (!montantStr || montant <= 0) { showToast('Veuillez saisir un montant', 'error'); return }
+    setGenerating(true)
+    try {
+      const result = await window.mtcApi.generateInvoice({
+        patientFirstName: patient.first_name,
+        patientLastName:  patient.last_name,
+        patientAddress:   patient.address || '',
+        email:            patient.email   || '',
+        phone:            patient.phone   || '',
+        sessionDate, description, invoiceDate, montant,
+      })
+      showToast(`Facture ${result.invoiceNumber} créée ✓`, 'success')
+      onGenerated?.(result.invoiceNumber)
+      await window.mtcApi.openPath(result.filePath)
+      onClose()
+    } catch (e: any) {
+      showToast(`Erreur génération facture : ${e?.message || e}`, 'error')
+    }
+    setGenerating(false)
+  }
+
+  if (profileEmpty === null) {
+    return (
+      <div className="modal-overlay">
+        <div className="modal" style={{ maxWidth: 480, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 120 }}>
+          <div className="loading-dots"><span /><span /><span /></div>
+        </div>
+      </div>
+    )
+  }
+
+  if (profileEmpty) {
+    return (
+      <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+        <div className="modal" style={{ maxWidth: 440 }}>
+          <div style={{ textAlign: 'center', padding: '8px 0 20px' }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>👤</div>
+            <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>Profil praticien requis</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.75, marginBottom: 20 }}>
+              Renseignez votre <strong>profil praticien</strong> (nom, activité, SIRET…) avant de générer une facture.
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              <button className="btn btn-primary" onClick={() => { onClose(); navigate('/profil') }}>
+                Compléter mon profil →
+              </button>
+              <button className="btn btn-secondary" onClick={onClose}>Fermer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 480 }}>
+        <button className="modal-close" onClick={onClose}>×</button>
+        <h2 style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+          <span>🧾</span><span>Générer une facture</span>
+        </h2>
+
+        <div style={{ background: 'var(--blue-light)', border: '1px solid rgba(42,90,138,.2)', borderRadius: 'var(--radius)', padding: '10px 14px', marginBottom: 16 }}>
+          <div style={{ fontWeight: 700, color: 'var(--blue)', fontSize: 14 }}>{patient.first_name} {patient.last_name}</div>
+          {patient.address && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{patient.address}</div>}
+        </div>
+
+        <div className="grid2" style={{ marginBottom: 12 }}>
+          <div className="field">
+            <label>Date de la séance *</label>
+            <input type="date" value={sessionDate} onChange={e => setSessionDate(e.target.value)} />
+          </div>
+          <div className="field">
+            <label>Date d'émission</label>
+            <input type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} />
+          </div>
+        </div>
+
+        <div className="field" style={{ marginBottom: 16 }}>
+          <label>Désignation</label>
+          <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Prestation de soin" />
+        </div>
+
+        <div className="field" style={{ marginBottom: 16 }}>
+          <label>Montant * (€)</label>
+          <input
+            type="text" inputMode="decimal"
+            value={montantStr}
+            onChange={e => setMontantStr(e.target.value)}
+            placeholder="Ex : 70,00"
+            style={{ fontSize: 22, fontWeight: 800, textAlign: 'right', color: 'var(--blue)' }}
+          />
+        </div>
+
+        {montant > 0 && (
+          <div className="invoice-recap">
+            <div className="invoice-recap-ttc" style={{ justifyContent: 'space-between', display: 'flex' }}>
+              <span>TOTAL À PAYER</span><span>{euro(montant)}</span>
+            </div>
+          </div>
+        )}
+
+        <div className="row-btns" style={{ marginTop: 20 }}>
+          <button className="btn btn-primary" onClick={handleGenerate} disabled={generating}
+            style={{ flex: 1, justifyContent: 'center', background: '#1A3A6B', borderColor: '#1A3A6B' }}>
+            {generating ? '⏳ Génération…' : '🧾 Générer le PDF'}
+          </button>
+          <button className="btn btn-secondary" onClick={onClose}>Annuler</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ─── PAGE ───────────────────────────────────────────────────────────────── */
 
 export default function SummaryPage() {
@@ -89,8 +242,10 @@ export default function SummaryPage() {
   const [allPatients, setAllPatients] = useState<Patient[]>([])
   const [loading, setLoading]       = useState(true)
   const [activePlugin, setActivePlugin] = useState<PluginDefinition | null>(null)
+  const [showInvoice, setShowInvoice]   = useState(false)
   const showToast = useContext(ToastContext)
   const navigate  = useNavigate()
+  const restriction = useRestriction()
 
   const load = async () => {
     setLoading(true)
@@ -108,7 +263,7 @@ export default function SummaryPage() {
 
   useEffect(() => {
     load()
-    window.mtcApi.pluginGet().then(p => setActivePlugin(p || null)).catch(() => {})
+    window.mtcApi.pluginGet().then(p => setActivePlugin(p || null)).catch(() => { showToast('Impossible de charger le plugin actif', 'error') })
   }, [sessionId])
 
   // Log accès à la séance (après chargement des données)
@@ -164,6 +319,12 @@ export default function SummaryPage() {
             }}>⬇ Excel</button>
             <button className="btn btn-secondary btn-sm" onClick={() => window.print()}>🖨 Imprimer</button>
             <button className="btn btn-primary btn-sm" onClick={() => navigate('/historique')}>📋 Historique</button>
+            <button
+              className="btn btn-amber btn-sm"
+              onClick={() => setShowInvoice(true)}
+              disabled={!restriction.canCreateInvoice}
+              title={!restriction.canCreateInvoice ? 'Fonctionnalité non disponible dans votre abonnement' : 'Générer une facture pour cette séance'}
+            >🧾 Facture</button>
           </div>
         )}
       </div>
@@ -172,6 +333,20 @@ export default function SummaryPage() {
         ? <div className="empty">Sélectionnez un patient et une séance pour afficher le résumé.</div>
         : <SummaryContent session={session} patient={patient} activePlugin={activePlugin} />
       }
+
+      {showInvoice && patient && session && (
+        <InvoiceModal
+          patient={patient}
+          sessionDate={session.date}
+          description={(() => {
+            const tmp = document.createElement('div')
+            tmp.innerHTML = session.motif || ''
+            return tmp.textContent?.trim() || ''
+          })()}
+          onClose={() => setShowInvoice(false)}
+          showToast={showToast}
+        />
+      )}
     </div>
   )
 }
@@ -185,13 +360,12 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
 }) {
 
   /* ── Données étendues depuis full_data_json ── */
-  let fd: AnyRec = {}
-  try { if (s.full_data_json) fd = JSON.parse(s.full_data_json) } catch {}
+  const fd: SessionFullData = parseFullData(s.full_data_json)
 
   /* ── Données plugin ── */
-  const pluginData: AnyRec      = (fd.pluginData  as AnyRec)          || {}
-  const pluginId:   string      = (fd.pluginId    as string)           || ''
-  const pluginSchema             = (fd.pluginSchema as PluginDefinition) || null
+  const pluginData: AnyRec      = (fd.pluginData  as AnyRec) || {}
+  const pluginId:   string      = fd.pluginId                || ''
+  const pluginSchema             = fd.pluginSchema            || null
 
   // Définition à utiliser pour rendre les sections plugin (plugins tiers seulement)
   const pluginDef: PluginDefinition | null =
@@ -214,6 +388,9 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
 
   // showMtcSections : vrai si aucun plugin (mode simple) OU plugin MTC intégré
   const showMtcSections = !pluginId || pluginIsBuiltin
+
+  // pluginId présent, mode non intégré, mais schéma absent (séance créée avant v1.4.4)
+  const pluginSchemaMissing = !!pluginId && !pluginIsBuiltin && !pluginSchema && !pluginDef
 
   const sessionNum: number        = fd.sessionNum   || 0
   const langueNote: string        = fd.langueNote   || ''
@@ -338,9 +515,15 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
         <PluginSummarySection key={section.id} section={section} data={pluginData} />
       ))}
 
+      {pluginSchemaMissing && (
+        <div className="summary-section" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, color: 'var(--text-muted)', fontSize: 13 }}>
+          <strong>Formulaire [{pluginId}]</strong> — données présentes mais schéma non disponible (séance créée avant v1.4.4).
+        </div>
+      )}
+
       {/* ─── 2. OBSERVATION MTC ──────────────────────────────────── */}
       {showMtcSections && (s.langue || langueNote || s.pouls || hasPoulsPos || poulsNote ||
-        s.constitution || s.type_corps || s.teint || s.observation) && (
+        s.constitution || s.type_corps || s.teint || (pluginIsBuiltin && s.observation)) && (
         <div className="summary-section">
           <h3 style={{ color: 'var(--teal)' }}>👀 Observation MTC</h3>
 
@@ -350,7 +533,7 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
               <div className="detail-label">Langue</div>
               {s.langue && <Chips values={s.langue.split(', ').filter(Boolean)} color="teal" />}
               {langueNote && (/<[a-z][\s\S]*>/i.test(langueNote)
-                ? <div className="detail-note" dangerouslySetInnerHTML={{ __html: langueNote }} />
+                ? <div className="detail-note" dangerouslySetInnerHTML={{ __html: sanitizeRichTextHtml(langueNote) }} />
                 : <div className="detail-note">{langueNote}</div>
               )}
             </div>
@@ -384,7 +567,7 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
                 </div>
               )}
               {poulsNote && (/<[a-z][\s\S]*>/i.test(poulsNote)
-                ? <div className="detail-note" dangerouslySetInnerHTML={{ __html: poulsNote }} />
+                ? <div className="detail-note" dangerouslySetInnerHTML={{ __html: sanitizeRichTextHtml(poulsNote) }} />
                 : <div className="detail-note">{poulsNote}</div>
               )}
             </div>
@@ -511,7 +694,7 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
       )}
 
       {/* ─── 4. DIAGNOSTIC MTC ───────────────────────────────────── */}
-      {showMtcSections && (
+      {showMtcSections && (s.diagnostic_mtc || s.cinq_elements || s.causes || s.analyse || s.principes) && (
         <SummaryBlock title="Diagnostic MTC" icon="🔵" color="var(--purple)">
           <Row     label="Diagnostic MTC principal" value={s.diagnostic_mtc} />
           <Row     label="5 Éléments"               value={s.cinq_elements} />
@@ -638,7 +821,7 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
       )}
 
       {/* ─── 6. TRAITEMENT ───────────────────────────────────────── */}
-      {showMtcSections && (
+      {showMtcSections && (s.points || s.pts_oreille || s.techniques || s.plantes || s.reactions || s.traitement_notes) && (
         <SummaryBlock title="Traitement du jour" icon="🌿" color="var(--accent)">
           <Row     label="Points d'acupuncture"     value={s.points} />
           <Row     label="Points d'oreille"         value={s.pts_oreille} />
@@ -658,7 +841,7 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
               <div key={lbl as string} className="barrage-summary-block">
                 <div className="detail-label">{lbl}</div>
                 {/<[a-z][\s\S]*>/i.test(val as string)
-                  ? <div className="detail-value" dangerouslySetInnerHTML={{ __html: val as string }} />
+                  ? <div className="detail-value" dangerouslySetInnerHTML={{ __html: sanitizeRichTextHtml(val as string) }} />
                   : <div className="detail-value">{val}</div>
                 }
               </div>
@@ -722,7 +905,7 @@ function PluginSummarySection({ section, data }: { section: PluginSection; data:
         {section.title}
       </h3>
       <div className="summary-grid">
-        {fields.map(field => (
+        {[...fields].sort((a, b) => (a.summary?.priority ?? 999) - (b.summary?.priority ?? 999)).map(field => (
           <PluginFieldSummary key={field.id} field={field} value={data[field.id]} />
         ))}
       </div>
@@ -730,125 +913,3 @@ function PluginSummarySection({ section, data }: { section: PluginSection; data:
   )
 }
 
-function PluginFieldSummary({ field, value }: { field: PluginField; value: any }) {
-  if (value === null || value === undefined || value === '') return null
-
-  switch (field.type) {
-
-    case 'richtext':
-    case 'textarea': {
-      const str = String(value || '').trim()
-      if (!str) return null
-      const hasHtml = /<[a-z][\s\S]*>/i.test(str)
-      return (
-        <div>
-          <div className="detail-label">{field.label}</div>
-          {hasHtml
-            ? <div className="detail-value" dangerouslySetInnerHTML={{ __html: str }} />
-            : <div className="detail-value">{str}</div>
-          }
-        </div>
-      )
-    }
-
-    case 'text':
-    case 'number':
-    case 'date':
-    case 'select':
-    case 'radio': {
-      const str = String(value).trim()
-      if (!str) return null
-      return (
-        <div>
-          <div className="detail-label">{field.label}</div>
-          <div className="detail-value">{str}</div>
-        </div>
-      )
-    }
-
-    case 'checkbox':
-      return value ? (
-        <div>
-          <div className="detail-value" style={{ color: 'var(--accent)', fontWeight: 600 }}>
-            ✓ {field.label}
-          </div>
-        </div>
-      ) : null
-
-    case 'checkboxgroup':
-    case 'tags': {
-      const arr: string[] = Array.isArray(value) ? value : []
-      if (!arr.length) return null
-      return (
-        <div>
-          <div className="detail-label">{field.label}</div>
-          <Chips values={arr} color="blue" />
-        </div>
-      )
-    }
-
-    case 'rating': {
-      if (value === null || value === undefined) return null
-      const num = Number(value)
-      const max = field.max ?? 10
-      const pct = (num / max) * 100
-      const col = pct <= 30 ? 'var(--accent)' : pct <= 60 ? 'var(--amber)' : 'var(--red)'
-      return (
-        <div>
-          <div className="detail-label">{field.label}</div>
-          <span className="score-badge" style={{ borderColor: col, color: col }}>
-            <strong>{num}</strong> / {max}
-          </span>
-        </div>
-      )
-    }
-
-    case 'bodychart': {
-      if (!value || typeof value !== 'object' || Array.isArray(value)) return null
-      const sides = [
-        { key: 'front', label: 'Anterieur' },
-        { key: 'back', label: 'Posterieur' },
-        { key: 'left', label: 'Profil gauche' },
-        { key: 'right', label: 'Profil droit' },
-      ]
-      const front: string[] = Array.isArray(value.front) ? value.front : []
-      const back: string[] = Array.isArray(value.back) ? value.back : []
-      const left: string[] = Array.isArray(value.left) ? value.left : []
-      const right: string[] = Array.isArray(value.right) ? value.right : []
-      const details: Record<string, any> = value.details && typeof value.details === 'object' ? value.details : {}
-      const rows = [
-        ...front.map(zone => ({ side: 'Antérieur', zone, detail: details[`front:${zone}`] || {} })),
-        ...back.map(zone => ({ side: 'Postérieur', zone, detail: details[`back:${zone}`] || {} })),
-      ]
-      rows.push(
-        ...left.map(zone => ({ side: 'Profil gauche', zone, detail: details[`left:${zone}`] || {} })),
-        ...right.map(zone => ({ side: 'Profil droit', zone, detail: details[`right:${zone}`] || {} })),
-      )
-      const notes = typeof value.notes === 'string' ? value.notes.trim() : ''
-      if (!rows.length && !notes) return null
-      return (
-        <div style={{ gridColumn: '1 / -1' }}>
-          <div className="detail-label">{field.label}</div>
-          {rows.length > 0 && (
-            <div className="bodychart-summary-list">
-              {rows.map(row => (
-                <div key={`${row.side}-${row.zone}`} className="bodychart-summary-row">
-                  <strong>{row.zone}</strong>
-                  <span>{row.side}</span>
-                  {row.detail?.symptom && <span>{row.detail.symptom}</span>}
-                  {row.detail?.laterality && row.detail.laterality !== 'Non precise' && <span>{row.detail.laterality}</span>}
-                  {typeof row.detail?.intensity === 'number' && <span>{row.detail.intensity}/10</span>}
-                  {row.detail?.note && <em>{row.detail.note}</em>}
-                </div>
-              ))}
-            </div>
-          )}
-          {notes && <div className="detail-value" style={{ marginTop: 8 }}>{notes}</div>}
-        </div>
-      )
-    }
-
-    default:
-      return null
-  }
-}

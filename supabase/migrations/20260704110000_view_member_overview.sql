@@ -2,7 +2,8 @@
 -- joint auth.users (email) avec organizations, licenses et subscriptions.
 -- Accessible depuis Table Editor → Views → member_overview.
 
-create or replace view public.member_overview as
+drop view if exists public.member_overview;
+create view public.member_overview as
 select
   u.email,
   u.id                          as user_id,
@@ -26,3 +27,8 @@ order by u.created_at desc;
 
 comment on view public.member_overview is
   'Vue d''administration : email + état licence + abonnement par utilisateur. Lecture seule.';
+
+-- Restreindre l'accès : vue admin uniquement, interdite aux clients anonymes et authentifiés.
+-- Accessible uniquement via le service_role (dashboard Supabase ou scripts serveur).
+revoke all on public.member_overview from anon, authenticated;
+grant select on public.member_overview to service_role;

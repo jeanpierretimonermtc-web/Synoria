@@ -33,6 +33,37 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim()
 }
 
+/**
+ * Sanitise du HTML richtext avant injection dans le rapport HTML patient.
+ * Approche regex (Node.js, pas de DOMParser) : supprime les balises et attributs dangereux.
+ * Conserve b, strong, i, em, u, br, p, ul, ol, li, span pour le formatage.
+ */
+function sanitizeHtmlForReport(html: string): string {
+  if (!html) return ''
+  let s = html
+  // Supprimer les blocs dangereux avec leur contenu
+  s = s.replace(/<script[\s\S]*?<\/script>/gi, '')
+  s = s.replace(/<style[\s\S]*?<\/style>/gi, '')
+  s = s.replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
+  s = s.replace(/<object[\s\S]*?<\/object>/gi, '')
+  s = s.replace(/<embed[^>]*\/?>/gi, '')
+  s = s.replace(/<form[\s\S]*?<\/form>/gi, '')
+  s = s.replace(/<input[^>]*\/?>/gi, '')
+  s = s.replace(/<link[^>]*\/?>/gi, '')
+  // Supprimer les attributs de gestionnaire d'événements (onclick, onload, onerror…)
+  s = s.replace(/\s+on[a-z][a-z0-9]*\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '')
+  // Bloquer les URI javascript: dans href/src/action
+  s = s.replace(/(?<=\s(?:href|src|action|data)\s*=\s*["'])javascript\s*:/gi, 'blocked:')
+  // Suppression de secours (lookbehind non dispo partout) : remplacer javascript: dans les attrs
+  s = s.replace(/(href|src|action|data)\s*=\s*["']\s*javascript\s*:/gi, '$1="blocked:')
+  // Supprimer les attributs style contenant expression() ou url()
+  s = s.replace(/style\s*=\s*"([^"]*)"/gi, (_m, v) => {
+    if (/expression\s*\(|javascript\s*:|url\s*\(/i.test(v)) return ''
+    return `style="${v}"`
+  })
+  return s
+}
+
 // ── Rendu d'un groupe de champs ─────────────────────────────────────
 function renderGroup(title: string, rows: string[]): string {
   const content = rows.filter(r => r.trim()).join('')
@@ -55,7 +86,7 @@ function rowHtml(label: string, value?: string | null): string {
   if (!value?.trim() || value === '<br>') return ''
   const clean = stripHtml(value)
   if (!clean) return ''
-  return `<div class="row"><span class="lbl">${label}</span><span class="val">${value}</span></div>`
+  return `<div class="row"><span class="lbl">${label}</span><span class="val">${sanitizeHtmlForReport(value)}</span></div>`
 }
 
 export async function exportPatientReport(patientId: string): Promise<string> {
@@ -78,7 +109,7 @@ export async function exportPatientReport(patientId: string): Promise<string> {
         const pluginData = (fd.pluginData as Record<string, unknown>) || {}
         const pluginSchema = fd.pluginSchema as {
           specialty?: string
-          sections?: Array<{ title: string; fields: Array<{ id: string; label: string; type: string }> }>
+          sections?: Array<{ title: string; fields: Array<{ id: string; label: string; type: string; export?: { patientReport?: boolean }; summary?: { label?: string } }> }>
         } | null
         const isBuiltin   = !!(fd.pluginIsBuiltin) || pluginId === 'mtc_jp'
         const sessionNum  = (fd.sessionNum as number) || idx + 1
@@ -174,16 +205,49 @@ export async function exportPatientReport(patientId: string): Promise<string> {
         if (pluginId && !isBuiltin && pluginSchema) {
           for (const sec of (pluginSchema.sections || [])) {
             const rows = sec.fields
-              .filter(f => f.type !== 'separator')
+              .filter(f => f.type !== 'separator' && f.export?.patientReport !== false)
               .map(f => {
                 const val = pluginData[f.id]
                 if (val === null || val === undefined || val === '') return ''
                 let display: string
-                if (Array.isArray(val)) display = (val as string[]).join(', ')
-                else if (f.type === 'checkbox') display = val ? `✓ Oui` : '✗ Non'
-                else if (f.type === 'rating') display = `${val} / 5`
-                else display = String(val).replace(/<[^>]+>/g,'').trim()
-                return display ? row(f.label, display) : ''
+                if (f.type === 'before_after' && typeof val === 'object' && !Array.isArray(val)) {
+                  const ba = val as { before?: number; after?: number }
+                  const m = f.max ?? 10
+                  const parts = [
+                    typeof ba.before === 'number' ? `Avant : ${ba.before}/${m}` : '',
+                    typeof ba.after  === 'number' ? `Après : ${ba.after}/${m}`  : '',
+                  ].filter(Boolean)
+                  if (typeof ba.before === 'number' && typeof ba.after === 'number') {
+                    const diff = ba.after - ba.before
+                    parts.push(`Δ ${diff >= 0 ? '+' : ''}${diff}`)
+                  }
+                  display = parts.join(' · ')
+                } else if (f.type === 'repeatable' && Array.isArray(val)) {
+                  const rrows = (val as Array<{ nom?: string; note?: string }>).filter(r => r?.nom?.trim())
+                  display = rrows.map(r => r.note?.trim() ? `${r.nom} (${r.note})` : r.nom!).join(', ')
+                } else if (f.type === 'bodychart' && typeof val === 'object' && !Array.isArray(val)) {
+                  const chart = val as { front?: string[]; back?: string[]; left?: string[]; right?: string[]; notes?: string }
+                  const parts = [
+                    chart.front?.length ? `Antérieur : ${chart.front.join(', ')}` : '',
+                    chart.back?.length  ? `Postérieur : ${chart.back.join(', ')}` : '',
+                    chart.left?.length  ? `Profil G : ${chart.left.join(', ')}`   : '',
+                    chart.right?.length ? `Profil D : ${chart.right.join(', ')}`  : '',
+                    chart.notes?.trim() ? `Notes : ${chart.notes.trim()}`         : '',
+                  ].filter(Boolean)
+                  display = parts.join(' | ')
+                } else if (Array.isArray(val)) {
+                  display = (val as string[]).join(', ')
+                } else if (f.type === 'checkbox') {
+                  display = val ? `✓ Oui` : '✗ Non'
+                } else if (f.type === 'rating' || f.type === 'slider') {
+                  display = `${val} / ${f.max ?? 10}`
+                } else if (typeof val === 'object') {
+                  display = '' // objet complexe sans handler — ignoré
+                } else {
+                  display = String(val).replace(/<[^>]+>/g,'').trim()
+                }
+                const fieldLabel = f.summary?.label || f.label
+                return display ? row(fieldLabel, display) : ''
               })
               .filter(Boolean)
             if (rows.length) {
@@ -482,3 +546,8 @@ ${sessionsHtml}
   writeFileSync(filePath, html, 'utf-8')
   return filePath
 }
+
+// ── Pipeline canonique (Phase 2) ─────────────────────────────────────────────
+// Nouveau chemin d'export d'UNE séance : Séance → ExportDocument → HTML.
+// L'ancien exportPatientReport() ci-dessus (dossier patient complet) est conservé.
+export { exportSessionHtml } from './exports/sessionExportPipeline'

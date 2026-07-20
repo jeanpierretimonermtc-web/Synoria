@@ -1,8 +1,8 @@
-version: 1.5.7
+version: 1.5.8
 files:
-  - url: Synoria-Dev-Setup-1.5.7.exe
-    sha512: kI3Q45tSbUA2vmXD8WMaSxwy85+trQ6OK+RSYjCE+z+ncoz+aWCHxIrao80SOI9AwOQuLtFQBjtStqVb9PgGcw==
-    size: 100859294
-path: Synoria-Dev-Setup-1.5.7.exe
-sha512: kI3Q45tSbUA2vmXD8WMaSxwy85+trQ6OK+RSYjCE+z+ncoz+aWCHxIrao80SOI9AwOQuLtFQBjtStqVb9PgGcw==
-releaseDate: '2026-07-03T15:33:20.229Z'
+  - url: Synoria-Setup-1.5.8.exe
+    sha512: U5b5l0efGTFk3TYaeVt/Y8lkgR8rczwN3xxkQ+F8o/oZZh3ITaoLyQXi1k7YxjmvmoywK4ohu2ALTBCeLcjF/A==
+    size: 106110108
+path: Synoria-Setup-1.5.8.exe
+sha512: U5b5l0efGTFk3TYaeVt/Y8lkgR8rczwN3xxkQ+F8o/oZZh3ITaoLyQXi1k7YxjmvmoywK4ohu2ALTBCeLcjF/A==
+releaseDate: '2026-07-17T06:59:16.673Z'

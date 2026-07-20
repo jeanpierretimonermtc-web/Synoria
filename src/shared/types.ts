@@ -211,6 +211,71 @@ export interface SystemesQuestionnaire {
   masculin: SystemeData
 }
 
+// ─── SESSION FULL DATA (contenu de la colonne full_data_json) ────────────────
+export interface SessionFullData {
+  sessionNum?: number
+  patientId?: string
+  date?: string
+  practitioner?: string
+  motif?: string
+  evolutionTags?: string
+  evolution?: string
+  problematiques?: string
+  // Interrogatoire
+  anamnese?: string
+  langueNote?: string
+  poulsNote?: string
+  poulsPos?: Record<string, string>
+  // Observation MTC
+  constitution?: string
+  typeCorps?: string
+  teint?: string
+  observation?: string
+  // Analyse MTC
+  diagnostic?: string
+  cinqElements?: string
+  causes?: string
+  analyse?: string
+  principes?: string
+  // Traitement MTC
+  points?: string
+  ptsOreille?: string
+  techniques?: string
+  plantes?: string
+  reactions?: string
+  traitementNotes?: string
+  // Barrage homéopathique
+  barrageNiv1?: string
+  barrageNiv2?: string
+  barrageNiv3?: string
+  barrageNiv4?: string
+  // Suivi
+  conseils?: string
+  plan?: string
+  surveiller?: string
+  // Mode simple (aucun plugin)
+  simpleContextVie?: string
+  simpleTraitementsEnCours?: string
+  simpleObjectifs?: string
+  simpleNotesEntretien?: string
+  // Plugin spécialité
+  pluginData?: Record<string, unknown>
+  pluginId?: string
+  pluginSchema?: import('./pluginTypes').PluginDefinition
+  pluginIsBuiltin?: boolean
+  // RDV suivant (sync avec calendrier)
+  nextSession?: string
+  nextSessionHeure?: string
+  nextSessionFin?: string
+  nextSessionNote?: string
+  nextSessionApptId?: string
+  // Comptabilité (clôture automatique)
+  comptaTypeId?: string
+  comptaMois?: string
+  // Métadonnée interne
+  _savedAt?: number
+}
+
 // ─── FOLLOW-UP ────────────────────────────────────────────────────────────────
 export interface FollowUpPatient {
   patient: Patient
@@ -540,13 +605,18 @@ export interface IpcApi {
   getUpcomingSessions: () => Promise<UpcomingSession[]>
   // Exports & Backup
   exportBackupJson: () => Promise<string>
-  importBackupJson:             (filePath: string)                   => Promise<{ patientsUpserted: number; sessionsUpserted: number; errors: string[] } | { __needsPassword: true; filePath: string } | { __needsKey: true; filePath: string }>
-  importBackupJsonWithPassword: (filePath: string, password: string) => Promise<{ patientsUpserted: number; sessionsUpserted: number; errors: string[] }>
-  importBackupJsonWithKey:      (filePath: string)                   => Promise<{ patientsUpserted: number; sessionsUpserted: number; errors: string[] }>
+  importBackupJson:             (filePath: string)                   => Promise<{ patientsUpserted: number; sessionsUpserted: number; sessionsSkipped: number; errors: string[] } | { __needsPassword: true; filePath: string } | { __needsKey: true; filePath: string }>
+  importBackupJsonWithPassword: (filePath: string, password: string) => Promise<{ patientsUpserted: number; sessionsUpserted: number; sessionsSkipped: number; errors: string[] }>
+  importBackupJsonWithKey:      (filePath: string)                   => Promise<{ patientsUpserted: number; sessionsUpserted: number; sessionsSkipped: number; errors: string[] }>
   exportEncryptionKey:          ()                                   => Promise<string | null>
   exportSessionJson: (sessionId: string) => Promise<string>
   exportSessionExcel: (sessionId: string) => Promise<string>
   exportSessionPdf: (sessionId: string) => Promise<string>
+  // Exports canoniques (Phase 2)
+  exportSessionInteropJson: (sessionId: string) => Promise<string>
+  exportSessionBackupJson:  (sessionId: string) => Promise<string>
+  exportSessionReportHtml:  (sessionId: string) => Promise<string>
+  exportSessionExcelV2:     (sessionId: string) => Promise<string>
   // File dialogs
   showSaveDialog: (opts: { defaultPath?: string; filters?: Array<{ name: string; extensions: string[] }> }) => Promise<string | null>
   showOpenDialog: (opts: { filters?: Array<{ name: string; extensions: string[] }>; properties?: string[]; defaultPath?: string; title?: string }) => Promise<string | null>
@@ -575,7 +645,22 @@ export interface IpcApi {
   pluginLibrarySave:       (plugin: import('./pluginTypes').PluginDefinition) => Promise<void>
   pluginLibrarySaveNative: (plugin: import('./pluginTypes').PluginDefinition) => Promise<void>
   pluginLibraryDelete:     (id: string) => Promise<void>
+  pluginLibraryExport:     (destPath: string) => Promise<void>
+  pluginLibraryImport:     (srcPath: string) => Promise<{ added: number; updated: number }>
+  pluginListAvailable:     () => Promise<import('./pluginTypes').PluginDefinition[]>
+  // ── Profils de séance (Phase 3) ──────────────────────────────────────────
+  profilesGetAll:     () => Promise<import('./sessionProfileTypes').SessionFormProfile[]>
+  profilesGetDefault: () => Promise<import('./sessionProfileTypes').SessionFormProfile | null>
+  profilesCreate:     (data: Omit<import('./sessionProfileTypes').SessionFormProfile, 'id' | 'createdAt' | 'updatedAt'>) => Promise<import('./sessionProfileTypes').SessionFormProfile>
+  profilesUpdate:     (id: string, data: Partial<import('./sessionProfileTypes').SessionFormProfile>) => Promise<import('./sessionProfileTypes').SessionFormProfile>
+  profilesDuplicate:  (id: string, name: string) => Promise<import('./sessionProfileTypes').SessionFormProfile>
+  profilesArchive:    (id: string) => Promise<void>
+  profilesSetDefault: (id: string) => Promise<void>
+  profilesMigrate:    () => Promise<{ migrated: boolean; profile?: import('./sessionProfileTypes').SessionFormProfile; reason?: string }>
   getDataPath: () => Promise<string>
+  openDocumentation: () => Promise<void>
+  openInstallGuide:  () => Promise<void>
+  openRgpdGuide:     () => Promise<void>
   setMenuBarVisible: (visible: boolean) => Promise<void>
   onFormatPopup: (cb: (pos: { x: number; y: number }) => void) => void
   searchGlobal: (query: string) => Promise<SearchResult[]>
@@ -586,11 +671,13 @@ export interface IpcApi {
   // Lecture fichier local → data URL base64 (aperçu logos)
   readFileDataUrl: (path: string) => Promise<string | null>
   // Factures
-  generateInvoice:    (data: InvoiceData) => Promise<InvoiceResult>
+  generateInvoice:      (data: InvoiceData) => Promise<InvoiceResult>
+  regenerateInvoicePdf: (id: string, invoiceNum: string, data: InvoiceData) => Promise<InvoiceResult>
   updateInvoiceLog:   (id: string, data: Partial<Omit<InvoiceLog, 'id' | 'created_at'>>) => Promise<void>
   deleteInvoiceLog:   (id: string) => Promise<void>
   markInvoicePaid:    (id: string, paid: boolean) => Promise<void>
-  sendInvoiceByEmail: (invoiceId: string) => Promise<{ pdfAttached: boolean }>
+  getInvoiceEmailData:    (id: string) => Promise<{ to: string | null; subject: string | null; body: string | null; pdfPath: string | null; fileName: string | null }>
+  openInvoiceEmailClient: (to: string, subject: string, body: string, pdfPath?: string | null) => Promise<void>
   // Rappels RDV
   getPendingReminders:   () => Promise<PendingReminder[]>
   markReminderSent:      (appointmentId: string) => Promise<void>
@@ -619,7 +706,7 @@ export interface IpcApi {
   openBackupFolder: (type: 'general' | 'patient') => Promise<void>
   // ── Google Calendar ──
   gcalStatus:        () => Promise<GoogleCalendarInfo>
-  gcalConnect:       (clientId: string, clientSecret: string) => Promise<void>
+  gcalConnect:       () => Promise<void>
   gcalDisconnect:    () => Promise<void>
   gcalListCalendars: () => Promise<GCalCalendar[]>
   gcalSetCalendar:   (calendarId: string, calendarName: string) => Promise<void>
@@ -649,10 +736,11 @@ export interface IpcApi {
   adminGetSettings:   () => Promise<string>
   adminForceBackup:   () => Promise<string>
   // ── Compte & Licence ──
-  accountSignUp:         (email: string, password: string) => Promise<{ ok: boolean; error?: string }>
-  accountSignIn:         (email: string, password: string) => Promise<{ ok: boolean; error?: string }>
-  accountSignOut:        () => Promise<void>
-  accountResetPassword:  (email: string) => Promise<{ ok: boolean; error?: string }>
+  accountSignUp:              (email: string, password: string) => Promise<{ ok: boolean; error?: string }>
+  accountSignIn:              (email: string, password: string) => Promise<{ ok: boolean; error?: string }>
+  accountSignOut:             () => Promise<void>
+  accountResetPassword:       (email: string) => Promise<{ ok: boolean; error?: string }>
+  accountResendConfirmation:  (email: string) => Promise<{ ok: boolean; error?: string }>
   accountGetState:       () => Promise<FullAccountState>
   accountCreateCheckout: (priceId: string) => Promise<string>
   accountBillingPortal:  () => Promise<string>
@@ -671,6 +759,7 @@ export interface IpcApi {
   dismissUpdateNotification:      (version: string) => Promise<void>
   getLastUpdateNotification:      () => Promise<{ version: string; dismissedAt: string } | null>
   onUpdateAvailable:              (cb: (result: ReleaseCheckResult) => void) => void
+  ownerCheck: () => Promise<boolean>
 }
 
 declare global {

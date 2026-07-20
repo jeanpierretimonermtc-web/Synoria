@@ -1,0 +1,152 @@
+{
+  "id": "basique",
+  "name": "Basique",
+  "specialty": "Généraliste",
+  "version": "1.0.0",
+  "description": "Formulaire généraliste pour tout praticien de santé — notes libres, traitement et suivi.",
+  "icon": "📋",
+  "accentColor": "#5B78A0",
+  "isNative": true,
+  "sections": [
+    {
+      "id": "motif_contexte",
+      "title": "Motif et contexte",
+      "icon": "📋",
+      "accentColor": "#5B78A0",
+      "fields": [
+        {
+          "id": "motifDetail",
+          "type": "richtext",
+          "label": "Motif principal de consultation",
+          "placeholder": "Plainte principale, demande exprimée par le patient, contexte de la venue...",
+          "width": "full",
+          "minHeight": 100
+        },
+        {
+          "id": "antecedents",
+          "type": "richtext",
+          "label": "Antécédents et contexte de santé",
+          "placeholder": "Antécédents médicaux, chirurgicaux, traitements en cours, allergies, suivi médical...",
+          "width": "half",
+          "minHeight": 90
+        },
+        {
+          "id": "medicaments",
+          "type": "richtext",
+          "label": "Médicaments et compléments en cours",
+          "placeholder": "Médicaments prescrits, compléments alimentaires, autres thérapies en parallèle...",
+          "width": "half",
+          "minHeight": 90
+        }
+      ]
+    },
+    {
+      "id": "notes_seance",
+      "title": "Notes de séance",
+      "icon": "🗒️",
+      "accentColor": "#5B78A0",
+      "fields": [
+        {
+          "id": "notesSeance",
+          "type": "richtext",
+          "label": "Observations et notes cliniques",
+          "placeholder": "Éléments relevés pendant la séance, anamnèse, observations, tests, hypothèses...",
+          "width": "full",
+          "minHeight": 200
+        }
+      ]
+    },
+    {
+      "id": "traitement",
+      "title": "Traitement effectué",
+      "icon": "🩺",
+      "accentColor": "#4A8A70",
+      "fields": [
+        {
+          "id": "traitementEffectue",
+          "type": "richtext",
+          "label": "Traitement effectué",
+          "placeholder": "Techniques utilisées, zones traitées, durée, intensité...",
+          "width": "full",
+          "minHeight": 120
+        },
+        {
+          "id": "conseilsDonnes",
+          "type": "richtext",
+          "label": "Conseils donnés",
+          "placeholder": "Recommandations, exercices, hygiène de vie, orientations vers d'autres praticiens...",
+          "width": "full",
+          "minHeight": 80
+        }
+      ]
+    },
+    {
+      "id": "resultats_reactions",
+      "title": "Résultats et réactions",
+      "icon": "💬",
+      "accentColor": "#8A7A5A",
+      "fields": [
+        {
+          "id": "ressentiFin",
+          "type": "radio",
+          "label": "Ressenti global en fin de séance",
+          "options": [
+            "Très bien",
+            "Bien / détendu(e)",
+            "Neutre",
+            "Fatigué(e)",
+            "Sensible",
+            "À surveiller"
+          ],
+          "width": "half"
+        },
+        {
+          "id": "reactionsNotes",
+          "type": "richtext",
+          "label": "Réactions et observations",
+          "placeholder": "Réactions observées pendant ou après la séance, retour du patient, points de vigilance...",
+          "width": "half",
+          "minHeight": 80
+        }
+      ]
+    },
+    {
+      "id": "plan_suivi",
+      "title": "Plan de suivi",
+      "icon": "📅",
+      "accentColor": "#5A7A5A",
+      "fields": [
+        {
+          "id": "objectifProchaine",
+          "type": "richtext",
+          "label": "Objectif de la prochaine séance",
+          "placeholder": "Ce qui sera travaillé lors de la prochaine séance, critères d'amélioration attendus...",
+          "width": "full",
+          "minHeight": 75
+        },
+        {
+          "id": "exercicesRecommandations",
+          "type": "richtext",
+          "label": "Exercices et recommandations",
+          "placeholder": "Exercices à faire à domicile, fréquence, précautions, points de vigilance...",
+          "width": "half",
+          "minHeight": 75
+        },
+        {
+          "id": "frequenceRecommandee",
+          "type": "select",
+          "label": "Fréquence recommandée",
+          "options": [
+            "2 fois par semaine",
+            "1 fois par semaine",
+            "Toutes les 2 semaines",
+            "1 fois par mois",
+            "À la demande",
+            "Fin de suivi"
+          ],
+          "width": "half"
+        }
+      ]
+    }
+  ]
+}

@@ -36,8 +36,8 @@ export interface LicenseState {
   planCode:       string | null
   features:       string[]
   maxDevices:     number
-  graceUntil:     Date | null
-  tokenExpiry:    Date | null
+  graceUntil:     string | null   // ISO date
+  tokenExpiry:    string | null   // ISO date
   isOffline:      boolean
 }
 
@@ -60,9 +60,6 @@ const DEVICE_ID_FILENAME = 'device.id'
 // ── Utilitaires chemin ─────────────────────────────────────────────────────
 
 function getUserDataPath(): string {
-  if (process.env.PORTABLE_EXECUTABLE_DIR) {
-    return join(process.env.PORTABLE_EXECUTABLE_DIR, 'data')
-  }
   return app.getPath('userData')
 }
 
@@ -265,8 +262,8 @@ export function getCurrentLicenseState(): LicenseState {
     planCode:       p.pln ?? null,
     features:       p.fts ?? [],
     maxDevices:     p.mxd,
-    graceUntil:     p.grc ? new Date(p.grc) : null,
-    tokenExpiry:    new Date(p.exp * 1000),
+    graceUntil:     p.grc ?? null,
+    tokenExpiry:    new Date(p.exp * 1000).toISOString(),
     isOffline:      false,
   }
 }

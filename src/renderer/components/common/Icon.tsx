@@ -52,3 +52,6 @@ export const UserIcon     = (p: IconProps) => <Ico {...p}><path d="M20 21v-2a4 4
 export const PrintIcon    = (p: IconProps) => <Ico {...p}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></Ico>
 export const CloseIcon    = (p: IconProps) => <Ico {...p}><path d="M18 6L6 18M6 6l12 12"/></Ico>
 export const ArrowLeftIcon= (p: IconProps) => <Ico {...p}><path d="M19 12H5M12 19l-7-7 7-7"/></Ico>
+export const SunIcon      = (p: IconProps) => <Ico {...p}><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></Ico>
+export const MoonIcon     = (p: IconProps) => <Ico {...p}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></Ico>
+export const MonitorIcon  = (p: IconProps) => <Ico {...p}><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></Ico>

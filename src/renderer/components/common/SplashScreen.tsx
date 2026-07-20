@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { logoLightSrc, logoDarkSrc, textLightSrc, textDarkSrc } from '../../assets/logoAssets'
 
 interface SplashScreenProps {
   onDone: () => void
@@ -19,9 +20,9 @@ export default function SplashScreen({ onDone, theme = 'light' }: SplashScreenPr
   return (
     <div className={`splash-overlay splash-${phase}`}>
       <div className="splash-content">
-        <img src={dark ? './Synoria fond noir.png' : './Synoria.png'} className="splash-logo" alt="Logo Synoria" />
+        <img src={dark ? logoDarkSrc : logoLightSrc} className="splash-logo" alt="Logo Synoria" />
         <img
-          src={dark ? './Synoria-text-sombre.png' : './Synoria-text-jour.png'}
+          src={dark ? textDarkSrc : textLightSrc}
           className="splash-title-img"
           alt="SYNORIA"
         />

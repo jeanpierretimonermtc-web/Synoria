@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef, Component } from 'react'
+import React, { useState, useEffect, useLayoutEffect, useCallback, useRef, Component } from 'react'
 import { Routes, Route, NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { logoLightSrc, logoDarkSrc, textLightSrc, textDarkSrc } from './assets/logoAssets'
 import { ConfirmDialog } from './components/common/ConfirmDialog'
-import { SaveIcon, FolderIcon, LockIcon as LockIco, DashboardIcon, UsersIcon, PlusCircle, ClipboardIcon, CalendarIcon, BarChartIcon, TrendDownIcon, FileTextIcon, ShieldIcon, SettingsIcon, UserIcon } from './components/common/Icon'
+import { SaveIcon, FolderIcon, LockIcon as LockIco, DashboardIcon, UsersIcon, PlusCircle, ClipboardIcon, CalendarIcon, BarChartIcon, TrendDownIcon, FileTextIcon, ShieldIcon, SettingsIcon, UserIcon, SunIcon, MoonIcon, MonitorIcon } from './components/common/Icon'
 import DashboardPage from './pages/DashboardPage'
 import PatientsPage from './pages/PatientsPage'
 import NewSessionPage from './pages/NewSessionPage'
@@ -61,6 +62,43 @@ export default function App() {
     return m === 'system' ? getSystemPref() : m === 'dark' ? 'dark' : 'light'
   })
 
+  // ── Auto-resize global de tous les textareas ──
+  useEffect(() => {
+    const resize = (el: HTMLTextAreaElement) => {
+      el.style.resize  = 'none'
+      el.style.overflow = 'hidden'
+      el.style.height  = 'auto'
+      el.style.height  = el.scrollHeight + 'px'
+    }
+
+    let rafId: number | null = null
+    const scheduleResizeAll = () => {
+      if (rafId != null) cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(() => {
+        document.querySelectorAll<HTMLTextAreaElement>('textarea').forEach(resize)
+        rafId = null
+      })
+    }
+
+    // Frappe clavier
+    const onInput = (e: Event) => {
+      if (e.target instanceof HTMLTextAreaElement) resize(e.target)
+    }
+
+    // Ajout de nouveaux éléments (navigation, chargement de séance)
+    const mo = new MutationObserver(scheduleResizeAll)
+    mo.observe(document.body, { childList: true, subtree: true })
+
+    document.addEventListener('input', onInput, true)
+    scheduleResizeAll()
+
+    return () => {
+      document.removeEventListener('input', onInput, true)
+      mo.disconnect()
+      if (rafId != null) cancelAnimationFrame(rafId)
+    }
+  }, [])
+
   // ── Chargement et application du thème ──
   useEffect(() => {
     window.mtcApi.getSettings().then(s => {
@@ -68,6 +106,7 @@ export default function App() {
       setThemeMode(mode)
       setTheme(mode === 'system' ? getSystemPref() : mode === 'dark' ? 'dark' : 'light')
       localStorage.setItem('synoria-theme-mode', mode)
+      window.dispatchEvent(new CustomEvent('synoria-theme-change', { detail: mode }))
     }).catch(() => {})
   }, [])
 
@@ -91,7 +130,7 @@ export default function App() {
     return () => window.removeEventListener('synoria-theme-change', handler)
   }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
 
@@ -101,6 +140,7 @@ export default function App() {
     setThemeMode(next)
     setTheme(next === 'system' ? getSystemPref() : next === 'dark' ? 'dark' : 'light')
     localStorage.setItem('synoria-theme-mode', next)
+    window.dispatchEvent(new CustomEvent('synoria-theme-change', { detail: next }))
     window.mtcApi.saveSettings({ themeMode: next } as any).catch(() => {})
   }
   const toggleTheme = cycleTheme  // alias pour compatibilité
@@ -321,7 +361,7 @@ export default function App() {
       {aboutOpen && (
         <div style={{ position:'fixed',inset:0,zIndex:9000,background:'rgba(0,0,0,.5)',display:'flex',alignItems:'center',justifyContent:'center' }} onClick={() => setAboutOpen(false)}>
           <div style={{ background:'var(--surface)',borderRadius:16,padding:'36px 44px',maxWidth:460,width:'100%',boxShadow:'0 32px 80px rgba(0,0,0,.28)',border:'1px solid var(--border)',textAlign:'center' }} onClick={e=>e.stopPropagation()}>
-            <img src={theme === 'dark' ? './Synoria fond noir.png' : './Synoria.png'} alt="Synoria" style={{ width:80,height:80,objectFit:'contain',marginBottom:16,mixBlendMode:theme==='dark'?'screen':'multiply' }} />
+            <img src={theme === 'dark' ? './Synoria-fond-noir.png' : './Synoria.png'} alt="Synoria" style={{ width:80,height:80,objectFit:'contain',marginBottom:16,mixBlendMode:theme==='dark'?'screen':'multiply' }} />
             <div style={{ fontFamily:'var(--font-serif)',fontSize:24,fontWeight:700,color:'var(--accent)',marginBottom:4 }}>Synoria</div>
             <div style={{ fontSize:12,color:'var(--text-muted)',marginBottom:20 }}>v{appVersion} · Logiciel de gestion de dossiers patients</div>
             <div style={{ fontSize:13,color:'var(--text)',lineHeight:1.8,marginBottom:20,textAlign:'left',background:'var(--bg)',borderRadius:10,padding:'14px 18px' }}>
@@ -343,15 +383,22 @@ export default function App() {
         {/* ── HEADER compact ── */}
         <header className="app-header">
           <div className="logo">
-            <img src={theme === 'dark' ? './Synoria fond noir.png' : './Synoria.png'} alt="Logo" className="logo-img" />
-            <img
-              src={theme === 'dark' ? './Synoria-text-sombre.png' : './Synoria-text-jour.png'}
-              alt="SYNORIA"
-              className="logo-title-img"
-            />
+            <img src={logoLightSrc} alt="Logo" className="logo-img logo-light" />
+            <img src={logoDarkSrc}  alt=""     className="logo-img logo-dark"  aria-hidden="true" />
+            <img src={textLightSrc} alt="SYNORIA" className="logo-title-img logo-light" />
+            <img src={textDarkSrc}  alt=""        className="logo-title-img logo-dark"  aria-hidden="true" />
             <span title="Données chiffrées AES-256" className="logo-secure">🔒 chiffré</span>
           </div>
           <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button
+              className="btn-header-theme"
+              onClick={cycleTheme}
+              title={themeMode === 'light' ? 'Mode clair — cliquer pour sombre' : themeMode === 'dark' ? 'Mode sombre — cliquer pour auto' : 'Mode auto — cliquer pour clair'}
+            >
+              {themeMode === 'light'  && <><SunIcon size={13} /><span>Clair</span></>}
+              {themeMode === 'dark'   && <><MoonIcon size={13} /><span>Sombre</span></>}
+              {themeMode === 'system' && <><MonitorIcon size={13} /><span>Auto</span></>}
+            </button>
             <button className="btn-header-icon" onClick={() => setShortcutsOpen(true)} title="Raccourcis clavier (?)">
               <span style={{ fontSize: 13, fontWeight: 700 }}>?</span>
             </button>
@@ -634,6 +681,8 @@ function FormattingPopup() {
 
   const exec = (cmd: string, arg?: string) => {
     document.execCommand(cmd, false, arg)
+    const el = document.activeElement
+    if (el?.isContentEditable) el.dispatchEvent(new Event('input', { bubbles: true }))
   }
 
   // Empêche le popup de sortir de l'écran
@@ -712,6 +761,8 @@ function FormattingToolbar() {
 
   const exec = (cmd: string, val?: string) => {
     document.execCommand(cmd, false, val)
+    const el = document.activeElement
+    if (el?.isContentEditable) el.dispatchEvent(new Event('input', { bubbles: true }))
   }
 
   if (!isSessionPage) return null
@@ -817,7 +868,7 @@ function BackupButton({ showToast }: { showToast: (msg: string, type?: 'success'
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       <button className="btn-header-data" onClick={() => setOpen(o => !o)}>
-        <span className="btn-header-icon" style={{ background: '#6E6CD8' }}>
+        <span className="btn-header-icon" style={{ background: '#6E6CD8', color: '#fff' }}>
           <SvgIcon>
             <ellipse cx="12" cy="5" rx="9" ry="3" />
             <path d="M3 5v4c0 1.66 4 3 9 3s9-1.34 9-3V5" />
@@ -862,19 +913,43 @@ function AccountGate({ onDone, theme }: { onDone: () => void; theme: 'light' | '
   const [view, setView]         = useState<'login' | 'signup' | 'reset'>('login')
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState('')
-  const [message, setMessage]   = useState('')
-  const [emailExists, setEmailExists] = useState(false)
+  const [loading, setLoading]           = useState(false)
+  const [error, setError]               = useState('')
+  const [message, setMessage]           = useState('')
+  const [emailExists, setEmailExists]   = useState(false)
+  const [emailNotConfirmed, setEmailNotConfirmed] = useState(false)
+  const [cguAccepted, setCguAccepted]   = useState(false)
 
-  const switchToLogin = () => { setView('login'); setError(''); setMessage(''); setEmailExists(false) }
+  const switchToLogin = () => { setView('login'); setError(''); setMessage(''); setEmailExists(false); setEmailNotConfirmed(false) }
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault(); setLoading(true); setError('')
+    e.preventDefault(); setLoading(true); setError(''); setEmailNotConfirmed(false)
     try {
       const { ok, error: err } = await window.mtcApi.accountSignIn(email, password)
-      if (!ok) { setError(err ?? 'Connexion échouée'); return }
+      if (!ok) {
+        if (err === 'EMAIL_NOT_CONFIRMED') {
+          setEmailNotConfirmed(true)
+          setError('Votre adresse email n\'est pas encore confirmée. Consultez vos emails (y compris les spams) et cliquez sur le lien de confirmation.')
+        } else {
+          setError(typeof err === 'string' ? err : 'Connexion échouée')
+        }
+        return
+      }
       onDone()
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Erreur inattendue — réessayez.')
+    } finally { setLoading(false) }
+  }
+
+  const handleResendConfirmation = async () => {
+    setLoading(true); setError(''); setMessage('')
+    try {
+      const { ok, error: err } = await window.mtcApi.accountResendConfirmation(email)
+      if (!ok) { setError(typeof err === 'string' ? err : 'Erreur lors de l\'envoi'); return }
+      setMessage('Email de confirmation renvoyé. Vérifiez votre boîte mail (et les spams).')
+      setEmailNotConfirmed(false)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Erreur inattendue — réessayez.')
     } finally { setLoading(false) }
   }
 
@@ -883,17 +958,21 @@ function AccountGate({ onDone, theme }: { onDone: () => void; theme: 'light' | '
     try {
       const { ok, error: err } = await window.mtcApi.accountSignUp(email, password)
       if (!ok) {
-        if (err === 'EMAIL_EXISTS') {
+        if (err === 'EMAIL_EXISTS' || err?.startsWith('EMAIL_EXISTS')) {
           setEmailExists(true)
           setError('Un compte existe déjà avec cette adresse email.')
+        } else if (err === 'SIGNUP_DISABLED' || err?.startsWith('SIGNUP_DISABLED')) {
+          setError(`Inscriptions bloquées côté Supabase${err.includes('[') ? ' ' + err.slice(err.indexOf('[')) : ''}. Vérifiez Authentication → Settings → "Allow new users to sign up" ET cliquez "Save changes".`)
         } else {
-          setError(err ?? 'Inscription échouée')
+          setError(typeof err === 'string' ? err : 'Inscription échouée')
         }
         return
       }
       setMessage('Compte créé ! Vérifiez votre email pour confirmer votre adresse, puis revenez vous connecter.')
       setView('login')
       setPassword('')
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Erreur inattendue — réessayez.')
     } finally { setLoading(false) }
   }
 
@@ -901,9 +980,11 @@ function AccountGate({ onDone, theme }: { onDone: () => void; theme: 'light' | '
     e.preventDefault(); setLoading(true); setError('')
     try {
       const { ok, error: err } = await window.mtcApi.accountResetPassword(email)
-      if (!ok) { setError(err ?? 'Erreur'); return }
+      if (!ok) { setError(typeof err === 'string' ? err : 'Erreur'); return }
       setMessage('Email envoyé. Consultez votre boîte mail.')
       setView('login')
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Erreur inattendue — réessayez.')
     } finally { setLoading(false) }
   }
 
@@ -912,7 +993,7 @@ function AccountGate({ onDone, theme }: { onDone: () => void; theme: 'light' | '
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: bg, flexDirection: 'column', gap: 24 }}>
       <div style={{ textAlign: 'center' }}>
-        <img src={theme === 'dark' ? './Synoria fond noir.png' : './Synoria.png'} alt="Synoria" style={{ width: 56, height: 56, objectFit: 'contain', marginBottom: 10, mixBlendMode: theme === 'dark' ? 'screen' : 'multiply' }} />
+        <img src={theme === 'dark' ? './Synoria-fond-noir.png' : './Synoria.png'} alt="Synoria" style={{ width: 56, height: 56, objectFit: 'contain', marginBottom: 10, mixBlendMode: theme === 'dark' ? 'screen' : 'multiply' }} />
         <div style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 22, fontWeight: 700, color: 'var(--accent, #4a7b3c)' }}>Synoria</div>
         <div style={{ fontSize: 13, color: 'var(--text-muted, #888)', marginTop: 4 }}>Logiciel de gestion de dossiers patients</div>
       </div>
@@ -943,6 +1024,17 @@ function AccountGate({ onDone, theme }: { onDone: () => void; theme: 'light' | '
             <button className="btn btn-primary" type="submit" disabled={loading}>
               {loading ? 'Connexion…' : 'Se connecter'}
             </button>
+            {emailNotConfirmed && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleResendConfirmation}
+                disabled={loading}
+                style={{ fontWeight: 600 }}
+              >
+                Renvoyer l'email de confirmation
+              </button>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
               <button type="button" style={{ background: 'none', border: 'none', color: 'var(--accent, #4a7b3c)', cursor: 'pointer', padding: 0, fontSize: 13 }}
                 onClick={() => { setView('signup'); setError(''); setMessage(''); setEmailExists(false) }}>
@@ -973,7 +1065,27 @@ function AccountGate({ onDone, theme }: { onDone: () => void; theme: 'light' | '
             <div style={{ background: '#fff8e1', border: '1px solid #f9a825', borderRadius: 8, padding: '10px 14px', fontSize: 12, color: '#7a5c00', lineHeight: 1.55 }}>
               ⚠️ <strong>Conservez ce mot de passe précieusement.</strong> Il chiffre également vos sauvegardes locales. En cas de perte, les données de sauvegarde seront inaccessibles. Notez-le dans un endroit sûr.
             </div>
-            <button className="btn btn-primary" type="submit" disabled={loading}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, color: 'var(--text-muted, #888)', cursor: 'pointer', lineHeight: 1.5 }}>
+              <input
+                type="checkbox"
+                checked={cguAccepted}
+                onChange={e => setCguAccepted(e.target.checked)}
+                style={{ marginTop: 2, flexShrink: 0, accentColor: 'var(--accent, #4a7b3c)' }}
+              />
+              <span>
+                J'accepte les{' '}
+                <a href="https://logiciel-synoria.fr/cgu" target="_blank" rel="noreferrer"
+                  style={{ color: 'var(--accent, #4a7b3c)', textDecoration: 'underline' }}>
+                  Conditions Générales d'Utilisation
+                </a>
+                {' '}et la{' '}
+                <a href="https://logiciel-synoria.fr/confidentialite" target="_blank" rel="noreferrer"
+                  style={{ color: 'var(--accent, #4a7b3c)', textDecoration: 'underline' }}>
+                  Politique de confidentialité
+                </a>
+              </span>
+            </label>
+            <button className="btn btn-primary" type="submit" disabled={loading || !cguAccepted}>
               {loading ? 'Création…' : 'Créer le compte'}
             </button>
             {emailExists && (
@@ -1069,7 +1181,7 @@ function SubscriptionGate({ onDone, theme }: { onDone: () => void; theme: 'light
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: bg, flexDirection: 'column', gap: 28, padding: '40px 20px' }}>
       {/* En-tête */}
       <div style={{ textAlign: 'center' }}>
-        <img src={theme === 'dark' ? './Synoria fond noir.png' : './Synoria.png'} alt="Synoria" style={{ width: 56, height: 56, objectFit: 'contain', marginBottom: 10, mixBlendMode: theme === 'dark' ? 'screen' : 'multiply' }} />
+        <img src={theme === 'dark' ? './Synoria-fond-noir.png' : './Synoria.png'} alt="Synoria" style={{ width: 56, height: 56, objectFit: 'contain', marginBottom: 10, mixBlendMode: theme === 'dark' ? 'screen' : 'multiply' }} />
         <div style={{ fontFamily: 'var(--font-serif, Georgia, serif)', fontSize: 22, fontWeight: 700, color: 'var(--accent, #4a7b3c)' }}>Synoria</div>
         <div style={{ fontSize: 15, color: 'var(--text-muted, #888)', marginTop: 6 }}>Choisissez votre formule pour commencer</div>
         <div style={{

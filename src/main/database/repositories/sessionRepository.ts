@@ -120,6 +120,26 @@ export function deleteSession(id: string): void {
 }
 
 /**
+ * Pour les séances sans nextSessionApptId (anciennes ou données de test), enregistre l'ID
+ * du RDV supprimé dans full_data_json afin que le backfill ne le recrée pas.
+ */
+export function linkAppointmentToSessionsByDate(patientId: string, date: string, appointmentId: string): void {
+  const rows = getDb().prepare(
+    `SELECT id, full_data_json FROM sessions WHERE patient_id = ? AND next_session_date = ?`
+  ).all(patientId, date) as Array<{ id: string; full_data_json: string | null }>
+  const now = new Date().toISOString()
+  for (const row of rows) {
+    try {
+      const fd = row.full_data_json ? JSON.parse(row.full_data_json) : {}
+      if (fd.nextSessionApptId) continue
+      fd.nextSessionApptId = appointmentId
+      getDb().prepare(`UPDATE sessions SET full_data_json = ?, updated_at = ? WHERE id = ?`)
+        .run(JSON.stringify(fd), now, row.id)
+    } catch { }
+  }
+}
+
+/**
  * UPSERT : insère la séance si elle n'existe pas, la remplace sinon (même id).
  * Utilisé par l'import de sauvegarde — préserve les timestamps d'origine.
  */

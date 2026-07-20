@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
+import { logoLightSrc, logoDarkSrc, textLightSrc, textDarkSrc } from '../assets/logoAssets'
 
 interface Props {
   mode: 'setup' | 'locked'
@@ -118,16 +119,16 @@ export default function LockScreen({ mode, onUnlock, theme = 'light' }: Props) {
 
         {/* Logo — version adaptée au thème */}
         <img
-          src={dark ? './Synoria fond noir.png' : './Synoria.png'}
+          src={dark ? logoDarkSrc : logoLightSrc}
           alt="Logo Synoria"
           style={{ width: 150, height: 150, objectFit: 'contain', marginBottom: 28, mixBlendMode: dark ? 'screen' : 'multiply' }}
         />
 
         {/* Texte SYNORIA */}
         <img
-          src={dark ? './Synoria-text-sombre.png' : './Synoria-text-jour.png'}
+          src={dark ? textDarkSrc : textLightSrc}
           alt="SYNORIA"
-          style={{ height: 80, objectFit: 'contain', marginBottom: 20, maxWidth: '80%' }}
+          style={{ height: 80, objectFit: 'contain', marginBottom: 20, maxWidth: '80%', mixBlendMode: dark ? 'screen' : 'normal' }}
         />
 
         {/* Tagline */}

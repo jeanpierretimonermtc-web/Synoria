@@ -2,76 +2,70 @@
   "id": "osteopathie",
   "name": "Ostéopathie",
   "specialty": "Ostéopathie",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Fiche d'anamnèse ostéopathique avec schéma corporel, antécédents traumatiques détaillés, mobilité, tests et drapeaux rouges musculo-squelettiques.",
   "icon": "🦴",
   "accentColor": "#6F7F8F",
-
+  "isNative": true,
+  "showGlobalReactions": true,
   "sections": [
     {
-      "id": "securite_drapeaux_rouges",
-      "title": "Sécurité et drapeaux rouges",
-      "icon": "🚩",
-      "accentColor": "#B85C5C",
+      "id": "antecedents_traumatiques",
+      "title": "Antécédents traumatiques détaillés",
+      "placement": "pre-motif",
+      "icon": "🗂️",
+      "accentColor": "#8A735F",
       "fields": [
         {
-          "id": "drapeauxRougesGeneraux",
-          "type": "checkboxgroup",
-          "label": "Signes généraux à explorer",
-          "options": [
-            "Fièvre / infection récente",
-            "Perte de poids inexpliquée",
-            "Altération importante de l'état général",
-            "Douleur nocturne non soulagée",
-            "Douleur constante non mécanique",
-            "Antécédent de cancer",
-            "Immunodépression",
-            "Traumatisme important récent",
-            "Ostéoporose / corticothérapie prolongée",
-            "Grossesse ou post-partum récent"
-          ],
+          "id": "traumatismesChronologie",
+          "type": "richtext",
+          "label": "Chronologie des traumatismes",
+          "placeholder": "Chutes, accidents de voiture, whiplash, fractures, entorses, luxations, commotions, contusions importantes, avec date/âge et côté...",
           "width": "full",
-          "hint": "À utiliser comme aide-mémoire de vigilance clinique, sans automatiser la décision."
+          "minHeight": 120
         },
         {
-          "id": "drapeauxRougesNeurologiques",
+          "id": "traumatismesTypes",
           "type": "checkboxgroup",
-          "label": "Signes neurologiques / vasculaires",
+          "label": "Types de traumatismes",
           "options": [
-            "Déficit moteur progressif",
-            "Troubles sensitifs étendus",
-            "Anesthésie en selle",
-            "Troubles urinaires ou fécaux nouveaux",
-            "Céphalée brutale inhabituelle",
-            "Vertiges avec signes neurologiques",
-            "Troubles visuels / parole / équilibre",
-            "Douleur thoracique ou dyspnée",
-            "Membre froid, pâle ou douloureux"
+            "Chute",
+            "Accident de la route",
+            "Traumatisme sportif",
+            "Whiplash / coup du lapin",
+            "Fracture",
+            "Entorse",
+            "Luxation",
+            "Commotion",
+            "Chirurgie post-traumatique",
+            "Cicatrice / brûlure",
+            "Accouchement difficile",
+            "Traumatisme répété professionnel"
           ],
           "width": "full"
         },
         {
-          "id": "conduiteSecurite",
+          "id": "sequellesTraumatiques",
           "type": "richtext",
-          "label": "Conduite tenue / orientation",
-          "placeholder": "Avis médical conseillé, urgence, imagerie demandée, consentement éclairé, précautions prises, motif de non-traitement...",
-          "width": "full",
-          "minHeight": 90
+          "label": "Séquelles et compensations suspectées",
+          "placeholder": "Douleur persistante, perte d'amplitude, appréhension, boiterie, cicatrice adhérente, compensation posturale, récidive...",
+          "width": "half",
+          "minHeight": 95
         },
         {
-          "id": "contreIndicationsPrecautions",
+          "id": "examensTraitementsTrauma",
           "type": "richtext",
-          "label": "Contre-indications et précautions ostéopathiques",
-          "placeholder": "Anticoagulants, fragilité osseuse, pathologie inflammatoire, chirurgie récente, hernie connue, grossesse, vertiges, douleurs cervicales atypiques...",
-          "width": "full",
-          "minHeight": 85
+          "label": "Examens et traitements liés aux traumatismes",
+          "placeholder": "Radiographie, IRM, scanner, échographie, immobilisation, rééducation, infiltration, chirurgie, résultats connus...",
+          "width": "half",
+          "minHeight": 95
         }
       ]
     },
-
     {
       "id": "motif_douleur",
       "title": "Motif, douleur et retentissement",
+      "placement": "motif",
       "icon": "📋",
       "accentColor": "#6F7F8F",
       "fields": [
@@ -143,87 +137,10 @@
         }
       ]
     },
-
-    {
-      "id": "schema_corporel",
-      "title": "Schéma corporel",
-      "icon": "🧍",
-      "accentColor": "#5F8A9B",
-      "fields": [
-        {
-          "id": "schemaCorporel",
-          "type": "bodychart",
-          "label": "Zones douloureuses, irradiations et restrictions",
-          "width": "full",
-          "hint": "Sélectionner les zones concernées puis préciser le trajet, le côté, l'intensité et les sensations."
-        },
-        {
-          "id": "localisationDetail",
-          "type": "richtext",
-          "label": "Localisation détaillée",
-          "placeholder": "Point de départ, trajet d'irradiation, côté dominant, profondeur, paresthésies, zones silencieuses mais limitées...",
-          "width": "full",
-          "minHeight": 80
-        }
-      ]
-    },
-
-    {
-      "id": "antecedents_traumatiques",
-      "title": "Antécédents traumatiques détaillés",
-      "icon": "🗂️",
-      "accentColor": "#8A735F",
-      "fields": [
-        {
-          "id": "traumatismesChronologie",
-          "type": "richtext",
-          "label": "Chronologie des traumatismes",
-          "placeholder": "Chutes, accidents de voiture, whiplash, fractures, entorses, luxations, commotions, contusions importantes, avec date/âge et côté...",
-          "width": "full",
-          "minHeight": 120
-        },
-        {
-          "id": "traumatismesTypes",
-          "type": "checkboxgroup",
-          "label": "Types de traumatismes",
-          "options": [
-            "Chute",
-            "Accident de la route",
-            "Traumatisme sportif",
-            "Whiplash / coup du lapin",
-            "Fracture",
-            "Entorse",
-            "Luxation",
-            "Commotion",
-            "Chirurgie post-traumatique",
-            "Cicatrice / brûlure",
-            "Accouchement difficile",
-            "Traumatisme répété professionnel"
-          ],
-          "width": "full"
-        },
-        {
-          "id": "sequellesTraumatiques",
-          "type": "richtext",
-          "label": "Séquelles et compensations suspectées",
-          "placeholder": "Douleur persistante, perte d'amplitude, appréhension, boiterie, cicatrice adhérente, compensation posturale, récidive...",
-          "width": "half",
-          "minHeight": 95
-        },
-        {
-          "id": "examensTraitementsTrauma",
-          "type": "richtext",
-          "label": "Examens et traitements liés aux traumatismes",
-          "placeholder": "Radiographie, IRM, scanner, échographie, immobilisation, rééducation, infiltration, chirurgie, résultats connus...",
-          "width": "half",
-          "minHeight": 95
-        }
-      ]
-    },
-
     {
       "id": "mobilite_tests",
       "title": "Mobilité et tests",
+      "placement": "notes",
       "icon": "🧪",
       "accentColor": "#6B8B6A",
       "fields": [
@@ -277,10 +194,71 @@
         }
       ]
     },
-
+    {
+      "id": "securite_drapeaux_rouges",
+      "title": "Sécurité et drapeaux rouges",
+      "placement": "notes",
+      "icon": "🚩",
+      "accentColor": "#B85C5C",
+      "fields": [
+        {
+          "id": "drapeauxRougesGeneraux",
+          "type": "checkboxgroup",
+          "label": "Signes généraux à explorer",
+          "options": [
+            "Fièvre / infection récente",
+            "Perte de poids inexpliquée",
+            "Altération importante de l'état général",
+            "Douleur nocturne non soulagée",
+            "Douleur constante non mécanique",
+            "Antécédent de cancer",
+            "Immunodépression",
+            "Traumatisme important récent",
+            "Ostéoporose / corticothérapie prolongée",
+            "Grossesse ou post-partum récent"
+          ],
+          "width": "full",
+          "hint": "À utiliser comme aide-mémoire de vigilance clinique, sans automatiser la décision."
+        },
+        {
+          "id": "drapeauxRougesNeurologiques",
+          "type": "checkboxgroup",
+          "label": "Signes neurologiques / vasculaires",
+          "options": [
+            "Déficit moteur progressif",
+            "Troubles sensitifs étendus",
+            "Anesthésie en selle",
+            "Troubles urinaires ou fécaux nouveaux",
+            "Céphalée brutale inhabituelle",
+            "Vertiges avec signes neurologiques",
+            "Troubles visuels / parole / équilibre",
+            "Douleur thoracique ou dyspnée",
+            "Membre froid, pâle ou douloureux"
+          ],
+          "width": "full"
+        },
+        {
+          "id": "conduiteSecurite",
+          "type": "richtext",
+          "label": "Conduite tenue / orientation",
+          "placeholder": "Avis médical conseillé, urgence, imagerie demandée, consentement éclairé, précautions prises, motif de non-traitement...",
+          "width": "full",
+          "minHeight": 90
+        },
+        {
+          "id": "contreIndicationsPrecautions",
+          "type": "richtext",
+          "label": "Contre-indications et précautions ostéopathiques",
+          "placeholder": "Anticoagulants, fragilité osseuse, pathologie inflammatoire, chirurgie récente, hernie connue, grossesse, vertiges, douleurs cervicales atypiques...",
+          "width": "full",
+          "minHeight": 85
+        }
+      ]
+    },
     {
       "id": "bilan_osteopathique",
       "title": "Bilan ostéopathique",
+      "placement": "notes",
       "icon": "👐",
       "accentColor": "#7A6B8B",
       "fields": [
@@ -310,10 +288,34 @@
         }
       ]
     },
-
+    {
+      "id": "schema_corporel",
+      "title": "Schéma corporel",
+      "placement": "notes",
+      "icon": "🧍",
+      "accentColor": "#5F8A9B",
+      "fields": [
+        {
+          "id": "schemaCorporel",
+          "type": "bodychart",
+          "label": "Zones douloureuses, irradiations et restrictions",
+          "width": "full",
+          "hint": "Sélectionner les zones concernées puis préciser le trajet, le côté, l'intensité et les sensations."
+        },
+        {
+          "id": "localisationDetail",
+          "type": "richtext",
+          "label": "Localisation détaillée",
+          "placeholder": "Point de départ, trajet d'irradiation, côté dominant, profondeur, paresthésies, zones silencieuses mais limitées...",
+          "width": "full",
+          "minHeight": 80
+        }
+      ]
+    },
     {
       "id": "traitement_suivi",
       "title": "Traitement, conseils et suivi",
+      "placement": "traitement",
       "icon": "🔄",
       "accentColor": "#6F7F8F",
       "fields": [

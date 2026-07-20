@@ -60,7 +60,7 @@ export function generateSupportDoc(): string {
   <div class="cover-logo">🔧</div>
   <div class="cover-title">Rapport de diagnostic — Guide de lecture</div>
   <div class="cover-sub">Synoria — v${app.getVersion()}</div>
-  <div class="cover-meta">Généré le ${new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })} · support@synoria.fr</div>
+  <div class="cover-meta">Généré le ${new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })} · contact@logiciel-synoria.fr</div>
 </div>
 
 <p class="section-intro">
@@ -80,7 +80,7 @@ Pour ouvrir le rapport : <em>Paramètres → Support → Générer le rapport de
   <tr><td>Electron</td><td>Version du runtime Electron embarqué (ex : <em>28.x</em>). Détermine les API disponibles et les limites de sécurité.</td></tr>
   <tr><td>Node</td><td>Version de Node.js intégrée à Electron. Conditionne la compatibilité de modules comme <em>better-sqlite3</em>.</td></tr>
   <tr><td>Chrome</td><td>Version du moteur Chromium (rendu de l'interface). Impacte le comportement CSS et les API web disponibles.</td></tr>
-  <tr><td>Mode portable</td><td><strong>non</strong> = installation standard. <strong>oui (chemin)</strong> = l'app tourne depuis une clé USB, les données sont stockées dans le dossier indiqué plutôt que dans AppData.</td></tr>
+  <tr><td>Mode portable</td><td>Toujours <strong>non</strong> — uniquement installation standard Windows.</td></tr>
 </table>
 
 <h2>2. BASE DE DONNÉES</h2>
@@ -235,11 +235,11 @@ Pour ouvrir le rapport : <em>Paramètres → Support → Générer le rapport de
 </table>
 
 <div class="note">
-  <strong>📬 Envoi au support :</strong> Pour tout incident, générez le rapport (<em>Paramètres → Support → Générer le rapport de diagnostic</em>) et envoyez-le à <strong>support@synoria.fr</strong> avec une description du problème rencontré. Le rapport est un fichier texte sans données patients, il peut être ouvert dans n'importe quel éditeur.
+  <strong>📬 Envoi au support :</strong> Pour tout incident, générez le rapport (<em>Paramètres → Support → Générer le rapport de diagnostic</em>) et envoyez-le à <strong>contact@logiciel-synoria.fr</strong> avec une description du problème rencontré. Le rapport est un fichier texte sans données patients, il peut être ouvert dans n'importe quel éditeur.
 </div>
 
 <div class="footer">
-  Synoria v${app.getVersion()} · Document généré le ${new Date().toLocaleDateString('fr-FR')} · support@synoria.fr
+  Synoria v${app.getVersion()} · Document généré le ${new Date().toLocaleDateString('fr-FR')} · contact@logiciel-synoria.fr
 </div>
 
 </body>
@@ -339,7 +339,7 @@ export function generateRecoveryDoc(): string {
 
 <div class="header">
   <div class="header-title">🔑 Mot de passe oublié — Procédure de récupération</div>
-  <div class="header-sub">Synoria v${app.getVersion()} · support@synoria.fr</div>
+  <div class="header-sub">Synoria v${app.getVersion()} · contact@logiciel-synoria.fr</div>
 </div>
 
 <div class="container">
@@ -425,13 +425,13 @@ export function generateRecoveryDoc(): string {
 
   <div class="contact">
     <strong>📬 Besoin d'aide ?</strong><br>
-    Contactez le support à <strong>support@synoria.fr</strong> en joignant :
+    Contactez le support à <strong>contact@logiciel-synoria.fr</strong> en joignant :
     votre fichier de sauvegarde <strong>.json.enc</strong> et le rapport de diagnostic
     (Paramètres → Support → Générer le rapport de diagnostic).
   </div>
 
   <div class="footer">
-    Synoria v${app.getVersion()} · Document généré le ${new Date().toLocaleDateString('fr-FR')} · support@synoria.fr
+    Synoria v${app.getVersion()} · Document généré le ${new Date().toLocaleDateString('fr-FR')} · contact@logiciel-synoria.fr
   </div>
 
 </div>
@@ -464,8 +464,7 @@ export function generateDiagnosticReport(): string {
     lines.push(`Electron         : ${process.versions.electron}`)
     lines.push(`Node             : ${process.versions.node}`)
     lines.push(`Chrome           : ${process.versions.chrome}`)
-    const portable = process.env.PORTABLE_EXECUTABLE_DIR
-    lines.push(`Mode portable    : ${portable ? 'oui (' + portable + ')' : 'non'}`)
+    lines.push(`Mode portable    : non`)
   } catch (e) {
     lines.push(`[ERREUR section identité] ${e}`)
   }

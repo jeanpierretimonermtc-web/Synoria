@@ -1,7 +1,8 @@
 import { ipcMain, dialog, shell, app } from 'electron'
 import { spawn }                         from 'child_process'
 import { mkdirSync, writeFileSync, unlinkSync, readFileSync, existsSync } from 'fs'
-import { join, extname }               from 'path'
+import { join, extname, normalize, isAbsolute, basename } from 'path'
+import { tmpdir }                        from 'os'
 import * as patientRepo               from '../database/repositories/patientRepository'
 import * as supabaseAuth              from '../services/supabaseAuthService'
 import * as licenseSvc               from '../services/licenseService'
@@ -11,9 +12,8 @@ import * as localStore               from '../services/localLicenseStore'
 
 import * as sessionRepo               from '../database/repositories/sessionRepository'
 import * as appointmentRepo           from '../database/repositories/appointmentRepository'
-import { encryptToFile }              from '../services/encryptionService'
 import { getSettings, saveSettings }  from '../services/settingsService'
-import { generateInvoice }            from '../services/invoiceService'
+import { generateInvoice, regenerateInvoicePdf } from '../services/invoiceService'
 import * as comptaRepo               from '../database/repositories/comptaRepository'
 import { exportComptaExcel }         from '../services/comptaExportService'
 import {
@@ -24,9 +24,17 @@ import {
   verifyBackup,
 } from '../services/backupService'
 import { exportSessionExcel }         from '../services/exportService'
+import {
+  exportSessionInteropJson,
+  exportSessionFullBackupJson,
+  exportSessionHtml,
+  exportSessionExcelCanonical,
+} from '../services/exports/sessionExportPipeline'
 import { initDatabase, closeDatabase, isDatabaseOpen } from '../database/connection'
 import * as auth                      from '../services/authService'
 import * as pluginSvc                 from '../services/pluginService'
+import * as profileSvc               from '../services/profileService'
+import '../services/moduleAdapters'
 import * as accessLogRepo             from '../database/repositories/accessLogRepository'
 import * as rgpdSvc                   from '../services/rgpdService'
 import * as gcalSvc                   from '../services/googleCalendarService'
@@ -34,6 +42,7 @@ import { logError }                             from '../services/logService'
 import { getAllBlocks, getBlocksByMonth, createBlock, updateBlock, deleteBlock } from '../database/repositories/calendarBlockRepository'
 import { generateDiagnosticReport, generateSupportDoc, generateRecoveryDoc } from '../services/diagnosticService'
 import { exportPatientReport }  from '../services/patientReportService'
+import { checkOwnerFromSettings, isOwner } from '../services/ownerService'
 import { exportConsentForm }    from '../services/consentFormService'
 import { exportUrssafReport }   from '../services/urssafReportService'
 import { adminVerify, adminGetLogs, adminClearLogs, adminGetSystemInfo, adminDbIntegrity, adminWalCheckpoint, adminDbStats, adminGetSettings, adminForceBackup } from '../services/adminService'
@@ -47,6 +56,7 @@ function patientSlug(lastName: string, firstName: string): string {
 }
 
 export function registerAllHandlers(): void {
+  pluginSvc.purgePluginLibrary()
 
   // ─── APPOINTMENTS (RDV) ────────────────────────────────────────────────────
   ipcMain.handle('appointments:getAll',    ()           => appointmentRepo.getAllAppointments())
@@ -99,6 +109,11 @@ export function registerAllHandlers(): void {
     licenseSvc.assertNotRestricted()
     const existing = appointmentRepo.getAppointmentById(id)
     appointmentRepo.deleteAppointment(id)
+    // Marquer les séances liées implicitement (sans nextSessionApptId) pour que
+    // le backfill ne recrée pas ce RDV lors du prochain chargement du calendrier
+    if (existing?.patient_id && existing?.date) {
+      try { sessionRepo.linkAppointmentToSessionsByDate(existing.patient_id, existing.date, id) } catch { }
+    }
     if (existing?.google_event_id && !gcalSvc.isExternalGCalEventId(existing.google_event_id)) {
       gcalSvc.deleteGCalEvent(existing.google_event_id).catch(e => console.error('[GCal] delete sync:', e))
     }
@@ -125,72 +140,20 @@ export function registerAllHandlers(): void {
 
   // ─── EXPORTS SESSION (sauvegarde dans le dossier patient configuré) ────────
 
-  /** Export JSON chiffré d'une séance → dossier backup patient */
+  /** Export JSON lisible d'une séance → dossier backup patient (format importable) */
   ipcMain.handle('exports:sessionJson', (_e, sessionId) => {
     const session = sessionRepo.getSessionById(sessionId)
     if (!session) throw new Error('Session introuvable')
     const patient = session.patient_id ? patientRepo.getPatientById(session.patient_id) : null
 
-    let fd: Record<string, unknown> = {}
-    if (session.full_data_json) { try { fd = JSON.parse(session.full_data_json) } catch {} }
-    let systemes: unknown = null
-    if (session.systemes_json) { try { systemes = JSON.parse(session.systemes_json) } catch {} }
-    let energyTests: unknown = null
-    if (session.energy_tests_json) { try { energyTests = JSON.parse(session.energy_tests_json) } catch {} }
-
-    const exportData = {
+    // Format importable : mêmes noms de champs que la BDD, encapsulé dans { patient, sessions }
+    const payload = {
+      version:    2,
       exportedAt: new Date().toISOString(),
-      patient: patient ? {
-        id: patient.id,
-        nom: `${patient.first_name} ${patient.last_name}`,
-        dateNaissance: patient.birth_date,
-        telephone: patient.phone,
-        email: patient.email,
-        medecinTraitant: patient.regular_doctor,
-        medicaments: patient.medications,
-        antecedents: patient.antecedents,
-        alertes: patient.alerts,
-        notesGenerales: patient.notes_general,
-      } : null,
-      seance: {
-        id: session.id, date: session.date,
-        numeroSeance: (fd.sessionNum as number) || null,
-        praticien: session.practitioner,
-        motif: session.motif,
-        priseDeNotes: (fd.anamnese as string) || null,
-        problematiques: session.problematiques || null,
-        evolutionTags: session.evolution_tags, evolution: session.evolution,
-        // Mode simple enrichi
-        simpleContextVie:         (fd.simpleContextVie         as string) || null,
-        simpleTraitementsEnCours: (fd.simpleTraitementsEnCours as string) || null,
-        simpleObjectifs:          (fd.simpleObjectifs          as string) || null,
-        simpleNotesEntretien:     (fd.simpleNotesEntretien     as string) || null,
-        observationsCliniques:    session.observation || null,
-        langue: { qualites: session.langue, notes: (fd.langueNote as string) || null },
-        pouls: { qualitesGlobales: session.pouls, positions: fd.poulsPos || null, notes: (fd.poulsNote as string) || null },
-        constitution: session.constitution, typeCorps: session.type_corps,
-        teint: session.teint, notesObservation: session.observation,
-        questionnaireSystemes: systemes, testsEnergetiques: energyTests,
-        diagnosticMTC: session.diagnostic_mtc, cinqElements: session.cinq_elements,
-        causes: session.causes, analyse: session.analyse, principes: session.principes,
-        pointsAcupuncture: session.points, pointsOreille: session.pts_oreille,
-        techniques: session.techniques, plantes: session.plantes,
-        reactions: session.reactions, notesTraitement: session.traitement_notes,
-        barrageHomeopathique: {
-          niveau1: (fd.barrageNiv1 as string) || null, niveau2: (fd.barrageNiv2 as string) || null,
-          niveau3: (fd.barrageNiv3 as string) || null, niveau4: (fd.barrageNiv4 as string) || null,
-        },
-        conseils: session.conseils, planSuivi: session.plan, surveiller: session.surveiller,
-        prochainRdv: {
-          date:  session.next_session_date || null,
-          heure: (fd.nextSessionHeure as string) || null,
-          fin:   (fd.nextSessionFin   as string) || null,
-          note:  (fd.nextSessionNote  as string) || null,
-        },
-      },
+      patient:    patient || undefined,
+      sessions:   [session],
     }
 
-    // Sauvegarde chiffrée → dossier patient configuré
     let outputDir: string
     if (patient) {
       const settings = getSettings()
@@ -204,8 +167,8 @@ export function registerAllHandlers(): void {
 
     const date     = session.date || new Date().toISOString().slice(0, 10)
     const slug     = patient ? patientSlug(patient.last_name, patient.first_name) : 'session'
-    const filePath = join(outputDir, `${slug}_${date}.json.enc`)
-    encryptToFile(JSON.stringify(exportData, null, 2), filePath)
+    const filePath = join(outputDir, `${slug}_${date}.json`)
+    writeFileSync(filePath, JSON.stringify(payload, null, 2), 'utf-8')
     return filePath
   })
 
@@ -242,6 +205,12 @@ export function registerAllHandlers(): void {
   ipcMain.handle('exports:patientReport',  (_e, patientId: string) => exportPatientReport(patientId))
   ipcMain.handle('exports:consentForm',    (_e, patientId?: string) => exportConsentForm(patientId))
   ipcMain.handle('exports:urssafReport',   (_e, year: number)      => exportUrssafReport(year))
+
+  // ─── EXPORTS CANONIQUES (Phase 2 : pipeline normalisé, sans perte) ─────────
+  ipcMain.handle('exports:sessionInteropJson', (_e, sessionId: string) => exportSessionInteropJson(sessionId))
+  ipcMain.handle('exports:sessionBackupJson',  (_e, sessionId: string) => exportSessionFullBackupJson(sessionId))
+  ipcMain.handle('exports:sessionReportHtml',  (_e, sessionId: string) => exportSessionHtml(sessionId))
+  ipcMain.handle('exports:sessionExcelV2',     (_e, sessionId: string) => exportSessionExcelCanonical(sessionId))
 
   // ─── BACKUP GÉNÉRAL ────────────────────────────────────────────────────────
   ipcMain.handle('exports:backupJson',   ()             => exportBackupEncrypted())
@@ -302,13 +271,18 @@ export function registerAllHandlers(): void {
   })
 
   // ─── FACTURATION ───────────────────────────────────────────────────────────
-  ipcMain.handle('invoice:generate', (_e, data)       => { licenseSvc.assertNotRestricted(); return generateInvoice(data) })
-  ipcMain.handle('invoice:update',   (_e, id, data)   => { licenseSvc.assertNotRestricted(); return comptaRepo.updateInvoiceLog(id, data) })
-  ipcMain.handle('invoice:delete',   (_e, id)         => { licenseSvc.assertNotRestricted(); return comptaRepo.deleteInvoiceLog(id) })
+  ipcMain.handle('invoice:generate', (_e, data)                   => { licenseSvc.assertNotRestricted(); return generateInvoice(data) })
+  ipcMain.handle('invoice:regeneratePdf', async (_e, id: string, invoiceNum: string, data) => {
+    licenseSvc.assertNotRestricted()
+    const filePath = await regenerateInvoicePdf(data, invoiceNum)
+    comptaRepo.updateInvoiceLog(id, { file_path: filePath } as any)
+    return { filePath, invoiceNumber: invoiceNum, montant: data.montant }
+  })
+  ipcMain.handle('invoice:update',   (_e, id, data)               => { licenseSvc.assertNotRestricted(); return comptaRepo.updateInvoiceLog(id, data) })
+  ipcMain.handle('invoice:delete',   (_e, id)                     => { licenseSvc.assertNotRestricted(); return comptaRepo.deleteInvoiceLog(id) })
   ipcMain.handle('invoice:markPaid', (_e, id: string, paid: boolean) => {
     licenseSvc.assertNotRestricted()
-    const now = new Date().toISOString().slice(0, 10)
-    comptaRepo.updateInvoiceLog(id, { is_paid: paid ? 1 : 0, paid_date: paid ? now : undefined } as any)
+    comptaRepo.markInvoicePaid(id, paid)
   })
   ipcMain.handle('invoice:overdue', (_e, thresholdDays: number) => {
     const cutoff = new Date()
@@ -319,10 +293,36 @@ export function registerAllHandlers(): void {
     )
   })
 
-  ipcMain.handle('invoice:sendByEmail', async (_e, invoiceId: string) => {
+  ipcMain.handle('invoice:getEmailData', async (_e, invoiceId: string) => {
     const inv = comptaRepo.getInvoiceLogById(invoiceId)
-    if (!inv)        throw new Error('Facture introuvable')
-    if (!inv.email)  throw new Error('Aucun email renseigné pour cette facture')
+    if (!inv) throw new Error('Facture introuvable')
+
+    const allPats = patientRepo.getAllPatients()
+
+    // Résoudre l'email : depuis la facture, ou par recherche prénom/nom dans les patients
+    let recipientEmail = inv.email || ''
+    let civility = ''
+
+    if (!recipientEmail) {
+      const fnLower = (inv.patient_first_name || '').toLowerCase()
+      const lnLower = (inv.patient_last_name  || '').toLowerCase()
+      const matched = allPats.find(p =>
+        p.email &&
+        (p.first_name || '').toLowerCase() === fnLower &&
+        (p.last_name  || '').toLowerCase() === lnLower
+      )
+      if (matched?.email) {
+        recipientEmail = matched.email
+        civility       = matched.civility || ''
+      }
+    } else {
+      const civPat = allPats.find(p => !!p.email && p.email === inv.email)
+      civility = civPat?.civility || ''
+    }
+
+    if (!recipientEmail) {
+      return { to: null, subject: null, body: null, pdfPath: null, fileName: null }
+    }
 
     const settings   = getSettings()
     const firstName  = settings.practitionerFirstName || ''
@@ -339,10 +339,6 @@ export function registerAllHandlers(): void {
 
     const subject = `Votre facture ${inv.invoice_number}${practName ? ` — Cabinet ${practName}` : ''}`
 
-    const allPats  = patientRepo.getAllPatients()
-    const civPat   = allPats.find(p => !!p.email && p.email === inv.email)
-    const civility = civPat?.civility || ''
-
     const bodyLines = [
       `${civility === 'M' ? 'Monsieur' : civility === 'Mme' ? 'Madame' : 'Madame, Monsieur'} ${inv.patient_first_name} ${inv.patient_last_name},`,
       '',
@@ -355,115 +351,60 @@ export function registerAllHandlers(): void {
       ...(practName  ? [practName]  : []),
       ...(practEmail ? [practEmail] : []),
     ]
-    const bodyText = bodyLines.join('\r\n')
+    const body = bodyLines.join('\n')
 
-    const hasPdf  = !!(inv.file_path && existsSync(inv.file_path))
-    const pdfPath = hasPdf ? inv.file_path! : ''
+    const hasPdf   = !!(inv.file_path && existsSync(inv.file_path))
+    const pdfPath  = hasPdf ? inv.file_path! : null
+    const fileName = pdfPath ? basename(pdfPath) : null
 
-    // ── Tentative 1 : Outlook COM via -EncodedCommand (pas de fichier temp, UTF-16 LE natif) ─
+    return { to: recipientEmail, subject, body, pdfPath, fileName }
+  })
+
+  ipcMain.handle('invoice:openEmailClient', async (_e, to: string, subject: string, body: string, pdfPath?: string | null) => {
+    const hasPdf = !!(pdfPath && existsSync(pdfPath))
+
+    // Tente COM automation Outlook via PowerShell (seule méthode fiable pour joindre un PDF)
     if (hasPdf) {
       try {
-        const subB64   = Buffer.from(subject,    'utf8').toString('base64')
-        const bodyB64  = Buffer.from(bodyText,   'utf8').toString('base64')
-        const pdfB64   = Buffer.from(pdfPath,    'utf8').toString('base64')
-        const emailB64 = Buffer.from(inv.email,  'utf8').toString('base64')
-        const fromB64  = Buffer.from(practEmail, 'utf8').toString('base64')
+        const tmpBodyFile = join(tmpdir(), 'synoria_mail_body.txt')
+        const tmpPs1      = join(tmpdir(), 'synoria_mail.ps1')
+        writeFileSync(tmpBodyFile, body, 'utf8')
 
-        // PowerShell script construit en tableau puis encodé UTF-16 LE Base64
-        // -EncodedCommand : pas de fichier temp, contourne les restrictions ExecutionPolicy
-        const ps1Script = [
-          `\$email   = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${emailB64}'))`,
-          `\$subject = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${subB64}'))`,
-          `\$body    = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${bodyB64}'))`,
-          `\$pdf     = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${pdfB64}'))`,
-          `\$from    = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${fromB64}'))`,
-          '\$ol = New-Object -ComObject Outlook.Application',
-          '\$m  = \$ol.CreateItem(0)',
-          '\$m.To      = \$email',
-          '\$m.Subject = \$subject',
-          '\$m.Body    = \$body',
-          // Attachement avec throw pour que le script échoue si le fichier est inaccessible
-          'try { \$null = \$m.Attachments.Add(\$pdf) } catch { throw "Attach: \$_" }',
-          // SendUsingAccount : sélectionne le bon compte Outlook par email (pas SentOnBehalfOfName)
-          'if (\$from) {',
-          '  \$accs = \$ol.Session.Accounts',
-          '  for (\$i = 1; \$i -le \$accs.Count; \$i++) {',
-          '    if (\$accs.Item(\$i).SmtpAddress -ieq \$from) { \$m.SendUsingAccount = \$accs.Item(\$i); break }',
-          '  }',
-          '}',
-          '\$m.Display()',
+        const escapeSQ = (s: string) => s.replace(/'/g, "''")
+        const script = [
+          `$ol   = New-Object -ComObject Outlook.Application`,
+          `$mail = $ol.CreateItem(0)`,
+          `$mail.To      = '${escapeSQ(to)}'`,
+          `$mail.Subject = '${escapeSQ(subject)}'`,
+          `$mail.Body    = [System.IO.File]::ReadAllText('${escapeSQ(tmpBodyFile)}')`,
+          `$mail.Attachments.Add('${escapeSQ(pdfPath!)}')`,
+          `$mail.Display()`,
         ].join('\r\n')
 
-        // Encode en UTF-16 LE Base64 pour -EncodedCommand
-        const encodedCmd = Buffer.from(ps1Script, 'utf16le').toString('base64')
+        writeFileSync(tmpPs1, script, 'utf8')
 
         await new Promise<void>((resolve, reject) => {
-          const timer = setTimeout(() => reject(new Error('timeout')), 20000)
-          let   stderr = ''
-          const proc  = spawn('powershell', [
-            '-NoProfile', '-NonInteractive', '-EncodedCommand', encodedCmd,
-          ], { windowsHide: true })
-          proc.stderr?.on('data', (d: Buffer) => { stderr += d.toString() })
-          proc.once('close', (code) => {
-            clearTimeout(timer)
-            code === 0 ? resolve() : reject(new Error(`PS:${code} ${stderr.slice(0, 400)}`))
+          const ps = spawn('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-NonInteractive', '-File', tmpPs1], { windowsHide: true })
+          ps.on('close', (code) => {
+            try { unlinkSync(tmpPs1) } catch {}
+            try { unlinkSync(tmpBodyFile) } catch {}
+            code === 0 ? resolve() : reject(new Error(`PowerShell exit ${code}`))
           })
-          proc.once('error', (err) => { clearTimeout(timer); reject(err) })
+          ps.on('error', reject)
+          setTimeout(() => { try { ps.kill() } catch {} reject(new Error('timeout')) }, 15000)
         })
-
-        return { pdfAttached: true }
-      } catch (e) {
-        console.warn('[sendByEmail] Outlook COM:', (e as any)?.message)
+        return // Succès COM Outlook
+      } catch {
+        // Outlook non disponible — repli vers mailto:
       }
     }
 
-
-        // ── Tentative 2 : Thunderbird CLI (attachment= natif) ────────────────────
-    if (hasPdf) {
-      const tbPaths = [
-        'C:\\Program Files\\Mozilla Thunderbird\\thunderbird.exe',
-        'C:\\Program Files (x86)\\Mozilla Thunderbird\\thunderbird.exe',
-        join(process.env['LOCALAPPDATA'] || '', 'Mozilla Thunderbird', 'thunderbird.exe'),
-      ]
-      const tbExe = tbPaths.find(p => { try { return existsSync(p) } catch { return false } })
-      if (tbExe) {
-        try {
-          const fileUri = 'file:///' + pdfPath.replace(/\\/g, '/')
-          const esc     = (s: string) => s.replace(/'/g, "\\'")
-          const parts   = [
-            `to='${esc(inv.email)}'`,
-            `subject='${esc(subject)}'`,
-            `body='${esc(bodyText)}'`,
-            `attachment='${fileUri}'`,
-            ...(practEmail ? [`from='${esc(practEmail)}'`] : []),
-          ]
-          spawn(tbExe, ['-compose', parts.join(',')], {
-            detached: true, stdio: 'ignore', windowsHide: false,
-          }).unref()
-          return { pdfAttached: true }
-        } catch (e) {
-          console.warn('[sendByEmail] Thunderbird CLI:', (e as any)?.message)
-        }
-      }
-    }
-
-    // ── Tentative 3 : mailto: URI (attach= fonctionne avec Outlook MAPI) ─────
-    let mailto = `mailto:${encodeURIComponent(inv.email)}`
-               + `?subject=${encodeURIComponent(subject)}`
-               + `&body=${encodeURIComponent(bodyText)}`
-               + (practEmail ? `&from=${encodeURIComponent(practEmail)}` : '')
-
-    if (hasPdf) {
-      mailto += `&attach=${inv.file_path}`
-    }
-
+    // Repli : mailto: standard (sans pièce jointe)
+    const mailto = `mailto:${encodeURIComponent(to)}`
+      + `?subject=${encodeURIComponent(subject)}`
+      + `&body=${encodeURIComponent(body)}`
     await shell.openExternal(mailto)
-
-    if (hasPdf) {
-      shell.showItemInFolder(pdfPath)
-    }
-
-    return { pdfAttached: false }
+    if (hasPdf) shell.showItemInFolder(pdfPath!)
   })
 
     // ─── RAPPEL RDV PAR EMAIL ──────────────────────────────────────────────────
@@ -541,6 +482,7 @@ export function registerAllHandlers(): void {
   // ─── PARAMÈTRES ────────────────────────────────────────────────────────────
   ipcMain.handle('settings:get',  ()             => getSettings())
   ipcMain.handle('settings:save', (_e, partial)  => saveSettings(partial))
+  ipcMain.handle('owner:check',   ()             => checkOwnerFromSettings())
 
   // ─── DIALOGS ───────────────────────────────────────────────────────────────
   ipcMain.handle('dialog:save', async (_e, opts) => {
@@ -605,6 +547,15 @@ export function registerAllHandlers(): void {
   })
 
   ipcMain.handle('auth:lock', () => {
+    if (auth.isKeyLoaded()) {
+      try {
+        closeDatabase()
+        auth.encryptDb()
+        auth.deleteWorkingDb()
+      } catch (e) {
+        console.error('[Auth] Erreur chiffrement au verrouillage:', e)
+      }
+    }
     auth.clearKey()
   })
 
@@ -642,42 +593,74 @@ export function registerAllHandlers(): void {
   ipcMain.handle('plugin:librarySave',       (_e, plugin) => pluginSvc.savePluginToLibrary(plugin))
   ipcMain.handle('plugin:librarySaveNative', (_e, plugin) => pluginSvc.saveNativePluginToLibrary(plugin))
   ipcMain.handle('plugin:libraryDelete',     (_e, id)     => pluginSvc.deletePluginFromLibrary(id))
+  ipcMain.handle('plugin:libraryExport',     (_e, dest)   => pluginSvc.exportPluginLibrary(dest))
+  ipcMain.handle('plugin:libraryImport',     (_e, src)    => pluginSvc.importPluginLibraryFromFile(src))
+  ipcMain.handle('plugin:listAvailable',     ()           => pluginSvc.listAvailablePlugins())
+
+  // ── Profils de séance (Phase 3) ──────────────────────────────────────────
+  ipcMain.handle('profiles:getAll',     ()             => profileSvc.getProfiles())
+  ipcMain.handle('profiles:getDefault', ()             => profileSvc.getDefaultProfile())
+  ipcMain.handle('profiles:create',     (_e, data)     => profileSvc.createProfile(data))
+  ipcMain.handle('profiles:update',     (_e, id, data) => profileSvc.updateProfile(id, data))
+  ipcMain.handle('profiles:duplicate',  (_e, id, name) => profileSvc.duplicateProfile(id, name))
+  ipcMain.handle('profiles:archive',    (_e, id)       => profileSvc.archiveProfile(id))
+  ipcMain.handle('profiles:setDefault', (_e, id)       => profileSvc.setDefaultProfile(id))
+  ipcMain.handle('profiles:migrate',    ()             => profileSvc.migrateActivePluginToProfile(pluginSvc))
   // ─────────────────────────────────────────────────────────────────────────
 
   ipcMain.handle('shell:openPath',      (_e, path)    => shell.openPath(path))
-  ipcMain.handle('shell:openExternal', (_e, url: string) => shell.openExternal(url))
+  ipcMain.handle('shell:openExternal', (_e, url: string) => {
+    if (typeof url !== 'string') return
+    if (!url.startsWith('https://') && !url.startsWith('http://') && !url.startsWith('mailto:')) return
+    return shell.openExternal(url)
+  })
 
   // Lit un fichier local et retourne un data URL base64 (pour les aperçus dans le renderer)
+  // Validation par magic bytes : rejette tout fichier qui ne commence pas par un en-tête image valide,
+  // même si son extension ressemble à une image (.json renommé en .png ne passera pas).
   ipcMain.handle('fs:readDataUrl', (_e, filePath: string): string | null => {
     if (!filePath || !existsSync(filePath)) return null
     try {
-      const ext  = extname(filePath).toLowerCase().slice(1)
-      const mime = ext === 'png' ? 'image/png'
-                 : ext === 'gif' ? 'image/gif'
-                 : ext === 'webp' ? 'image/webp'
-                 : ext === 'bmp' ? 'image/bmp'
-                 : 'image/jpeg'
-      const b64 = readFileSync(filePath).toString('base64')
-      return `data:${mime};base64,${b64}`
+      const ALLOWED_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'])
+      if (!ALLOWED_EXTS.has(extname(filePath).toLowerCase().slice(1))) return null
+      const buf = readFileSync(filePath)
+      const isPng  = buf[0]===0x89 && buf[1]===0x50 && buf[2]===0x4E && buf[3]===0x47
+      const isJpeg = buf[0]===0xFF && buf[1]===0xD8
+      const isGif  = buf[0]===0x47 && buf[1]===0x49 && buf[2]===0x46 && buf[3]===0x38
+      const isBmp  = buf[0]===0x42 && buf[1]===0x4D
+      const isWebp = buf[0]===0x52 && buf[1]===0x49 && buf[2]===0x46 && buf[3]===0x46
+                  && buf[8]===0x57 && buf[9]===0x45 && buf[10]===0x42 && buf[11]===0x50
+      if (!isPng && !isJpeg && !isGif && !isBmp && !isWebp) return null
+      const mime = isPng ? 'image/png' : isJpeg ? 'image/jpeg' : isGif ? 'image/gif'
+                 : isWebp ? 'image/webp' : 'image/bmp'
+      return `data:${mime};base64,${buf.toString('base64')}`
     } catch { return null }
   })
   ipcMain.handle('app:getVersion',      ()            => app.getVersion())
   ipcMain.handle('app:relaunch',        ()            => { app.relaunch(); app.quit() })
   ipcMain.handle('app:launchInstaller', async (_e, exePath: string) => {
+    if (typeof exePath !== 'string' || !isAbsolute(exePath)) return
+    const norm = normalize(exePath)
+    const normLower = norm.toLowerCase()
+    const tmpDir  = normalize(tmpdir()).toLowerCase()
+    const udataDir = normalize(app.getPath('userData')).toLowerCase()
+    if (!normLower.endsWith('.exe') && !normLower.endsWith('.dmg')) return
+    if (!normLower.startsWith(tmpDir) && !normLower.startsWith(udataDir)) return
     if (process.platform === 'darwin') {
-      // Sur Mac : ouvrir le DMG avec Finder, ne pas quitter l'app
-      await shell.openPath(exePath)
+      await shell.openPath(norm)
       return
     }
-    const { spawn } = require('child_process')
-    spawn(exePath, [], { detached: true, stdio: 'ignore' }).unref()
+    spawn(norm, [], { detached: true, stdio: 'ignore' }).unref()
     setTimeout(() => app.quit(), 500)
   })
   ipcMain.handle('app:dataPath',   ()            => app.getPath('userData'))
+  ipcMain.handle('docs:open',      ()            => shell.openPath(join(app.getAppPath(), 'public', 'documentation.html')))
+  ipcMain.handle('docs:openInstall', ()          => shell.openPath(join(app.getAppPath(), 'public', 'guide-installation.html')))
+  ipcMain.handle('docs:openRgpd',    ()          => shell.openPath(join(app.getAppPath(), 'public', 'guide-rgpd.html')))
 
   // ─── GOOGLE CALENDAR ──────────────────────────────────────────────────────
   ipcMain.handle('gcal:status',        ()              => gcalSvc.getStatus())
-  ipcMain.handle('gcal:connect',       async (_e, cid, csec) => gcalSvc.connect(cid, csec))
+  ipcMain.handle('gcal:connect',       async () => gcalSvc.connect())
   ipcMain.handle('gcal:disconnect', () => {
     // Supprimer tous les RDV importés depuis les calendriers Google
     const allAppts = appointmentRepo.getAllAppointments()
@@ -826,7 +809,7 @@ export function registerAllHandlers(): void {
       if (existing) continue
 
       // Créer le RDV manquant (séances V1.4.3 sans nextSessionApptId)
-      appointmentRepo.createAppointment({
+      const newAppt = appointmentRepo.createAppointment({
         patient_id:  sess.patient_id,
         date:        sess.next_session_date,
         heure_debut: heureD,
@@ -834,6 +817,12 @@ export function registerAllHandlers(): void {
         note:        note,
         is_done:     0,
       })
+      // Enregistrer l'ID du RDV dans la séance pour que les suppressions futures soient respectées
+      try {
+        const fd = sess.full_data_json ? JSON.parse(sess.full_data_json) : {}
+        fd.nextSessionApptId = newAppt.id
+        sessionRepo.updateSession(sess.id, { full_data_json: JSON.stringify(fd) })
+      } catch { /* non bloquant */ }
       created++
     }
     return { created }
@@ -1065,21 +1054,53 @@ export function registerAllHandlers(): void {
   ipcMain.handle('admin:forceBackup',   ()         => adminForceBackup())
 
   // ── Compte Supabase ───────────────────────────────────────────────
-  ipcMain.handle('account:signUp',         (_e, email, pwd)  => supabaseAuth.signUp(email, pwd))
-  ipcMain.handle('account:signIn',         (_e, email, pwd)  => supabaseAuth.signIn(email, pwd))
-  ipcMain.handle('account:signOut',        ()                => supabaseAuth.signOut())
-  ipcMain.handle('account:resetPassword',  (_e, email)       => supabaseAuth.resetPassword(email))
+  ipcMain.handle('account:signUp',              (_e, email, pwd)  => supabaseAuth.signUp(email, pwd))
+  ipcMain.handle('account:signIn',              (_e, email, pwd)  => supabaseAuth.signIn(email, pwd))
+  ipcMain.handle('account:signOut',             ()                => supabaseAuth.signOut())
+  ipcMain.handle('account:resetPassword',       (_e, email)       => supabaseAuth.resetPassword(email))
+  ipcMain.handle('account:resendConfirmation',  (_e, email)       => supabaseAuth.resendConfirmationEmail(email))
   ipcMain.handle('account:getState',       ()                => supabaseAuth.getFullAccountState())
   ipcMain.handle('account:createCheckout', (_e, priceId)     => supabaseAuth.createCheckoutUrl(priceId))
   ipcMain.handle('account:billingPortal',  ()                => supabaseAuth.createBillingPortalUrl())
 
   // ── Licence locale ────────────────────────────────────────────────
-  ipcMain.handle('license:getState',       () => licenseSvc.getCurrentLicenseState())
-  ipcMain.handle('license:verifyOnline',   async () => {
+
+  // État propriétaire permanent : accès illimité pour les comptes listés dans ownerService.
+  const OWNER_LICENSE_STATE: import('../services/licenseService').LicenseState = {
+    status:         'active',
+    mode:           'full',
+    organizationId: 'owner',
+    licenseId:      'owner',
+    deviceId:       null,
+    planCode:       'synoria_owner',
+    features:       ['read', 'write', 'export', 'backup', 'calendar', 'billing'],
+    maxDevices:     99,
+    graceUntil:     null,
+    tokenExpiry:    new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+    isOffline:      false,
+  }
+
+  function getOwnerStateIfApplicable() {
+    const user = supabaseAuth.getCurrentUser()
+    if (isOwner(user?.email)) {
+      licenseSvc.setCachedLicenseState(OWNER_LICENSE_STATE)
+      return OWNER_LICENSE_STATE
+    }
+    return null
+  }
+
+  ipcMain.handle('license:getState', () => {
+    return getOwnerStateIfApplicable() ?? licenseSvc.getCachedLicenseState()
+  })
+
+  ipcMain.handle('license:verifyOnline', async () => {
+    const ownerState = getOwnerStateIfApplicable()
+    if (ownerState) return ownerState
     const token = supabaseAuth.getAccessToken()
     if (!token) throw new Error('Non connecté — impossible de vérifier la licence en ligne')
     return licenseSvc.verifyLicenseOnline(token)
   })
+
   ipcMain.handle('license:getDeviceId',    () => licenseSvc.getDeviceIdHash())
   ipcMain.handle('license:getDevices',     () => supabaseAuth.getDevices())
   ipcMain.handle('license:deactivateDevice', (_e, deviceId, reason) => supabaseAuth.deactivateDevice(deviceId, reason))
@@ -1089,6 +1110,8 @@ export function registerAllHandlers(): void {
 
   // license:refresh = alias de license:verifyOnline (même logique, nom du spec)
   ipcMain.handle('license:refresh', async () => {
+    const ownerState = getOwnerStateIfApplicable()
+    if (ownerState) return ownerState
     const token = supabaseAuth.getAccessToken()
     if (!token) throw new Error('Non connecté — impossible de rafraîchir la licence en ligne')
     const state = await licenseSvc.verifyLicenseOnline(token)

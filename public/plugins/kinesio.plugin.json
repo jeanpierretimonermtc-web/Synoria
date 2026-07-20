@@ -1,10 +1,11 @@
 {
   "id": "kinesio_charlotte",
-  "name": "Kinésiologie — Charlotte DECAENS",
+  "name": "Kinésiologie",
   "specialty": "Kinésiologie",
-  "version": "1.0.0",
-  "author": "Charlotte DECAENS KINESIOLOGIE — SIRET 930727706",
-  "description": "Fiche d'anamnèse kinésiologique : contexte, état psycho-émotionnel, motivation, objectifs et suivi.",
+  "version": "1.1.0",
+  "isNative": true,
+  "hideGlobalMotif": true,
+  "description": "Fiche d'anamnèse kinésiologique : contexte, état psycho-émotionnel, motivation, objectifs et équilibrage.",
   "icon": "🔬",
   "accentColor": "#7A9E7E",
 
@@ -13,6 +14,7 @@
     {
       "id": "contexte_rdv",
       "title": "Contexte du rendez-vous",
+      "placement": "motif",
       "icon": "📋",
       "accentColor": "#7A9E7E",
       "fields": [
@@ -54,6 +56,7 @@
     {
       "id": "signes_psycho_physiques",
       "title": "Signes psychologiques et physiques actuels",
+      "placement": "notes",
       "icon": "💫",
       "accentColor": "#5A7E9E",
       "fields": [
@@ -106,6 +109,7 @@
     {
       "id": "motivation_objectifs",
       "title": "Motivation & Objectifs",
+      "placement": "notes",
       "icon": "🎯",
       "accentColor": "#9E7A5A",
       "fields": [
@@ -137,33 +141,112 @@
     },
 
     {
-      "id": "suivi",
-      "title": "Suivi & Anamnèse séance suivante",
-      "icon": "🔄",
-      "accentColor": "#7A9E7E",
+      "id": "equilibrage_effectue",
+      "title": "Équilibrage effectué",
+      "placement": "traitement",
+      "icon": "⚖️",
+      "accentColor": "#7A5A9E",
       "fields": [
         {
-          "id": "anamneseSeanceSuivante",
-          "type": "richtext",
-          "label": "Anamnèse séance suivante",
-          "placeholder": "Points à reprendre à la prochaine séance, évolutions observées, axes de travail à venir…",
-          "width": "full",
-          "minHeight": 110
+          "id": "techniquesEquilibrage",
+          "type": "checkboxgroup",
+          "label": "Techniques d'équilibrage utilisées",
+          "options": [
+            "Test musculaire",
+            "Points neuro-lymphatiques",
+            "Points neuro-vasculaires",
+            "Respiration consciente",
+            "Mouvements oculaires",
+            "Acupression",
+            "Ancrage / enracinement",
+            "Visualisation",
+            "Affirmation positive",
+            "Libération émotionnelle",
+            "Mouvement intégrateur",
+            "Intégration neurologique",
+            "Autre"
+          ],
+          "width": "full"
         },
         {
-          "id": "exercices_prescrits",
+          "id": "derouléSeance",
           "type": "richtext",
-          "label": "Exercices / devoirs entre les séances",
-          "placeholder": "Pratiques recommandées, affirmations, visualisations, exercices corporels…",
+          "label": "Déroulé et observations de séance",
+          "placeholder": "Éléments travaillés, réactions du client, moments clés, découvertes, phrases importantes du client…",
           "width": "full",
-          "minHeight": 80
+          "minHeight": 140
         },
         {
-          "id": "ressenti_global",
+          "id": "resultatPercu",
           "type": "radio",
           "label": "Ressenti global en fin de séance",
-          "options": ["Très bien", "Bien", "Neutre", "Fatigué(e)", "Émotionnel(le)"],
-          "width": "full"
+          "options": ["Très positif", "Positif", "Neutre", "Émotionnel(le)", "Fatigué(e)", "À surveiller"],
+          "width": "half"
+        },
+        {
+          "id": "stressApres",
+          "type": "rating",
+          "label": "Niveau de stress en fin de séance",
+          "min": 0,
+          "max": 10,
+          "width": "third",
+          "hint": "0 = très calme · 10 = très stressé(e)"
+        }
+      ]
+    },
+
+    {
+      "id": "suivi_anamnese",
+      "title": "Suivi & Anamnèse séance suivante",
+      "placement": "plan",
+      "icon": "📅",
+      "accentColor": "#5A7E9E",
+      "fields": [
+        {
+          "id": "bilanSeance",
+          "type": "richtext",
+          "label": "Bilan de la séance",
+          "placeholder": "Ce qui a bien fonctionné, pistes à approfondir, découvertes importantes, niveau d'intégration…",
+          "width": "full",
+          "minHeight": 90
+        },
+        {
+          "id": "conseilsEntreSeances",
+          "type": "richtext",
+          "label": "Conseils entre les séances",
+          "placeholder": "Pratiques à maintenir, exercices, points de vigilance, auto-soin, ancrage…",
+          "width": "half",
+          "minHeight": 90
+        },
+        {
+          "id": "axesTravailProchain",
+          "type": "richtext",
+          "label": "Axes de travail pour la prochaine séance",
+          "placeholder": "Thèmes à explorer, objectifs intermédiaires, suivi des effets de cette séance…",
+          "width": "half",
+          "minHeight": 90
+        },
+        {
+          "id": "frequencePreconisee",
+          "type": "select",
+          "label": "Fréquence préconisée",
+          "options": [
+            "2 fois par semaine",
+            "1 fois par semaine",
+            "Toutes les 2 semaines",
+            "1 fois par mois",
+            "À la demande",
+            "Fin de suivi"
+          ],
+          "width": "half"
+        },
+        {
+          "id": "anamnèseProchainRdv",
+          "type": "richtext",
+          "label": "Points à aborder au prochain rendez-vous",
+          "placeholder": "Questions à poser, éléments à réévaluer, anamnèse complémentaire, contexte de vie à suivre…",
+          "width": "half",
+          "minHeight": 80
         }
       ]
     }

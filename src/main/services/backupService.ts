@@ -24,6 +24,10 @@ import {
 } from './encryptionService'
 import { getSessionKey, getAuthSalt, deriveKeyFromPassword } from './authService'
 import { getSettings, saveSettings }      from './settingsService'
+import {
+  getActivePlugin, setActivePlugin,
+  getPluginLibrary, setPluginLibrary,
+} from './pluginService'
 import type { Patient } from '../../shared/types'
 
 // ── Helpers internes ───────────────────────────────────────────────
@@ -123,6 +127,9 @@ export function exportBackupEncrypted(): string {
     invoicesLog:      (db.prepare("SELECT * FROM invoices_log ORDER BY invoice_date").all() as any[]),
     // Modèles
     sessionTemplates: (db.prepare("SELECT * FROM session_templates").all() as any[]),
+    // Plugin actif et bibliothèque personnalisée
+    activePlugin:  getActivePlugin(),
+    pluginLibrary: getPluginLibrary(),
   }
 
   const filePath   = join(dir, `backup-global-${fileTimestamp()}.json.enc`)
@@ -189,6 +196,7 @@ export function exportPatientBackup(patientId: string): string {
 export interface ImportResult {
   patientsUpserted: number
   sessionsUpserted: number
+  sessionsSkipped:  number
   errors: string[]
 }
 
@@ -230,6 +238,7 @@ export function importBackupJson(
   const errors: string[] = []
   let patientsUpserted = 0
   let sessionsUpserted = 0
+  let sessionsSkipped  = 0
 
   // Helper : INSERT OR REPLACE générique sur n'importe quelle table
   const upsertRow = (table: string, row: Record<string, unknown>) => {
@@ -255,6 +264,9 @@ export function importBackupJson(
       if (!s.id || !s.patient_id || !s.date) {
         errors.push(`Séance ignorée : ${JSON.stringify(s).slice(0, 80)}`); continue
       }
+      // Détection de doublon : on n'écrase pas une séance déjà présente
+      const alreadyExists = db.prepare('SELECT id FROM sessions WHERE id = ?').get(s.id)
+      if (alreadyExists) { sessionsSkipped++; continue }
       s.created_at = s.created_at || now
       s.updated_at = s.updated_at || now
       upsertSession(s); sessionsUpserted++
@@ -356,7 +368,27 @@ export function importBackupJson(
   })
 
   importAll()
-  return { patientsUpserted, sessionsUpserted, errors }
+
+  // ── Plugin actif ───────────────────────────────────────────────────
+  // Restauré seulement si la sauvegarde en contient un (null = pas de plugin = on ne touche pas)
+  if (data.activePlugin && typeof data.activePlugin === 'object' && data.activePlugin.id) {
+    try { setActivePlugin(data.activePlugin) } catch { /* ignore */ }
+  }
+
+  // ── Bibliothèque de plugins ────────────────────────────────────────
+  // Fusion : on ajoute les plugins du backup qui ne sont pas déjà présents (par id)
+  if (Array.isArray(data.pluginLibrary) && data.pluginLibrary.length) {
+    try {
+      const current = getPluginLibrary()
+      const existingIds = new Set(current.map(e => e.plugin.id))
+      const incoming = data.pluginLibrary.filter(
+        (e: any) => e?.plugin?.id && !existingIds.has(e.plugin.id)
+      )
+      if (incoming.length) setPluginLibrary([...current, ...incoming])
+    } catch { /* ignore */ }
+  }
+
+  return { patientsUpserted, sessionsUpserted, sessionsSkipped, errors }
 }
 
 // ── VÉRIFICATION D'INTÉGRITÉ ──────────────────────────────────────

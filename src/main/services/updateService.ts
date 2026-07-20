@@ -12,9 +12,7 @@ interface DismissRecord {
 }
 
 function getUserDataPath(): string {
-  return process.env.PORTABLE_EXECUTABLE_DIR
-    ? join(process.env.PORTABLE_EXECUTABLE_DIR, 'data')
-    : app.getPath('userData')
+  return app.getPath('userData')
 }
 
 function notifPath(): string { return join(getUserDataPath(), NOTIF_FILE) }

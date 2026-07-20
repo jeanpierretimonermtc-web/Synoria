@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synoria — Guide d'installation v1.5.8</title>
+<style>
+:root {
+  --accent:#2c5f8a;--accent-light:#e8f1f8;--green:#3a7d5a;--green-light:#e8f4ed;
+  --amber:#b5661a;--amber-light:#fdf3e3;--red:#c0392b;--red-light:#fdecea;
+  --text:#1a2330;--text-muted:#546478;--surface:#fff;--bg:#f4f7fa;
+  --border:#cbd5e0;--sidebar-bg:#eef2f7;--sidebar-w:240px;--nav-h:56px;--radius:8px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --accent:#5b92c4;--accent-light:#172030;--green:#52a875;--green-light:#1b3228;
+  --amber:#d4893a;--amber-light:#2a1c0a;--red:#e05a4d;--red-light:#2a1010;
+  --text:#d8e6f0;--text-muted:#8aaabb;--surface:#1a2535;--bg:#111b28;
+  --border:#243348;--sidebar-bg:#152035;
+}}
+:root[data-theme="dark"]{--accent:#5b92c4;--accent-light:#172030;--green:#52a875;--green-light:#1b3228;--amber:#d4893a;--amber-light:#2a1c0a;--red:#e05a4d;--red-light:#2a1010;--text:#d8e6f0;--text-muted:#8aaabb;--surface:#1a2535;--bg:#111b28;--border:#243348;--sidebar-bg:#152035;}
+:root[data-theme="light"]{--accent:#2c5f8a;--accent-light:#e8f1f8;--green:#3a7d5a;--green-light:#e8f4ed;--amber:#b5661a;--amber-light:#fdf3e3;--red:#c0392b;--red-light:#fdecea;--text:#1a2330;--text-muted:#546478;--surface:#fff;--bg:#f4f7fa;--border:#cbd5e0;--sidebar-bg:#eef2f7;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:15px;line-height:1.7;color:var(--text);background:var(--bg);display:flex;flex-direction:column;min-height:100vh;}
+a{color:var(--accent);text-decoration:none;}a:hover{text-decoration:underline;}
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;z-index:100;}
+.topbar-brand{display:flex;align-items:center;gap:10px;font-family:Georgia,serif;font-size:17px;font-weight:700;color:var(--accent);}
+.topbar-title{font-size:13px;font-weight:500;color:var(--text-muted);margin-left:4px;padding-left:12px;border-left:1px solid var(--border);}
+.topbar-badge{margin-left:auto;font-size:11px;font-weight:700;background:var(--accent-light);color:var(--accent);padding:3px 10px;border-radius:20px;}
+.theme-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px;color:var(--text-muted);cursor:pointer;margin-left:8px;}
+.theme-btn:hover{background:var(--accent-light);color:var(--accent);}
+.layout{display:flex;padding-top:var(--nav-h);min-height:100vh;}
+.sidebar{position:fixed;top:var(--nav-h);left:0;bottom:0;width:var(--sidebar-w);background:var(--sidebar-bg);border-right:1px solid var(--border);overflow-y:auto;padding:20px 0 40px;z-index:50;}
+.sidebar::-webkit-scrollbar{width:4px;}.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.nav-group-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);padding:14px 20px 4px;}
+.nav-link{display:flex;align-items:center;gap:8px;padding:7px 20px;font-size:13.5px;color:var(--text);border-left:3px solid transparent;transition:background .12s,color .12s,border-color .12s;}
+.nav-link:hover,.nav-link.active{background:var(--accent-light);color:var(--accent);text-decoration:none;border-left-color:var(--accent);}
+.nav-link.active{font-weight:600;}
+.main{margin-left:var(--sidebar-w);flex:1;padding:48px 56px 80px;max-width:calc(var(--sidebar-w) + 800px);}
+.content{max-width:760px;}
+h1{font-family:Georgia,serif;font-size:30px;font-weight:700;color:var(--text);line-height:1.25;text-wrap:balance;margin-bottom:12px;}
+h2{font-family:Georgia,serif;font-size:22px;font-weight:700;color:var(--text);margin-top:56px;margin-bottom:16px;padding-bottom:10px;border-bottom:1.5px solid var(--border);text-wrap:balance;}
+h3{font-size:16px;font-weight:700;color:var(--text);margin-top:32px;margin-bottom:10px;}
+h4{font-size:14px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-top:24px;margin-bottom:8px;}
+p{margin-bottom:14px;}ul,ol{padding-left:22px;margin-bottom:14px;}li{margin-bottom:5px;}li::marker{color:var(--accent);}
+strong{font-weight:700;color:var(--text);}
+code{font-family:'Courier New',monospace;font-size:13px;background:var(--accent-light);color:var(--accent);padding:1px 6px;border-radius:4px;}
+.section-intro{font-size:16px;color:var(--text-muted);margin-bottom:32px;line-height:1.65;}
+.adm{display:flex;gap:14px;padding:14px 16px;border-radius:var(--radius);margin:20px 0;border-left:4px solid;}
+.adm-icon{flex-shrink:0;margin-top:1px;}.adm-body{flex:1;}.adm-body strong{display:block;margin-bottom:4px;font-size:14px;}.adm-body p{margin-bottom:0;font-size:14px;}
+.adm.info{background:var(--accent-light);border-color:var(--accent);}.adm.tip{background:var(--green-light);border-color:var(--green);}.adm.warn{background:var(--amber-light);border-color:var(--amber);}.adm.danger{background:var(--red-light);border-color:var(--red);}
+.adm.info .adm-icon{color:var(--accent);}.adm.tip .adm-icon{color:var(--green);}.adm.warn .adm-icon{color:var(--amber);}.adm.danger .adm-icon{color:var(--red);}
+.steps{counter-reset:step;list-style:none;padding:0;}
+.steps li{counter-increment:step;display:flex;gap:16px;align-items:flex-start;margin-bottom:18px;}
+.steps li::before{content:counter(step);flex-shrink:0;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px;}
+.steps li p{margin:0;}
+.req-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:16px 0;}
+.req-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;}
+.req-card-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:4px;}
+.req-card-val{font-size:14px;font-weight:600;color:var(--text);}
+.doc-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+.doc-table th{background:var(--accent-light);color:var(--accent);text-align:left;padding:9px 14px;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.06em;}
+.doc-table td{padding:9px 14px;border-bottom:1px solid var(--border);}
+.doc-table tr:last-child td{border-bottom:none;}
+.doc-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);margin:16px 0;}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;vertical-align:middle;}
+.badge-green{background:var(--green-light);color:var(--green);}.badge-blue{background:var(--accent-light);color:var(--accent);}.badge-amber{background:var(--amber-light);color:var(--amber);}.badge-red{background:var(--red-light);color:var(--red);}
+.anchor{scroll-margin-top:calc(var(--nav-h) + 24px);}
+.path-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;font-family:'Courier New',monospace;font-size:13px;margin:10px 0;word-break:break-all;}
+.doc-footer{text-align:center;padding:40px;font-size:13px;color:var(--text-muted);border-top:1px solid var(--border);margin-top:60px;}
+@media(max-width:860px){.sidebar{display:none;}.main{margin-left:0;padding:32px 20px;}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-brand">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#2c5f8a"/><path d="M12 3l1.5 4.5H18l-3.75 2.7 1.5 4.5L12 12l-3.75 2.7 1.5-4.5L6 7.5h4.5L12 3z" fill="none" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></svg>
+    Synoria
+  </div>
+  <span class="topbar-title">Guide d'installation — v1.5.8</span>
+  <span class="topbar-badge">💿 Windows</span>
+  <button type="button" class="theme-btn" onclick="toggleTheme()">☀ / ☾</button>
+</header>
+
+<div class="layout">
+<nav class="sidebar">
+  <div class="nav-group-label">Installation</div>
+  <a href="#prerequis"        class="nav-link">Prérequis</a>
+  <a href="#telechargement"   class="nav-link">Téléchargement</a>
+  <a href="#installation"     class="nav-link">Installation Windows</a>
+  <a href="#premier-lancement" class="nav-link">Premier lancement</a>
+  <a href="#mot-de-passe"     class="nav-link">Mot de passe principal</a>
+  <div class="nav-group-label">Gestion</div>
+  <a href="#transfert"        class="nav-link">Transfert vers un autre PC</a>
+  <a href="#mises-a-jour"     class="nav-link">Mises à jour</a>
+  <a href="#desinstallation"  class="nav-link">Désinstallation</a>
+  <div class="nav-group-label">Aide</div>
+  <a href="#faq"              class="nav-link">FAQ</a>
+</nav>
+
+<main class="main"><div class="content">
+
+<section id="introduction" class="anchor">
+  <h1>Guide d'installation</h1>
+  <p class="section-intro">Ce guide couvre l'installation de Synoria v1.5.8 sur Windows, la création de votre compte, la configuration du mot de passe de chiffrement, et le transfert vers un autre poste.</p>
+</section>
+
+<!-- PRÉREQUIS -->
+<section id="prerequis" class="anchor">
+  <h2>Prérequis système</h2>
+  <div class="req-grid">
+    <div class="req-card"><div class="req-card-label">Système</div><div class="req-card-val">Windows 10 ou 11 (64 bits)</div></div>
+    <div class="req-card"><div class="req-card-label">Processeur</div><div class="req-card-val">Intel / AMD x64, 1,6 GHz minimum</div></div>
+    <div class="req-card"><div class="req-card-label">RAM</div><div class="req-card-val">4 Go (8 Go recommandé)</div></div>
+    <div class="req-card"><div class="req-card-label">Espace disque</div><div class="req-card-val">300 Mo + espace pour vos données</div></div>
+    <div class="req-card"><div class="req-card-label">Internet</div><div class="req-card-val">Requise pour l'activation et les mises à jour</div></div>
+    <div class="req-card"><div class="req-card-label">Droits</div><div class="req-card-val">Administrateur pour l'installation</div></div>
+  </div>
+  <div class="adm info">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 16A8 8 0 108 0a8 8 0 000 16zm.93-9.412l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM8 5.5a1 1 0 110-2 1 1 0 010 2z"/></svg></span>
+    <div class="adm-body"><strong>macOS</strong><p>La version macOS est en cours de développement. Pour être notifié de sa sortie, contactez <strong>contact@logiciel-synoria.fr</strong>.</p></div>
+  </div>
+</section>
+
+<!-- TÉLÉCHARGEMENT -->
+<section id="telechargement" class="anchor">
+  <h2>Téléchargement</h2>
+  <ol class="steps">
+    <li><p>Rendez-vous sur <strong>synoria.fr</strong> et connectez-vous à votre espace personnel avec l'email utilisé lors de votre souscription.</p></li>
+    <li><p>Dans la section <strong>Téléchargements</strong>, cliquez sur <span class="badge badge-green">Installateur Windows .exe</span> pour télécharger la version 1.5.8.</p></li>
+    <li><p>Enregistrez le fichier dans votre dossier Téléchargements. Le nom du fichier ressemble à <code>Synoria-Setup-1.5.8.exe</code>.</p></li>
+  </ol>
+  <div class="adm warn">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8.982 1.566a1.13 1.13 0 00-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 01-1.1 0L7.1 5.995A.905.905 0 018 5zm.002 6a1 1 0 110 2 1 1 0 010-2z"/></svg></span>
+    <div class="adm-body"><strong>Téléchargez uniquement depuis synoria.fr</strong><p>Ne téléchargez jamais Synoria depuis un site tiers. Vérifiez le cadenas HTTPS dans la barre d'adresse de votre navigateur.</p></div>
+  </div>
+</section>
+
+<!-- INSTALLATION WINDOWS -->
+<section id="installation" class="anchor">
+  <h2>Installation Windows</h2>
+  <ol class="steps">
+    <li><p>Double-cliquez sur le fichier <code>Synoria-Setup-1.5.8.exe</code> téléchargé.</p></li>
+    <li><p><strong>Windows SmartScreen</strong> peut afficher un avertissement "Windows a protégé votre ordinateur". Cliquez sur <strong>Informations complémentaires</strong> puis <strong>Exécuter quand même</strong>. Synoria est un logiciel légitime signé numériquement.</p></li>
+    <li><p>Si Windows demande les droits administrateur (fenêtre bleue UAC), cliquez <strong>Oui</strong>.</p></li>
+    <li><p>L'installeur NSIS s'exécute, copie les fichiers et crée un raccourci sur le bureau. L'installation dure moins d'une minute.</p></li>
+    <li><p>Synoria se lance automatiquement à la fin de l'installation.</p></li>
+  </ol>
+
+  <h3>Contournement de SmartScreen (détail)</h3>
+  <p>SmartScreen bloque les exécutables peu répandus à leur sortie. Ce n'est pas une indication de danger :</p>
+  <ul>
+    <li>Cliquez <strong>Informations complémentaires</strong> (lien bleu en bas à gauche de la fenêtre)</li>
+    <li>Cliquez <strong>Exécuter quand même</strong></li>
+  </ul>
+  <div class="adm tip">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 16A8 8 0 108 0a8 8 0 000 16zm.93-9.412l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM8 5.5a1 1 0 110-2 1 1 0 010 2z"/></svg></span>
+    <div class="adm-body"><strong>Problème UAC uniquement</strong><p>Si vous n'avez pas les droits administrateur sur votre ordinateur professionnel, demandez à votre responsable informatique d'effectuer l'installation.</p></div>
+  </div>
+</section>
+
+<!-- PREMIER LANCEMENT -->
+<section id="premier-lancement" class="anchor">
+  <h2>Premier lancement</h2>
+  <p>Au premier lancement, Synoria vous guide en 3 étapes :</p>
+
+  <h3>Étape 1 — Connexion à votre compte Synoria</h3>
+  <p>Synoria utilise un compte en ligne pour gérer votre abonnement. Vos données patients, elles, restent 100 % locales sur votre ordinateur.</p>
+  <ul>
+    <li><strong>Si vous avez déjà un compte</strong> : saisissez votre email et mot de passe Synoria, puis cliquez <strong>Se connecter</strong>.</li>
+    <li><strong>Si vous n'avez pas encore de compte</strong> : cliquez <strong>Créer un compte</strong>, renseignez votre email professionnel et choisissez un mot de passe (8 caractères minimum). Acceptez les CGU, puis cliquez <strong>Créer mon compte</strong>.</li>
+  </ul>
+  <div class="adm warn">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8.982 1.566a1.13 1.13 0 00-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 01-1.1 0L7.1 5.995A.905.905 0 018 5zm.002 6a1 1 0 110 2 1 1 0 010-2z"/></svg></span>
+    <div class="adm-body"><strong>Confirmez votre email</strong><p>Après la création, vérifiez votre boîte mail et cliquez sur le lien de confirmation avant de vous connecter. Sans confirmation, la connexion est refusée. Si vous ne recevez pas l'email dans 5 minutes, vérifiez vos spams ou cliquez "Renvoyer l'email de confirmation" sur l'écran de connexion.</p></div>
+  </div>
+
+  <h3>Étape 2 — Abonnement et essai gratuit</h3>
+  <p>Si votre compte est nouveau ou si vous n'avez pas encore d'abonnement, l'écran d'abonnement s'affiche. Deux formules sont disponibles :</p>
+  <div class="doc-table-wrap"><table class="doc-table">
+    <thead><tr><th>Formule</th><th>Prix</th><th>Essai gratuit</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Synoria Annuel</strong></td><td>123 € / an (10,25 €/mois)</td><td>14 jours gratuits</td></tr>
+      <tr><td><strong>Synoria 6 mois</strong></td><td>63 € / 6 mois (10,50 €/mois)</td><td>14 jours gratuits</td></tr>
+    </tbody>
+  </table></div>
+  <p>Cliquez <strong>Commencer l'essai gratuit</strong> sur la formule de votre choix. Vous serez redirigé vers Stripe pour renseigner votre carte bancaire. <strong>Aucun prélèvement n'est effectué avant J+14.</strong></p>
+  <div class="adm info">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 16A8 8 0 108 0a8 8 0 000 16zm.93-9.412l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM8 5.5a1 1 0 110-2 1 1 0 010 2z"/></svg></span>
+    <div class="adm-body"><strong>Si vous avez déjà un abonnement actif</strong><p>Cette étape est ignorée et Synoria passe directement à la création du mot de passe principal.</p></div>
+  </div>
+
+  <h3>Étape 3 — Assistant de configuration</h3>
+  <p>Au tout premier démarrage, un assistant (wizard) s'affiche une seule fois pour vous aider à choisir votre formulaire métier (MTC, kinésio, ostéo, naturo, basique, etc.) et configurer les sauvegardes automatiques.</p>
+</section>
+
+<!-- MOT DE PASSE PRINCIPAL -->
+<section id="mot-de-passe" class="anchor">
+  <h2>Mot de passe principal — à lire absolument</h2>
+  <p>Synoria utilise <strong>deux mots de passe distincts</strong> :</p>
+  <div class="doc-table-wrap"><table class="doc-table">
+    <thead><tr><th>Mot de passe</th><th>Rôle</th><th>Où le changer</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Compte Synoria</strong></td><td>Connexion à votre compte en ligne, gestion de l'abonnement</td><td>Sur synoria.fr</td></tr>
+      <tr><td><strong>Mot de passe principal</strong></td><td>Chiffre votre base de données patients (AES-256) ET chiffre vos sauvegardes</td><td>Paramètres → Sécurité</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="adm danger">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8.982 1.566a1.13 1.13 0 00-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 01-1.1 0L7.1 5.995A.905.905 0 018 5zm.002 6a1 1 0 110 2 1 1 0 010-2z"/></svg></span>
+    <div class="adm-body"><strong>Ce mot de passe est irremplaçable</strong><p>Il n'existe <strong>aucune procédure de récupération</strong> du mot de passe principal. Si vous le perdez, vous perdez l'accès à votre base de données ET à vos sauvegardes chiffrées. Notez-le immédiatement dans un gestionnaire de mots de passe ou en lieu sûr physique (coffre, tiroir fermé à clé).</p></div>
+  </div>
+
+  <h3>Créer le mot de passe principal</h3>
+  <ol class="steps">
+    <li><p>L'écran de création s'affiche au premier lancement. Saisissez un mot de passe d'au moins <strong>6 caractères</strong> (recommandé : 12+ caractères avec des chiffres et caractères spéciaux).</p></li>
+    <li><p>Confirmez-le dans le second champ.</p></li>
+    <li><p>Cliquez <strong>Créer le mot de passe</strong>. Synoria chiffre immédiatement la base de données et ouvre l'application.</p></li>
+  </ol>
+
+  <h3>Déverrouillage au démarrage</h3>
+  <p>À chaque démarrage suivant, Synoria demande le mot de passe principal pour déchiffrer la base de données. L'application se verrouille également automatiquement après <strong>20 minutes d'inactivité</strong> ou via <strong>Ctrl+L</strong>.</p>
+</section>
+
+<!-- TRANSFERT -->
+<section id="transfert" class="anchor">
+  <h2>Transfert vers un autre ordinateur</h2>
+  <p>Pour installer Synoria sur un autre ordinateur et retrouver toutes vos données, suivez ces étapes dans l'ordre.</p>
+
+  <h3>Sur l'ancien ordinateur — Créer une sauvegarde transférable</h3>
+  <ol class="steps">
+    <li><p>Dans Synoria, cliquez sur le bouton <strong>Données</strong> dans l'en-tête (en haut à droite), puis <strong>Sauvegarder la base de données</strong>. Ou allez dans <strong>Paramètres → Sauvegardes → Sauvegarder maintenant</strong>.</p></li>
+    <li><p>Un fichier <code>backup-global-AAAA-MM-JJ-HHhMM.json.enc</code> est créé dans votre dossier de sauvegardes. Copiez ce fichier sur une clé USB ou un dossier partagé (cloud personnel, email, etc.).</p></li>
+    <li><p><strong>Notez votre mot de passe principal</strong> — il sera nécessaire pour restaurer la sauvegarde sur le nouvel ordinateur.</p></li>
+  </ol>
+
+  <div class="adm info">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 16A8 8 0 108 0a8 8 0 000 16zm.93-9.412l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM8 5.5a1 1 0 110-2 1 1 0 010 2z"/></svg></span>
+    <div class="adm-body"><strong>Sauvegardes chiffrées par votre mot de passe</strong><p>Les sauvegardes Synoria sont chiffrées avec votre mot de passe principal. Elles sont directement importables sur n'importe quel ordinateur — il suffit de connaître votre mot de passe.</p></div>
+  </div>
+
+  <h3>Sur le nouvel ordinateur — Installer et restaurer</h3>
+  <ol class="steps">
+    <li><p>Installez Synoria en suivant les étapes de ce guide (téléchargement → installation → connexion au compte Synoria → abonnement).</p></li>
+    <li><p>Lors de la création du mot de passe principal, choisissez le <strong>même mot de passe</strong> que sur l'ancien ordinateur. Cela n'est pas obligatoire, mais facilite la mémorisation.</p></li>
+    <li><p>Une fois dans l'application, cliquez <strong>Données</strong> → <strong>Restaurer une sauvegarde…</strong> (ou <strong>Paramètres → Sauvegardes → Importer une sauvegarde</strong>).</p></li>
+    <li><p>Sélectionnez le fichier <code>.json.enc</code> copié depuis l'ancien ordinateur.</p></li>
+    <li><p>Une fenêtre s'ouvre — saisissez le mot de passe principal de <em>l'ancien</em> ordinateur et cliquez <strong>Importer</strong>. Synoria fusionne les données et affiche un résumé (patients importés, séances importées, doublons ignorés).</p></li>
+  </ol>
+
+  <h3>Désactiver l'ancien appareil</h3>
+  <p>Votre licence autorise <strong>2 appareils simultanément</strong>. Si l'ancien ordinateur est remplacé définitivement, désactivez-le pour libérer un slot :</p>
+  <ul>
+    <li>Sur le <strong>nouvel</strong> ordinateur : <strong>Mon abonnement → Appareils actifs</strong> → trouvez l'ancien poste → <strong>Désactiver</strong>.</li>
+    <li>Ou sur l'ancien ordinateur (s'il est encore accessible) : <strong>Mon abonnement → Désactiver cet appareil</strong>.</li>
+  </ul>
+</section>
+
+<!-- MISES À JOUR -->
+<section id="mises-a-jour" class="anchor">
+  <h2>Mises à jour</h2>
+  <p>Synoria vérifie automatiquement les mises à jour. Lorsqu'une nouvelle version est disponible, un bandeau bleu apparaît sous la barre de navigation.</p>
+
+  <h3>Procédure de mise à jour</h3>
+  <ol class="steps">
+    <li><p>Cliquez sur <strong>Télécharger vX.Y.Z</strong> dans le bandeau de mise à jour (ou via <strong>Mon abonnement → Télécharger</strong>). Le navigateur télécharge le nouveau fichier <code>.exe</code>.</p></li>
+    <li><p>Une fois le téléchargement terminé, allez dans <strong>Paramètres → Sécurité → Mise à jour du logiciel</strong>. Cliquez sur le bouton <strong>Parcourir</strong> pour sélectionner le fichier <code>.exe</code> téléchargé.</p></li>
+    <li><p>Cliquez <strong>Installer la mise à jour</strong>. Synoria se ferme automatiquement et lance l'installeur.</p></li>
+    <li><p>Suivez l'installeur, puis relancez Synoria depuis le bureau.</p></li>
+  </ol>
+
+  <div class="adm tip">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 16A8 8 0 108 0a8 8 0 000 16zm.93-9.412l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM8 5.5a1 1 0 110-2 1 1 0 010 2z"/></svg></span>
+    <div class="adm-body"><strong>Vos données ne sont pas supprimées</strong><p>Une mise à jour ne touche jamais vos données patients. La base de données chiffrée reste intacte dans <code>AppData\Roaming\Synoria\</code>.</p></div>
+  </div>
+
+  <h3>Mises à jour requises</h3>
+  <p>Certaines versions sont marquées "requises" (⚠). Dans ce cas, le bandeau ne peut pas être ignoré et le bouton "Télécharger" est mis en évidence. Il est recommandé d'effectuer ces mises à jour dès que possible.</p>
+</section>
+
+<!-- DÉSINSTALLATION -->
+<section id="desinstallation" class="anchor">
+  <h2>Désinstallation</h2>
+  <div class="adm warn">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8.982 1.566a1.13 1.13 0 00-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 01-1.1 0L7.1 5.995A.905.905 0 018 5zm.002 6a1 1 0 110 2 1 1 0 010-2z"/></svg></span>
+    <div class="adm-body"><strong>Sauvegardez avant de désinstaller</strong><p>La désinstallation ne supprime pas vos données (elles sont dans AppData), mais il est prudent de faire une sauvegarde complète avant toute manipulation.</p></div>
+  </div>
+  <ol class="steps">
+    <li><p>Faites une sauvegarde complète : <strong>Données → Sauvegarder la base de données</strong>.</p></li>
+    <li><p>Fermez Synoria complètement.</p></li>
+    <li><p>Dans Windows : <strong>Paramètres → Applications → Applications installées</strong> → recherchez "Synoria" → <strong>Désinstaller</strong>.</p></li>
+    <li><p>Pour supprimer aussi vos données patients (attention, irréversible) : supprimez manuellement le dossier <code>C:\Users\[nom]\AppData\Roaming\Synoria\</code>.</p></li>
+  </ol>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="anchor">
+  <h2>Foire aux questions</h2>
+
+  <h3>Je n'arrive pas à me connecter — "Email non confirmé"</h3>
+  <p>Vérifiez votre boîte mail (y compris les spams). Cliquez sur le lien dans l'email de confirmation. Si vous ne trouvez pas l'email, sur l'écran de connexion Synoria, cliquez <strong>Renvoyer l'email de confirmation</strong>.</p>
+
+  <h3>J'ai oublié mon mot de passe Synoria (compte)</h3>
+  <p>Sur l'écran de connexion, cliquez <strong>Mot de passe oublié ?</strong>. Saisissez votre email et cliquez Envoyer. Vous recevrez un lien de réinitialisation par email.</p>
+
+  <h3>J'ai oublié mon mot de passe PRINCIPAL (base de données)</h3>
+  <div class="adm danger">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8.982 1.566a1.13 1.13 0 00-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 01-1.1 0L7.1 5.995A.905.905 0 018 5zm.002 6a1 1 0 110 2 1 1 0 010-2z"/></svg></span>
+    <div class="adm-body"><strong>Ce mot de passe est irrécupérable</strong><p>Le mot de passe principal chiffre votre base de données avec AES-256. Il n'est jamais envoyé à Synoria. Si vous le perdez, il n'existe aucune procédure de récupération. Notez-le impérativement.</p></div>
+  </div>
+
+  <h3>Puis-je installer Synoria sur plusieurs ordinateurs ?</h3>
+  <p>Oui, votre licence autorise jusqu'à <strong>2 appareils simultanés</strong>. La synchronisation automatique entre postes n'est pas disponible — utilisez les sauvegardes pour transférer vos données d'une machine à l'autre. Pour ajouter un 3ème appareil, désactivez d'abord l'un des deux actifs depuis <strong>Mon abonnement → Appareils actifs</strong>.</p>
+
+  <h3>Où sont stockées mes données ?</h3>
+  <div class="doc-table-wrap"><table class="doc-table">
+    <thead><tr><th>Fichier</th><th>Emplacement Windows</th></tr></thead>
+    <tbody>
+      <tr><td>Base de données (chiffrée)</td><td><code>%AppData%\Synoria\database\mtc.sqlite.enc</code></td></tr>
+      <tr><td>Paramètres</td><td><code>%AppData%\Synoria\settings.json</code></td></tr>
+      <tr><td>Formulaire actif</td><td><code>%AppData%\Synoria\active.plugin.json</code></td></tr>
+    </tbody>
+  </table></div>
+  <p>Le dossier <code>AppData</code> est caché par défaut dans Windows. Pour l'afficher : Explorateur de fichiers → Affichage → Éléments masqués. Ou appuyez sur <strong>Win+R</strong> et saisissez <code>%AppData%\Synoria</code>.</p>
+
+  <h3>L'installation échoue / l'installeur ne se lance pas</h3>
+  <p>Faites un clic droit sur le fichier <code>.exe</code> → <strong>Exécuter en tant qu'administrateur</strong>. Si le problème persiste, vérifiez que votre Windows est à jour (Windows Update) et redémarrez.</p>
+
+  <h3>Synoria ne démarre pas après l'installation</h3>
+  <p>Redémarrez votre ordinateur et relancez Synoria. Si le problème persiste, contactez le support (<strong>contact@logiciel-synoria.fr</strong>) en joignant le rapport de diagnostic (<strong>Paramètres → Support → Générer le rapport de diagnostic</strong>).</p>
+
+  <h3>Ma sauvegarde ne peut pas être restaurée sur le nouvel ordinateur</h3>
+  <p>Vérifiez que vous utilisez le bon mot de passe principal (celui de l'<em>ancien</em> ordinateur). Vous pouvez aussi contrôler l'intégrité du fichier avant de l'importer : <strong>Paramètres → Sauvegardes → Vérifier une sauvegarde</strong>.</p>
+</section>
+
+<div class="doc-footer">
+  <p>Synoria v1.5.8 · <a href="mailto:contact@logiciel-synoria.fr">contact@logiciel-synoria.fr</a> · <a href="documentation.html">Guide d'utilisation</a> · <a href="guide-rgpd.html">Guide RGPD</a></p>
+</div>
+
+</div></main>
+</div>
+<script>
+function getTheme(){return localStorage.getItem('doc-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}
+function applyTheme(t){document.documentElement.setAttribute('data-theme',t);localStorage.setItem('doc-theme',t);}
+function toggleTheme(){applyTheme(getTheme()==='dark'?'light':'dark');}
+applyTheme(getTheme());
+const sections=document.querySelectorAll('section[id]');
+const navLinks=document.querySelectorAll('.nav-link[href^="#"]');
+const observer=new IntersectionObserver(e=>{e.forEach(e=>{if(e.isIntersecting){navLinks.forEach(l=>l.classList.remove('active'));const a=document.querySelector(`.nav-link[href="#${e.target.id}"]`);if(a)a.classList.add('active');}});},{rootMargin:'-20% 0px -70% 0px'});
+sections.forEach(s=>observer.observe(s));
+</script>
+</body>
+</html>

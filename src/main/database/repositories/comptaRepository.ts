@@ -168,8 +168,8 @@ export function addInvoiceLog(inv: Omit<InvoiceLog, 'id' | 'created_at'>): void 
 export function updateInvoiceLog(id: string, data: Partial<Omit<InvoiceLog, 'id' | 'created_at'>>): void {
   getDb().prepare(`
     UPDATE invoices_log SET
-      invoice_number = COALESCE(?, invoice_number),
-      invoice_date   = COALESCE(?, invoice_date),
+      invoice_number     = COALESCE(?, invoice_number),
+      invoice_date       = COALESCE(?, invoice_date),
       patient_first_name = COALESCE(?, patient_first_name),
       patient_last_name  = COALESCE(?, patient_last_name),
       patient_address    = ?,
@@ -177,21 +177,30 @@ export function updateInvoiceLog(id: string, data: Partial<Omit<InvoiceLog, 'id'
       phone              = ?,
       session_date       = ?,
       description        = ?,
-      montant            = COALESCE(?, montant)
+      montant            = COALESCE(?, montant),
+      file_path          = COALESCE(?, file_path)
     WHERE id = ?
   `).run(
-    data.invoice_number    ?? null,
-    data.invoice_date      ?? null,
+    data.invoice_number     ?? null,
+    data.invoice_date       ?? null,
     data.patient_first_name ?? null,
     data.patient_last_name  ?? null,
-    data.patient_address   ?? null,
-    data.email             ?? null,
-    data.phone             ?? null,
-    data.session_date      ?? null,
-    data.description       ?? null,
-    data.montant           ?? null,
+    data.patient_address    ?? null,
+    data.email              ?? null,
+    data.phone              ?? null,
+    data.session_date       ?? null,
+    data.description        ?? null,
+    data.montant            ?? null,
+    data.file_path          ?? null,
     id
   )
+}
+
+export function markInvoicePaid(id: string, paid: boolean): void {
+  const paidDate = paid ? new Date().toISOString().slice(0, 10) : null
+  getDb().prepare(
+    'UPDATE invoices_log SET is_paid = ?, paid_date = ? WHERE id = ?'
+  ).run(paid ? 1 : 0, paidDate, id)
 }
 
 export function deleteInvoiceLog(id: string): void {

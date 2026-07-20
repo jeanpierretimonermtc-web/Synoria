@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext, useRef, useCallback } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import type { Patient, Session, ConsultationType, SystemesQuestionnaire, EnergyTests, Appointment } from '../../shared/types'
+import type { Patient, Session, ConsultationType, SystemesQuestionnaire, EnergyTests, Appointment, SessionFullData } from '../../shared/types'
 import type { PluginDefinition } from '../../shared/pluginTypes'
 import PluginFormRenderer from '../components/plugin/PluginFormRenderer'
 import { showConfirm } from '../components/common/ConfirmDialog'
@@ -8,7 +8,10 @@ import { ToastContext } from '../App'
 import { useRestriction } from '../hooks/useRestriction'
 import RichTextArea from '../components/common/RichTextArea'
 import { defaultSystemes, defaultEnergyTests, migrateSystemes, MV_LIST, RECHAUFFEURS, FOYERS, POINTS_MU, SYNDROMES_BASE, SYNDROMES_CLIMAT, PENETRATION_LEVELS } from '../utils/sessionData'
+import { sanitizeRichTextHtml } from '../utils/sanitizeHtml'
 import SystemesForm from '../components/forms/SystemesForm'
+
+const OFFICIAL_FORM_IDS = ['basique', 'mtc_jp', 'osteopathie', 'kinesio_charlotte', 'naturopathie', 'douleur_evolution'] as const
 
 /* ─── SCORE BUTTON COMPONENT ─────────────────────────────────── */
 function ScoreButtons({ value, onChange }: { value: number; onChange: (v: number) => void }) {
@@ -37,7 +40,7 @@ function PrevField({ label, value }: { label: string; value?: string | null }) {
     <div style={{ marginBottom: 10 }}>
       <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-muted)', marginBottom: 3 }}>{label}</div>
       {hasHtml
-        ? <div className="detail-value" style={{ fontSize: 13 }} dangerouslySetInnerHTML={{ __html: value }} />
+        ? <div className="detail-value" style={{ fontSize: 13 }} dangerouslySetInnerHTML={{ __html: sanitizeRichTextHtml(value) }} />
         : <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>{value}</div>
       }
     </div>
@@ -49,24 +52,24 @@ function PrevSessionAccordion({ session: s, open, onToggle }: {
   open: boolean
   onToggle: () => void
 }) {
-  let fd: Record<string, unknown> = {}
-  try { if (s.full_data_json) fd = JSON.parse(s.full_data_json) } catch {}
+  const fd: SessionFullData = (() => { try { return s.full_data_json ? JSON.parse(s.full_data_json) as SessionFullData : {} } catch { return {} } })()
 
-  const anamnese    = (fd.anamnese    as string) || ''
-  const barrageNiv1 = (fd.barrageNiv1 as string) || ''
-  const barrageNiv2 = (fd.barrageNiv2 as string) || ''
-  const barrageNiv3 = (fd.barrageNiv3 as string) || ''
-  const barrageNiv4 = (fd.barrageNiv4 as string) || ''
-  const nextNote              = (fd.nextSessionNote          as string) || ''
-  const prevSimpleContextVie  = (fd.simpleContextVie         as string) || ''
-  const prevSimpleTraitements = (fd.simpleTraitementsEnCours as string) || ''
-  const prevSimpleObjectifs   = (fd.simpleObjectifs          as string) || ''
-  const prevSimpleNotes       = (fd.simpleNotesEntretien     as string) || ''
-  const pluginId              = (fd.pluginId as string) || ''
+  const anamnese    = fd.anamnese    || ''
+  const barrageNiv1 = fd.barrageNiv1 || ''
+  const barrageNiv2 = fd.barrageNiv2 || ''
+  const barrageNiv3 = fd.barrageNiv3 || ''
+  const barrageNiv4 = fd.barrageNiv4 || ''
+  const nextNote              = fd.nextSessionNote          || ''
+  const prevSimpleContextVie  = fd.simpleContextVie         || ''
+  const prevSimpleTraitements = fd.simpleTraitementsEnCours || ''
+  const prevSimpleObjectifs   = fd.simpleObjectifs          || ''
+  const prevSimpleNotes       = fd.simpleNotesEntretien     || ''
+  const pluginId              = fd.pluginId  || ''
   const pluginData  = (fd.pluginData as Record<string, unknown>) || {}
-  const pluginSchema = fd.pluginSchema as { name?: string; sections?: Array<{ id: string; title: string; icon?: string; fields: Array<{ id: string; label: string; type: string; max?: number }> }> } | null
+  const pluginSchema = fd.pluginSchema || null
   const isMtcBuiltin = !!(fd.pluginIsBuiltin) || pluginId === 'mtc_jp'
   const hasPlugin    = !!pluginId && !isMtcBuiltin && !!pluginSchema
+  const pluginSchemaMissing = !!pluginId && !isMtcBuiltin && !pluginSchema
 
   // Aperçu tronqué du motif pour le header
   const motifPreview = s.motif
@@ -76,18 +79,35 @@ function PrevSessionAccordion({ session: s, open, onToggle }: {
   // Helper pour afficher une valeur de champ plugin
   const renderPluginVal = (type: string, val: unknown, max?: number): string | null => {
     if (val === null || val === undefined || val === '') return null
+    if (type === 'before_after' && typeof val === 'object' && !Array.isArray(val)) {
+      const ba = val as { before?: number; after?: number }
+      const m = max ?? 10
+      const parts = [
+        typeof ba.before === 'number' ? `Avant : ${ba.before}/${m}` : '',
+        typeof ba.after  === 'number' ? `Après : ${ba.after}/${m}` : '',
+      ].filter(Boolean)
+      return parts.length ? parts.join(' · ') : null
+    }
+    if (type === 'repeatable' && Array.isArray(val)) {
+      const rows = (val as Array<{ nom?: string; note?: string }>).filter(r => r?.nom?.trim())
+      return rows.length ? rows.map(r => r.nom).join(', ') : null
+    }
     if (Array.isArray(val)) return val.length ? (val as string[]).join(', ') : null
     if (type === 'checkbox') return val ? '✓' : null
-    if (type === 'rating') return `${val} / ${max ?? 10}`
+    if (type === 'rating' || type === 'slider') return `${val} / ${max ?? 10}`
     if (type === 'bodychart' && typeof val === 'object') {
-      const chart = val as { front?: string[]; back?: string[]; notes?: string }
+      const chart = val as { front?: string[]; back?: string[]; left?: string[]; right?: string[]; notes?: string }
       const parts = [
-        chart.front?.length ? `Antérieur : ${chart.front.join(', ')}` : '',
-        chart.back?.length ? `Postérieur : ${chart.back.join(', ')}` : '',
-        chart.notes?.trim() ? `Notes : ${chart.notes.trim()}` : '',
+        chart.front?.length  ? `Antérieur : ${chart.front.join(', ')}`       : '',
+        chart.back?.length   ? `Postérieur : ${chart.back.join(', ')}`        : '',
+        chart.left?.length   ? `Profil G : ${chart.left.join(', ')}`          : '',
+        chart.right?.length  ? `Profil D : ${chart.right.join(', ')}`         : '',
+        chart.notes?.trim()  ? `Notes : ${chart.notes.trim()}`                : '',
       ].filter(Boolean)
       return parts.length ? parts.join(' | ') : null
     }
+    // Modules complexes (mtc_systemes, osteo_posture, etc.) : trop riches pour ce contexte
+    if (typeof val === 'object') return null
     const str = String(val).replace(/<[^>]+>/g, '').trim()
     return str || null
   }
@@ -175,9 +195,9 @@ function PrevSessionAccordion({ session: s, open, onToggle }: {
                   {(barrageNiv1 || barrageNiv2 || barrageNiv3 || barrageNiv4) && (
                     <div style={{ marginBottom: 10 }}>
                       <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--text-muted)', marginBottom: 4 }}>Barrage</div>
-                      {[barrageNiv1, barrageNiv2, barrageNiv3, barrageNiv4].filter(Boolean).map((v, i) => (
+                      {[barrageNiv1, barrageNiv2, barrageNiv3, barrageNiv4].map((v, i) => v ? (
                         <div key={i} style={{ fontSize: 12, color: 'var(--text)', marginBottom: 2 }}>N{i + 1} : {v}</div>
-                      ))}
+                      ) : null)}
                     </div>
                   )}
                 </div>
@@ -257,6 +277,14 @@ function PrevSessionAccordion({ session: s, open, onToggle }: {
           )}
         </div>
       )}
+
+      {pluginSchemaMissing && (
+        <div style={{ borderTop: "1px solid var(--border-soft)", paddingTop: 10 }}>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic" }}>
+            Formulaire [{pluginId}] — schéma non disponible (séance ancienne, données conservées en base).
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -319,9 +347,16 @@ export default function NewSessionPage() {
   const [barrageNiv2, setBarrageNiv2] = useState('')
   const [barrageNiv3, setBarrageNiv3] = useState('')
   const [barrageNiv4, setBarrageNiv4] = useState('')
+  // Profils de séance (Phase 3) — sélecteur additif
+  const [profiles,          setProfiles]          = useState<import('../../shared/sessionProfileTypes').SessionFormProfile[]>([])
+  const [selectedProfileId, setSelectedProfileId] = useState<string>('')
+
   // Plugin spécialité
-  const [activePlugin,  setActivePlugin]  = useState<PluginDefinition | null>(null)
-  const [pluginData,    setPluginData]    = useState<Record<string, any>>({})
+  const [activePlugin,     setActivePlugin]     = useState<PluginDefinition | null>(null)
+  const [availablePlugins, setAvailablePlugins] = useState<PluginDefinition[]>([])
+  const [pluginData,       setPluginData]       = useState<Record<string, any>>({})
+  const pluginLoadedIdRef = useRef<string | null>(null)
+  const [isOwner,          setIsOwner]          = useState(false)
 
   // Prochain rendez-vous (synchronisé avec le calendrier)
   const [nextSession,       setNextSession]       = useState('')
@@ -340,6 +375,12 @@ export default function NewSessionPage() {
   const [simpleTraitementsEnCours, setSimpleTraitementsEnCours] = useState('')
   const [simpleObjectifs,          setSimpleObjectifs]          = useState('')
   const [simpleNotesEntretien,     setSimpleNotesEntretien]     = useState('')
+  const [techInput, setTechInput] = useState('')
+  const addTech = () => {
+    const t = techInput.trim()
+    if (t && !techniques.includes(t)) setTechniques(prev => [...prev, t])
+    setTechInput('')
+  }
   // Clôture séance : marquer RDV réalisé + comptabilité
   const [markRdvDone,      setMarkRdvDone]      = useState(false)
   const [enableCompta,     setEnableCompta]     = useState(false)
@@ -381,7 +422,35 @@ export default function NewSessionPage() {
   }, [patientId])
 
   useEffect(() => {
-    window.mtcApi.pluginGet().then(p => setActivePlugin(p || null)).catch(() => {})
+    // Profils de séance (Phase 3) — chargement additif, ne change pas le formulaire actif
+    Promise.all([window.mtcApi.profilesGetAll(), window.mtcApi.profilesGetDefault()])
+      .then(([list, def]) => {
+        setProfiles((list || []).filter(p => !p.isArchived))
+        if (def) setSelectedProfileId(def.id)
+      })
+      .catch(() => {})
+
+    window.mtcApi.ownerCheck().then(setIsOwner).catch(() => {})
+
+    Promise.all([
+      window.mtcApi.pluginGet(),
+      window.mtcApi.pluginListAvailable(),
+    ]).then(([p, all]) => {
+      setAvailablePlugins(all)
+      if (!isEditing) {
+        // En création : utiliser le plugin actif (rafraîchi depuis le bundle si disponible,
+        // sinon conserver la version stockée dans userData pour les plugins payants).
+        // Fallback sur basique si aucun plugin actif.
+        const effective = p
+          ? (all.find(f => f.id === p.id) ?? p)
+          : (all.find(f => f.id === 'basique') ?? null)
+        setActivePlugin(effective)
+        pluginLoadedIdRef.current = effective?.id ?? null
+      } else {
+        setActivePlugin(p || null)
+        pluginLoadedIdRef.current = p?.id ?? null
+      }
+    }).catch(() => {})
     window.mtcApi.getConsultationTypes().then(all => {
       const active = all.filter(t => t.is_active)
       setClotureTypes(active)
@@ -467,6 +536,7 @@ export default function NewSessionPage() {
       nextSession, nextSessionHeure, nextSessionFin, nextSessionNote, nextSessionApptId,
       barrageNiv1, barrageNiv2, barrageNiv3, barrageNiv4,
       systemes, energy, pluginData,
+      activePluginSnapshot: activePlugin && !activePlugin.useBuiltinForm ? activePlugin : null,
       _savedAt: Date.now(),
     }
   }, [isEditing, patientId, date, practitioner, motif, evolutionTags, evolution, problematiques,
@@ -477,7 +547,7 @@ export default function NewSessionPage() {
       conseils, plan, surveiller,
       nextSession, nextSessionHeure, nextSessionFin, nextSessionNote, nextSessionApptId,
       barrageNiv1, barrageNiv2, barrageNiv3, barrageNiv4,
-      systemes, energy, pluginData])
+      systemes, energy, pluginData, activePlugin])
 
   const saveDraftNow = useCallback(() => {
     const d = draftRef.current
@@ -512,7 +582,7 @@ export default function NewSessionPage() {
       conseils, plan, surveiller,
       nextSession, nextSessionHeure, nextSessionFin, nextSessionNote, nextSessionApptId,
       barrageNiv1, barrageNiv2, barrageNiv3, barrageNiv4,
-      systemes, energy, pluginData, saveDraftNow])
+      systemes, energy, pluginData, activePlugin, saveDraftNow])
 
   // 3. Perte de focus OS (alt-tab, minimiser) → sauvegarde immédiate
   useEffect(() => {
@@ -583,6 +653,9 @@ export default function NewSessionPage() {
         setNextSessionNote(d.nextSessionNote || '')
         setNextSessionApptId(d.nextSessionApptId || '')
         setPluginData(d.pluginData || {})
+        if (d.activePluginSnapshot && typeof d.activePluginSnapshot === 'object') {
+          setActivePlugin(d.activePluginSnapshot as PluginDefinition)
+        }
         setAnamnese(d.anamnese || '')
         setSimpleContextVie(d.simpleContextVie || '')
         setSimpleTraitementsEnCours(d.simpleTraitementsEnCours || '')
@@ -653,6 +726,15 @@ export default function NewSessionPage() {
           setNextSessionNote(d.nextSessionNote    || '')
           setNextSessionApptId(d.nextSessionApptId || '')
           setPluginData(d.pluginData || {})
+          // Édition : restaurer le formulaire utilisé lors de la séance, pas le formulaire actif global
+          if (d.pluginSchema && typeof d.pluginSchema === 'object' && !d.pluginIsBuiltin) {
+            setActivePlugin(d.pluginSchema as PluginDefinition)
+          }
+          // Clôture — restaurer l'état existant pour idempotence
+          if (d.comptaTypeId) {
+            setClotureTypeId(d.comptaTypeId)
+            setEnableCompta(true)
+          }
           setAnamnese(d.anamnese || '')
           setSimpleContextVie(d.simpleContextVie || '')
           setSimpleTraitementsEnCours(d.simpleTraitementsEnCours || '')
@@ -731,6 +813,29 @@ export default function NewSessionPage() {
   const handleSave = async () => {
     if (!patientId) { showToast('Sélectionnez un patient', 'error'); return }
     if (!date) { showToast('Indiquez la date', 'error'); return }
+
+    // ── Validation des champs requis du plugin ────────────────────────────────
+    if (activePlugin && !activePlugin.useBuiltinForm) {
+      const MODULE_TYPES_SET = new Set([
+        'mtc_systemes', 'mtc_five_elements', 'mtc_tongue_pulse',
+        'osteo_ortho_tests', 'osteo_posture',
+      ])
+      const missing: string[] = []
+      for (const section of activePlugin.sections) {
+        for (const field of section.fields) {
+          if (!field.required || field.type === 'separator' || MODULE_TYPES_SET.has(field.type)) continue
+          const val = pluginData[field.id]
+          let empty = val === null || val === undefined || val === ''
+          if (!empty && Array.isArray(val)) empty = val.length === 0
+          if (empty) missing.push(field.label || field.id)
+        }
+      }
+      if (missing.length > 0) {
+        showToast(`Champs requis manquants : ${missing.join(', ')}`, 'error')
+        return
+      }
+    }
+
     try {
       // ── 1. Synchronisation calendrier EN PREMIER ─────────────────
       // On résout l'ID du RDV avant de construire le payload pour que
@@ -837,6 +942,7 @@ export default function NewSessionPage() {
       // ────────────────────────────────────────────────────────────────
 
       try { localStorage.removeItem(DRAFT_KEY) } catch {}
+      draftRef.current = {}
       setDraftInfo(null)
 
       // Si un prochain RDV a été créé/lié, ouvrir le calendrier sur cette date
@@ -848,8 +954,7 @@ export default function NewSessionPage() {
     } catch (e) { showToast('Erreur lors de l\'enregistrement', 'error') }
   }
 
-  const handleClear = async () => {
-    if (!await showConfirm({ message: 'Vider tous les champs du formulaire ?', title: 'Réinitialiser', confirmLabel: 'Vider' })) return
+  const resetAllFields = useCallback(() => {
     setPatientId(''); setDate(new Date().toISOString().slice(0, 10)); setPractitioner('')
     setMotif(''); setEvolutionTags([]); setEvolution(''); setProblematiques(''); setAnamnese('')
     setSimpleContextVie(''); setSimpleTraitementsEnCours(''); setSimpleObjectifs(''); setSimpleNotesEntretien('')
@@ -864,7 +969,13 @@ export default function NewSessionPage() {
     setBarrageNiv1(''); setBarrageNiv2(''); setBarrageNiv3(''); setBarrageNiv4('')
     setSystemes(defaultSystemes()); setEnergy(defaultEnergyTests())
     try { localStorage.removeItem(DRAFT_KEY) } catch {}
+    draftRef.current = {}
     setDraftInfo(null)
+  }, [])
+
+  const handleClear = async () => {
+    if (!await showConfirm({ message: 'Vider tous les champs du formulaire ?', title: 'Réinitialiser', confirmLabel: 'Vider' })) return
+    resetAllFields()
     showToast('Formulaire vidé')
   }
 
@@ -934,45 +1045,63 @@ export default function NewSessionPage() {
       <aside className="session-toc">
         <div className="session-toc-title">Sommaire séance</div>
         {(
-          // Plugin tiers (kinésio, ostéo…)
-          activePlugin && !activePlugin.useBuiltinForm
+          // ── Plugin spécialisé (ostéo, kinesio, naturo, douleur…)
+          activePlugin && !activePlugin.useBuiltinForm && activePlugin.id !== 'basique'
+            ? (() => {
+                const pre   = activePlugin.sections.filter(s => s.placement === 'pre-motif')
+                const mots  = activePlugin.sections.filter(s => s.placement === 'motif')
+                const notes = activePlugin.sections.filter(s => !s.placement || s.placement === 'notes')
+                const trait = activePlugin.sections.filter(s => s.placement === 'traitement')
+                const showR = trait.length === 0 || !!activePlugin.showGlobalReactions
+                const items: [string, string][] = [
+                  ['sec-identification', '0. Identification'],
+                  ['sec-info-patient',   'ℹ️ Info patient'],
+                ]
+                let n = 1
+                pre.forEach(s => items.push([`sec-pre-${s.id}`, `${n++}. ${s.title}`]))
+                items.push(['sec-motif', mots.length > 0 ? `${n++}. ${mots[0].title}` : `${n++}. Motif`])
+                items.push(['sec-evolution', `${n++}. Évolution`])
+                if (notes.length > 0) {
+                  notes.forEach((s, idx) => {
+                    const id = idx === 0 ? 'sec-anamnese' : `sec-notes-${s.id}`
+                    items.push([id, `${n++}. ${s.title}`])
+                  })
+                } else {
+                  items.push(['sec-anamnese', `${n++}. Notes de séance`])
+                }
+                if (trait.length > 0) {
+                  items.push(['sec-traitement', `${n++}. ${trait[0].title}`])
+                } else {
+                  items.push(['sec-traitement', `${n++}. Traitement effectué`])
+                }
+                if (showR) items.push(['sec-reactions', `${n++}. Résultats & Réactions`])
+                items.push(['sec-suivi',      `${n++}. Plan de suivi`])
+                return items
+              })()
+          // ── MTC builtin
+          : activePlugin?.useBuiltinForm
             ? [
+                ['sec-identification',   '0. Identification'],
+                ['sec-info-patient',     'ℹ️ Info patient'],
+                ['sec-motif',            '1. Motif'],
+                ['sec-evolution',        '2. Évolution'],
+                ['sec-anamnese',         '3. Notes de séance'],
+                ['sec-observation-mtc',  '4. Observation MTC'],
+                ['sec-diagnostic-mtc',   '5. Analyse & Diagnostic'],
+                ['sec-traitement',       '6. Traitement effectué'],
+                ['sec-suivi',            '7. Plan de suivi'],
+              ]
+          // ── Basique ou Sans plugin
+            : [
                 ['sec-identification', '0. Identification'],
                 ['sec-info-patient',   'ℹ️ Info patient'],
                 ['sec-motif',          '1. Motif'],
                 ['sec-evolution',      '2. Évolution'],
-                ...activePlugin.sections.map((s, i) => [`sec-plugin-${s.id}`, `${i + 3}. ${s.title}`] as [string, string]),
-                ['sec-suivi',          `${activePlugin.sections.length + 3}. Suivi`],
+                ['sec-anamnese',       '3. Notes de séance'],
+                ['sec-traitement',     '4. Traitement effectué'],
+                ['sec-reactions',      '5. Résultats & Réactions'],
+                ['sec-suivi',          '6. Plan de suivi'],
               ]
-          // MTC JP (formulaire intégré complet)
-          : activePlugin?.useBuiltinForm
-            ? [
-                ['sec-identification','0. Identification'],
-                ['sec-info-patient', 'ℹ️ Info patient'],
-                ['sec-motif',        '1. Motif'],
-                ['sec-evolution',    '2. Évolution'],
-                ['sec-anamnese',     '3. Prise de notes'],
-                ['sec-systemes',     '4. Questionnaire'],
-                ['sec-observation',  '5. Observation MTC'],
-                ['sec-tests',        '6. Tests énergétiques'],
-                ['sec-analyse',      '7. Analyse clinique'],
-                ['sec-traitement',   '8. Traitement'],
-                ['sec-barrage',      '9. Barrage homéopathique'],
-                ['sec-suivi',        '10. Suivi'],
-              ]
-          // Sans plugin — formulaire générique simple
-          : [
-              ['sec-identification',  '0. Identification'],
-              ['sec-info-patient',    'ℹ️ Info patient'],
-              ['sec-motif',           '1. Motif'],
-              ['sec-evolution',       '2. Évolution'],
-              ['sec-histoire-simple',  '3. Histoire & interrogatoire'],
-              ['sec-examen-simple',    '4. Bilan & observations'],
-              ['sec-notes-simple',     '5. Notes d\'entretien'],
-              ['sec-traitement-simple','6. Traitement'],
-              ['sec-reactions-simple', '7. Résultats'],
-              ['sec-suivi',           '6. Suivi'],
-            ]
         ).map(([id, label]) => (
           <a key={id} href="#" onClick={e => { e.preventDefault(); scrollTo(id) }}>{label}</a>
         ))}
@@ -1001,10 +1130,7 @@ export default function NewSessionPage() {
             {draftInfo.autoRestored ? (
               <>
                 <span>✅ Brouillon restauré automatiquement — séance du {draftInfo.date || '?'}</span>
-                <button className="btn btn-secondary btn-sm" onClick={() => {
-                  try { localStorage.removeItem(DRAFT_KEY) } catch {}
-                  setDraftInfo(null)
-                }}>Ignorer</button>
+                <button className="btn btn-secondary btn-sm" onClick={resetAllFields}>Ignorer</button>
               </>
             ) : (
               <>
@@ -1043,16 +1169,45 @@ export default function NewSessionPage() {
           <div className="card-title" style={{ justifyContent: 'space-between' }}>
             <span><span className="card-title-icon icon-green">👤</span>Identification</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {activePlugin && (
-                <span
-                  className="plugin-session-badge"
-                  style={{ '--plugin-accent': activePlugin.accentColor || 'var(--accent)' } as React.CSSProperties}
-                  title={`Spécialité active : ${activePlugin.name}`}
-                >
-                  {activePlugin.icon && <span>{activePlugin.icon}</span>}
-                  <span>{activePlugin.specialty}</span>
-                </span>
-              )}
+              {(() => {
+                // Le propriétaire voit tous les formulaires ; les autres : Basique + plugin acheté actif.
+                const basiqueDef = availablePlugins.find(p => p.id === 'basique')
+                const formsForSwitcher: PluginDefinition[] = isOwner
+                  ? availablePlugins
+                  : [
+                      ...(basiqueDef ? [basiqueDef] : []),
+                      ...(activePlugin && activePlugin.id !== 'basique' ? [activePlugin] : []),
+                    ]
+                return !isEditing ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <label style={{ fontSize: 12, opacity: 0.65, whiteSpace: 'nowrap', margin: 0 }}>Formulaire :</label>
+                    <select
+                      value={activePlugin?.id || ''}
+                      onChange={async e => {
+                        const id = e.target.value
+                        const hasData = Object.values(pluginData).some(v => v !== null && v !== undefined && v !== '')
+                        if (hasData && !await showConfirm({ message: 'Changer de formulaire effacera les données saisies. Continuer ?', title: 'Changer de formulaire', confirmLabel: 'Continuer' })) return
+                        setPluginData({})
+                        setActivePlugin(formsForSwitcher.find(p => p.id === id) ?? null)
+                      }}
+                      style={{ fontSize: 12, padding: '3px 8px', borderRadius: 6 }}
+                    >
+                      {formsForSwitcher.map(p => (
+                        <option key={p.id} value={p.id}>{p.icon ? p.icon + ' ' : ''}{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <span
+                    className="plugin-session-badge"
+                    style={{ '--plugin-accent': (activePlugin?.accentColor || 'var(--accent)') } as React.CSSProperties}
+                    title={`Formulaire de la séance : ${activePlugin?.name || 'Basique'}${activePlugin?.version ? ' v' + activePlugin.version : ''}`}
+                  >
+                    {activePlugin?.icon && <span>{activePlugin.icon}</span>}
+                    <span>{activePlugin?.specialty || activePlugin?.name || 'Basique'}</span>
+                  </span>
+                )
+              })()}
               {patientId && (
                 <span className="session-num-badge">
                   {sessionNum === 1 ? '1ère séance' : `${sessionNum}ème séance`}
@@ -1075,77 +1230,9 @@ export default function NewSessionPage() {
           </div>
         </div>
 
-        {/* INFORMATIONS PATIENT */}
-        {patientId && (
-          <div className="card" id="sec-info-patient" style={{ borderLeft: '4px solid var(--blue)' }}>
-            <div className="card-title">
-              <span className="card-title-icon icon-blue">ℹ️</span>
-              Informations patient
-              <span style={{ fontSize: 11, color: 'var(--text-hint)', fontWeight: 400, marginLeft: 8 }}>
-                — Les modifications sont enregistrées sur la fiche patient
-              </span>
-            </div>
-            {(() => {
-              const pi = (field: string) => patientInfo[field] || ''
-              const onChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-                setPatientInfo(prev => ({ ...prev, [field]: e.target.value }))
-              const onBlur = (field: string) => (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-                savePatientField(field, e.target.value)
-              return (
-                <>
-                  <div className="grid2" style={{ marginBottom: 10 }}>
-                    <div className="field"><label>Nom</label>
-                      <input type="text" value={pi('last_name')} onChange={onChange('last_name')} onBlur={onBlur('last_name')} placeholder="Dupont" />
-                    </div>
-                    <div className="field"><label>Prénom</label>
-                      <input type="text" value={pi('first_name')} onChange={onChange('first_name')} onBlur={onBlur('first_name')} placeholder="Marie" />
-                    </div>
-                  </div>
-                  <div className="grid3" style={{ marginBottom: 10 }}>
-                    <div className="field"><label>Date de naissance</label>
-                      <input type="date" value={pi('birth_date')} onChange={onChange('birth_date')} onBlur={onBlur('birth_date')} />
-                    </div>
-                    <div className="field"><label>Téléphone</label>
-                      <input type="tel" value={pi('phone')} onChange={onChange('phone')} onBlur={onBlur('phone')} placeholder="06 00 00 00 00" />
-                    </div>
-                    <div className="field"><label>Email</label>
-                      <input type="email" value={pi('email')} onChange={onChange('email')} onBlur={onBlur('email')} placeholder="email@exemple.com" />
-                    </div>
-                  </div>
-                  <div className="grid2" style={{ marginBottom: 10 }}>
-                    <div className="field">
-                      <label>Adresse</label>
-                      <input type="text" value={pi('address')} onChange={onChange('address')} onBlur={onBlur('address')} placeholder="Adresse complète" />
-                    </div>
-                    <div className="field">
-                      <label>Profession</label>
-                      <input type="text" value={pi('profession')} onChange={onChange('profession')} onBlur={onBlur('profession')} placeholder="Infirmier·ère, enseignant·e…" />
-                    </div>
-                  </div>
-                  <div className="grid2" style={{ marginBottom: 10 }}>
-                    <div className="field"><label>Antécédents médicaux / opérations</label>
-                      <textarea value={pi('antecedents')} onChange={onChange('antecedents')} onBlur={onBlur('antecedents')} placeholder="Antécédents, opérations chirurgicales, allergies…" style={{ minHeight: 70 }} />
-                    </div>
-                    <div className="field"><label>Médicaments en cours</label>
-                      <textarea value={pi('medications')} onChange={onChange('medications')} onBlur={onBlur('medications')} placeholder="Médicaments sur ordonnance, compléments…" style={{ minHeight: 70 }} />
-                    </div>
-                  </div>
-                  <div className="field" style={{ marginBottom: 10, background: 'var(--red-light)', borderRadius: 'var(--radius)', padding: '8px 10px', border: '1px solid rgba(200,60,60,.15)' }}>
-                    <label style={{ color: 'var(--red)' }}>⚠️ Alertes importantes</label>
-                    <textarea value={pi('alerts')} onChange={onChange('alerts')} onBlur={onBlur('alerts')} placeholder="Contre-indications, précautions particulières…" style={{ minHeight: 50, background: 'transparent', border: 'none', paddingLeft: 0 }} />
-                  </div>
-                  <div className="field">
-                    <label>Notes générales</label>
-                    <textarea value={pi('notes_general')} onChange={onChange('notes_general')} onBlur={onBlur('notes_general')} style={{ minHeight: 50 }} />
-                  </div>
-                </>
-              )
-            })()}
-          </div>
-        )}
 
         {/* ── SÉANCE PRÉCÉDENTE (accordéon de référence) ──────────── */}
-        {prevSession && !isEditing && (
+        {prevSession && (
           <PrevSessionAccordion
             session={prevSession}
             open={prevSessionOpen}
@@ -1153,358 +1240,649 @@ export default function NewSessionPage() {
           />
         )}
 
-        {/* 1. MOTIF */}
-        <div className="card" id="sec-motif">
-          <div className="card-title"><span className="card-title-icon icon-amber">🎯</span>1. Motif de consultation</div>
-          <RichTextArea value={motif} onChange={setMotif} placeholder="Demande du patient, attentes, priorité du jour…" minHeight={80} />
-        </div>
+        {/* ── GROUPES DE SECTIONS PAR PLACEMENT (plugins spécialisés) ─────────── */}
+        {(() => {
+          const isSpecialty = activePlugin && activePlugin.id !== 'basique' && !activePlugin.useBuiltinForm
+          const preMotiSections    = isSpecialty ? activePlugin!.sections.filter(s => s.placement === 'pre-motif') : []
+          const motifSections      = isSpecialty ? activePlugin!.sections.filter(s => s.placement === 'motif') : []
+          const notesSections      = isSpecialty ? activePlugin!.sections.filter(s => !s.placement || s.placement === 'notes') : []
+          const traitSections      = isSpecialty ? activePlugin!.sections.filter(s => s.placement === 'traitement') : []
+          const traitInnerSections = isSpecialty ? activePlugin!.sections.filter(s => s.placement === 'traitement-inner') : []
+          const planSections       = isSpecialty ? activePlugin!.sections.filter(s => s.placement === 'plan') : []
+          const pluginOnChange     = (id: string, val: unknown) => setPluginData(prev => ({ ...prev, [id]: val }))
 
-        {/* 2. ÉVOLUTION */}
-        <div className="card" id="sec-evolution">
-          <div className="card-title"><span className="card-title-icon icon-teal">📈</span>2. Évolution depuis la dernière séance</div>
-          <label>Évolution globale</label>
-          <div className="tag-group">
-            {['✅ Amélioration nette','↗ Légère amélioration','→ Stable','↕ Fluctuant','↘ Aggravation','🌱 1ère consultation'].map(v => (
-              <TagBtn key={v} label={v} active={evolutionTags.includes(v)} onClick={() => setEvolutionTags(toggleArr(evolutionTags, v))} />
-            ))}
-          </div>
-          <div className="field" style={{ marginTop: 10 }}>
-            <RichTextArea value={evolution} onChange={setEvolution} placeholder="Détail de l'évolution, retours du patient…" minHeight={80} />
-          </div>
-        </div>
+          const showCoreMotif = !isSpecialty
+            ? true  // simple, basique, MTC : afficher le motif dans tous les cas
+            : motifSections.length === 0 && !activePlugin!.hideGlobalMotif
 
-        {/* ── FORMULAIRE SIMPLE (sans aucun plugin) ───────────────────────────── */}
-        {!activePlugin && (
-          <SimpleAnamneseSection
-            anamnese={anamnese}                     setAnamnese={setAnamnese}
-            observation={observation}               setObservation={setObservation}
-            traitementNotes={traitementNotes}       setTraitementNotes={setTraitementNotes}
-            reactions={reactions}                   setReactions={setReactions}
-            techniques={techniques}                 setTechniques={setTechniques}
-            simpleContextVie={simpleContextVie}     setSimpleContextVie={setSimpleContextVie}
-            simpleTraitementsEnCours={simpleTraitementsEnCours} setSimpleTraitementsEnCours={setSimpleTraitementsEnCours}
-            simpleObjectifs={simpleObjectifs}       setSimpleObjectifs={setSimpleObjectifs}
-            simpleNotesEntretien={simpleNotesEntretien} setSimpleNotesEntretien={setSimpleNotesEntretien}
-          />
-        )}
+          // Numérotation des blocs — suit exactement l'ordre du sommaire TOC
+          let _n = 1
+          const preMotifNums   = preMotiSections.map(() => _n++)
+          const motifN         = _n++
+          const evolutionN     = _n++
+          const notesNums      = isSpecialty && notesSections.length > 0
+            ? notesSections.map(() => _n++)
+            : [_n++]
+          const notesN         = notesNums[0]
+          const observationN   = activePlugin?.useBuiltinForm ? _n++ : null
+          const diagnosticN    = activePlugin?.useBuiltinForm ? _n++ : null
+          const traitN         = _n++
+          // Pour MTC builtin : réactions intégrées dans le bloc traitement → pas de bloc séparé
+          const showReactions  = activePlugin?.useBuiltinForm
+            ? false
+            : (!isSpecialty || traitSections.length === 0 || !!activePlugin?.showGlobalReactions)
+          const reactionsN     = showReactions ? _n++ : null
+          const planN          = _n++
 
-        {/* ── PLUGIN TIERS (kinésio, ostéo…) ──────────────────────────────────── */}
-        {activePlugin && !activePlugin.useBuiltinForm && (
-          <PluginFormRenderer
-            plugin={activePlugin}
-            data={pluginData}
-            onChange={(id, val) => setPluginData(prev => ({ ...prev, [id]: val }))}
-          />
-        )}
-
-        {/* ── SECTIONS MTC INTÉGRÉES (uniquement si plugin MTC JP actif) ────────── */}
-        {activePlugin?.useBuiltinForm && <>
-
-        {/* 3. PRISE DE NOTES — INTERROGATOIRE */}
-        <div className="card" id="sec-anamnese">
-          <div className="card-title"><span className="card-title-icon icon-amber">📝</span>3. Prise de notes — Interrogatoire</div>
-          <div className="anamnese-layout">
-            {/* Zone de notes libre */}
-            <div className="anamnese-notes">
-              <RichTextArea
-                value={anamnese}
-                onChange={setAnamnese}
-                placeholder="Réponses du patient aux questions de l'interrogatoire…"
-                minHeight={260}
-              />
-            </div>
-            {/* Pense-bête */}
-            <div className="anamnese-pensebete">
-              <div className="pensebete-title">📌 Questions à poser</div>
-              {[
-                { icon: '🌡', label: 'Froid / Chaleur',   hint: 'Sensation générale, préférence thermique, membres froids' },
-                { icon: '🚽', label: 'Selles / Urine',    hint: 'Fréquence, consistance, couleur, brûlures' },
-                { icon: '💧', label: 'Soif / Boisson',    hint: 'Quantité, préférence chaud/froid, bouche sèche' },
-                { icon: '😴', label: 'Sommeil',            hint: 'Durée, endormissement, réveils, rêves' },
-                { icon: '🗡', label: 'Tête',               hint: 'Maux de tête, vertiges, acouphènes, vision' },
-                { icon: '💦', label: 'Transpiration',      hint: 'Diurne, nocturne, localisée, spontanée' },
-                { icon: '🦴', label: 'Membres',            hint: 'Douleurs, engourdissements, lourdeurs, tremblements' },
-                { icon: '🫙', label: 'Digestif',           hint: 'Appétit, ballonnements, nausées, reflux' },
-              ].map(({ icon, label, hint }) => (
-                <div key={label} className="pensebete-item">
-                  <div className="pensebete-item-header">
-                    <span className="pensebete-icon">{icon}</span>
-                    <span className="pensebete-label">{label}</span>
-                  </div>
-                  <div className="pensebete-hint">{hint}</div>
+          return (
+            <>
+              {/* PRE-MOTIF : ex. antécédents traumatiques ostéo */}
+              {preMotiSections.map((section, idx) => (
+                <div key={section.id} id={`sec-pre-${section.id}`}>
+                  <PluginFormRenderer
+                    plugin={activePlugin!}
+                    sections={[section]}
+                    data={pluginData}
+                    onChange={pluginOnChange}
+                    asCard
+                    sectionNumber={preMotifNums[idx]}
+                  />
                 </div>
               ))}
-            </div>
-          </div>
-        </div>
 
-        {/* 4. QUESTIONNAIRE PAR SYSTÈMES */}
-        <div className="card" id="sec-systemes">
-          <div className="card-title"><span className="card-title-icon icon-blue">📋</span>4. Questionnaire par systèmes</div>
-          <SystemesForm systemes={systemes} onChange={setSystemes} />
-        </div>
+              {/* MOTIF */}
+              {isSpecialty && motifSections.length > 0 ? (
+                <div id="sec-motif">
+                  <PluginFormRenderer
+                    plugin={activePlugin!}
+                    sections={motifSections}
+                    data={pluginData}
+                    onChange={pluginOnChange}
+                    asCard
+                    sectionNumber={motifN}
+                  />
+                </div>
+              ) : showCoreMotif && (
+                <div className="card" id="sec-motif" style={{ borderLeft: '4px solid var(--amber)' }}>
+                  <div className="card-title"><span className="card-title-icon icon-amber">🎯</span>{motifN}. Motif de consultation</div>
+                  <RichTextArea value={motif} onChange={setMotif} placeholder="Demande du patient, attentes, priorité du jour…" minHeight={80} />
+                </div>
+              )}
 
-        {/* 5. OBSERVATION MTC */}
-        <div className="card" id="sec-observation">
-          <div className="card-title"><span className="card-title-icon icon-teal">👀</span>5. Observation MTC</div>
-
-          {/* Langue */}
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ fontWeight: 600 }}>Langue</label>
-            <div className="tag-group" style={{ marginBottom: 8 }}>
-              {['Pâle','Rouge','Violacée','Enduit blanc','Enduit jaune','Sans enduit','Fissures','Gonflée','Tremblante'].map(v => (
-                <TagBtn key={v} label={v} active={langue.includes(v)} onClick={() => setLangue(toggleArr(langue, v))} />
-              ))}
-            </div>
-            <RichTextArea value={langueNote} onChange={setLangueNote} placeholder="Notes complémentaires sur la langue…" minHeight={48} />
-          </div>
-
-          {/* Pouls */}
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ fontWeight: 600 }}>Pouls — qualités globales</label>
-            <div className="tag-group" style={{ marginBottom: 8 }}>
-              {['Superficiel','Profond','Lent','Rapide','Fort','Faible','Glissant','Tendu','En corde','Irrégulier','Sans racine'].map(v => (
-                <TagBtn key={v} label={v} active={pouls.includes(v)} onClick={() => setPouls(toggleArr(pouls, v))} />
-              ))}
-            </div>
-
-            {/* Grille 6 positions */}
-            <div className="pouls-grid">
-              <div className="pouls-grid-header">
-                <div className="pouls-hand-label">Main droite</div>
-                <div className="pouls-positions-header">
-                  <span>Cun (avant)</span>
-                  <span>Guan (milieu)</span>
-                  <span>Chi (arrière)</span>
+              {/* ÉVOLUTION */}
+              <div className="card" id="sec-evolution" style={{ borderLeft: '4px solid var(--teal)' }}>
+                <div className="card-title"><span className="card-title-icon icon-teal">📈</span>{evolutionN}. Évolution depuis la dernière séance</div>
+                <label>Évolution globale</label>
+                <div className="tag-group">
+                  {['✅ Amélioration nette','↗ Légère amélioration','→ Stable','↕ Fluctuant','↘ Aggravation','🌱 1ère consultation'].map(v => (
+                    <TagBtn key={v} label={v} active={evolutionTags.includes(v)} onClick={() => setEvolutionTags(toggleArr(evolutionTags, v))} />
+                  ))}
+                </div>
+                <div className="field" style={{ marginTop: 10 }}>
+                  <RichTextArea value={evolution} onChange={setEvolution} placeholder="Détail de l'évolution, retours du patient…" minHeight={80} />
                 </div>
               </div>
-              <div className="pouls-grid-row">
-                <div className="pouls-hand-label" style={{ color: 'var(--teal-dark)' }}>Droite</div>
-                <input className="pouls-pos-input" type="text" value={poulsPos.droitAvant}   onChange={e => setPoulsPos(p => ({ ...p, droitAvant:   e.target.value }))} placeholder="P / Gros int." />
-                <input className="pouls-pos-input" type="text" value={poulsPos.droitMilieu}  onChange={e => setPoulsPos(p => ({ ...p, droitMilieu:  e.target.value }))} placeholder="Rate / Estomac" />
-                <input className="pouls-pos-input" type="text" value={poulsPos.droitArriere} onChange={e => setPoulsPos(p => ({ ...p, droitArriere: e.target.value }))} placeholder="Mingmen / RMC" />
-              </div>
-              <div className="pouls-grid-row">
-                <div className="pouls-hand-label" style={{ color: 'var(--accent)' }}>Gauche</div>
-                <input className="pouls-pos-input" type="text" value={poulsPos.gaucheAvant}   onChange={e => setPoulsPos(p => ({ ...p, gaucheAvant:   e.target.value }))} placeholder="C / IG" />
-                <input className="pouls-pos-input" type="text" value={poulsPos.gaucheMilieu}  onChange={e => setPoulsPos(p => ({ ...p, gaucheMilieu:  e.target.value }))} placeholder="Foie / VB" />
-                <input className="pouls-pos-input" type="text" value={poulsPos.gaucheArriere} onChange={e => setPoulsPos(p => ({ ...p, gaucheArriere: e.target.value }))} placeholder="Reins / V" />
-              </div>
-            </div>
-            <RichTextArea value={poulsNote} onChange={setPoulsNote} placeholder="Notes complémentaires sur le pouls…" minHeight={48} />
-          </div>
 
-          {/* Constitution / Teint */}
-          <div className="grid3" style={{ marginBottom: 12 }}>
-            <div className="field"><label>Constitution</label>
-              <select value={constitution} onChange={e => setConstitution(e.target.value)}>
-                <option value="">—</option><option>Excellente</option><option>Moyenne</option><option>Faible</option>
-              </select>
-            </div>
-            <div className="field"><label>Type de corps</label><input type="text" value={typeCorps} onChange={e => setTypeCorps(e.target.value)} placeholder="Ex : longiligne, massif…" /></div>
-            <div className="field"><label>Teint</label><input type="text" value={teint} onChange={e => setTeint(e.target.value)} placeholder="Ex : pâle, jaunâtre, rouge…" /></div>
-          </div>
-          <div className="field"><label>Notes d'observation générales</label><RichTextArea value={observation} onChange={setObservation} placeholder="Cartographie du visage, cheveux, ongles, palpation, humidité…" minHeight={80} /></div>
-        </div>
-
-        {/* 6. TESTS ÉNERGÉTIQUES */}
-        <EnergySection energy={energy} updateEnergy={updateEnergy} />
-
-        {/* 6. ANALYSE CLINIQUE */}
-        <div className="card" id="sec-analyse" style={{ borderLeft: '4px solid var(--purple)' }}>
-          <div className="card-title"><span className="card-title-icon icon-purple">🔬</span>7. Analyse clinique MTC</div>
-          <div className="field"><label>Diagnostic MTC principal</label><input type="text" value={diagnostic} onChange={e => setDiagnostic(e.target.value)} placeholder="Ex : Vide de Qi du Poumon, Chaleur du Foie…" /></div>
-          <div className="grid2">
-            <div className="field"><label>5 Éléments</label><input type="text" value={cinqElements} onChange={e => setCinqElements(e.target.value)} placeholder="Ex : Bois-Feu, Eau-Métal…" /></div>
-            <div className="field"><label>Causes</label><input type="text" value={causes} onChange={e => setCauses(e.target.value)} placeholder="Ex : émotionnel, alimentaire, climatique…" /></div>
-          </div>
-          <div className="field"><label>Mécanisme / terrain</label><RichTextArea value={analyse} onChange={setAnalyse} placeholder="Mécanisme physiopathologique MTC, terrain du patient…" minHeight={80} /></div>
-          <div className="field"><label>Principes de traitement</label><RichTextArea value={principes} onChange={setPrincipes} placeholder="Tonifier, disperser, harmoniser…" minHeight={55} /></div>
-        </div>
-
-        {/* 7. TRAITEMENT */}
-        <div className="card" id="sec-traitement" style={{ borderLeft: '4px solid var(--accent)' }}>
-          <div className="card-title"><span className="card-title-icon icon-green">🌿</span>8. Traitement du jour</div>
-          <div className="field"><label>Points d'acupuncture</label><input type="text" value={points} onChange={e => setPoints(e.target.value)} placeholder="Ex : P7, MC6, E36, Rte6, V23…" /></div>
-          <div className="field"><label>Points d'oreille</label><input type="text" value={ptsOreille} onChange={e => setPtsOreille(e.target.value)} placeholder="Ex : Shen Men, Rein, Foie…" /></div>
-          <div className="field">
-            <label>Techniques utilisées</label>
-            <div className="tag-group">
-              {['Acupuncture','Moxibustion','Ventouses','Tuina','Gua sha','Auriculothérapie','Diététique','Plantes'].map(v => (
-                <TagBtn key={v} label={v} active={techniques.includes(v)} onClick={() => setTechniques(toggleArr(techniques, v))} />
-              ))}
-            </div>
-          </div>
-          <div className="field"><label>Formule à base de plantes / dosage</label><RichTextArea value={plantes} onChange={setPlantes} placeholder="Nom de la formule, ingrédients, dosage, fréquence de prise, durée du traitement…" minHeight={90} /></div>
-          <div className="field"><label>Réactions / observations pendant le soin</label><RichTextArea value={reactions} onChange={setReactions} placeholder="Réactions du patient, sensations, observations…" minHeight={80} /></div>
-          <div className="field"><label>📝 Notes libres – Traitement</label><RichTextArea value={traitementNotes} onChange={setTraitementNotes} placeholder="Notes libres sur le traitement…" minHeight={80} /></div>
-        </div>
-
-        {/* 8. BARRAGE HOMÉOPATHIQUE */}
-        <div className="card" id="sec-barrage" style={{ borderLeft: '4px solid var(--amber)' }}>
-          <div className="card-title"><span className="card-title-icon icon-amber">💊</span>9. Barrage homéopathique</div>
-          <div className="grid2">
-            <div className="field">
-              <label>Niveau 1</label>
-              <RichTextArea value={barrageNiv1} onChange={setBarrageNiv1} placeholder="Remèdes niveau 1…" minHeight={80} />
-            </div>
-            <div className="field">
-              <label>Niveau 2</label>
-              <RichTextArea value={barrageNiv2} onChange={setBarrageNiv2} placeholder="Remèdes niveau 2…" minHeight={80} />
-            </div>
-            <div className="field">
-              <label>Niveau 3</label>
-              <RichTextArea value={barrageNiv3} onChange={setBarrageNiv3} placeholder="Remèdes niveau 3…" minHeight={80} />
-            </div>
-            <div className="field">
-              <label>Niveau 4</label>
-              <RichTextArea value={barrageNiv4} onChange={setBarrageNiv4} placeholder="Remèdes niveau 4…" minHeight={80} />
-            </div>
-          </div>
-        </div>
-
-        {/* ── FIN SECTIONS MTC INTÉGRÉES ── */}
-        </>}
-
-        {/* 9. SUIVI */}
-        <div className="card" id="sec-suivi" style={{ borderLeft: '4px solid var(--teal-mid)' }}>
-          <div className="card-title"><span className="card-title-icon icon-teal">📅</span>10. Plan de suivi</div>
-          <div className="field"><label>Conseils donnés</label><RichTextArea value={conseils} onChange={setConseils} placeholder="Conseils hygiéno-diététiques, exercices, recommandations…" minHeight={80} /></div>
-          <div className="field"><label>Plan à long terme / recommandations</label><RichTextArea value={plan} onChange={setPlan} placeholder="Fréquence des séances, objectif thérapeutique…" minHeight={80} /></div>
-          <div className="field"><label>À surveiller</label><input type="text" value={surveiller} onChange={e => setSurveiller(e.target.value)} placeholder="Signes d'alerte, évolution à observer…" /></div>
-          {/* ─── PROCHAIN RDV synchronisé avec le calendrier ─── */}
-          <NextRdvSection
-            patientId={patientId}
-            nextSession={nextSession}        setNextSession={setNextSession}
-            nextSessionHeure={nextSessionHeure}  setNextSessionHeure={setNextSessionHeure}
-            nextSessionFin={nextSessionFin}      setNextSessionFin={setNextSessionFin}
-            nextSessionNote={nextSessionNote}    setNextSessionNote={setNextSessionNote}
-            nextSessionApptId={nextSessionApptId} setNextSessionApptId={setNextSessionApptId}
-            patientAppts={patientAppts}
-            onApptDeleted={id => setPatientAppts(prev => prev.filter(a => a.id !== id))}
-          />
-
-          {/* ── Clôture séance : RDV réalisé + Comptabilité ─── */}
-          {patientId && !isEditing && (
-            <div style={{ marginTop: 14, background: 'var(--purple-light)', padding: '14px 16px', borderRadius: 'var(--radius)', border: '1.5px solid var(--purple-mid)' }}>
-
-              <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--purple)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span>✅</span> Clôture de séance
-              </div>
-
-              {/* RDV réalisé */}
-              <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer', marginBottom: clotureTypes.length > 0 ? 12 : 0 }}>
-                <input
-                  type="checkbox"
-                  checked={markRdvDone}
-                  onChange={e => setMarkRdvDone(e.target.checked)}
-                  style={{ width: 16, height: 16, accentColor: 'var(--purple)', cursor: 'pointer', flexShrink: 0 }}
-                />
-                <span>
-                  <strong>Marquer le RDV comme réalisé</strong>
-                  <span style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
-                    Met à jour le calendrier et le tableau de bord
-                  </span>
-                </span>
-              </label>
-
-              {/* Comptabilité — case à cocher simple */}
-              {clotureTypes.length > 0 && (
-                <div>
-                  <div style={{ height: 1, background: 'var(--purple-mid)', opacity: .3, marginBottom: 12 }} />
-
-                  {/* Case principale */}
-                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={enableCompta}
-                      onChange={e => {
-                        const checked = e.target.checked
-                        setEnableCompta(checked)
-                        if (checked && clotureTypes.length === 1) {
-                          setClotureTypeId(clotureTypes[0].id)
-                        } else if (!checked) {
-                          setClotureTypeId('')
-                        }
-                      }}
-                      style={{ width: 16, height: 16, accentColor: 'var(--purple)', cursor: 'pointer', flexShrink: 0, marginTop: 2 }}
+              {/* NOTES DE SÉANCE */}
+              {isSpecialty && notesSections.length > 0 ? (
+                notesSections.map((section, idx) => (
+                  <div key={section.id} id={idx === 0 ? 'sec-anamnese' : `sec-notes-${section.id}`}>
+                    <PluginFormRenderer
+                      plugin={activePlugin!}
+                      sections={[section]}
+                      data={pluginData}
+                      onChange={pluginOnChange}
+                      asCard
+                      sectionNumber={notesNums[idx]}
                     />
-                    <span>
-                      <strong>Enregistrer cette séance en comptabilité</strong>
-                      <span style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
-                        Ajoute +1 au tableau mensuel de revenus
-                      </span>
-                    </span>
-                  </label>
+                  </div>
+                ))
+              ) : (
+                <div className="card" id="sec-anamnese" style={{ borderLeft: '4px solid var(--amber)' }}>
+                  <div className="card-title"><span className="card-title-icon icon-amber">📝</span>{notesN}. Notes de séance</div>
+                  {activePlugin?.useBuiltinForm ? (
+                    /* MTC JP : notes libres + pense-bête côte à côte */
+                    <div className="anamnese-layout">
+                      <div className="anamnese-notes">
+                        <RichTextArea
+                          value={anamnese}
+                          onChange={setAnamnese}
+                          placeholder="Réponses du patient aux questions de l'interrogatoire…"
+                          minHeight={300}
+                        />
+                      </div>
+                      <div className="anamnese-pensebete">
+                        <div className="pensebete-title">📌 Questions à poser</div>
+                        {[
+                          { icon: '🌡', label: 'Froid / Chaleur',   hint: 'Sensation générale, préférence thermique, membres froids' },
+                          { icon: '🚽', label: 'Selles / Urine',    hint: 'Fréquence, consistance, couleur, brûlures' },
+                          { icon: '💧', label: 'Soif / Boisson',    hint: 'Quantité, préférence chaud/froid, bouche sèche' },
+                          { icon: '😴', label: 'Sommeil',            hint: 'Durée, endormissement, réveils, rêves' },
+                          { icon: '🗡', label: 'Tête',               hint: 'Maux de tête, vertiges, acouphènes, vision' },
+                          { icon: '💦', label: 'Transpiration',      hint: 'Diurne, nocturne, localisée, spontanée' },
+                          { icon: '🦴', label: 'Membres',            hint: 'Douleurs, engourdissements, lourdeurs, tremblements' },
+                          { icon: '🫙', label: 'Digestif',           hint: 'Appétit, ballonnements, nausées, reflux' },
+                        ].map(({ icon, label, hint }) => (
+                          <div key={label} className="pensebete-item">
+                            <div className="pensebete-item-header">
+                              <span className="pensebete-icon">{icon}</span>
+                              <span className="pensebete-label">{label}</span>
+                            </div>
+                            <div className="pensebete-hint">{hint}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    /* Basique / mode sans plugin : grande zone de notes libres */
+                    <RichTextArea
+                      value={anamnese}
+                      onChange={setAnamnese}
+                      placeholder="Notes de séance — interrogatoire, observations, hypothèses, ressentis…"
+                      minHeight={300}
+                    />
+                  )}
+                </div>
+              )}
 
-                  {/* Select type uniquement si plusieurs types et case cochée */}
-                  {enableCompta && clotureTypes.length > 1 && (
-                    <div className="field" style={{ margin: '10px 0 0 26px' }}>
-                      <select
-                        value={clotureTypeId}
-                        onChange={e => setClotureTypeId(e.target.value)}
-                        style={{ fontSize: 13, borderColor: 'var(--purple-mid)', background: '#fff' }}
-                      >
-                        <option value="">— Choisir le type —</option>
-                        {clotureTypes.map(t => (
-                          <option key={t.id} value={t.id}>
-                            {t.name}{t.price > 0 ? ` — ${t.price.toFixed(2)} €` : ''}
-                          </option>
+              {/* OBSERVATION MTC — uniquement pour le formulaire MTC intégré */}
+              {activePlugin?.useBuiltinForm && (
+                <div className="card" id="sec-observation-mtc" style={{ borderLeft: '4px solid var(--teal)' }}>
+                  <div className="card-title">
+                    <span className="card-title-icon icon-teal">👁</span>
+                    {observationN}. Observation MTC
+                  </div>
+
+                  {/* Langue */}
+                  <div className="field">
+                    <label>Langue</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 8 }}>
+                      {['Pâle','Rouge','Violacée','Enduit blanc','Enduit jaune','Sans enduit','Fissures','Gonflée','Tremblante'].map(opt => (
+                        <TagBtn key={opt} label={opt} active={langue.includes(opt)}
+                          onClick={() => setLangue(toggleArr(langue, opt))} />
+                      ))}
+                    </div>
+                    <textarea
+                      value={langueNote}
+                      onChange={e => setLangueNote(e.target.value)}
+                      placeholder="Notes complémentaires sur la langue…"
+                      rows={2}
+                      style={{ width: '100%', resize: 'vertical' }}
+                    />
+                  </div>
+
+                  {/* Pouls qualités globales */}
+                  <div className="field">
+                    <label>Pouls — qualités globales</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 8 }}>
+                      {['Superficiel','Profond','Lent','Rapide','Fort','Faible','Glissant','Tendu','En corde','Irrégulier','Sans racine'].map(opt => (
+                        <TagBtn key={opt} label={opt} active={pouls.includes(opt)}
+                          onClick={() => setPouls(toggleArr(pouls, opt))} />
+                      ))}
+                    </div>
+
+                    {/* Table positions Cun / Guan / Chi */}
+                    {(() => {
+                      const cols = [
+                        { label: 'Cun (avant)',   hBg: 'var(--amber)', hText: '#fff', cellBg: 'var(--amber-light)', border: '#C17B2A'          },
+                        { label: 'Guan (milieu)', hBg: 'var(--teal)',  hText: '#fff', cellBg: 'var(--teal-light)',  border: 'var(--teal-mid)'   },
+                        { label: 'Chi (arrière)', hBg: 'var(--blue)',  hText: '#fff', cellBg: 'var(--blue-light)',  border: 'var(--blue-mid)'   },
+                      ]
+                      const rows = [
+                        { side: 'Droite', fields: ['droitAvant','droitMilieu','droitArriere'] as const,   placeholders: ['P / Gros int.','Rate / Estomac','Mingmen / RMC'] },
+                        { side: 'Gauche', fields: ['gaucheAvant','gaucheMilieu','gaucheArriere'] as const, placeholders: ['C / IG','Foie / VB','Reins / V'] },
+                      ]
+                      return (
+                        <div style={{ overflowX: 'auto', marginBottom: 8, borderRadius: 8, border: '1px solid var(--border)', overflow: 'hidden' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                            <thead>
+                              <tr>
+                                <th style={{ padding: '7px 10px', background: 'var(--bg)', borderBottom: '1px solid var(--border)', width: '13%' }} />
+                                {cols.map(c => (
+                                  <th key={c.label} style={{ padding: '8px 10px', textAlign: 'center', borderBottom: `2px solid ${c.border}`, background: c.hBg, color: c.hText, fontWeight: 700, fontSize: 11, letterSpacing: '.05em', textTransform: 'uppercase' }}>
+                                    {c.label}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {rows.map(({ side, fields, placeholders }, ri) => (
+                                <tr key={side} style={{ background: ri % 2 === 1 ? 'var(--bg)' : 'transparent' }}>
+                                  <td style={{ padding: '6px 10px', fontWeight: 700, fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap', borderRight: '1px solid var(--border)' }}>{side}</td>
+                                  {fields.map((f, i) => (
+                                    <td key={f} style={{ padding: '5px 7px', borderRight: i < 2 ? `1px solid ${cols[i].border}` : undefined, background: cols[i].cellBg }}>
+                                      <input
+                                        type="text"
+                                        value={poulsPos[f]}
+                                        onChange={e => setPoulsPos(prev => ({ ...prev, [f]: e.target.value }))}
+                                        placeholder={placeholders[i]}
+                                        style={{ width: '100%', fontSize: 12, background: 'var(--surface)', border: `1px solid ${cols[i].border}`, borderRadius: 5, padding: '3px 7px' }}
+                                      />
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )
+                    })()}
+
+                    <textarea
+                      value={poulsNote}
+                      onChange={e => setPoulsNote(e.target.value)}
+                      placeholder="Notes complémentaires sur le pouls…"
+                      rows={2}
+                      style={{ width: '100%', resize: 'vertical' }}
+                    />
+                  </div>
+
+                  {/* Constitution / Type de corps / Teint */}
+                  <div className="grid3">
+                    <div className="field">
+                      <label>Constitution</label>
+                      <select value={constitution} onChange={e => setConstitution(e.target.value)}>
+                        <option value="">—</option>
+                        {['Bois 🌿','Feu 🔥','Terre 🌍','Métal ⚙️','Eau 💧'].map(o => (
+                          <option key={o} value={o}>{o}</option>
                         ))}
                       </select>
                     </div>
-                  )}
-                  {enableCompta && clotureTypeId && (() => {
-                    const type = clotureTypes.find(t => t.id === clotureTypeId)
-                    const [y, m] = date.split('-')
-                    const alreadyNb = currentMonthNb ?? null
-                    const afterNb   = alreadyNb !== null ? alreadyNb + 1 : null
-                    return (
-                      <div style={{ marginTop: 10, marginLeft: 26 }}>
-                        {/* Résumé du mois actuel */}
-                        {alreadyNb !== null && (
-                          <div style={{
-                            display: 'flex', alignItems: 'center', gap: 8,
-                            padding: '7px 10px',
-                            borderRadius: 7,
-                            background: alreadyNb > 0 ? 'rgba(245,158,11,.1)' : 'rgba(74,103,65,.07)',
-                            border: `1px solid ${alreadyNb > 0 ? 'rgba(245,158,11,.35)' : 'rgba(74,103,65,.2)'}`,
-                            fontSize: 12,
-                          }}>
-                            <span style={{ fontSize: 15 }}>{alreadyNb > 0 ? '⚠️' : '✅'}</span>
-                            <div>
-                              <div style={{ fontWeight: 700, color: alreadyNb > 0 ? 'var(--amber)' : 'var(--accent)' }}>
-                                {alreadyNb > 0
-                                  ? `Déjà ${alreadyNb} séance${alreadyNb > 1 ? 's' : ''} enregistrée${alreadyNb > 1 ? 's' : ''} ce mois`
-                                  : 'Aucune séance enregistrée ce mois'
-                                }
-                              </div>
-                              <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 1 }}>
-                                "{type?.name}" · {m}/{y}
-                                {afterNb !== null && (
-                                  <span style={{ marginLeft: 6, color: 'var(--purple)', fontWeight: 600 }}>
-                                    → passera à {afterNb} après enregistrement
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        {/* Résumé de ce qui sera ajouté */}
-                        <div style={{ fontSize: 11, color: 'var(--purple)', marginTop: 5, display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <span>+1</span>
-                          <strong>"{type?.name}"</strong>
-                          {type?.price ? <span>({type.price.toFixed(2)} €)</span> : null}
-                          <span>· sera ajouté à la comptabilité {m}/{y}</span>
-                        </div>
-                      </div>
-                    )
-                  })()}
+                    <div className="field">
+                      <label>Type de corps</label>
+                      <input type="text" value={typeCorps} onChange={e => setTypeCorps(e.target.value)} placeholder="Ex : longiligne, massif…" />
+                    </div>
+                    <div className="field">
+                      <label>Teint</label>
+                      <input type="text" value={teint} onChange={e => setTeint(e.target.value)} placeholder="Ex : pâle, jaunâtre, rouge…" />
+                    </div>
+                  </div>
+
+                  {/* Notes d'observation générales */}
+                  <div className="field">
+                    <label>Notes d'observation générales</label>
+                    <RichTextArea
+                      value={observation}
+                      onChange={setObservation}
+                      placeholder="Cartographie du visage, cheveux, ongles, palpation, humidité…"
+                      minHeight={100}
+                    />
+                  </div>
                 </div>
               )}
-            </div>
-          )}
-        </div>
+
+              {/* ANALYSE & DIAGNOSTIC MTC */}
+              {activePlugin?.useBuiltinForm && (
+                <div className="card" id="sec-diagnostic-mtc" style={{ borderLeft: '4px solid var(--purple)' }}>
+                  <div className="card-title">
+                    <span className="card-title-icon icon-purple">🔵</span>
+                    {diagnosticN}. Analyse &amp; Diagnostic
+                  </div>
+
+                  <div className="field">
+                    <label>Diagnostic MTC principal</label>
+                    <textarea
+                      value={diagnostic}
+                      onChange={e => setDiagnostic(e.target.value)}
+                      placeholder="Ex : Vide de Yin du Rein, Stagnation du Qi du Foie…"
+                      rows={2}
+                      style={{ width: '100%', resize: 'vertical' }}
+                    />
+                  </div>
+
+                  <div className="grid2">
+                    <div className="field">
+                      <label>5 Éléments</label>
+                      <input
+                        type="text"
+                        value={cinqElements}
+                        onChange={e => setCinqElements(e.target.value)}
+                        placeholder="Ex : Bois++, Eau–…"
+                      />
+                    </div>
+                    <div className="field">
+                      <label>Causes</label>
+                      <input
+                        type="text"
+                        value={causes}
+                        onChange={e => setCauses(e.target.value)}
+                        placeholder="Ex : émotions, alimentation, fatigue…"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="field">
+                    <label>Mécanisme / Terrain</label>
+                    <RichTextArea
+                      value={analyse}
+                      onChange={setAnalyse}
+                      placeholder="Analyse du mécanisme pathologique, terrain du patient…"
+                      minHeight={90}
+                    />
+                  </div>
+
+                  <div className="field">
+                    <label>Principes de traitement</label>
+                    <textarea
+                      value={principes}
+                      onChange={e => setPrincipes(e.target.value)}
+                      placeholder="Ex : Tonifier le Yin du Rein, disperser la chaleur du Foie…"
+                      rows={2}
+                      style={{ width: '100%', resize: 'vertical' }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* TRAITEMENT — plugin standalone OU bloc core (avec sections inner) */}
+              {isSpecialty && traitSections.length > 0 ? (
+                /* Plugin couvre entièrement le traitement (ostéo, kinesio) */
+                <div id="sec-traitement">
+                  <PluginFormRenderer
+                    plugin={activePlugin!}
+                    sections={traitSections}
+                    data={pluginData}
+                    onChange={pluginOnChange}
+                    asCard
+                    sectionNumber={traitN}
+                  />
+                </div>
+              ) : (
+                /* Bloc core traitement */
+                <div className="card" id="sec-traitement" style={{ borderLeft: '4px solid var(--accent)' }}>
+                  <div className="card-title"><span className="card-title-icon icon-green">🌿</span>{traitN}. Traitement effectué</div>
+
+                  {activePlugin?.useBuiltinForm ? (
+                    /* ── Version MTC intégrée ── */
+                    <>
+                      <div className="field">
+                        <label>Points d'acupuncture</label>
+                        <textarea
+                          value={points}
+                          onChange={e => setPoints(e.target.value)}
+                          placeholder="Ex : P7, MC6, E36, Rte6, V23…"
+                          rows={2}
+                          style={{ width: '100%', resize: 'vertical', minHeight: 44 }}
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Points d'oreille</label>
+                        <textarea
+                          value={ptsOreille}
+                          onChange={e => setPtsOreille(e.target.value)}
+                          placeholder="Ex : Shen Men, Rein, Foie…"
+                          rows={2}
+                          style={{ width: '100%', resize: 'vertical', minHeight: 44 }}
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Techniques utilisées</label>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                          {['Acupuncture','Moxibustion','Ventouses','Tuina','Gua sha','Auriculothérapie','Diététique','Plantes'].map(opt => (
+                            <TagBtn key={opt} label={opt} active={techniques.includes(opt)}
+                              onClick={() => setTechniques(toggleArr(techniques, opt))} />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="field">
+                        <label>Formule à base de plantes / dosage</label>
+                        <textarea
+                          value={plantes}
+                          onChange={e => setPlantes(e.target.value)}
+                          placeholder="Nom de la formule, ingrédients, dosage, fréquence de prise, durée du traitement…"
+                          rows={3}
+                          style={{ width: '100%', resize: 'vertical', minHeight: 80 }}
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Réactions / observations pendant le soin</label>
+                        <textarea
+                          value={reactions}
+                          onChange={e => setReactions(e.target.value)}
+                          placeholder="Réactions du patient, sensations, observations…"
+                          rows={3}
+                          style={{ width: '100%', resize: 'vertical', minHeight: 80 }}
+                        />
+                      </div>
+                      <div className="field">
+                        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span>📝</span> Notes libres – Traitement
+                        </div>
+                        <textarea
+                          value={traitementNotes}
+                          onChange={e => setTraitementNotes(e.target.value)}
+                          placeholder="Notes libres sur le traitement…"
+                          rows={3}
+                          style={{ width: '100%', resize: 'vertical', minHeight: 80 }}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    /* ── Version générique (basique / simple) ── */
+                    <>
+                      <div className="field">
+                        <RichTextArea
+                          value={traitementNotes}
+                          onChange={setTraitementNotes}
+                          placeholder="Techniques appliquées, zones traitées, protocole suivi, dosages, formules…"
+                          minHeight={140}
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Techniques utilisées</label>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
+                          {techniques.map(t => (
+                            <span key={t} style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 4,
+                              padding: '3px 10px', background: 'var(--accent-light)',
+                              border: '1.5px solid var(--accent-mid)', borderRadius: 12,
+                              fontSize: 12, color: 'var(--accent)', fontWeight: 500,
+                            }}>
+                              {t}
+                              <button type="button" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', fontSize: 14, padding: 0, lineHeight: 1 }}
+                                onClick={() => setTechniques(techniques.filter(x => x !== t))}>×</button>
+                            </span>
+                          ))}
+                        </div>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <input
+                            type="text"
+                            value={techInput}
+                            onChange={e => setTechInput(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTech() } }}
+                            placeholder="Ex : acupuncture, massage, mobilisation… (Entrée pour ajouter)"
+                            style={{ flex: 1 }}
+                          />
+                          <button type="button" className="btn btn-secondary btn-sm" onClick={addTech}>+</button>
+                        </div>
+                      </div>
+                      {/* Sections traitement-inner (naturo : protocole, douleur : séance) */}
+                      {traitInnerSections.length > 0 && (
+                        <PluginFormRenderer
+                          plugin={activePlugin!}
+                          sections={traitInnerSections}
+                          data={pluginData}
+                          onChange={pluginOnChange}
+                          inline
+                        />
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* RÉSULTATS & RÉACTIONS */}
+              {showReactions && (
+                <div className="card" id="sec-reactions" style={{ borderLeft: '4px solid var(--teal-mid)' }}>
+                  <div className="card-title"><span className="card-title-icon icon-teal">💬</span>{reactionsN}. Résultats &amp; Réactions</div>
+                  <RichTextArea
+                    value={reactions}
+                    onChange={setReactions}
+                    placeholder="Ressenti du patient, évolution pendant la séance, résultats observés, effets immédiats…"
+                    minHeight={120}
+                  />
+                </div>
+              )}
+
+              {/* PLAN DE SUIVI */}
+              <div className="card" id="sec-suivi" style={{ borderLeft: '4px solid var(--teal-mid)' }}>
+                <div className="card-title"><span className="card-title-icon icon-teal">📅</span>{planN}. Plan de suivi</div>
+                {/* Sections plan (kinesio : suivi_anamnese, douleur : plan_suivi) */}
+                {planSections.length > 0 && (
+                  <PluginFormRenderer
+                    plugin={activePlugin!}
+                    sections={planSections}
+                    data={pluginData}
+                    onChange={pluginOnChange}
+                    inline
+                  />
+                )}
+                <div className="field"><label>Conseils donnés</label><RichTextArea value={conseils} onChange={setConseils} placeholder="Conseils hygiéno-diététiques, exercices, recommandations…" minHeight={80} /></div>
+                <div className="field"><label>Plan à long terme / recommandations</label><RichTextArea value={plan} onChange={setPlan} placeholder="Fréquence des séances, objectif thérapeutique…" minHeight={80} /></div>
+                <div className="field"><label>À surveiller</label><input type="text" value={surveiller} onChange={e => setSurveiller(e.target.value)} placeholder="Signes d'alerte, évolution à observer…" /></div>
+                {/* ─── PROCHAIN RDV synchronisé avec le calendrier ─── */}
+                <NextRdvSection
+                  patientId={patientId}
+                  nextSession={nextSession}        setNextSession={setNextSession}
+                  nextSessionHeure={nextSessionHeure}  setNextSessionHeure={setNextSessionHeure}
+                  nextSessionFin={nextSessionFin}      setNextSessionFin={setNextSessionFin}
+                  nextSessionNote={nextSessionNote}    setNextSessionNote={setNextSessionNote}
+                  nextSessionApptId={nextSessionApptId} setNextSessionApptId={setNextSessionApptId}
+                  patientAppts={patientAppts}
+                  onApptDeleted={id => setPatientAppts(prev => prev.filter(a => a.id !== id))}
+                />
+
+                {/* ── Clôture séance : RDV réalisé + Comptabilité ─── */}
+                {patientId && (
+                  <div style={{ marginTop: 14, background: 'var(--purple-light)', padding: '14px 16px', borderRadius: 'var(--radius)', border: '1.5px solid var(--purple-mid)' }}>
+
+                    <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--purple)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span>✅</span> Clôture de séance
+                    </div>
+
+                    {/* RDV réalisé */}
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer', marginBottom: clotureTypes.length > 0 ? 12 : 0 }}>
+                      <input
+                        type="checkbox"
+                        checked={markRdvDone}
+                        onChange={e => setMarkRdvDone(e.target.checked)}
+                        style={{ width: 16, height: 16, accentColor: 'var(--purple)', cursor: 'pointer', flexShrink: 0 }}
+                      />
+                      <span>
+                        <strong>Marquer le RDV comme réalisé</strong>
+                        <span style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
+                          Met à jour le calendrier et le tableau de bord
+                        </span>
+                      </span>
+                    </label>
+
+                    {/* Comptabilité — case à cocher simple */}
+                    {clotureTypes.length > 0 && (
+                      <div>
+                        <div style={{ height: 1, background: 'var(--purple-mid)', opacity: .3, marginBottom: 12 }} />
+
+                        {/* Case principale */}
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13, cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={enableCompta}
+                            onChange={e => {
+                              const checked = e.target.checked
+                              setEnableCompta(checked)
+                              if (checked && clotureTypes.length === 1) {
+                                setClotureTypeId(clotureTypes[0].id)
+                              } else if (!checked) {
+                                setClotureTypeId('')
+                              }
+                            }}
+                            style={{ width: 16, height: 16, accentColor: 'var(--purple)', cursor: 'pointer', flexShrink: 0, marginTop: 2 }}
+                          />
+                          <span>
+                            <strong>Enregistrer cette séance en comptabilité</strong>
+                            <span style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
+                              Ajoute +1 au tableau mensuel de revenus
+                            </span>
+                          </span>
+                        </label>
+
+                        {/* Select type uniquement si plusieurs types et case cochée */}
+                        {enableCompta && clotureTypes.length > 1 && (
+                          <div className="field" style={{ margin: '10px 0 0 26px' }}>
+                            <select
+                              value={clotureTypeId}
+                              onChange={e => setClotureTypeId(e.target.value)}
+                              style={{ fontSize: 13, borderColor: 'var(--purple-mid)', background: '#fff' }}
+                            >
+                              <option value="">— Choisir le type —</option>
+                              {clotureTypes.map(t => (
+                                <option key={t.id} value={t.id}>
+                                  {t.name}{t.price > 0 ? ` — ${t.price.toFixed(2)} €` : ''}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                        {enableCompta && clotureTypeId && (() => {
+                          const type = clotureTypes.find(t => t.id === clotureTypeId)
+                          const [y, m] = date.split('-')
+                          const alreadyNb = currentMonthNb ?? null
+                          const afterNb   = alreadyNb !== null ? alreadyNb + 1 : null
+                          return (
+                            <div style={{ marginTop: 10, marginLeft: 26 }}>
+                              {/* Résumé du mois actuel */}
+                              {alreadyNb !== null && (
+                                <div style={{
+                                  display: 'flex', alignItems: 'center', gap: 8,
+                                  padding: '7px 10px',
+                                  borderRadius: 7,
+                                  background: alreadyNb > 0 ? 'rgba(245,158,11,.1)' : 'rgba(74,103,65,.07)',
+                                  border: `1px solid ${alreadyNb > 0 ? 'rgba(245,158,11,.35)' : 'rgba(74,103,65,.2)'}`,
+                                  fontSize: 12,
+                                }}>
+                                  <span style={{ fontSize: 15 }}>{alreadyNb > 0 ? '⚠️' : '✅'}</span>
+                                  <div>
+                                    <div style={{ fontWeight: 700, color: alreadyNb > 0 ? 'var(--amber)' : 'var(--accent)' }}>
+                                      {alreadyNb > 0
+                                        ? `Déjà ${alreadyNb} séance${alreadyNb > 1 ? 's' : ''} enregistrée${alreadyNb > 1 ? 's' : ''} ce mois`
+                                        : 'Aucune séance enregistrée ce mois'
+                                      }
+                                    </div>
+                                    <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 1 }}>
+                                      "{type?.name}" · {m}/{y}
+                                      {afterNb !== null && !isEditing && (
+                                        <span style={{ marginLeft: 6, color: 'var(--purple)', fontWeight: 600 }}>
+                                          → passera à {afterNb} après enregistrement
+                                        </span>
+                                      )}
+                                      {isEditing && (
+                                        <span style={{ marginLeft: 6, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                                          — pas de modification en mode édition
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              {/* Résumé de ce qui sera ajouté — masqué en mode édition (pas d'incrémentation) */}
+                              {!isEditing && (
+                                <div style={{ fontSize: 11, color: 'var(--purple)', marginTop: 5, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <span>+1</span>
+                                  <strong>"{type?.name}"</strong>
+                                  {type?.price ? <span>({type.price.toFixed(2)} €)</span> : null}
+                                  <span>· sera ajouté à la comptabilité {m}/{y}</span>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </>
+          )
+        })()}
 
         {/* BOUTONS BAS */}
         <div className="row-btns" style={{ marginBottom: '3rem' }}>

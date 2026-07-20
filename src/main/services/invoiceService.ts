@@ -297,17 +297,12 @@ ${prat.paymentTerms ? `
 
 // ── Génération ────────────────────────────────────────────────────
 
-export async function generateInvoice(data: InvoiceData): Promise<InvoiceResult> {
-  // Force un rechargement depuis le disque pour avoir les dernières données du profil
-  invalidateCache()
-  const invoiceNum = getNextInvoiceNumber()
-  const settings   = getSettings() as any
-
+function buildPractitionerInfo(): PractitionerInfo {
+  const settings  = getSettings() as any
   const firstName = (settings.practitionerFirstName as string | undefined) || ''
   const lastName  = (settings.practitionerLastName  as string | undefined) || ''
   const fullName  = [firstName, lastName].filter(Boolean).join(' ').toUpperCase()
-
-  const prat: PractitionerInfo = {
+  return {
     name:         fullName,
     activity:     (settings.practitionerActivity     as string | undefined) || '',
     address:      (settings.practitionerAddress      as string | undefined) || '',
@@ -316,20 +311,9 @@ export async function generateInvoice(data: InvoiceData): Promise<InvoiceResult>
     ape:          (settings.practitionerApe          as string | undefined) || '',
     paymentTerms: (settings.practitionerPaymentTerms as string | undefined) || '',
   }
+}
 
-  const logoDataUrl = getLogoDataUrl((settings.practitionerLogoPath as string | undefined) || '')
-  const html        = buildHtml(data, invoiceNum, logoDataUrl, prat)
-
-  const dir = (settings.invoicePath as string) || ''
-  if (!dir) throw new Error('Aucun dossier de destination configuré. Définissez-le dans Paramètres > Facturation.')
-  mkdirSync(dir, { recursive: true })
-
-  const slug     = `${data.patientLastName.toUpperCase()}_${data.patientFirstName}`
-    .replace(/[^a-zA-Z0-9_]/g, '_')
-  const fileName = `Facture_${invoiceNum.replace('-', '_')}_${slug}.pdf`
-  const filePath = join(dir, fileName)
-
-  // Écriture dans un fichier temporaire (data: URL trop long avec logo base64)
+async function printToPdf(html: string, filePath: string): Promise<void> {
   const tmpDir  = join(app.getPath('userData'), 'tmp')
   mkdirSync(tmpDir, { recursive: true })
   const tmpPath = join(tmpDir, `invoice_${Date.now()}.html`)
@@ -358,8 +342,29 @@ export async function generateInvoice(data: InvoiceData): Promise<InvoiceResult>
     try { win.close() } catch { /* ignore */ }
     try { unlinkSync(tmpPath) } catch { /* ignore */ }
   }
+}
 
-  // Enregistrement dans le journal des factures
+function resolveFilePath(settings: any, data: InvoiceData, invoiceNum: string): string {
+  const dir = (settings.invoicePath as string) || ''
+  if (!dir) throw new Error('Aucun dossier de destination configuré. Définissez-le dans Paramètres > Facturation.')
+  mkdirSync(dir, { recursive: true })
+  const slug     = `${data.patientLastName.toUpperCase()}_${data.patientFirstName}`
+    .replace(/[^a-zA-Z0-9_]/g, '_')
+  const fileName = `Facture_${invoiceNum.replace('-', '_')}_${slug}.pdf`
+  return join(dir, fileName)
+}
+
+export async function generateInvoice(data: InvoiceData): Promise<InvoiceResult> {
+  invalidateCache()
+  const invoiceNum  = getNextInvoiceNumber()
+  const settings    = getSettings() as any
+  const prat        = buildPractitionerInfo()
+  const logoDataUrl = getLogoDataUrl((settings.practitionerLogoPath as string | undefined) || '')
+  const html        = buildHtml(data, invoiceNum, logoDataUrl, prat)
+  const filePath    = resolveFilePath(settings, data, invoiceNum)
+
+  await printToPdf(html, filePath)
+
   try {
     addInvoiceLog({
       invoice_number:     invoiceNum,
@@ -377,4 +382,20 @@ export async function generateInvoice(data: InvoiceData): Promise<InvoiceResult>
   } catch (e) { console.error('[Invoice] Erreur log DB:', e) }
 
   return { filePath, invoiceNumber: invoiceNum, montant: data.montant }
+}
+
+/** Régénère le PDF d'une facture existante (même numéro, pas d'incrémentation). */
+export async function regenerateInvoicePdf(
+  data: InvoiceData,
+  invoiceNum: string,
+): Promise<string> {
+  invalidateCache()
+  const settings    = getSettings() as any
+  const prat        = buildPractitionerInfo()
+  const logoDataUrl = getLogoDataUrl((settings.practitionerLogoPath as string | undefined) || '')
+  const html        = buildHtml(data, invoiceNum, logoDataUrl, prat)
+  const filePath    = resolveFilePath(settings, data, invoiceNum)
+
+  await printToPdf(html, filePath)
+  return filePath
 }

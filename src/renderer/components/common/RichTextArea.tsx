@@ -1,5 +1,26 @@
 import React, { useRef, useEffect, useCallback, CSSProperties } from 'react'
 
+function sanitizeHtml(dirty: string): string {
+  if (!dirty) return ''
+  const div = document.createElement('div')
+  div.innerHTML = dirty
+  for (const el of Array.from(div.querySelectorAll('*'))) {
+    if (/^(script|iframe|object|embed|form|input|button|link|meta|style|base)$/i.test(el.tagName)) {
+      el.remove()
+      continue
+    }
+    for (const { name } of Array.from(el.attributes)) {
+      if (/^on/i.test(name) || ['src', 'action', 'formaction', 'data', 'xlink:href'].includes(name.toLowerCase())) {
+        el.removeAttribute(name)
+      } else if (name.toLowerCase() === 'href') {
+        const val = (el as HTMLElement).getAttribute('href') || ''
+        if (/^javascript:/i.test(val.trim())) el.removeAttribute('href')
+      }
+    }
+  }
+  return div.innerHTML
+}
+
 interface RichTextAreaProps {
   value: string
   onChange: (html: string) => void
@@ -15,16 +36,18 @@ export default function RichTextArea({ value, onChange, placeholder, style, minH
   // Initialisation au montage
   useEffect(() => {
     if (divRef.current) {
-      divRef.current.innerHTML = value || ''
-      internalHtml.current = value || ''
+      const safe = sanitizeHtml(value || '')
+      divRef.current.innerHTML = safe
+      internalHtml.current = safe
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Mise à jour externe (ex: chargement d'une séance existante)
   useEffect(() => {
     if (divRef.current && value !== internalHtml.current) {
-      divRef.current.innerHTML = value || ''
-      internalHtml.current = value || ''
+      const safe = sanitizeHtml(value || '')
+      divRef.current.innerHTML = safe
+      internalHtml.current = safe
     }
   }, [value])
 

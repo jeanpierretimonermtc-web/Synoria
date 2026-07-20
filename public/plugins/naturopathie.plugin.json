@@ -6,9 +6,7 @@
   "description": "Fiche d'anamnèse naturopathique complète : terrain, hygiène de vie, alimentation, éliminations, émotionnel et protocole.",
   "icon": "🌿",
   "accentColor": "#5E8A5E",
-
   "sections": [
-
     {
       "id": "motif_terrain",
       "title": "Motif de consultation et terrain",
@@ -27,7 +25,13 @@
           "id": "constitution",
           "type": "radio",
           "label": "Constitution dominante",
-          "options": ["Sanguine", "Lymphatique", "Bilieuse", "Nerveuse", "Mixte"],
+          "options": [
+            "Sanguine",
+            "Lymphatique",
+            "Bilieuse",
+            "Nerveuse",
+            "Mixte"
+          ],
           "width": "half",
           "hint": "Selon la morphologie, le tempérament et les tendances pathologiques"
         },
@@ -56,9 +60,9 @@
           "width": "full",
           "minHeight": 75
         }
-      ]
+      ],
+      "placement": "motif"
     },
-
     {
       "id": "hygiene_vie",
       "title": "Hygiène de vie",
@@ -69,25 +73,46 @@
           "id": "sommeilQuantite",
           "type": "radio",
           "label": "Durée de sommeil habituelle",
-          "options": ["Moins de 6h", "6h", "7h", "8h", "Plus de 8h"],
+          "options": [
+            "Moins de 6h",
+            "6h",
+            "7h",
+            "8h",
+            "Plus de 8h"
+          ],
           "width": "half"
         },
         {
           "id": "qualiteSommeil",
           "type": "radio",
           "label": "Qualité du sommeil",
-          "options": ["Très mauvaise", "Mauvaise", "Perturbée", "Correcte", "Réparatrice"],
+          "options": [
+            "Très mauvaise",
+            "Mauvaise",
+            "Perturbée",
+            "Correcte",
+            "Réparatrice"
+          ],
           "width": "half"
         },
         {
           "id": "troublesSommeil",
           "type": "checkboxgroup",
           "label": "Troubles du sommeil",
-          "options": ["Difficultés d'endormissement", "Réveils nocturnes", "Réveil trop tôt", "Sommeil non réparateur", "Cauchemars", "Apnées"],
+          "options": [
+            "Difficultés d'endormissement",
+            "Réveils nocturnes",
+            "Réveil trop tôt",
+            "Sommeil non réparateur",
+            "Cauchemars",
+            "Apnées"
+          ],
           "width": "full"
         },
         {
-          "id": "sep1", "type": "separator", "label": ""
+          "id": "sep1",
+          "type": "separator",
+          "label": ""
         },
         {
           "id": "stressScore",
@@ -107,13 +132,21 @@
           "minHeight": 80
         },
         {
-          "id": "sep2", "type": "separator", "label": ""
+          "id": "sep2",
+          "type": "separator",
+          "label": ""
         },
         {
           "id": "activitePhysique",
           "type": "radio",
           "label": "Activité physique régulière",
-          "options": ["Aucune", "Occasionnelle", "1–2×/semaine", "3–4×/semaine", "Quotidienne"],
+          "options": [
+            "Aucune",
+            "Occasionnelle",
+            "1–2×/semaine",
+            "3–4×/semaine",
+            "Quotidienne"
+          ],
           "width": "half"
         },
         {
@@ -128,7 +161,12 @@
           "id": "expositionSoleil",
           "type": "radio",
           "label": "Exposition solaire",
-          "options": ["Insuffisante", "Modérée", "Régulière", "Excessive"],
+          "options": [
+            "Insuffisante",
+            "Modérée",
+            "Régulière",
+            "Excessive"
+          ],
           "width": "third"
         },
         {
@@ -139,9 +177,9 @@
           "width": "half",
           "minHeight": 60
         }
-      ]
+      ],
+      "placement": "notes"
     },
-
     {
       "id": "alimentation",
       "title": "Bilan alimentaire",
@@ -152,25 +190,46 @@
           "id": "nbRepas",
           "type": "radio",
           "label": "Nombre de repas par jour",
-          "options": ["1 repas", "2 repas", "3 repas", "Plus de 3 repas", "Grignotage"],
+          "options": [
+            "1 repas",
+            "2 repas",
+            "3 repas",
+            "Plus de 3 repas",
+            "Grignotage"
+          ],
           "width": "half"
         },
         {
           "id": "hydratation",
           "type": "radio",
           "label": "Hydratation quotidienne",
-          "options": ["Moins de 1 L", "1 à 1,5 L", "1,5 à 2 L", "Plus de 2 L"],
+          "options": [
+            "Moins de 1 L",
+            "1 à 1,5 L",
+            "1,5 à 2 L",
+            "Plus de 2 L"
+          ],
           "width": "half"
         },
         {
           "id": "typesBoissons",
           "type": "checkboxgroup",
           "label": "Boissons consommées régulièrement",
-          "options": ["Eau plate", "Eau gazeuse", "Café", "Thé / tisanes", "Sodas / jus industriels", "Alcool", "Jus de fruits frais"],
+          "options": [
+            "Eau plate",
+            "Eau gazeuse",
+            "Café",
+            "Thé / tisanes",
+            "Sodas / jus industriels",
+            "Alcool",
+            "Jus de fruits frais"
+          ],
           "width": "full"
         },
         {
-          "id": "sep1", "type": "separator", "label": ""
+          "id": "sep1",
+          "type": "separator",
+          "label": ""
         },
         {
           "id": "alimentsFrequents",
@@ -200,7 +259,14 @@
           "id": "sucresExcitants",
           "type": "checkboxgroup",
           "label": "Consommation de sucres et excitants",
-          "options": ["Sucre raffiné quotidien", "Confiseries fréquentes", "Café > 3 tasses/j", "Tabac", "Alcool régulier", "Drogues récréatives"],
+          "options": [
+            "Sucre raffiné quotidien",
+            "Confiseries fréquentes",
+            "Café > 3 tasses/j",
+            "Tabac",
+            "Alcool régulier",
+            "Drogues récréatives"
+          ],
           "width": "full"
         },
         {
@@ -211,9 +277,9 @@
           "width": "full",
           "minHeight": 75
         }
-      ]
+      ],
+      "placement": "notes"
     },
-
     {
       "id": "eliminations",
       "title": "Bilan digestif et éliminations",
@@ -224,14 +290,29 @@
           "id": "transit",
           "type": "radio",
           "label": "Transit intestinal",
-          "options": ["Constipation chronique", "Constipation occasionnelle", "Normal (1–2×/j)", "Accéléré", "Diarrhée chronique", "Alternant"],
+          "options": [
+            "Constipation chronique",
+            "Constipation occasionnelle",
+            "Normal (1–2×/j)",
+            "Accéléré",
+            "Diarrhée chronique",
+            "Alternant"
+          ],
           "width": "half"
         },
         {
           "id": "troublesDigestifs",
           "type": "checkboxgroup",
           "label": "Troubles digestifs",
-          "options": ["Ballonnements", "Gaz / flatulences", "Reflux / brûlures", "Nausées", "Douleurs abdominales", "Selles anormales", "Hémorroïdes"],
+          "options": [
+            "Ballonnements",
+            "Gaz / flatulences",
+            "Reflux / brûlures",
+            "Nausées",
+            "Douleurs abdominales",
+            "Selles anormales",
+            "Hémorroïdes"
+          ],
           "width": "full"
         },
         {
@@ -243,7 +324,9 @@
           "minHeight": 75
         },
         {
-          "id": "sep1", "type": "separator", "label": ""
+          "id": "sep1",
+          "type": "separator",
+          "label": ""
         },
         {
           "id": "eliminationUrinaire",
@@ -269,9 +352,9 @@
           "width": "full",
           "minHeight": 65
         }
-      ]
+      ],
+      "placement": "notes"
     },
-
     {
       "id": "emotionnel_mental",
       "title": "Bilan émotionnel et mental",
@@ -290,7 +373,16 @@
           "id": "etatMental",
           "type": "checkboxgroup",
           "label": "Signes mentaux",
-          "options": ["Fatigue mentale", "Brouillard mental", "Difficultés de concentration", "Mémoire altérée", "Ruminations", "Anxiété", "Déprime / tristesse", "Hypersensibilité"],
+          "options": [
+            "Fatigue mentale",
+            "Brouillard mental",
+            "Difficultés de concentration",
+            "Mémoire altérée",
+            "Ruminations",
+            "Anxiété",
+            "Déprime / tristesse",
+            "Hypersensibilité"
+          ],
           "width": "full"
         },
         {
@@ -309,9 +401,9 @@
           "width": "half",
           "minHeight": 85
         }
-      ]
+      ],
+      "placement": "notes"
     },
-
     {
       "id": "bilan_cycles",
       "title": "Cycles et sphère hormonale (si applicable)",
@@ -334,9 +426,9 @@
           "width": "half",
           "minHeight": 85
         }
-      ]
+      ],
+      "placement": "notes"
     },
-
     {
       "id": "protocole",
       "title": "Protocole naturopathique",
@@ -379,7 +471,18 @@
           "id": "techniquesNaturelles",
           "type": "checkboxgroup",
           "label": "Techniques naturelles recommandées",
-          "options": ["Hydrothérapie", "Balnéothérapie", "Jeûne / semi-jeûne", "Brossage à sec", "Bain dérivatif", "Argile", "Cataplasmes", "Réflexologie", "Cohérence cardiaque", "Sophrologie"],
+          "options": [
+            "Hydrothérapie",
+            "Balnéothérapie",
+            "Jeûne / semi-jeûne",
+            "Brossage à sec",
+            "Bain dérivatif",
+            "Argile",
+            "Cataplasmes",
+            "Réflexologie",
+            "Cohérence cardiaque",
+            "Sophrologie"
+          ],
           "width": "full"
         },
         {
@@ -394,11 +497,18 @@
           "id": "ressentiFin",
           "type": "radio",
           "label": "Ressenti global du patient en fin de séance",
-          "options": ["Très bien — motivé(e)", "Bien — serein(e)", "Neutre", "Overwhelmé(e) / submergé(e)", "Fatigué(e)"],
+          "options": [
+            "Très bien — motivé(e)",
+            "Bien — serein(e)",
+            "Neutre",
+            "Overwhelmé(e) / submergé(e)",
+            "Fatigué(e)"
+          ],
           "width": "full"
         }
-      ]
+      ],
+      "placement": "traitement-inner"
     }
-
-  ]
+  ],
+  "isNative": true
 }

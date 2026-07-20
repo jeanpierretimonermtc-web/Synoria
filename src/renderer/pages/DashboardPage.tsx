@@ -457,6 +457,8 @@ function RdvDrawer({ initialYear, initialMonth, patients, onClose }: {
 
 // ── Page principale ───────────────────────────────────────────────
 
+
+
 export default function DashboardPage() {
   const [stats,           setStats]           = useState<DashboardStats | null>(null)
   const [upcoming,        setUpcoming]        = useState<UpcomingSession[]>([])
@@ -759,7 +761,7 @@ export default function DashboardPage() {
                       }}
                       style={{ padding: '4px 8px', color: cfg.dot, borderColor: cfg.border }}
                     >
-                      📋 Séance
+                      ＋ Séance
                     </button>
 
                     {/* 2. Ouvrir le calendrier sur la date du RDV */}

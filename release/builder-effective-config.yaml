@@ -1,0 +1,47 @@
+directories:
+  output: release
+  buildResources: build
+appId: com.synoria.app
+productName: Synoria
+icon: build/icons/icon
+files:
+  - filter:
+      - dist/**/*
+      - dist-electron/**/*
+      - node_modules/better-sqlite3/**/*
+      - node_modules/xlsx-js-style/**/*
+      - node_modules/@supabase/**/*
+      - node_modules/ws/**/*
+asarUnpack:
+  - node_modules/better-sqlite3/**/*
+nsis:
+  oneClick: true
+  perMachine: false
+  allowToChangeInstallationDirectory: false
+  deleteAppDataOnUninstall: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Synoria
+  uninstallDisplayName: Synoria
+  guid: 9F4A2B1C-8E3D-4F6A-B5C7-D2E8F0A1B3C5
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  icon: build/icons/icon.ico
+mac:
+  target:
+    - target: dmg
+      arch:
+        - universal
+  icon: build/icons/icon.png
+  category: public.app-category.medical
+  darkModeSupport: true
+linux:
+  target: AppImage
+  icon: build/icons
+electronVersion: 28.3.3

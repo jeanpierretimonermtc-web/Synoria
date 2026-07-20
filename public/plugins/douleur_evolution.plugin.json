@@ -1,0 +1,342 @@
+{
+  "id": "douleur_evolution",
+  "name": "Douleur & évolution",
+  "specialty": "Suivi douleur",
+  "version": "1.0.0",
+  "schemaVersion": 1,
+  "description": "Suivi de la douleur et de son évolution — utilisable en MTC, ostéopathie, thérapies manuelles, kinésiologie, naturopathie et bien-être.",
+  "icon": "🎯",
+  "accentColor": "#C05050",
+  "category": "manual_therapy",
+  "tags": [
+    "douleur",
+    "évolution",
+    "suivi",
+    "bodychart"
+  ],
+  "sections": [
+    {
+      "id": "motif_contexte",
+      "title": "Motif et contexte",
+      "icon": "📋",
+      "accentColor": "#C05050",
+      "fields": [
+        {
+          "id": "motifPrincipal",
+          "type": "richtext",
+          "label": "Motif principal de consultation",
+          "placeholder": "Plainte principale, demande exprimée par le patient…",
+          "width": "full",
+          "minHeight": 90
+        },
+        {
+          "id": "anciennete",
+          "type": "select",
+          "label": "Ancienneté de la douleur",
+          "options": [
+            "Moins d'une semaine",
+            "1 à 4 semaines",
+            "1 à 3 mois",
+            "3 à 6 mois",
+            "6 mois à 1 an",
+            "Plus d'un an",
+            "Chronique (plus de 3 ans)"
+          ],
+          "width": "half"
+        },
+        {
+          "id": "circonstances",
+          "type": "richtext",
+          "label": "Circonstances d'apparition",
+          "placeholder": "Traumatisme, geste, effort, stress, sans facteur déclenchant…",
+          "width": "half",
+          "minHeight": 80
+        },
+        {
+          "id": "antecedentsLies",
+          "type": "richtext",
+          "label": "Antécédents liés",
+          "placeholder": "Antécédents médicaux, chirurgicaux ou traumatiques en lien…",
+          "width": "half",
+          "minHeight": 80
+        },
+        {
+          "id": "traitementsEnCours",
+          "type": "tags",
+          "label": "Traitements en cours",
+          "placeholder": "Médicaments, autres praticiens, kinésithérapie…",
+          "width": "half"
+        }
+      ],
+      "placement": "motif"
+    },
+    {
+      "id": "localisation",
+      "title": "Localisation",
+      "icon": "🫀",
+      "accentColor": "#8F5050",
+      "fields": [
+        {
+          "id": "schemaCorps",
+          "type": "bodychart",
+          "label": "Localisation de la douleur",
+          "width": "full"
+        },
+        {
+          "id": "irradiation",
+          "type": "richtext",
+          "label": "Irradiation / trajet",
+          "placeholder": "Trajet douloureux, zones irradiées, paresthésies…",
+          "width": "half",
+          "minHeight": 80
+        },
+        {
+          "id": "lateralite",
+          "type": "radio",
+          "label": "Latéralité",
+          "options": [
+            "Gauche",
+            "Droit",
+            "Bilatéral",
+            "Central",
+            "Variable"
+          ],
+          "width": "half"
+        },
+        {
+          "id": "notesLocalisation",
+          "type": "textarea",
+          "label": "Notes complémentaires de localisation",
+          "placeholder": "Profondeur, caractère superficiel ou profond, zones adjacentes…",
+          "width": "full",
+          "minHeight": 60
+        }
+      ],
+      "placement": "notes"
+    },
+    {
+      "id": "intensite_evolution",
+      "title": "Intensité et évolution",
+      "icon": "📈",
+      "accentColor": "#C05050",
+      "fields": [
+        {
+          "id": "douleurAvantApres",
+          "type": "before_after",
+          "label": "Intensité de la douleur (0 = absente · 10 = maximale)",
+          "min": 0,
+          "max": 10,
+          "step": 1,
+          "width": "full"
+        },
+        {
+          "id": "frequence",
+          "type": "select",
+          "label": "Fréquence de la douleur",
+          "options": [
+            "Continue",
+            "Pluriquotidienne",
+            "Quotidienne",
+            "Plusieurs fois par semaine",
+            "Hebdomadaire",
+            "Occasionnelle"
+          ],
+          "width": "half"
+        },
+        {
+          "id": "evolutionDepuis",
+          "type": "radio",
+          "label": "Évolution depuis la dernière séance",
+          "options": [
+            "Nette amélioration",
+            "Légère amélioration",
+            "Stable",
+            "Légère aggravation",
+            "Aggravation",
+            "Première consultation"
+          ],
+          "width": "half"
+        },
+        {
+          "id": "limitationFonctionnelle",
+          "type": "checkboxgroup",
+          "label": "Impact fonctionnel",
+          "options": [
+            "Marche",
+            "Montée des escaliers",
+            "Travail",
+            "Conduite",
+            "Sommeil",
+            "Sport / activité physique",
+            "Activités du quotidien",
+            "Vie sociale"
+          ],
+          "width": "full"
+        },
+        {
+          "id": "impactSommeil",
+          "type": "slider",
+          "label": "Impact sur le sommeil (0 = aucun · 10 = très perturbé)",
+          "min": 0,
+          "max": 10,
+          "step": 1,
+          "width": "half"
+        },
+        {
+          "id": "impactActivites",
+          "type": "slider",
+          "label": "Impact sur les activités (0 = aucun · 10 = total)",
+          "min": 0,
+          "max": 10,
+          "step": 1,
+          "width": "half"
+        }
+      ],
+      "placement": "notes"
+    },
+    {
+      "id": "facteurs",
+      "title": "Facteurs modulant la douleur",
+      "icon": "⚖️",
+      "accentColor": "#7A6A3A",
+      "fields": [
+        {
+          "id": "facteursAggravants",
+          "type": "richtext",
+          "label": "Facteurs aggravants",
+          "placeholder": "Effort, froid, humidité, stress, station debout prolongée…",
+          "width": "half",
+          "minHeight": 80
+        },
+        {
+          "id": "facteursAmeliorants",
+          "type": "richtext",
+          "label": "Facteurs améliorants",
+          "placeholder": "Repos, chaleur, antalgiques, mouvement doux, position…",
+          "width": "half",
+          "minHeight": 80
+        },
+        {
+          "id": "sensibilitesExterieures",
+          "type": "checkboxgroup",
+          "label": "Sensible à",
+          "options": [
+            "Chaleur",
+            "Froid",
+            "Humidité",
+            "Mouvement",
+            "Repos prolongé",
+            "Stress / émotions",
+            "Alimentation",
+            "Changement météorologique"
+          ],
+          "width": "half"
+        },
+        {
+          "id": "momentJournee",
+          "type": "checkboxgroup",
+          "label": "Moments d'intensification",
+          "options": [
+            "Au réveil",
+            "Le matin",
+            "L'après-midi",
+            "Le soir",
+            "La nuit",
+            "À l'effort",
+            "Après l'effort",
+            "Sans variation nette"
+          ],
+          "width": "half"
+        }
+      ],
+      "placement": "notes"
+    },
+    {
+      "id": "seance",
+      "title": "Séance",
+      "icon": "🩺",
+      "accentColor": "#3A6A6A",
+      "fields": [
+        {
+          "id": "testsRealises",
+          "type": "repeatable",
+          "label": "Tests réalisés",
+          "width": "full"
+        },
+        {
+          "id": "traitementEffectue",
+          "type": "richtext",
+          "label": "Traitement effectué",
+          "placeholder": "Techniques utilisées, zones traitées, durée, intensité…",
+          "width": "full",
+          "minHeight": 100
+        },
+        {
+          "id": "reactionsSeance",
+          "type": "richtext",
+          "label": "Réactions pendant / après séance",
+          "placeholder": "Sensations, réponses tissulaires, réactions émotionnelles…",
+          "width": "half",
+          "minHeight": 80
+        },
+        {
+          "id": "conseilsDonnes",
+          "type": "richtext",
+          "label": "Conseils donnés",
+          "placeholder": "Conseils posturaux, exercices, recommandations hygiéno-diététiques…",
+          "width": "half",
+          "minHeight": 80
+        }
+      ],
+      "placement": "traitement-inner"
+    },
+    {
+      "id": "plan_suivi",
+      "title": "Plan de suivi",
+      "icon": "🔜",
+      "accentColor": "#4A6A3A",
+      "fields": [
+        {
+          "id": "objectifProchaine",
+          "type": "richtext",
+          "label": "Objectif de la prochaine séance",
+          "placeholder": "Ce que vous prévoyez de travailler, critères d'amélioration attendus…",
+          "width": "full",
+          "minHeight": 80
+        },
+        {
+          "id": "exercicesRecommandations",
+          "type": "richtext",
+          "label": "Exercices et recommandations",
+          "placeholder": "Exercices à faire à domicile, fréquence, précautions…",
+          "width": "half",
+          "minHeight": 80
+        },
+        {
+          "id": "frequenceRecommandee",
+          "type": "select",
+          "label": "Fréquence recommandée",
+          "options": [
+            "2 fois par semaine",
+            "1 fois par semaine",
+            "Toutes les 2 semaines",
+            "1 fois par mois",
+            "À la demande",
+            "Fin de suivi"
+          ],
+          "width": "half"
+        },
+        {
+          "id": "notesFinSeance",
+          "type": "textarea",
+          "label": "Notes de fin",
+          "placeholder": "Observations cliniques, points de vigilance, bilan de la séance…",
+          "width": "full",
+          "minHeight": 70
+        }
+      ],
+      "placement": "plan"
+    }
+  ],
+  "isNative": true
+}

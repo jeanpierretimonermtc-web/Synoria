@@ -66,10 +66,7 @@ import { app } from 'electron'
 import { getDeviceIdHash } from './licenseService'
 
 function sessionFilePath(): string {
-  const base = process.env.PORTABLE_EXECUTABLE_DIR
-    ? join(process.env.PORTABLE_EXECUTABLE_DIR, 'data')
-    : app.getPath('userData')
-  return join(base, 'supabase.session.enc')
+  return join(app.getPath('userData'), 'supabase.session.enc')
 }
 
 // ── Chiffrement de la session (AES-256-GCM, même pattern que licenseService) ──
@@ -147,28 +144,64 @@ export async function initSupabaseAuth(): Promise<void> {
 // ── Authentification ─────────────────────────────────────────────────────────
 
 export async function signUp(email: string, password: string): Promise<{ ok: boolean; error?: string }> {
-  const { data, error } = await getClient().auth.signUp({ email, password })
-  if (error) {
-    const msg = error.message.toLowerCase()
-    if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('email address is already')) {
+  try {
+    const { data, error } = await getClient().auth.signUp({ email, password })
+    if (error) {
+      const rawMsg = error.message ?? ''
+      const httpStatus = (error as any).status as number | undefined
+      const msg = rawMsg.toLowerCase()
+      if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('email address is already') || msg.includes('user already registered')) {
+        return { ok: false, error: 'EMAIL_EXISTS' }
+      }
+      if (msg.includes('signups not allowed') || (msg.includes('signup') && msg.includes('not allowed'))) {
+        return { ok: false, error: 'SIGNUP_DISABLED' }
+      }
+      if (!rawMsg || rawMsg === '{}' || rawMsg === 'null') {
+        // Message vide — inclure le status HTTP pour diagnostic
+        const suffix = httpStatus != null ? ` [HTTP ${httpStatus}]` : ''
+        return { ok: false, error: `SIGNUP_DISABLED${suffix}` }
+      }
+      return { ok: false, error: rawMsg }
+    }
+    // Quand la confirmation email est activée, Supabase retourne ok sans error
+    // mais data.user.identities === [] pour signaler que l'email est déjà utilisé
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
       return { ok: false, error: 'EMAIL_EXISTS' }
     }
-    return { ok: false, error: error.message }
+    return { ok: true }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return { ok: false, error: `Erreur de connexion Supabase : ${msg}` }
   }
-  // Quand la confirmation email est activée, Supabase retourne ok sans error
-  // mais data.user.identities === [] pour signaler que l'email est déjà utilisé
-  if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
-    return { ok: false, error: 'EMAIL_EXISTS' }
-  }
-  return { ok: true }
 }
 
 export async function signIn(email: string, password: string): Promise<{ ok: boolean; error?: string }> {
-  const { data, error } = await getClient().auth.signInWithPassword({ email, password })
-  if (error) return { ok: false, error: error.message }
-  _session = data.session
-  persistSession(_session)
-  return { ok: true }
+  try {
+    const { data, error } = await getClient().auth.signInWithPassword({ email, password })
+    if (error) {
+      const msg = error.message ?? ''
+      if (msg.toLowerCase().includes('email not confirmed')) {
+        return { ok: false, error: 'EMAIL_NOT_CONFIRMED' }
+      }
+      return { ok: false, error: msg }
+    }
+    _session = data.session
+    persistSession(_session)
+    return { ok: true }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return { ok: false, error: `Erreur de connexion : ${msg}` }
+  }
+}
+
+export async function resendConfirmationEmail(email: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { error } = await getClient().auth.resend({ type: 'signup', email })
+    if (error) return { ok: false, error: error.message }
+    return { ok: true }
+  } catch (err: unknown) {
+    return { ok: false, error: 'Erreur réseau — réessayez.' }
+  }
 }
 
 export async function signOut(): Promise<void> {
@@ -210,15 +243,26 @@ export async function getFullAccountState(): Promise<FullAccountState> {
 
   const client = getClient()
 
+  // Récupère l'org_id de l'utilisateur pour filtrer explicitement les requêtes suivantes,
+  // en complément du RLS Supabase (défense en profondeur).
+  const { data: orgData } = await client
+    .from('organizations')
+    .select('id')
+    .eq('owner_user_id', user.id)
+    .maybeSingle()
+  const orgId = orgData?.id ?? null
+
   const { data: subData } = await client
     .from('subscriptions')
     .select('status, current_period_end, cancel_at_period_end, trial_end, stripe_price_id')
-    .single()
+    .eq('organization_id', orgId ?? '')
+    .maybeSingle()
 
   const { data: licData } = await client
     .from('licenses')
     .select('status')
-    .single()
+    .eq('organization_id', orgId ?? '')
+    .maybeSingle()
 
   return {
     isLoggedIn: true,

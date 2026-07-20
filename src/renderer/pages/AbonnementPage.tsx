@@ -219,7 +219,16 @@ function AuthForm({
         onSuccess()
       } else if (view === 'signup') {
         const { ok, error } = await window.mtcApi.accountSignUp(email, pwd)
-        if (!ok) { showToast(error ?? 'Inscription échouée', 'error'); return }
+        if (!ok) {
+          if (error === 'EMAIL_EXISTS' || error?.startsWith('EMAIL_EXISTS')) {
+            showToast('Un compte existe déjà avec cet email. Connectez-vous ou réinitialisez votre mot de passe.', 'error')
+          } else if (error === 'SIGNUP_DISABLED' || error?.startsWith('SIGNUP_DISABLED')) {
+            showToast(`Inscriptions bloquées côté Supabase ${error.includes('[') ? error.slice(error.indexOf('[')) : ''}. Vérifiez Authentication → Settings → "Allow new users to sign up" ET cliquez "Save changes".`, 'error')
+          } else {
+            showToast(error ?? 'Inscription échouée', 'error')
+          }
+          return
+        }
         showToast('Compte créé — vérifiez votre email pour confirmer.', 'success')
         setView('login')
       } else {

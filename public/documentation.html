@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synoria — Guide d'utilisation v1.5.8</title>
+<style>
+:root {
+  --accent:#2c5f8a;--accent-light:#e8f1f8;--green:#3a7d5a;--green-light:#e8f4ed;
+  --amber:#b5661a;--amber-light:#fdf3e3;--red:#c0392b;--red-light:#fdecea;
+  --purple:#6b4fa0;--purple-light:#f0ebfa;
+  --text:#1a2330;--text-muted:#546478;--surface:#fff;--bg:#f4f7fa;
+  --border:#cbd5e0;--sidebar-bg:#eef2f7;--sidebar-w:240px;--nav-h:56px;--radius:8px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --accent:#5b92c4;--accent-light:#172030;--green:#52a875;--green-light:#1b3228;
+  --amber:#d4893a;--amber-light:#2a1c0a;--red:#e05a4d;--red-light:#2a1010;
+  --purple:#9b7fd4;--purple-light:#1e1630;
+  --text:#d8e6f0;--text-muted:#8aaabb;--surface:#1a2535;--bg:#111b28;
+  --border:#243348;--sidebar-bg:#152035;
+}}
+:root[data-theme="dark"]{--accent:#5b92c4;--accent-light:#172030;--green:#52a875;--green-light:#1b3228;--amber:#d4893a;--amber-light:#2a1c0a;--red:#e05a4d;--red-light:#2a1010;--purple:#9b7fd4;--purple-light:#1e1630;--text:#d8e6f0;--text-muted:#8aaabb;--surface:#1a2535;--bg:#111b28;--border:#243348;--sidebar-bg:#152035;}
+:root[data-theme="light"]{--accent:#2c5f8a;--accent-light:#e8f1f8;--green:#3a7d5a;--green-light:#e8f4ed;--amber:#b5661a;--amber-light:#fdf3e3;--red:#c0392b;--red-light:#fdecea;--purple:#6b4fa0;--purple-light:#f0ebfa;--text:#1a2330;--text-muted:#546478;--surface:#fff;--bg:#f4f7fa;--border:#cbd5e0;--sidebar-bg:#eef2f7;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:15px;line-height:1.7;color:var(--text);background:var(--bg);}
+a{color:var(--accent);text-decoration:none;}a:hover{text-decoration:underline;}
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;z-index:100;}
+.topbar-brand{display:flex;align-items:center;gap:10px;font-family:Georgia,serif;font-size:17px;font-weight:700;color:var(--accent);}
+.topbar-title{font-size:13px;font-weight:500;color:var(--text-muted);margin-left:4px;padding-left:12px;border-left:1px solid var(--border);}
+.topbar-badge{margin-left:auto;font-size:11px;font-weight:700;background:var(--accent-light);color:var(--accent);padding:3px 10px;border-radius:20px;}
+.theme-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px;color:var(--text-muted);cursor:pointer;margin-left:8px;}
+.theme-btn:hover{background:var(--accent-light);color:var(--accent);}
+.layout{display:flex;padding-top:var(--nav-h);min-height:100vh;}
+.sidebar{position:fixed;top:var(--nav-h);left:0;bottom:0;width:var(--sidebar-w);background:var(--sidebar-bg);border-right:1px solid var(--border);overflow-y:auto;padding:20px 0 40px;z-index:50;}
+.sidebar::-webkit-scrollbar{width:4px;}.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.nav-group-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);padding:14px 20px 4px;}
+.nav-link{display:flex;align-items:center;gap:8px;padding:7px 20px;font-size:13px;color:var(--text);border-left:3px solid transparent;transition:background .12s,color .12s,border-color .12s;}
+.nav-link:hover,.nav-link.active{background:var(--accent-light);color:var(--accent);text-decoration:none;border-left-color:var(--accent);}
+.nav-link.active{font-weight:600;}
+.main{margin-left:var(--sidebar-w);flex:1;padding:48px 56px 80px;max-width:calc(var(--sidebar-w) + 820px);}
+.content{max-width:760px;}
+h1{font-family:Georgia,serif;font-size:30px;font-weight:700;color:var(--text);line-height:1.25;text-wrap:balance;margin-bottom:12px;}
+h2{font-family:Georgia,serif;font-size:22px;font-weight:700;color:var(--text);margin-top:56px;margin-bottom:16px;padding-bottom:10px;border-bottom:1.5px solid var(--border);text-wrap:balance;}
+h3{font-size:16px;font-weight:700;color:var(--text);margin-top:32px;margin-bottom:10px;}
+p{margin-bottom:14px;}ul,ol{padding-left:22px;margin-bottom:14px;}li{margin-bottom:5px;}li::marker{color:var(--accent);}
+strong{font-weight:700;color:var(--text);}
+code{font-family:'Courier New',monospace;font-size:13px;background:var(--accent-light);color:var(--accent);padding:1px 6px;border-radius:4px;}
+kbd{display:inline-block;font-family:'Courier New',monospace;font-size:12px;background:var(--surface);border:1px solid var(--border);border-bottom:2px solid var(--border);border-radius:4px;padding:2px 6px;line-height:1.4;}
+.section-intro{font-size:16px;color:var(--text-muted);margin-bottom:32px;line-height:1.65;}
+.adm{display:flex;gap:14px;padding:14px 16px;border-radius:var(--radius);margin:20px 0;border-left:4px solid;}
+.adm-icon{flex-shrink:0;margin-top:1px;}.adm-body{flex:1;}.adm-body strong{display:block;margin-bottom:4px;font-size:14px;}.adm-body p{margin-bottom:0;font-size:14px;}
+.adm.info{background:var(--accent-light);border-color:var(--accent);}.adm.tip{background:var(--green-light);border-color:var(--green);}.adm.warn{background:var(--amber-light);border-color:var(--amber);}.adm.danger{background:var(--red-light);border-color:var(--red);}
+.adm.info .adm-icon{color:var(--accent);}.adm.tip .adm-icon{color:var(--green);}.adm.warn .adm-icon{color:var(--amber);}.adm.danger .adm-icon{color:var(--red);}
+.doc-table{width:100%;border-collapse:collapse;font-size:14px;}
+.doc-table th{background:var(--accent-light);color:var(--accent);text-align:left;padding:9px 14px;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.06em;}
+.doc-table td{padding:9px 14px;border-bottom:1px solid var(--border);vertical-align:top;}
+.doc-table tr:last-child td{border-bottom:none;}
+.doc-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);margin:16px 0;}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;vertical-align:middle;}
+.badge-green{background:var(--green-light);color:var(--green);}.badge-blue{background:var(--accent-light);color:var(--accent);}.badge-amber{background:var(--amber-light);color:var(--amber);}.badge-red{background:var(--red-light);color:var(--red);}
+.anchor{scroll-margin-top:calc(var(--nav-h) + 24px);}
+.shortcut-grid{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:12px 0;font-size:14px;align-items:center;}
+.doc-footer{text-align:center;padding:40px;font-size:13px;color:var(--text-muted);border-top:1px solid var(--border);margin-top:60px;}
+@media(max-width:860px){.sidebar{display:none;}.main{margin-left:0;padding:32px 20px;}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-brand">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#2c5f8a"/><path d="M12 3l1.5 4.5H18l-3.75 2.7 1.5 4.5L12 12l-3.75 2.7 1.5-4.5L6 7.5h4.5L12 3z" fill="none" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></svg>
+    Synoria
+  </div>
+  <span class="topbar-title">Guide d'utilisation — v1.5.8</span>
+  <span class="topbar-badge">📖 Complet</span>
+  <button type="button" class="theme-btn" onclick="toggleTheme()">☀ / ☾</button>
+</header>
+
+<div class="layout">
+<nav class="sidebar">
+  <div class="nav-group-label">Démarrage</div>
+  <a href="#interface"    class="nav-link">Interface générale</a>
+  <a href="#raccourcis"   class="nav-link">Raccourcis clavier</a>
+  <div class="nav-group-label">Fonctionnalités</div>
+  <a href="#dashboard"    class="nav-link">Tableau de bord</a>
+  <a href="#patients"     class="nav-link">Patients</a>
+  <a href="#seances"      class="nav-link">Nouvelle séance</a>
+  <a href="#historique"   class="nav-link">Historique & Résumé</a>
+  <a href="#exports"      class="nav-link">Exports</a>
+  <a href="#calendrier"   class="nav-link">Calendrier</a>
+  <a href="#sauvegardes"  class="nav-link">Sauvegardes</a>
+  <a href="#comptabilite" class="nav-link">Comptabilité</a>
+  <a href="#factures"     class="nav-link">Factures</a>
+  <a href="#rgpd"         class="nav-link">RGPD</a>
+  <div class="nav-group-label">Administration</div>
+  <a href="#parametres"   class="nav-link">Paramètres</a>
+  <a href="#abonnement"   class="nav-link">Mon abonnement</a>
+  <a href="#recherche"    class="nav-link">Recherche globale</a>
+  <a href="#securite"     class="nav-link">Sécurité</a>
+  <a href="#support"      class="nav-link">Support</a>
+</nav>
+
+<main class="main"><div class="content">
+
+<section id="introduction" class="anchor">
+  <h1>Guide d'utilisation — Synoria v1.5.8</h1>
+  <p class="section-intro">Synoria est un logiciel de gestion de dossiers patients pour praticiens de santé (MTC, kinésiologie, ostéopathie, naturopathie…). Toutes vos données sont stockées localement, chiffrées sur votre ordinateur — rien n'est transmis à des serveurs tiers.</p>
+</section>
+
+<!-- INTERFACE -->
+<section id="interface" class="anchor">
+  <h2>Interface générale</h2>
+
+  <h3>Barre de navigation latérale</h3>
+  <ul>
+    <li><strong>Tableau de bord</strong> — vue d'ensemble et alertes</li>
+    <li><strong>Patients</strong> — liste et fiches patients</li>
+    <li><strong>Nouvelle séance</strong> (bouton accent) — créer une séance</li>
+    <li><strong>Séances</strong> — historique de toutes les séances</li>
+    <li><strong>Calendrier</strong> — rendez-vous et planning</li>
+    <li><strong>Comptabilité / Dépenses / Factures</strong> — gestion financière</li>
+    <li><strong>RGPD / Paramètres / Mon abonnement</strong> — administration</li>
+    <li><strong>Mon profil</strong> (bas) — informations praticien pour les factures</li>
+    <li><strong>Verrouiller</strong> (bas) — verrouillage immédiat</li>
+  </ul>
+
+  <h3>En-tête (header)</h3>
+  <ul>
+    <li><strong>Bouton Données</strong> — menu rapide Sauvegarder / Restaurer</li>
+    <li><strong>Bouton thème</strong> ☀️🌙 — bascule Clair / Sombre / Système</li>
+    <li><strong>Bouton ?</strong> — liste des raccourcis clavier</li>
+    <li><strong>Bouton ℹ</strong> — fenêtre "À propos" (version, contact)</li>
+  </ul>
+
+  <h3>Verrouillage automatique</h3>
+  <p>Synoria se verrouille automatiquement après <strong>20 minutes d'inactivité</strong>. Entrez votre mot de passe principal pour déverrouiller. Verrou manuel : <kbd>Ctrl</kbd>+<kbd>L</kbd> ou le bouton en bas de la sidebar.</p>
+</section>
+
+<!-- RACCOURCIS -->
+<section id="raccourcis" class="anchor">
+  <h2>Raccourcis clavier</h2>
+  <div class="shortcut-grid">
+    <kbd>Ctrl</kbd>+<kbd>K</kbd> <span>Recherche globale (patients et séances)</span>
+    <kbd>Ctrl</kbd>+<kbd>1</kbd> <span>Tableau de bord</span>
+    <kbd>Ctrl</kbd>+<kbd>2</kbd> <span>Patients</span>
+    <kbd>Ctrl</kbd>+<kbd>3</kbd> <span>Nouvelle séance</span>
+    <kbd>Ctrl</kbd>+<kbd>4</kbd> <span>Séances</span>
+    <kbd>Ctrl</kbd>+<kbd>5</kbd> <span>Calendrier</span>
+    <kbd>Ctrl</kbd>+<kbd>6</kbd> <span>Comptabilité</span>
+    <kbd>Ctrl</kbd>+<kbd>7</kbd> <span>Paramètres</span>
+    <kbd>Ctrl</kbd>+<kbd>L</kbd> <span>Verrouiller l'application</span>
+    <kbd>Ctrl</kbd>+<kbd>B</kbd> <span>Gras (dans zone de texte riche)</span>
+    <kbd>Ctrl</kbd>+<kbd>I</kbd> <span>Italique (dans zone de texte riche)</span>
+    <kbd>Ctrl</kbd>+<kbd>U</kbd> <span>Souligné (dans zone de texte riche)</span>
+    <kbd>?</kbd> <span>Afficher la liste des raccourcis (hors champ texte)</span>
+  </div>
+</section>
+
+<!-- TABLEAU DE BORD -->
+<section id="dashboard" class="anchor">
+  <h2>Tableau de bord</h2>
+  <p>Page d'accueil de Synoria. Elle regroupe toutes les informations importantes du jour.</p>
+
+  <h3>Sections affichées</h3>
+  <ul>
+    <li><strong>Rendez-vous du jour</strong> — liste des RDV d'aujourd'hui avec statut et compteur "réalisés / total".</li>
+    <li><strong>5 statistiques</strong> — Total patients, Total séances, Séances ce mois (avec tendance ↑↓ vs mois précédent), Patients actifs, RDV du mois.</li>
+    <li><strong>Graphique d'activité</strong> — courbe des séances sur les 6 derniers mois.</li>
+    <li><strong>Prochains rendez-vous</strong> (jusqu'à 15) — avec nom, date, heure, note, badge délai (J+N). Boutons rapides : créer la séance, voir le calendrier, ouvrir la fiche patient.</li>
+    <li><strong>Rappels email</strong> — patients avec RDV demain et une adresse email. Envoi individuel ou groupé en un clic.</li>
+    <li><strong>Factures en retard</strong> — factures non payées depuis plus de X jours. Bouton "Marquer payée" direct.</li>
+    <li><strong>Patients à revoir</strong> — sans séance depuis plus de 90 jours, avec code couleur urgence (rouge &gt;6 mois, ambre 1–6 mois).</li>
+    <li><strong>Dernières séances</strong> — 5 séances les plus récentes.</li>
+    <li><strong>Alerte sauvegarde</strong> — affichée si aucune sauvegarde n'a été faite ou si la dernière date de plus de 7 jours.</li>
+  </ul>
+</section>
+
+<!-- PATIENTS -->
+<section id="patients" class="anchor">
+  <h2>Patients</h2>
+
+  <h3>Liste des patients</h3>
+  <ul>
+    <li>Recherche par nom, prénom, email, téléphone</li>
+    <li>Filtre par statut actif / inactif</li>
+    <li>Clic → ouvre la fiche patient</li>
+    <li>Bouton <strong>+ Nouveau patient</strong> pour créer une fiche</li>
+  </ul>
+
+  <h3>Fiche patient</h3>
+  <ul>
+    <li>Identité : nom, prénom, date de naissance, profession, téléphone, email, adresse</li>
+    <li>Médecin traitant, médicaments en cours, antécédents, alertes praticien</li>
+    <li>Notes générales, statut actif / inactif</li>
+    <li>Consentement RGPD (case + date)</li>
+    <li>Historique des séances du patient</li>
+  </ul>
+
+  <h3>Consentement RGPD</h3>
+  <p>Lors de la première consultation, cochez <strong>Consentement RGPD recueilli</strong> sur la fiche patient et indiquez la date. Cela trace que vous avez remis votre notice d'information au patient.</p>
+</section>
+
+<!-- NOUVELLE SÉANCE -->
+<section id="seances" class="anchor">
+  <h2>Nouvelle séance</h2>
+  <p>Le formulaire de séance s'adapte au formulaire métier actif. Trois modes :</p>
+
+  <div class="doc-table-wrap"><table class="doc-table">
+    <thead><tr><th>Mode</th><th>Quand</th><th>Sections principales</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Basique</strong></td><td>Formulaire "Basique" actif (inclus gratuit)</td><td>Identification, Motif, Évolution, Notes, Traitement, Réactions, Plan de suivi</td></tr>
+      <tr><td><strong>MTC JP</strong></td><td>Formulaire MTC JP actif</td><td>+ Observation MTC, Questionnaire systèmes, Tests énergétiques, Barrage homéopathique, Analyse &amp; Diagnostic</td></tr>
+      <tr><td><strong>Plugin spécialisé</strong></td><td>Formulaire ostéo / kinésio / naturo / personnalisé</td><td>Sections définies par le formulaire importé</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Navigation dans le formulaire</h3>
+  <ul>
+    <li><strong>Sommaire latéral</strong> — table des matières cliquable (défilement direct vers la section)</li>
+    <li><strong>Barre de progression</strong> (0–100 %) — basée sur 5 champs clés : patient, date, motif, diagnostic, traitement</li>
+    <li><strong>Bouton Enregistrer</strong> — dans le sommaire et en haut du formulaire</li>
+  </ul>
+
+  <h3>Brouillon automatique</h3>
+  <p>Synoria sauvegarde votre saisie en temps réel. Si vous quittez sans enregistrer, Synoria propose de <strong>Restaurer</strong> ou <strong>Ignorer</strong> le brouillon à la prochaine ouverture du formulaire pour ce patient.</p>
+
+  <h3>Formatage du texte riche</h3>
+  <p>Une barre de formatage apparaît dans l'en-tête quand le curseur est dans une zone de texte :</p>
+  <ul>
+    <li><kbd>Ctrl</kbd>+<kbd>B</kbd> Gras · <kbd>Ctrl</kbd>+<kbd>I</kbd> Italique · <kbd>Ctrl</kbd>+<kbd>U</kbd> Souligné</li>
+    <li>Couleurs de texte : Rouge, Bleu, Vert, Orange, Violet</li>
+    <li>Clic droit dans le texte : popup contextuel avec les mêmes options</li>
+  </ul>
+
+  <h3>Séance précédente</h3>
+  <p>Un accordéon sous l'identification affiche le résumé de la dernière séance — motif, évolution, traitement — pour vous rappeler le contexte sans quitter le formulaire.</p>
+
+  <h3>Plan de suivi — synchronisation calendrier</h3>
+  <p>La section "Plan de suivi" permet de renseigner la date du prochain RDV (heure début, heure fin, motif). À l'enregistrement, Synoria crée ou met à jour automatiquement ce rendez-vous dans votre calendrier Synoria, et le synchronise sur Google Calendar si vous êtes connecté.</p>
+
+  <h3>Clôture comptable (optionnelle)</h3>
+  <p>Toggle en bas du formulaire. S'il est activé, Synoria incrémente automatiquement le compteur mensuel du type de consultation correspondant dans la page Comptabilité.</p>
+
+  <h3>Mode modification</h3>
+  <p>Pour modifier une séance existante : ouvrez-la depuis l'historique → cliquez <strong>Modifier</strong>. Un bandeau ambre "Mode modification" s'affiche. Enregistrez pour valider les changements.</p>
+</section>
+
+<!-- HISTORIQUE & RÉSUMÉ -->
+<section id="historique" class="anchor">
+  <h2>Historique et Résumé de séance</h2>
+
+  <h3>Page Séances</h3>
+  <p>Liste toutes les séances. Filtrez par patient. Cliquez sur une séance pour voir son résumé complet.</p>
+
+  <h3>Page Résumé</h3>
+  <p>Affiche toutes les informations saisies, organisées selon le formulaire utilisé à la date de la séance. L'en-tête affiche nom du patient, âge, téléphone, email, profession, date et numéro de séance, praticien, et toutes les alertes du dossier patient.</p>
+  <p>Depuis le résumé, vous pouvez :</p>
+  <ul>
+    <li>Exporter la séance (JSON, Excel, impression PDF)</li>
+    <li>Générer une facture</li>
+    <li>Modifier la séance</li>
+    <li>Dupliquer la séance (crée une nouvelle séance pré-remplie avec les mêmes données)</li>
+  </ul>
+</section>
+
+<!-- EXPORTS -->
+<section id="exports" class="anchor">
+  <h2>Exports disponibles</h2>
+
+  <h3>Depuis une séance (page Résumé)</h3>
+  <div class="doc-table-wrap"><table class="doc-table">
+    <thead><tr><th>Export</th><th>Format</th><th>Usage</th></tr></thead>
+    <tbody>
+      <tr><td>JSON brut</td><td>.json</td><td>Archivage, transfert technique</td></tr>
+      <tr><td>Excel</td><td>.xlsx</td><td>Feuille de soin détaillée</td></tr>
+      <tr><td>Impression / PDF</td><td>PDF via navigateur</td><td>À remettre au patient ou pour votre classeur</td></tr>
+      <tr><td>Rapport HTML</td><td>.html</td><td>Résumé lisible dans le navigateur</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Depuis un dossier patient</h3>
+  <ul>
+    <li><strong>Excel patient</strong> — toutes les séances en un seul fichier .xlsx</li>
+    <li><strong>Rapport patient</strong> — synthèse du dossier (.html)</li>
+    <li><strong>Formulaire de consentement</strong> — pré-rempli, à imprimer et faire signer</li>
+  </ul>
+
+  <h3>Exports administratifs</h3>
+  <ul>
+    <li><strong>Comptabilité Excel</strong> — revenus et charges par année (page Comptabilité)</li>
+    <li><strong>Rapport URSSAF</strong> — déclaration annuelle</li>
+    <li><strong>Registre Art. 30 RGPD</strong> — fichier HTML (page RGPD)</li>
+    <li><strong>Rapport de diagnostic</strong> — technique, aucune donnée patient (Paramètres → Support)</li>
+  </ul>
+</section>
+
+<!-- CALENDRIER -->
+<section id="calendrier" class="anchor">
+  <h2>Calendrier</h2>
+  <p>Vue mensuelle (gauche) et planning horaire par jour (droite). Créneaux de 08h00 à 19h30, sélecteurs par pas de 5 minutes.</p>
+
+  <h3>Types de rendez-vous</h3>
+  <ul>
+    <li><strong>Patient Synoria</strong> — lié à un patient existant. Clic → ouvre la fiche ou crée la séance.</li>
+    <li><strong>Invité</strong> — nom et téléphone saisis manuellement, sans fiche patient.</li>
+  </ul>
+
+  <h3>Statuts</h3>
+  <ul>
+    <li><span class="badge badge-blue">Planifié</span> — confirmé</li>
+    <li><span class="badge badge-green">Réalisé</span> — séance effectuée</li>
+    <li><span class="badge badge-amber">À confirmer</span> — en attente</li>
+  </ul>
+
+  <h3>Créer une séance depuis un RDV</h3>
+  <p>Cliquez <strong>Créer la séance</strong> sur un rendez-vous patient. Le formulaire s'ouvre avec le patient et la date pré-remplis.</p>
+
+  <h3>Google Calendar</h3>
+  <p>Après connexion (Paramètres → Google Calendar) :</p>
+  <ul>
+    <li>Les RDV Synoria sont exportés avec le titre générique "Consultation" — aucune donnée patient dans le cloud.</li>
+    <li>Vous pouvez importer des événements de vos calendriers Google dans Synoria (en lecture seule, couleur personnalisable).</li>
+  </ul>
+</section>
+
+<!-- SAUVEGARDES -->
+<section id="sauvegardes" class="anchor">
+  <h2>Sauvegardes et restauration</h2>
+  <p>Les sauvegardes sont chiffrées AES-256 et protégées par votre <strong>mot de passe principal</strong>. Elles sont directement transportables sur n'importe quel ordinateur avec ce mot de passe.</p>
+
+  <h3>Créer une sauvegarde</h3>
+  <ul>
+    <li><strong>En-tête → Données → Sauvegarder la base de données</strong></li>
+    <li><strong>Paramètres → Sauvegardes → Sauvegarder maintenant</strong></li>
+    <li><strong>Automatiquement</strong> à la fermeture ou quotidiennement (si activé)</li>
+  </ul>
+  <p>Fichier créé : <code>backup-global-AAAA-MM-JJ-HHhMM.json.enc</code></p>
+
+  <h3>Contenu d'une sauvegarde générale</h3>
+  <p>Tout : patients, séances, rendez-vous, blocs calendrier, données comptables complètes (revenus, taux URSSAF, charges, dépenses variables, factures sur toutes les années), formulaire actif et bibliothèque de formulaires.</p>
+
+  <h3>Restaurer une sauvegarde</h3>
+  <ol>
+    <li>Cliquez <strong>Données → Restaurer une sauvegarde…</strong> (ou Paramètres → Sauvegardes → Importer)</li>
+    <li>Sélectionnez le fichier <code>.json.enc</code></li>
+    <li>Saisissez le mot de passe principal de la machine d'origine et cliquez <strong>Importer</strong></li>
+  </ol>
+
+  <div class="adm tip">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 16A8 8 0 108 0a8 8 0 000 16zm.93-9.412l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM8 5.5a1 1 0 110-2 1 1 0 010 2z"/></svg></span>
+    <div class="adm-body"><strong>Import non-destructif</strong><p>La restauration fusionne : les données absentes sont ajoutées, les doublons (même ID) sont ignorés. Un résumé s'affiche — "X patients, Y séances importés, Z doublons ignorés" — puis vous êtes redirigé vers le tableau de bord.</p></div>
+  </div>
+
+  <h3>Vérifier l'intégrité d'une sauvegarde</h3>
+  <p><strong>Paramètres → Sauvegardes → Vérifier une sauvegarde</strong>. Affiche si le fichier est valide et le nombre de patients / séances qu'il contient.</p>
+
+  <h3>Automatisation</h3>
+  <p>Dans Paramètres → Sauvegardes :</p>
+  <ul>
+    <li><strong>Sauvegarde à la fermeture</strong> — sauvegarde complète à chaque fermeture de Synoria</li>
+    <li><strong>Sauvegarde quotidienne</strong> — une fois par jour au démarrage</li>
+    <li><strong>Rétention</strong> (7 à 365 jours) — les fichiers plus anciens sont supprimés automatiquement</li>
+  </ul>
+
+  <div class="adm warn">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8.982 1.566a1.13 1.13 0 00-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 01-1.1 0L7.1 5.995A.905.905 0 018 5zm.002 6a1 1 0 110 2 1 1 0 010-2z"/></svg></span>
+    <div class="adm-body"><strong>Conservez vos sauvegardes hors du cabinet</strong><p>Stockez au moins une copie dans un endroit physiquement différent de votre ordinateur (domicile, cloud personnel chiffré). Un incendie ou un vol pourrait détruire les deux en même temps.</p></div>
+  </div>
+</section>
+
+<!-- COMPTABILITÉ -->
+<section id="comptabilite" class="anchor">
+  <h2>Comptabilité</h2>
+  <p>Vision mensuelle de vos revenus et charges pour l'année sélectionnée.</p>
+
+  <h3>Revenus</h3>
+  <p>Pour chaque mois, saisissez le nombre de consultations par type (configurable dans Paramètres → Facturation). Le montant est calculé automatiquement. Vous pouvez aussi incrémenter le compteur depuis le formulaire de séance (toggle "Clôture comptable").</p>
+
+  <h3>Taux URSSAF et charges variables</h3>
+  <p>Renseignez votre taux URSSAF mensuel et vos dépenses variables (loyer, fournitures, formation…) par catégorie.</p>
+
+  <h3>Export</h3>
+  <p>Le bouton <strong>Exporter en Excel</strong> génère un fichier <code>.xlsx</code> complet pour l'année sélectionnée avec revenus, charges et calculs. Le rapport URSSAF annuel est disponible depuis la même page.</p>
+</section>
+
+<!-- FACTURES -->
+<section id="factures" class="anchor">
+  <h2>Factures</h2>
+
+  <h3>Générer une facture</h3>
+  <p>Depuis le résumé d'une séance → bouton <strong>Facture</strong>. Renseignez la désignation et le montant. Un PDF est créé et ouvert automatiquement. La facture est enregistrée dans le journal.</p>
+  <div class="adm info">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 16A8 8 0 108 0a8 8 0 000 16zm.93-9.412l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM8 5.5a1 1 0 110-2 1 1 0 010 2z"/></svg></span>
+    <div class="adm-body"><strong>Profil praticien requis</strong><p>Complétez vos informations dans <strong>Mon profil</strong> (bas de la sidebar) avant de générer des factures : nom, prénom, SIRET, adresse.</p></div>
+  </div>
+
+  <h3>Numérotation automatique</h3>
+  <p>Format <code>AAAA-XXX</code> (ex : 2026-001). Recommence à 001 chaque année civile. Le prochain numéro est modifiable dans Paramètres → Facturation.</p>
+
+  <h3>Journal des factures</h3>
+  <p>La page <strong>Factures</strong> liste toutes les factures. Actions disponibles :</p>
+  <ul>
+    <li>Marquer payée / impayée</li>
+    <li>Régénérer le PDF</li>
+    <li>Envoyer par email (ouvre votre client mail)</li>
+    <li>Supprimer</li>
+  </ul>
+  <p>Le tableau de bord signale les factures non payées depuis plus de X jours (configurable dans Paramètres → Facturation → Alerte retard).</p>
+</section>
+
+<!-- RGPD -->
+<section id="rgpd" class="anchor">
+  <h2>RGPD</h2>
+  <p>Centralise tous les outils de conformité. Pour le détail des obligations légales, voir le <a href="guide-rgpd.html">Guide RGPD praticien</a>.</p>
+
+  <h3>Onglets disponibles</h3>
+  <ul>
+    <li><strong>Consentements</strong> — taux global (barre de progression), liste des patients sans consentement et liste des patients avec date de consentement.</li>
+    <li><strong>Journal d'accès</strong> — 300 dernières entrées automatiquement tracées (fiches ouvertes, séances consultées/créées/modifiées, exports). Filtre par patient ou par action.</li>
+    <li><strong>Alertes</strong> — patients dont la durée de conservation est dépassée (rouge) ou approche (jaune).</li>
+    <li><strong>Notice patient</strong> — affichage de votre notice Art. 13 avec bouton <strong>Imprimer la notice</strong>.</li>
+    <li><strong>Registre Art. 30</strong> — tableau synthétique + bouton <strong>Générer et ouvrir le registre complet</strong> (HTML, imprimable en PDF).</li>
+  </ul>
+
+  <h3>Boutons d'en-tête</h3>
+  <ul>
+    <li><strong>Exporter le registre Art. 30</strong> — génère le fichier HTML complet</li>
+    <li><strong>Formulaire consentement vierge</strong> — à imprimer et faire signer par chaque nouveau patient</li>
+  </ul>
+</section>
+
+<!-- PARAMÈTRES -->
+<section id="parametres" class="anchor">
+  <h2>Paramètres</h2>
+  <p>Accessible via la sidebar ou <kbd>Ctrl</kbd>+<kbd>7</kbd>. Huit onglets :</p>
+
+  <h3>Apparence</h3>
+  <p>Thème : <strong>Clair</strong> (☀️), <strong>Sombre</strong> (🌙) ou <strong>Système</strong> (suit l'OS). Changement immédiat.</p>
+
+  <h3>Sauvegardes</h3>
+  <ul>
+    <li>Chemin du dossier de destination, statut (accessible / inaccessible), date et stats</li>
+    <li>Toggles : Sauvegarde à la fermeture, Sauvegarde quotidienne</li>
+    <li>Curseur Rétention (7 à 365 jours)</li>
+    <li>Boutons : Sauvegarder maintenant, Importer une sauvegarde, Vérifier une sauvegarde</li>
+  </ul>
+
+  <h3>Facturation</h3>
+  <ul>
+    <li>Dossier de sauvegarde des factures</li>
+    <li>Numéro de la prochaine facture (modifiable)</li>
+    <li>Curseur Alerte retard de paiement (7 à 90 jours)</li>
+  </ul>
+
+  <h3>RGPD</h3>
+  <ul>
+    <li>Nom et email du praticien / cabinet</li>
+    <li>Durée de conservation (1 à 30 ans, défaut 10 ans)</li>
+    <li>Texte de la notice d'information Art. 13 (éditeur libre)</li>
+  </ul>
+
+  <h3>Sécurité</h3>
+  <ul>
+    <li>Changer le mot de passe principal (3 champs). La base est re-chiffrée immédiatement.</li>
+    <li>Bouton Ouvrir le dossier de données</li>
+    <li>Mise à jour : sélectionner le fichier <code>.exe</code>, bouton Installer la mise à jour</li>
+  </ul>
+
+  <h3>Formulaire métier</h3>
+  <ul>
+    <li>Formulaires disponibles : Basique (gratuit, inclus) + formulaires achetés. Bouton "Définir par défaut".</li>
+    <li>Importer un formulaire (.plugin.json)</li>
+    <li>Bibliothèque : aperçu, activation, modification dans le builder, suppression, export/import</li>
+    <li>Profils de séance : créer, dupliquer, archiver, définir par défaut</li>
+  </ul>
+  <div class="adm info">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 16A8 8 0 108 0a8 8 0 000 16zm.93-9.412l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM8 5.5a1 1 0 110-2 1 1 0 010 2z"/></svg></span>
+    <div class="adm-body"><strong>Changement de formulaire sans perte de données</strong><p>Changer le formulaire actif ne modifie pas les séances existantes. Elles restent toujours accessibles avec leur formulaire d'origine.</p></div>
+  </div>
+
+  <h3>Google Calendar</h3>
+  <ul>
+    <li>Bouton Connecter Google Calendar (autorisation OAuth dans le navigateur)</li>
+    <li>Sélection du calendrier Synoria de destination</li>
+    <li>Importation de calendriers Google dans Synoria (en lecture seule, couleur personnalisable)</li>
+  </ul>
+  <div class="adm tip">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 16A8 8 0 108 0a8 8 0 000 16zm.93-9.412l-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM8 5.5a1 1 0 110-2 1 1 0 010 2z"/></svg></span>
+    <div class="adm-body"><strong>Zéro donnée patient dans Google Calendar</strong><p>Synoria n'exporte que le titre générique "Consultation". Aucun nom, aucun motif, aucune note n'est transmis.</p></div>
+  </div>
+
+  <h3>Support</h3>
+  <ul>
+    <li>Liens vers les trois guides (utilisation, installation, RGPD)</li>
+    <li>Bouton Générer le rapport de diagnostic (aucune donnée patient) → à envoyer à <strong>contact@logiciel-synoria.fr</strong></li>
+  </ul>
+</section>
+
+<!-- ABONNEMENT -->
+<section id="abonnement" class="anchor">
+  <h2>Mon abonnement</h2>
+
+  <h3>Informations de licence</h3>
+  <ul>
+    <li>Statut : <span class="badge badge-green">Actif</span> <span class="badge badge-blue">Essai gratuit</span> <span class="badge badge-amber">Paiement dû</span> <span class="badge badge-red">Restreint</span></li>
+    <li>Offre souscrite, dates (fin d'essai, prochain renouvellement)</li>
+    <li>Dernière et prochaine vérification en ligne</li>
+  </ul>
+
+  <h3>Actions</h3>
+  <ul>
+    <li><strong>Vérifier maintenant</strong> — rafraîchit la licence en ligne</li>
+    <li><strong>Gérer mon abonnement</strong> — portail Stripe (modifier la CB, annuler, voir les factures Synoria)</li>
+    <li><strong>Désactiver cet appareil</strong> — libère un slot, passe en mode restreint sur cet ordinateur</li>
+  </ul>
+
+  <h3>Appareils actifs</h3>
+  <p>Votre licence autorise <strong>2 appareils simultanément</strong>. La section liste vos postes avec nom, plateforme, version et date de dernière activité. Pour libérer un slot : <strong>Désactiver</strong> sur l'appareil à retirer. Limite : 3 désactivations par 30 jours.</p>
+
+  <h3>Mode restreint</h3>
+  <p>Quand la licence expire, un bandeau rouge s'affiche. Vous pouvez toujours consulter, exporter et sauvegarder vos données existantes. La création et modification sont bloquées. Cliquez <strong>Renouveler →</strong> pour rétablir l'accès complet.</p>
+
+  <h3>Mises à jour disponibles</h3>
+  <p>En bas de la page Mon abonnement : version installée, dernière version disponible, bouton Télécharger si une mise à jour est disponible. Les mises à jour requises (⚠) ne peuvent pas être ignorées.</p>
+</section>
+
+<!-- RECHERCHE -->
+<section id="recherche" class="anchor">
+  <h2>Recherche globale</h2>
+  <p>Appuyez sur <kbd>Ctrl</kbd>+<kbd>K</kbd> pour ouvrir la recherche. Elle cherche simultanément dans tous les patients (nom, prénom, téléphone, email) et toutes les séances (motif, diagnostic, notes) — résultats en temps réel. Cliquez sur un résultat pour naviguer directement. <kbd>Ctrl</kbd>+<kbd>K</kbd> ou <kbd>Échap</kbd> pour fermer.</p>
+</section>
+
+<!-- SÉCURITÉ -->
+<section id="securite" class="anchor">
+  <h2>Sécurité des données</h2>
+
+  <h3>Ce que Synoria fait</h3>
+  <ul>
+    <li>Chiffrement AES-256-GCM de la base de données locale</li>
+    <li>Clé dérivée de votre mot de passe par PBKDF2 (600 000 itérations) — votre mot de passe n'est jamais stocké ni transmis</li>
+    <li>Verrouillage automatique après 20 minutes d'inactivité</li>
+    <li>Rechiffrement de la base toutes les 3 minutes et à chaque fermeture</li>
+    <li>Aucune donnée patient transmise à des serveurs tiers</li>
+    <li>Traçage automatique des accès (journal RGPD)</li>
+  </ul>
+
+  <div class="adm danger">
+    <span class="adm-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8.982 1.566a1.13 1.13 0 00-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 01-1.1 0L7.1 5.995A.905.905 0 018 5zm.002 6a1 1 0 110 2 1 1 0 010-2z"/></svg></span>
+    <div class="adm-body"><strong>Mot de passe principal irrécupérable</strong><p>En cas d'oubli, il n'existe aucune procédure de récupération. Notez-le impérativement dans un endroit sûr (gestionnaire de mots de passe, coffre physique).</p></div>
+  </div>
+</section>
+
+<!-- SUPPORT -->
+<section id="support" class="anchor">
+  <h2>Support</h2>
+  <p>En cas de problème, contactez : <strong>contact@logiciel-synoria.fr</strong></p>
+  <p>Depuis <strong>Paramètres → Support → Générer le rapport de diagnostic</strong> : créez un rapport technique sans aucune donnée patient et joignez-le à votre email pour accélérer le diagnostic.</p>
+
+  <h3>Panneau d'administration (avancé)</h3>
+  <p><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Alt</kbd>+<kbd>A</kbd> — vérification intégrité base de données, statistiques, checkpoint WAL, logs internes, informations système, forcer une sauvegarde.</p>
+</section>
+
+<div class="doc-footer">
+  <p>Synoria v1.5.8 · <a href="mailto:contact@logiciel-synoria.fr">contact@logiciel-synoria.fr</a> · <a href="guide-installation.html">Guide d'installation</a> · <a href="guide-rgpd.html">Guide RGPD</a></p>
+</div>
+
+</div></main>
+</div>
+<script>
+function getTheme(){return localStorage.getItem('doc-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}
+function applyTheme(t){document.documentElement.setAttribute('data-theme',t);localStorage.setItem('doc-theme',t);}
+function toggleTheme(){applyTheme(getTheme()==='dark'?'light':'dark');}
+applyTheme(getTheme());
+const sections=document.querySelectorAll('section[id]');
+const navLinks=document.querySelectorAll('.nav-link[href^="#"]');
+const observer=new IntersectionObserver(e=>{e.forEach(e=>{if(e.isIntersecting){navLinks.forEach(l=>l.classList.remove('active'));const a=document.querySelector(`.nav-link[href="#${e.target.id}"]`);if(a)a.classList.add('active');}});},{rootMargin:'-20% 0px -70% 0px'});
+sections.forEach(s=>observer.observe(s));
+</script>
+</body>
+</html>

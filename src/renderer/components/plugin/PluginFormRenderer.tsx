@@ -1,12 +1,24 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import type { PluginCondition, PluginDefinition, PluginSection, PluginField } from '../../../shared/pluginTypes'
 import RichTextArea from '../common/RichTextArea'
-import {
-  osteoAnatomyBackImage,
-  osteoAnatomyFrontImage,
-  osteoAnatomyLeftImage,
-  osteoAnatomyRightImage,
-} from '../../assets/bodycharts/bodychartImages.generated'
+import MtcSystemesModule     from './modules/MtcSystemesModule'
+import MtcFiveElementsModule  from './modules/MtcFiveElementsModule'
+import MtcTonguePulseModule   from './modules/MtcTonguePulseModule'
+import OsteoOrthoTestsModule  from './modules/OsteoOrthoTestsModule'
+import OsteoPostureModule     from './modules/OsteoPostureModule'
+import { getAnatomyImages } from '../../assets/bodycharts/bodychartImages.generated'
+
+function useIsDark(): boolean {
+  const [dark, setDark] = useState(
+    () => document.documentElement.getAttribute('data-theme') === 'dark'
+  )
+  useEffect(() => {
+    const handler = () => setDark(document.documentElement.getAttribute('data-theme') === 'dark')
+    window.addEventListener('synoria-theme-change', handler)
+    return () => window.removeEventListener('synoria-theme-change', handler)
+  }, [])
+  return dark
+}
 
 function evaluateCondition(condition: PluginCondition, data: Record<string, any>): boolean {
   const currentValue = data[condition.fieldId]
@@ -44,10 +56,21 @@ interface RendererProps {
   plugin: PluginDefinition
   data: Record<string, any>
   onChange: (id: string, value: any) => void
+  /** Si fourni, rend uniquement ces sections (sans en-tête plugin). */
+  sections?: import('../../../shared/pluginTypes').PluginSection[]
+  /** Si true, rend chaque section comme un bloc core (card + card-title) au lieu du style plugin gradient. */
+  asCard?: boolean
+  /** Numéro de bloc affiché devant le titre de la première section (uniquement avec asCard). */
+  sectionNumber?: number
+  /** Si true, rend les sections en sous-section inline (sans carte enveloppante — à utiliser à l'intérieur d'une card parente). */
+  inline?: boolean
 }
 
-export default function PluginFormRenderer({ plugin, data, onChange }: RendererProps) {
-  const fieldCount = plugin.sections.reduce(
+export default function PluginFormRenderer({ plugin, data, onChange, sections: sectionsOverride, asCard, sectionNumber, inline }: RendererProps) {
+  const sectionsToRender = sectionsOverride ?? plugin.sections
+  const showHeader = !sectionsOverride
+
+  const fieldCount = sectionsToRender.reduce(
     (total, section) => total + section.fields.filter(field => field.type !== 'separator').length,
     0
   )
@@ -58,28 +81,33 @@ export default function PluginFormRenderer({ plugin, data, onChange }: RendererP
       className="plugin-form"
       style={{ '--plugin-accent': accent } as React.CSSProperties}
     >
-      <div className="plugin-form-overview">
-        <div className="plugin-form-badge">{plugin.icon || 'Plugin'}</div>
-        <div className="plugin-form-copy">
-          <div className="plugin-form-kicker">{plugin.specialty}</div>
-          <h3>{plugin.name}</h3>
-          {plugin.description && <p>{plugin.description}</p>}
+      {showHeader && (
+        <div className="plugin-form-overview">
+          <div className="plugin-form-badge">{plugin.icon || 'Plugin'}</div>
+          <div className="plugin-form-copy">
+            <div className="plugin-form-kicker">{plugin.specialty}</div>
+            <h3>{plugin.name}</h3>
+            {plugin.description && <p>{plugin.description}</p>}
+          </div>
+          <div className="plugin-form-meta">
+            <span>{plugin.sections.length} sections</span>
+            <span>{fieldCount} champs</span>
+            <span>v{plugin.version}</span>
+          </div>
         </div>
-        <div className="plugin-form-meta">
-          <span>{plugin.sections.length} sections</span>
-          <span>{fieldCount} champs</span>
-          <span>v{plugin.version}</span>
-        </div>
-      </div>
+      )}
 
-      {plugin.sections
+      {sectionsToRender
         .filter(section => isVisible(section.visibleWhen, data))
-        .map(section => (
+        .map((section, idx) => (
           <PluginSectionCard
             key={section.id}
             section={section}
             data={data}
             onChange={onChange}
+            asCard={asCard}
+            inline={inline}
+            sectionNumber={asCard && idx === 0 ? sectionNumber : undefined}
           />
         ))}
     </div>
@@ -88,12 +116,52 @@ export default function PluginFormRenderer({ plugin, data, onChange }: RendererP
 
 // ── SECTION ────────────────────────────────────────────────────────────────
 
-function PluginSectionCard({ section, data, onChange }: {
+function PluginSectionCard({ section, data, onChange, asCard, inline, sectionNumber }: {
   section: PluginSection
   data: Record<string, any>
   onChange: (id: string, value: any) => void
+  asCard?: boolean
+  inline?: boolean
+  sectionNumber?: number
 }) {
   const accent = section.accentColor || 'var(--accent)'
+
+  if (inline) {
+    return (
+      <div
+        className="plugin-section-inline"
+        style={{ '--ps-inline-color': accent } as React.CSSProperties}
+      >
+        <div className="plugin-section-inline-title">
+          {section.icon && (
+            <span className="plugin-section-inline-icon">{section.icon}</span>
+          )}
+          {section.title}
+        </div>
+        <FieldsGrid fields={section.fields} data={data} onChange={onChange} />
+      </div>
+    )
+  }
+
+  if (asCard) {
+    return (
+      <div className="card" id={`sec-plugin-${section.id}`} style={{ borderLeft: `4px solid ${accent}` }}>
+        <div className="card-title">
+          {section.icon && (
+            <span
+              className="card-title-icon plugin-section-icon"
+              style={{ '--psi-color': accent } as React.CSSProperties}
+            >
+              {section.icon}
+            </span>
+          )}
+          <span>{sectionNumber != null ? `${sectionNumber}. ${section.title}` : section.title}</span>
+        </div>
+        <FieldsGrid fields={section.fields} data={data} onChange={onChange} />
+      </div>
+    )
+  }
+
   return (
     <div className="card plugin-card" id={`sec-plugin-${section.id}`} style={{ borderLeft: `4px solid ${accent}` }}>
       <div
@@ -184,9 +252,13 @@ function FieldsGrid({ fields, data, onChange }: {
         return (
           <div key={i} className={gridClass}>
             {r.map(f => (
-              <div key={f.id} className="field">
-                <FieldWrapper field={f} data={data} onChange={onChange} />
-              </div>
+              f.type === 'mtc_aide_interrogatoire' ? (
+                <FieldWrapper key={f.id} field={f} data={data} onChange={onChange} />
+              ) : (
+                <div key={f.id} className="field">
+                  <FieldWrapper field={f} data={data} onChange={onChange} />
+                </div>
+              )
             ))}
           </div>
         )
@@ -202,6 +274,11 @@ function FieldWrapper({ field, data, onChange }: {
   data: Record<string, any>
   onChange: (id: string, value: any) => void
 }) {
+  // Aide-mémoire : display-only, pas de label, pas de wrapper field
+  if (field.type === 'mtc_aide_interrogatoire') {
+    return <DynamicField field={field} value={undefined} onChange={() => {}} />
+  }
+
   // Checkbox inline (le label fait partie du composant)
   if (field.type === 'checkbox') {
     return (
@@ -230,6 +307,36 @@ function FieldWrapper({ field, data, onChange }: {
       {field.hint && <div className="hint">{field.hint}</div>}
       <DynamicField field={field} value={data[field.id]} onChange={v => onChange(field.id, v)} />
     </>
+  )
+}
+
+// ── PENSE-BÊTE INTERROGATOIRE MTC ─────────────────────────────────────────
+
+const MTC_AIDE_ITEMS = [
+  { icon: '🌡',  label: 'Froid / Chaleur',  hint: 'Sensation générale, préférence thermique, membres froids' },
+  { icon: '🚽',  label: 'Selles / Urine',   hint: 'Fréquence, consistance, couleur, brûlures' },
+  { icon: '💧',  label: 'Soif / Boisson',   hint: 'Quantité, préférence chaud/froid, bouche sèche' },
+  { icon: '😴',  label: 'Sommeil',           hint: 'Durée, endormissement, réveils, rêves' },
+  { icon: '🗡',  label: 'Tête',              hint: 'Maux de tête, vertiges, acouphènes, vision' },
+  { icon: '💦',  label: 'Transpiration',     hint: 'Diurne, nocturne, localisée, spontanée' },
+  { icon: '🦴',  label: 'Membres',           hint: 'Douleurs, engourdissements, lourdeurs, tremblements' },
+  { icon: '🫙',  label: 'Digestif',          hint: 'Appétit, ballonnements, nausées, reflux' },
+]
+
+function MtcAideInterrogatoire({ label }: { label?: string }) {
+  return (
+    <div className="anamnese-pensebete" style={{ position: 'static', margin: 0 }}>
+      <div className="pensebete-title">{label || '📌 Questions à poser'}</div>
+      {MTC_AIDE_ITEMS.map(({ icon, label: l, hint }) => (
+        <div key={l} className="pensebete-item">
+          <div className="pensebete-item-header">
+            <span className="pensebete-icon">{icon}</span>
+            <span className="pensebete-label">{l}</span>
+          </div>
+          <div className="pensebete-hint">{hint}</div>
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -349,8 +456,38 @@ function DynamicField({ field, value, onChange }: {
     case 'rating':
       return <RatingField value={value} onChange={onChange} min={field.min ?? 0} max={field.max ?? 10} />
 
+    case 'slider':
+      return <SliderField value={value} onChange={onChange} min={field.min ?? 0} max={field.max ?? 10} step={field.step ?? 1} />
+
+    case 'before_after':
+      return <BeforeAfterField value={value} onChange={onChange} min={field.min ?? 0} max={field.max ?? 10} step={field.step ?? 1} />
+
+    case 'repeatable':
+      return <RepeatableField value={value} onChange={onChange} />
+
     case 'bodychart':
       return <BodyChartField value={value} onChange={onChange} />
+
+    // ── Aide-mémoire MTC ──────────────────────────────────────────────────────
+    case 'mtc_aide_interrogatoire':
+      return <MtcAideInterrogatoire label={field.label} />
+
+    // ── Modules MTC ──────────────────────────────────────────────────────────
+    case 'mtc_systemes':
+      return <MtcSystemesModule value={value} onChange={onChange} />
+
+    case 'mtc_five_elements':
+      return <MtcFiveElementsModule value={value} onChange={onChange} />
+
+    case 'mtc_tongue_pulse':
+      return <MtcTonguePulseModule value={value} onChange={onChange} />
+
+    // ── Modules Ostéo ─────────────────────────────────────────────────────────
+    case 'osteo_ortho_tests':
+      return <OsteoOrthoTestsModule value={value} onChange={onChange} />
+
+    case 'osteo_posture':
+      return <OsteoPostureModule value={value} onChange={onChange} />
 
     default:
       return null
@@ -430,33 +567,63 @@ const BODY_CHART_ZONE_POSITIONS: Record<BodyChartSide, { x: number; y: number }[
     { x: 38, y: 91 }, { x: 62, y: 91 },
   ],
   left: [
-    { x: 39, y: 8 }, { x: 54, y: 16 }, { x: 68, y: 23 }, { x: 47, y: 31 },
-    { x: 67, y: 37 }, { x: 54, y: 50 }, { x: 61, y: 47 }, { x: 60, y: 52 },
-    { x: 59, y: 69 }, { x: 53, y: 92 }, { x: 68, y: 33 }, { x: 39, y: 33 },
+    // figure facing LEFT : low-x = antérieur, high-x = postérieur
+    { x: 53, y: 7  }, // 1  Temporal / ATM gauche
+    { x: 52, y: 15 }, // 2  Cervical gauche
+    { x: 56, y: 21 }, // 3  Épaule (articulation gléno-humérale, postérieure)
+    { x: 46, y: 29 }, // 4  Thorax latéral (centré sur la cage thoracique visible)
+    { x: 58, y: 40 }, // 5  Coude (olécrane postérieur)
+    { x: 46, y: 52 }, // 6  Poignet (main en avant de la hanche, antérieur)
+    { x: 41, y: 49 }, // 7  Bassin (crête iliaque, plus en avant)
+    { x: 60, y: 51 }, // 8  Hanche (grand trochanter, postérieur)
+    { x: 49, y: 70 }, // 9  Genou latéral (centré)
+    { x: 48, y: 90 }, // 10 Cheville / pied (légèrement antérieur)
+    { x: 72, y: 49 }, // 11 Chaîne postérieure (plus loin du corps)
+    { x: 28, y: 49 }, // 12 Chaîne antérieure (plus loin du corps)
   ],
   right: [
-    { x: 60, y: 8 }, { x: 46, y: 16 }, { x: 32, y: 23 }, { x: 53, y: 31 },
-    { x: 34, y: 37 }, { x: 47, y: 50 }, { x: 39, y: 47 }, { x: 40, y: 52 },
-    { x: 41, y: 69 }, { x: 47, y: 92 }, { x: 32, y: 33 }, { x: 62, y: 33 },
+    // miroir exact du profil gauche : x_droit = 100 - x_gauche, même y
+    { x: 47, y: 7  }, // 1
+    { x: 48, y: 15 }, // 2
+    { x: 44, y: 21 }, // 3
+    { x: 54, y: 29 }, // 4
+    { x: 42, y: 40 }, // 5
+    { x: 54, y: 52 }, // 6
+    { x: 59, y: 49 }, // 7
+    { x: 40, y: 51 }, // 8
+    { x: 51, y: 70 }, // 9
+    { x: 52, y: 90 }, // 10
+    { x: 28, y: 49 }, // 11
+    { x: 72, y: 49 }, // 12
   ],
-}
-
-const BODY_CHART_IMAGES: Record<BodyChartSide, string> = {
-  front: osteoAnatomyFrontImage,
-  back: osteoAnatomyBackImage,
-  left: osteoAnatomyLeftImage,
-  right: osteoAnatomyRightImage,
 }
 
 const BODY_CHART_SYMPTOMS = ['Douleur', 'Tension', 'Blocage', 'Irradiation', 'Fourmillement', 'Engourdissement', 'Brulure', 'Faiblesse']
-const BODY_CHART_LATERALITY = ['Non precise', 'Droit', 'Gauche', 'Bilateral', 'Central']
+
+function zoneLaterality(side: BodyChartSide, zone: string): string {
+  if (side === 'right') return 'Droit'
+  if (side === 'left') return 'Gauche'
+  const lower = zone.toLowerCase()
+  if (/\bdroit[es]?\b/.test(lower)) return 'Droit'
+  if (/\bgauche[s]?\b/.test(lower)) return 'Gauche'
+  return 'Non precise'
+}
+
+function lateralityOptions(side: BodyChartSide, zone: string): string[] {
+  if (side === 'right') return ['Non precise', 'Droit']
+  if (side === 'left') return ['Non precise', 'Gauche']
+  const lower = zone.toLowerCase()
+  if (/\bdroit[es]?\b/.test(lower)) return ['Non precise', 'Droit']
+  if (/\bgauche[s]?\b/.test(lower)) return ['Non precise', 'Gauche']
+  return ['Non precise', 'Droit', 'Gauche', 'Bilateral', 'Central']
+}
 
 function bodyChartKey(side: BodyChartSide, zone: string): string {
   return `${side}:${zone}`
 }
 
-function defaultBodyChartDetail(): BodyChartZoneDetail {
-  return { intensity: 5, symptom: 'Douleur', laterality: 'Non precise', note: '' }
+function defaultBodyChartDetail(laterality = 'Non precise'): BodyChartZoneDetail {
+  return { intensity: 5, symptom: 'Douleur', laterality, note: '' }
 }
 
 function bodyChartIntensityColor(intensity: number | undefined): string {
@@ -471,6 +638,8 @@ function BodyChartField({ value, onChange }: {
   value: BodyChartValue | null | undefined
   onChange: (v: BodyChartValue) => void
 }) {
+  const isDark = useIsDark()
+  const chartImages = getAnatomyImages(isDark)
   const [activeSide, setActiveSide] = useState<BodyChartSide>('front')
   const current: BodyChartValue = value && typeof value === 'object' && !Array.isArray(value)
     ? value
@@ -486,7 +655,7 @@ function BodyChartField({ value, onChange }: {
     if (selected.includes(zone)) {
       delete details[key]
     } else if (!details[key]) {
-      details[key] = defaultBodyChartDetail()
+      details[key] = defaultBodyChartDetail(zoneLaterality(side, zone))
     }
     onChange({ ...current, [side]: next, details })
   }
@@ -526,11 +695,11 @@ function BodyChartField({ value, onChange }: {
     <div
       className={`bodychart-clinical-map ${activeSide}`}
       aria-label={activeMeta.label}
-      style={{ '--bodychart-image': `url("${BODY_CHART_IMAGES[activeSide]}")` } as React.CSSProperties}
+      style={{ '--bodychart-image': `url("${chartImages[activeSide]}")` } as React.CSSProperties}
     >
       <img
         className="bodychart-asset"
-        src={BODY_CHART_IMAGES[activeSide]}
+        src={chartImages[activeSide]}
         alt=""
         aria-hidden="true"
         draggable={false}
@@ -631,7 +800,7 @@ function BodyChartField({ value, onChange }: {
                     value={detail.laterality || 'Non precise'}
                     onChange={e => updateZoneDetail(activeSide, zone, { laterality: e.target.value })}
                   >
-                    {BODY_CHART_LATERALITY.map(option => <option key={option} value={option}>{option}</option>)}
+                    {lateralityOptions(activeSide, zone).map(option => <option key={option} value={option}>{option}</option>)}
                   </select>
                 </label>
               </div>
@@ -712,6 +881,150 @@ function BodyChartField({ value, onChange }: {
         placeholder="Annotations : trajet de douleur, intensité par zone, irradiation, paresthésies, restrictions, cicatrices, zones à surveiller..."
         style={{ minHeight: 72, resize: 'vertical', marginTop: 10 }}
       />
+    </div>
+  )
+}
+
+// ── SLIDER ─────────────────────────────────────────────────────────────────
+
+function SliderField({ value, onChange, min, max, step }: {
+  value: any; onChange: (v: number) => void; min: number; max: number; step: number
+}) {
+  const current = typeof value === 'number' ? value : min
+  const pct = max > min ? ((current - min) / (max - min)) * 100 : 0
+  const col = pct <= 30 ? 'var(--accent)' : pct <= 60 ? 'var(--amber)' : 'var(--red)'
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <input
+        type="range" min={min} max={max} step={step}
+        value={current}
+        onChange={e => onChange(Number(e.target.value))}
+        style={{ flex: 1, accentColor: col, height: 4 }}
+      />
+      <span style={{
+        minWidth: 52, textAlign: 'center', fontWeight: 700, fontSize: 14,
+        color: col, background: col + '18', borderRadius: 6, padding: '3px 8px',
+        border: `1.5px solid ${col}44`, flexShrink: 0,
+      }}>
+        {current}<span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-muted)' }}> / {max}</span>
+      </span>
+    </div>
+  )
+}
+
+// ── BEFORE / AFTER ─────────────────────────────────────────────────────────
+
+interface BeforeAfterValue { before?: number; after?: number }
+
+function BeforeAfterField({ value, onChange, min, max, step }: {
+  value: any; onChange: (v: BeforeAfterValue) => void; min: number; max: number; step: number
+}) {
+  const current: BeforeAfterValue = value && typeof value === 'object' && !Array.isArray(value)
+    ? value as BeforeAfterValue
+    : {}
+  const hasBefore = typeof current.before === 'number'
+  const hasAfter  = typeof current.after  === 'number'
+  const before = hasBefore ? current.before! : min
+  const after  = hasAfter  ? current.after!  : min
+  const diff = hasBefore && hasAfter ? after - before : null
+
+  const sliderRow = (
+    label: string,
+    hasVal: boolean,
+    curVal: number,
+    accentColor: string,
+    bgColor: string,
+    onInit: () => void,
+    onSlide: (v: number) => void,
+    onClear: () => void,
+  ) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <span style={{ minWidth: 44, fontSize: 12, fontWeight: 600, color: accentColor, flexShrink: 0 }}>{label}</span>
+      {hasVal ? (
+        <>
+          <input type="range" min={min} max={max} step={step} value={curVal}
+            onChange={e => onSlide(Number(e.target.value))}
+            style={{ flex: 1, accentColor }} />
+          <span style={{ minWidth: 52, textAlign: 'center', fontWeight: 700, fontSize: 13,
+            color: accentColor, background: bgColor, border: `1px solid ${accentColor}44`,
+            borderRadius: 6, padding: '3px 8px', flexShrink: 0 }}>
+            {curVal}<span style={{ fontSize: 10, fontWeight: 400 }}> / {max}</span>
+          </span>
+          <button type="button" onClick={onClear}
+            title="Effacer cette valeur"
+            style={{ fontSize: 11, padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)',
+              background: 'none', color: 'var(--text-muted)', cursor: 'pointer', flexShrink: 0, lineHeight: 1 }}>✕</button>
+        </>
+      ) : (
+        <button type="button" onClick={onInit}
+          style={{ fontSize: 12, padding: '4px 12px', borderRadius: 6, border: `1.5px dashed ${accentColor}66`,
+            background: 'transparent', color: accentColor, cursor: 'pointer', flex: 1, textAlign: 'left' }}>
+          + Définir la valeur
+        </button>
+      )}
+    </div>
+  )
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {sliderRow(
+        'Avant', hasBefore, before, 'var(--text-muted)', 'var(--surface)',
+        () => onChange({ ...current, before: min }),
+        v  => onChange({ ...current, before: v }),
+        () => onChange({ ...current, before: undefined }),
+      )}
+      {sliderRow(
+        'Après', hasAfter, after, 'var(--accent)', 'var(--accent-light)',
+        () => onChange({ ...current, after: min }),
+        v  => onChange({ ...current, after: v }),
+        () => onChange({ ...current, after: undefined }),
+      )}
+      {diff !== null && (
+        <div style={{
+          textAlign: 'center', fontSize: 12, fontWeight: 600, padding: '4px 0',
+          color: diff < 0 ? 'var(--accent)' : diff > 0 ? 'var(--red)' : 'var(--text-muted)',
+        }}>
+          Variation : {diff > 0 ? '+' : ''}{diff}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── REPEATABLE ─────────────────────────────────────────────────────────────
+
+interface RepeatableRow { nom: string; note: string }
+
+function RepeatableField({ value, onChange }: {
+  value: any; onChange: (v: RepeatableRow[]) => void
+}) {
+  const rows: RepeatableRow[] = Array.isArray(value) ? value as RepeatableRow[] : []
+  const addRow    = () => onChange([...rows, { nom: '', note: '' }])
+  const removeRow = (i: number) => onChange(rows.filter((_, idx) => idx !== i))
+  const updateRow = (i: number, patch: Partial<RepeatableRow>) =>
+    onChange(rows.map((r, idx) => idx === i ? { ...r, ...patch } : r))
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {rows.map((row, i) => (
+        <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input type="text" value={row.nom} placeholder="Nom…"
+            onChange={e => updateRow(i, { nom: e.target.value })}
+            style={{ flex: '0 0 160px', minWidth: 0 }} />
+          <input type="text" value={row.note} placeholder="Note…"
+            onChange={e => updateRow(i, { note: e.target.value })}
+            style={{ flex: 1, minWidth: 0 }} />
+          <button type="button" onClick={() => removeRow(i)}
+            style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid var(--red)',
+              background: 'transparent', color: 'var(--red)', cursor: 'pointer', flexShrink: 0, lineHeight: 1 }}>
+            ✕
+          </button>
+        </div>
+      ))}
+      <button type="button" onClick={addRow} className="btn btn-secondary btn-sm"
+        style={{ alignSelf: 'flex-start' }}>
+        + Ajouter une ligne
+      </button>
     </div>
   )
 }

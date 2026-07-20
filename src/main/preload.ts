@@ -40,6 +40,10 @@ const api: IpcApi = {
   exportSessionJson:    (sessionId)  => ipcRenderer.invoke('exports:sessionJson', sessionId),
   exportSessionExcel:   (sessionId)  => ipcRenderer.invoke('exports:sessionExcel', sessionId),
   exportSessionPdf:     (sessionId)  => ipcRenderer.invoke('exports:sessionPdf', sessionId),
+  exportSessionInteropJson: (sessionId) => ipcRenderer.invoke('exports:sessionInteropJson', sessionId),
+  exportSessionBackupJson:  (sessionId) => ipcRenderer.invoke('exports:sessionBackupJson', sessionId),
+  exportSessionReportHtml:  (sessionId) => ipcRenderer.invoke('exports:sessionReportHtml', sessionId),
+  exportSessionExcelV2:     (sessionId) => ipcRenderer.invoke('exports:sessionExcelV2', sessionId),
   exportPatientExcel:   (patientId, sessionId) => ipcRenderer.invoke('exports:patientExcel', patientId, sessionId),
   exportPatientReport:  (patientId)            => ipcRenderer.invoke('exports:patientReport', patientId),
   exportConsentForm:    (patientId?: string)   => ipcRenderer.invoke('exports:consentForm', patientId),
@@ -52,11 +56,13 @@ const api: IpcApi = {
   openBackupFolder:     (type)       => ipcRenderer.invoke('backup:openFolder', type),
 
   // ─── FACTURATION ─────────────────────────────────────────────────────────────
-  generateInvoice:     (data)       => ipcRenderer.invoke('invoice:generate', data),
-  updateInvoiceLog:    (id, data)   => ipcRenderer.invoke('invoice:update', id, data),
+  generateInvoice:      (data)                => ipcRenderer.invoke('invoice:generate', data),
+  regenerateInvoicePdf: (id, invoiceNum, data) => ipcRenderer.invoke('invoice:regeneratePdf', id, invoiceNum, data),
+  updateInvoiceLog:     (id, data)             => ipcRenderer.invoke('invoice:update', id, data),
   deleteInvoiceLog:    (id)         => ipcRenderer.invoke('invoice:delete', id),
   markInvoicePaid:     (id, paid)   => ipcRenderer.invoke('invoice:markPaid', id, paid),
-  sendInvoiceByEmail:  (id)         => ipcRenderer.invoke('invoice:sendByEmail', id),
+  getInvoiceEmailData:    (id)                      => ipcRenderer.invoke('invoice:getEmailData', id),
+  openInvoiceEmailClient: (to, subject, body, pdfPath) => ipcRenderer.invoke('invoice:openEmailClient', to, subject, body, pdfPath),
   // Rappels et alertes
   getPendingReminders:  ()          => ipcRenderer.invoke('reminders:getPending'),
   markReminderSent:     (apptId)    => ipcRenderer.invoke('reminders:markSent', apptId),
@@ -108,7 +114,22 @@ const api: IpcApi = {
   pluginLibrarySave:       (plugin) => ipcRenderer.invoke('plugin:librarySave', plugin),
   pluginLibrarySaveNative: (plugin) => ipcRenderer.invoke('plugin:librarySaveNative', plugin),
   pluginLibraryDelete:     (id)     => ipcRenderer.invoke('plugin:libraryDelete', id),
+  pluginLibraryExport:     (dest)   => ipcRenderer.invoke('plugin:libraryExport', dest),
+  pluginLibraryImport:     (src)    => ipcRenderer.invoke('plugin:libraryImport', src),
+  pluginListAvailable:     ()       => ipcRenderer.invoke('plugin:listAvailable'),
+  // ── Profils de séance (Phase 3) ──────────────────────────────────────────
+  profilesGetAll:     ()          => ipcRenderer.invoke('profiles:getAll'),
+  profilesGetDefault: ()          => ipcRenderer.invoke('profiles:getDefault'),
+  profilesCreate:     (data)      => ipcRenderer.invoke('profiles:create', data),
+  profilesUpdate:     (id, data)  => ipcRenderer.invoke('profiles:update', id, data),
+  profilesDuplicate:  (id, name)  => ipcRenderer.invoke('profiles:duplicate', id, name),
+  profilesArchive:    (id)        => ipcRenderer.invoke('profiles:archive', id),
+  profilesSetDefault: (id)        => ipcRenderer.invoke('profiles:setDefault', id),
+  profilesMigrate:    ()          => ipcRenderer.invoke('profiles:migrate'),
   getDataPath:       ()          => ipcRenderer.invoke('app:dataPath'),
+  openDocumentation:   ()          => ipcRenderer.invoke('docs:open'),
+  openInstallGuide:    ()          => ipcRenderer.invoke('docs:openInstall'),
+  openRgpdGuide:       ()          => ipcRenderer.invoke('docs:openRgpd'),
   setMenuBarVisible: (v: boolean)=> ipcRenderer.invoke('win:setMenuBarVisible', v),
   onFormatPopup: (cb: (pos: { x: number; y: number }) => void) => {
     ipcRenderer.on('format:popup', (_e, pos) => cb(pos))
@@ -117,7 +138,7 @@ const api: IpcApi = {
   verifyBackup:   (path)        => ipcRenderer.invoke('backup:verify', path),
   // Google Calendar
   gcalStatus:        ()              => ipcRenderer.invoke('gcal:status'),
-  gcalConnect:       (cid, csec)     => ipcRenderer.invoke('gcal:connect', cid, csec),
+  gcalConnect:       ()              => ipcRenderer.invoke('gcal:connect'),
   gcalDisconnect:    ()              => ipcRenderer.invoke('gcal:disconnect'),
   gcalListCalendars: ()              => ipcRenderer.invoke('gcal:listCalendars'),
   gcalSetCalendar:   (id, name)      => ipcRenderer.invoke('gcal:setCalendar', id, name),
@@ -147,10 +168,11 @@ const api: IpcApi = {
   adminGetSettings:   ()                 => ipcRenderer.invoke('admin:getSettings'),
   adminForceBackup:   ()                 => ipcRenderer.invoke('admin:forceBackup'),
   // ── Compte & Licence ──────────────────────────────────────────────────────
-  accountSignUp:         (email, pwd)   => ipcRenderer.invoke('account:signUp', email, pwd),
-  accountSignIn:         (email, pwd)   => ipcRenderer.invoke('account:signIn', email, pwd),
-  accountSignOut:        ()             => ipcRenderer.invoke('account:signOut'),
-  accountResetPassword:  (email)        => ipcRenderer.invoke('account:resetPassword', email),
+  accountSignUp:              (email, pwd) => ipcRenderer.invoke('account:signUp', email, pwd),
+  accountSignIn:              (email, pwd) => ipcRenderer.invoke('account:signIn', email, pwd),
+  accountSignOut:             ()           => ipcRenderer.invoke('account:signOut'),
+  accountResetPassword:       (email)      => ipcRenderer.invoke('account:resetPassword', email),
+  accountResendConfirmation:  (email)      => ipcRenderer.invoke('account:resendConfirmation', email),
   accountGetState:       ()             => ipcRenderer.invoke('account:getState'),
   accountCreateCheckout: (priceId)      => ipcRenderer.invoke('account:createCheckout', priceId),
   accountBillingPortal:  ()             => ipcRenderer.invoke('account:billingPortal'),
@@ -169,6 +191,7 @@ const api: IpcApi = {
   dismissUpdateNotification:      (version)      => ipcRenderer.invoke('update:dismissNotification', version),
   getLastUpdateNotification:      ()             => ipcRenderer.invoke('update:getLastNotification'),
   onUpdateAvailable: (cb) => { ipcRenderer.on('update:available', (_e, result) => cb(result)) },
+  ownerCheck: () => ipcRenderer.invoke('owner:check'),
 }
 
 contextBridge.exposeInMainWorld('mtcApi', api)

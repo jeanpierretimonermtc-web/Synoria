@@ -236,7 +236,10 @@ export function getStatus() {
   }
 }
 
-export async function connect(clientId: string, clientSecret: string): Promise<void> {
+export async function connect(clientId?: string, clientSecret?: string): Promise<void> {
+  clientId     = clientId     || (process.env.GCAL_CLIENT_ID     as string)
+  clientSecret = clientSecret || (process.env.GCAL_CLIENT_SECRET as string)
+  if (!clientId || !clientSecret) throw new Error('Identifiants Google Calendar non configurés.')
   return new Promise((resolve, reject) => {
     let settled = false
     let timeout: ReturnType<typeof setTimeout> | null = null

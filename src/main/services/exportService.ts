@@ -66,9 +66,29 @@ function sectionHeader(label: string, bg: string): unknown[] {
   ]
 }
 
+// Convertit du HTML riche (issu des RichTextArea) en texte brut lisible pour Excel
+function stripHtml(html: string | undefined | null): string {
+  if (!html) return ''
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<li>/gi, '• ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 // Ligne de données : colonne label (fond clair, gras) + colonne valeur (blanc)
 function row(label: string, value: string | undefined | null, labelBg = C.greenLight): unknown[] | null {
-  if (!value?.trim()) return null
+  const plainValue = stripHtml(value)
+  if (!plainValue.trim()) return null
   return [
     cell(label, {
       font: { bold: true, sz: 10, color: { rgb: C.text } },
@@ -76,7 +96,7 @@ function row(label: string, value: string | undefined | null, labelBg = C.greenL
       alignment: { horizontal: 'left', vertical: 'top', wrapText: true },
       border: border(),
     }),
-    cell(value, {
+    cell(plainValue, {
       font: { sz: 10, color: { rgb: C.text } },
       fill: { fgColor: { rgb: C.white }, patternType: 'solid' },
       alignment: { horizontal: 'left', vertical: 'top', wrapText: true },
@@ -412,7 +432,7 @@ export function exportSessionExcel(sessionId: string, outputDir?: string): strin
   }
 
   // ── DONNÉES PLUGIN ───────────────────────────────────────────────
-  type PluginFieldMeta = { id: string; label: string; type: string; max?: number }
+  type PluginFieldMeta = { id: string; label: string; type: string; max?: number; export?: { excel?: boolean }; summary?: { label?: string } }
   type PluginSectionMeta = { title: string; accentColor?: string; fields: PluginFieldMeta[] }
   type PluginSchemaMeta  = { name?: string; icon?: string; sections?: PluginSectionMeta[] }
 
@@ -441,16 +461,160 @@ export function exportSessionExcel(sessionId: string, outputDir?: string): strin
 
       for (const field of section.fields) {
         if (field.type === 'separator') continue
+        if (field.type === 'mtc_aide_interrogatoire') continue // display-only, pas de données
+        if (field.export?.excel === false) continue
         const val = pluginData[field.id]
         if (val === null || val === undefined || val === '') continue
 
+        // ── Modules spécialisés ──────────────────────────────────────────────
+
+        if (field.type === 'mtc_systemes') {
+          const sysVal = val as Record<string, { checked?: string[]; note?: string; stress?: number; anxiete?: number; energie?: number; douleur?: number; localisation?: string }>
+          const SYSTEME_LABELS: Record<string, string> = {
+            cardio: 'Cardio-vasculaire', pulmo: 'Respiratoire / Pulmonaire',
+            mental: 'Mental / Émotionnel', vision: 'Vision / Yeux',
+            reins: 'Reins / Urinaire', rate: 'Rate / Digestion',
+            estomac: 'Estomac', grosIntestin: 'Gros Intestin', peau: 'Peau',
+            tete: 'Tête / ORL', temp: 'Température / Transpiration',
+            musculo: 'Musculo-squelettique', feminin: 'Gynécologique',
+            fertilite: 'Fertilité / Grossesse', masculin: 'Masculin',
+          }
+          for (const [key, data] of Object.entries(sysVal)) {
+            if (!data || typeof data !== 'object') continue
+            const parts: string[] = []
+            if (Array.isArray(data.checked) && data.checked.length) parts.push(data.checked.join(' · '))
+            if (typeof data.stress === 'number' && data.stress) parts.push(`Stress ${data.stress}/10`)
+            if (typeof data.anxiete === 'number' && data.anxiete) parts.push(`Anxiété ${data.anxiete}/10`)
+            if (typeof data.energie === 'number' && data.energie) parts.push(`Énergie ${data.energie}/10`)
+            if (typeof data.douleur === 'number' && data.douleur) parts.push(`Douleur ${data.douleur}/10`)
+            if (data.localisation) parts.push(`Localisation: ${data.localisation}`)
+            if (data.note) parts.push(data.note)
+            if (!parts.length) continue
+            push(ws_data, row(`${field.label} — ${SYSTEME_LABELS[key] || key}`, parts.join('\n'), pluginLight)); ri++
+          }
+          continue
+        }
+
+        if (field.type === 'mtc_five_elements') {
+          const feVal = val as { selected?: string[]; notes?: Record<string, string>; generalNote?: string }
+          const ELEMENT_LABELS: Record<string, string> = { bois: 'Bois', feu: 'Feu', terre: 'Terre', metal: 'Métal', eau: 'Eau' }
+          const selected = Array.isArray(feVal.selected) ? feVal.selected : []
+          if (selected.length) {
+            push(ws_data, row(`${field.label} — Éléments`, selected.map(k => ELEMENT_LABELS[k] || k).join(' · '), pluginLight)); ri++
+          }
+          for (const [key, note] of Object.entries(feVal.notes || {})) {
+            if (!note) continue
+            push(ws_data, row(`${field.label} — ${ELEMENT_LABELS[key] || key}`, note, pluginLight)); ri++
+          }
+          if (feVal.generalNote) {
+            push(ws_data, row(`${field.label} — Synthèse`, feVal.generalNote, pluginLight)); ri++
+          }
+          continue
+        }
+
+        if (field.type === 'mtc_tongue_pulse') {
+          const tpVal = val as {
+            tongue?: { color?: string; coatColor?: string; coatTextures?: string[]; moisture?: string; shapes?: string[]; note?: string }
+            pulse?: { positions?: Record<string, { qualities?: string[]; note?: string }>; globalNote?: string }
+          }
+          const tongue = tpVal.tongue || {}
+          const tongueParts: string[] = []
+          if (tongue.color) tongueParts.push(`Couleur: ${tongue.color}`)
+          if (tongue.coatColor) tongueParts.push(`Enduit: ${tongue.coatColor}`)
+          if (tongue.coatTextures?.length) tongueParts.push(`Aspect: ${tongue.coatTextures.join(', ')}`)
+          if (tongue.moisture) tongueParts.push(`Humidité: ${tongue.moisture}`)
+          if (tongue.shapes?.length) tongueParts.push(`Forme: ${tongue.shapes.join(', ')}`)
+          if (tongue.note) tongueParts.push(tongue.note)
+          if (tongueParts.length) {
+            push(ws_data, row(`${field.label} — Langue`, tongueParts.join(' · '), pluginLight)); ri++
+          }
+          const POSITION_LABELS: Record<string, string> = {
+            cun_g: 'Cun G / Cœur', guan_g: 'Guan G / Foie', chi_g: 'Chi G / Reins Yin',
+            cun_d: 'Cun D / Poumon', guan_d: 'Guan D / Rate', chi_d: 'Chi D / Reins Yang',
+          }
+          for (const [posId, posData] of Object.entries(tpVal.pulse?.positions || {})) {
+            const parts: string[] = []
+            if (posData.qualities?.length) parts.push(posData.qualities.join(', '))
+            if (posData.note) parts.push(posData.note)
+            if (!parts.length) continue
+            push(ws_data, row(`${field.label} — ${POSITION_LABELS[posId] || posId}`, parts.join(' · '), pluginLight)); ri++
+          }
+          if (tpVal.pulse?.globalNote) {
+            push(ws_data, row(`${field.label} — Note globale pouls`, tpVal.pulse.globalNote, pluginLight)); ri++
+          }
+          continue
+        }
+
+        if (field.type === 'osteo_ortho_tests') {
+          const tests = val as Array<{ name?: string; result?: string; note?: string }>
+          const RESULT_LABELS: Record<string, string> = { positif: 'Positif', negatif: 'Négatif', non_concluant: 'Non concluant' }
+          for (const t of tests) {
+            if (!t.name) continue
+            const parts: string[] = []
+            if (t.result) parts.push(RESULT_LABELS[t.result] || t.result)
+            if (t.note) parts.push(t.note)
+            push(ws_data, row(`${field.label} — ${t.name}`, parts.join(' · ') || '—', pluginLight)); ri++
+          }
+          continue
+        }
+
+        if (field.type === 'osteo_posture') {
+          const pvVal = val as Record<string, { findings?: string[]; note?: string }>
+          const VIEW_ORDER = ['anterieure', 'posterieure', 'laterale_gauche', 'laterale_droite']
+          const VIEW_LABELS: Record<string, string> = {
+            anterieure: 'Vue antérieure', posterieure: 'Vue postérieure',
+            laterale_gauche: 'Profil gauche', laterale_droite: 'Profil droit',
+          }
+          for (const viewKey of VIEW_ORDER) {
+            const d = pvVal[viewKey]
+            if (!d) continue
+            const parts: string[] = []
+            if (d.findings?.length) parts.push(d.findings.join(' · '))
+            if (d.note) parts.push(d.note)
+            if (!parts.length) continue
+            push(ws_data, row(`${field.label} — ${VIEW_LABELS[viewKey]}`, parts.join('\n'), pluginLight)); ri++
+          }
+          continue
+        }
+
+        // ── Champs standard ─────────────────────────────────────────────────
+
         let strVal: string
-        if (Array.isArray(val)) {
+        if (field.type === 'before_after' && typeof val === 'object' && !Array.isArray(val)) {
+          const ba = val as { before?: number; after?: number }
+          const m = field.max ?? 10
+          const parts = [
+            typeof ba.before === 'number' ? `Avant : ${ba.before}/${m}` : '',
+            typeof ba.after  === 'number' ? `Après : ${ba.after}/${m}`  : '',
+          ].filter(Boolean)
+          if (typeof ba.before === 'number' && typeof ba.after === 'number') {
+            const diff = ba.after - ba.before
+            parts.push(`Variation : ${diff >= 0 ? '+' : ''}${diff}`)
+          }
+          strVal = parts.join(' · ')
+        } else if (field.type === 'repeatable' && Array.isArray(val)) {
+          const rrows = (val as Array<{ nom?: string; note?: string }>).filter(r => r?.nom?.trim())
+          strVal = rrows.map(r => r.note?.trim() ? `${r.nom} (${r.note})` : r.nom!).join('\n')
+        } else if (field.type === 'bodychart' && typeof val === 'object' && !Array.isArray(val)) {
+          const chart = val as { front?: string[]; back?: string[]; left?: string[]; right?: string[]; notes?: string }
+          const parts = [
+            chart.front?.length ? `Antérieur : ${chart.front.join(', ')}` : '',
+            chart.back?.length  ? `Postérieur : ${chart.back.join(', ')}` : '',
+            chart.left?.length  ? `Profil G : ${chart.left.join(', ')}`   : '',
+            chart.right?.length ? `Profil D : ${chart.right.join(', ')}`  : '',
+            chart.notes?.trim() ? `Notes : ${chart.notes.trim()}`         : '',
+          ].filter(Boolean)
+          strVal = parts.join(' | ')
+        } else if (field.type === 'slider') {
+          strVal = `${val} / ${field.max ?? 10}`
+        } else if (Array.isArray(val)) {
           strVal = (val as string[]).join(', ')
         } else if (typeof val === 'boolean') {
           strVal = val ? `✓ ${field.label}` : ''
         } else if (field.type === 'rating') {
           strVal = `${val} / ${field.max ?? 10}`
+        } else if (typeof val === 'object') {
+          continue // objet complexe sans handler spécifique — ignoré
         } else {
           // Retirer les balises HTML pour l'export texte
           strVal = String(val).replace(/<[^>]+>/g, '')
@@ -507,3 +671,11 @@ export function exportSessionExcel(sessionId: string, outputDir?: string): strin
 
   return filePath
 }
+
+// ── Pipeline canonique (Phase 2) ─────────────────────────────────────────────
+// Délègue aux nouveaux exporteurs basés sur la structure canonique. L'ancien
+// point d'entrée exportSessionExcel() ci-dessus reste inchangé (compatibilité).
+export {
+  exportSessionExcelCanonical,
+  exportPatientExcelCanonical,
+} from './exports/sessionExportPipeline'
