@@ -98,12 +98,21 @@
         <span id="account-renew">-</span>
       </div>
       <div style="display:flex;gap:10px;margin-top:24px;flex-wrap:wrap">
-        <a class="btn btn-outline" href="/tarifs">Changer d'offre</a>
+        <button class="btn btn-primary" id="portal-btn">Gérer mon abonnement</button>
         <button class="btn btn-outline" id="logout-btn">Se déconnecter</button>
       </div>
-      <p style="font-size:12px;color:var(--muted);opacity:.8;margin-top:20px">
-        La gestion complète du moyen de paiement et la résiliation se feront depuis le portail client Stripe (lien ajouté prochainement dans cet espace).
+      <p style="font-size:12px;color:var(--muted);opacity:.8;margin-top:14px">
+        Modifier le moyen de paiement, changer d'offre ou résilier : utilisez le bouton ci-dessus (portail sécurisé Stripe).
       </p>
+
+      <div class="account-download">
+        <p class="account-download-label">Télécharger Synoria</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <a class="btn btn-outline btn-sm" href="https://github.com/jeanpierretimonermtc-web/Synoria/releases/download/v1.5.8/Synoria-Setup-1.5.8.exe">🪟 Windows</a>
+          <a class="btn btn-outline btn-sm" href="https://github.com/jeanpierretimonermtc-web/Synoria/releases/download/v1.5.8/Synoria-1.5.8-arm64.dmg">🍎 macOS Apple Silicon</a>
+          <a class="btn btn-outline btn-sm" href="https://github.com/jeanpierretimonermtc-web/Synoria/releases/download/v1.5.8/Synoria-1.5.8-x64.dmg">🍎 macOS Intel</a>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -246,6 +255,32 @@
 
   document.getElementById('logout-btn').addEventListener('click', function () {
     sb.auth.signOut();
+  });
+
+  document.getElementById('portal-btn').addEventListener('click', function () {
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = 'Redirection...';
+    sb.auth.getSession().then(function (res) {
+      var session = res.data && res.data.session;
+      if (!session) { btn.disabled = false; btn.textContent = 'Gérer mon abonnement'; return; }
+      fetch('https://nicyxynczjvoyxaernbr.supabase.co/functions/v1/create-customer-portal-session', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + session.access_token, 'Content-Type': 'application/json' }
+      }).then(function (r) { return r.json(); }).then(function (data) {
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'Gérer mon abonnement';
+          accountMsg.textContent = 'Impossible d\'accéder au portail. Contactez le support.';
+          accountMsg.className = 'form-msg error';
+        }
+      }).catch(function () {
+        btn.disabled = false;
+        btn.textContent = 'Gérer mon abonnement';
+      });
+    });
   });
 
   function loadAccount(user) {

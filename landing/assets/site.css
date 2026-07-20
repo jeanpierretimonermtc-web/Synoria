@@ -163,6 +163,8 @@ h2{font-family:Georgia,"Times New Roman",serif;font-size:42px;font-weight:400;li
 .account-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--border);font-size:14px;gap:12px}
 .account-row:last-child{border-bottom:0}
 .account-row span:first-child{color:var(--muted)}
+.account-download{border-top:1px solid var(--border);margin-top:24px;padding-top:20px}
+.account-download-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:14px}
 .status-pill{font-size:12px;font-weight:800;padding:5px 11px;border-radius:999px;white-space:nowrap}
 .status-pill.active{background:var(--accent-light);color:var(--accent-dark)}
 .status-pill.pending{background:var(--amber-light);color:var(--amber)}
