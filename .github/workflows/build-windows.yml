@@ -24,11 +24,32 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Créer .env.local depuis les secrets
+        shell: pwsh
+        env:
+          LICENSE_PUBLIC_KEY: ${{ secrets.LICENSE_PUBLIC_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          GCAL_CLIENT_ID: ${{ secrets.GCAL_CLIENT_ID }}
+          GCAL_CLIENT_SECRET: ${{ secrets.GCAL_CLIENT_SECRET }}
+          OWNER_EMAILS: ${{ secrets.OWNER_EMAILS }}
+        run: |
+          node -e @"
+            const fs = require('fs');
+            const keys = ['LICENSE_PUBLIC_KEY','SUPABASE_URL','SUPABASE_ANON_KEY','GCAL_CLIENT_ID','GCAL_CLIENT_SECRET','OWNER_EMAILS'];
+            const lines = keys.map(k => {
+              const v = (process.env[k] || '').replace(/\x22/g, '\\\\\x22').replace(/\r\n/g, '\\\\n').replace(/\n/g, '\\\\n');
+              return k + '=\x22' + v + '\x22';
+            });
+            fs.writeFileSync('.env.local', lines.join('\n') + '\n');
+            console.log('Cree .env.local avec', keys.length, 'variables');
+          "@
+
       - name: Configurer package.json cabinet (identifiants stables)
         shell: pwsh
         run: |
           $version = "${{ github.ref_name }}".TrimStart('v')
-          if (-not $version -or $version -eq "") { $version = "1.5.3" }
+          if (-not $version -or $version -eq "" -or $version -notmatch '^\d+\.\d+\.\d+') { $version = "1.5.8" }
           $json = Get-Content "package.json" -Raw | ConvertFrom-Json
           $json.version = $version
           $json.build.appId = "com.synoria.cabinet"
@@ -69,7 +90,7 @@ jobs:
             | `Synoria-*.exe` (sans Setup) | Version portable |
 
             ### Mac
-            Voir le job **Build Mac** — `*-universal.dmg` (Intel + Apple Silicon)
+            Voir le job **Build Mac** — `*-arm64.dmg` (Apple Silicon) · `*-x64.dmg` (Intel)
           files: release/Synoria*.exe
           overwrite: true
           fail_on_unmatched_files: false

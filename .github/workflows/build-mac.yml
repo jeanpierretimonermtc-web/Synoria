@@ -31,7 +31,9 @@ jobs:
           node -e "
             const fs = require('fs');
             const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            p.version = '${{ github.ref_name }}'.replace('v', '') || p.version;
+            const ref = '${{ github.ref_name }}';
+            const m = ref.match(/^v?(\d+\.\d+\.\d+)/);
+            if (m) p.version = m[1];
             p.build.appId = 'com.synoria.cabinet';
             p.build.productName = 'Synoria';
             fs.writeFileSync('package.json', JSON.stringify(p, null, 2), 'utf8');
@@ -40,6 +42,26 @@ jobs:
 
       - name: npm install (arm64 natif)
         run: npm install
+
+      - name: Créer .env.local depuis les secrets
+        env:
+          LICENSE_PUBLIC_KEY: ${{ secrets.LICENSE_PUBLIC_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          GCAL_CLIENT_ID: ${{ secrets.GCAL_CLIENT_ID }}
+          GCAL_CLIENT_SECRET: ${{ secrets.GCAL_CLIENT_SECRET }}
+          OWNER_EMAILS: ${{ secrets.OWNER_EMAILS }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const keys = ['LICENSE_PUBLIC_KEY','SUPABASE_URL','SUPABASE_ANON_KEY','GCAL_CLIENT_ID','GCAL_CLIENT_SECRET','OWNER_EMAILS'];
+            const lines = keys.map(k => {
+              const v = (process.env[k] || '').replace(/\"/g, '\\\\\"').replace(/\r\n/g, '\\\\n').replace(/\n/g, '\\\\n');
+              return k + '=\"' + v + '\"';
+            });
+            fs.writeFileSync('.env.local', lines.join('\n') + '\n');
+            console.log('Créé .env.local avec', keys.length, 'variables');
+          "
 
       - name: Nettoyer les anciens DMG
         run: rm -f release/*.dmg release/*.zip || true
@@ -104,7 +126,9 @@ jobs:
           node -e "
             const fs = require('fs');
             const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            p.version = '${{ github.ref_name }}'.replace('v', '') || p.version;
+            const ref = '${{ github.ref_name }}';
+            const m = ref.match(/^v?(\d+\.\d+\.\d+)/);
+            if (m) p.version = m[1];
             p.build.appId = 'com.synoria.cabinet';
             p.build.productName = 'Synoria';
             p.build.npmRebuild = false;
@@ -112,11 +136,28 @@ jobs:
             console.log('OK', p.version, 'npmRebuild=false');
           "
 
-      - name: Nettoyer les anciens DMG
-        run: rm -f release/*.dmg release/*.zip || true
-
       - name: npm install (sans postinstall)
         run: npm install --ignore-scripts
+
+      - name: Créer .env.local depuis les secrets
+        env:
+          LICENSE_PUBLIC_KEY: ${{ secrets.LICENSE_PUBLIC_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          GCAL_CLIENT_ID: ${{ secrets.GCAL_CLIENT_ID }}
+          GCAL_CLIENT_SECRET: ${{ secrets.GCAL_CLIENT_SECRET }}
+          OWNER_EMAILS: ${{ secrets.OWNER_EMAILS }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const keys = ['LICENSE_PUBLIC_KEY','SUPABASE_URL','SUPABASE_ANON_KEY','GCAL_CLIENT_ID','GCAL_CLIENT_SECRET','OWNER_EMAILS'];
+            const lines = keys.map(k => {
+              const v = (process.env[k] || '').replace(/\"/g, '\\\\\"').replace(/\r\n/g, '\\\\n').replace(/\n/g, '\\\\n');
+              return k + '=\"' + v + '\"';
+            });
+            fs.writeFileSync('.env.local', lines.join('\n') + '\n');
+            console.log('Créé .env.local avec', keys.length, 'variables');
+          "
 
       - name: Compiler better-sqlite3 x64 (CFLAGS + npm_config_arch)
         env:
