@@ -34,16 +34,17 @@ jobs:
           GCAL_CLIENT_SECRET: ${{ secrets.GCAL_CLIENT_SECRET }}
           OWNER_EMAILS: ${{ secrets.OWNER_EMAILS }}
         run: |
-          node -e @"
-            const fs = require('fs');
-            const keys = ['LICENSE_PUBLIC_KEY','SUPABASE_URL','SUPABASE_ANON_KEY','GCAL_CLIENT_ID','GCAL_CLIENT_SECRET','OWNER_EMAILS'];
-            const lines = keys.map(k => {
-              const v = (process.env[k] || '').replace(/\x22/g, '\\\\\x22').replace(/\r\n/g, '\\\\n').replace(/\n/g, '\\\\n');
-              return k + '=\x22' + v + '\x22';
-            });
-            fs.writeFileSync('.env.local', lines.join('\n') + '\n');
-            console.log('Cree .env.local avec', keys.length, 'variables');
-          "@
+          $keys = @('LICENSE_PUBLIC_KEY','SUPABASE_URL','SUPABASE_ANON_KEY','GCAL_CLIENT_ID','GCAL_CLIENT_SECRET','OWNER_EMAILS')
+          $lines = @()
+          foreach ($k in $keys) {
+            $v = [System.Environment]::GetEnvironmentVariable($k)
+            if ($null -eq $v) { $v = '' }
+            $v = $v -replace '\\', '\\' -replace '"', '\"' -replace "`r`n", "`n"
+            $lines += "$k=`"$v`""
+          }
+          $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+          [System.IO.File]::WriteAllText("$PWD\.env.local", ($lines -join "`n") + "`n", $utf8NoBom)
+          Write-Host "Created .env.local with $($keys.Count) variables"
 
       - name: Configurer package.json cabinet (identifiants stables)
         shell: pwsh

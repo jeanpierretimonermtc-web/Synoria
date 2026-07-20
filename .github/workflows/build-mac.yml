@@ -28,17 +28,17 @@ jobs:
 
       - name: Configurer package.json (cabinet, version)
         run: |
-          node -e "
-            const fs = require('fs');
-            const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            const ref = '${{ github.ref_name }}';
-            const m = ref.match(/^v?(\d+\.\d+\.\d+)/);
-            if (m) p.version = m[1];
-            p.build.appId = 'com.synoria.cabinet';
-            p.build.productName = 'Synoria';
-            fs.writeFileSync('package.json', JSON.stringify(p, null, 2), 'utf8');
-            console.log('OK', p.version, 'com.synoria.cabinet');
-          "
+          node - << 'EOF'
+          const fs = require('fs')
+          const p = JSON.parse(fs.readFileSync('package.json', 'utf8'))
+          const ref = process.env.GITHUB_REF_NAME || ''
+          const m = ref.match(/^v?(\d+\.\d+\.\d+)/)
+          if (m) p.version = m[1]
+          p.build.appId = 'com.synoria.cabinet'
+          p.build.productName = 'Synoria'
+          fs.writeFileSync('package.json', JSON.stringify(p, null, 2), 'utf8')
+          console.log('OK', p.version, p.build.appId)
+          EOF
 
       - name: npm install (arm64 natif)
         run: npm install
@@ -52,16 +52,16 @@ jobs:
           GCAL_CLIENT_SECRET: ${{ secrets.GCAL_CLIENT_SECRET }}
           OWNER_EMAILS: ${{ secrets.OWNER_EMAILS }}
         run: |
-          node -e "
-            const fs = require('fs');
-            const keys = ['LICENSE_PUBLIC_KEY','SUPABASE_URL','SUPABASE_ANON_KEY','GCAL_CLIENT_ID','GCAL_CLIENT_SECRET','OWNER_EMAILS'];
-            const lines = keys.map(k => {
-              const v = (process.env[k] || '').replace(/\"/g, '\\\\\"').replace(/\r\n/g, '\\\\n').replace(/\n/g, '\\\\n');
-              return k + '=\"' + v + '\"';
-            });
-            fs.writeFileSync('.env.local', lines.join('\n') + '\n');
-            console.log('Créé .env.local avec', keys.length, 'variables');
-          "
+          node - << 'EOF'
+          const fs = require('fs')
+          const keys = ['LICENSE_PUBLIC_KEY','SUPABASE_URL','SUPABASE_ANON_KEY','GCAL_CLIENT_ID','GCAL_CLIENT_SECRET','OWNER_EMAILS']
+          const lines = keys.map(k => {
+            const v = (process.env[k] || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+            return k + '="' + v + '"'
+          })
+          fs.writeFileSync('.env.local', lines.join('\n') + '\n', 'utf8')
+          console.log('Created .env.local with', keys.length, 'variables')
+          EOF
 
       - name: Nettoyer les anciens DMG
         run: rm -f release/*.dmg release/*.zip || true
@@ -98,7 +98,7 @@ jobs:
             | `*-arm64.dmg` | **Apple Silicon** M1 / M2 / M3 — MacBook depuis fin 2020 |
             | `*-x64.dmg`   | **Intel Core** — MacBook avant fin 2020 |
 
-            > **Comment savoir ?** Pomme  → À propos de ce Mac
+            > **Comment savoir ?** Pomme → À propos de ce Mac
             > - "Apple M..." → télécharger **arm64**
             > - "Intel Core..." → télécharger **x64**
           files: release/Synoria*-arm64.dmg
@@ -123,18 +123,18 @@ jobs:
 
       - name: Configurer package.json (cabinet, version)
         run: |
-          node -e "
-            const fs = require('fs');
-            const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            const ref = '${{ github.ref_name }}';
-            const m = ref.match(/^v?(\d+\.\d+\.\d+)/);
-            if (m) p.version = m[1];
-            p.build.appId = 'com.synoria.cabinet';
-            p.build.productName = 'Synoria';
-            p.build.npmRebuild = false;
-            fs.writeFileSync('package.json', JSON.stringify(p, null, 2), 'utf8');
-            console.log('OK', p.version, 'npmRebuild=false');
-          "
+          node - << 'EOF'
+          const fs = require('fs')
+          const p = JSON.parse(fs.readFileSync('package.json', 'utf8'))
+          const ref = process.env.GITHUB_REF_NAME || ''
+          const m = ref.match(/^v?(\d+\.\d+\.\d+)/)
+          if (m) p.version = m[1]
+          p.build.appId = 'com.synoria.cabinet'
+          p.build.productName = 'Synoria'
+          p.build.npmRebuild = false
+          fs.writeFileSync('package.json', JSON.stringify(p, null, 2), 'utf8')
+          console.log('OK', p.version, 'npmRebuild=false')
+          EOF
 
       - name: npm install (sans postinstall)
         run: npm install --ignore-scripts
@@ -148,16 +148,16 @@ jobs:
           GCAL_CLIENT_SECRET: ${{ secrets.GCAL_CLIENT_SECRET }}
           OWNER_EMAILS: ${{ secrets.OWNER_EMAILS }}
         run: |
-          node -e "
-            const fs = require('fs');
-            const keys = ['LICENSE_PUBLIC_KEY','SUPABASE_URL','SUPABASE_ANON_KEY','GCAL_CLIENT_ID','GCAL_CLIENT_SECRET','OWNER_EMAILS'];
-            const lines = keys.map(k => {
-              const v = (process.env[k] || '').replace(/\"/g, '\\\\\"').replace(/\r\n/g, '\\\\n').replace(/\n/g, '\\\\n');
-              return k + '=\"' + v + '\"';
-            });
-            fs.writeFileSync('.env.local', lines.join('\n') + '\n');
-            console.log('Créé .env.local avec', keys.length, 'variables');
-          "
+          node - << 'EOF'
+          const fs = require('fs')
+          const keys = ['LICENSE_PUBLIC_KEY','SUPABASE_URL','SUPABASE_ANON_KEY','GCAL_CLIENT_ID','GCAL_CLIENT_SECRET','OWNER_EMAILS']
+          const lines = keys.map(k => {
+            const v = (process.env[k] || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+            return k + '="' + v + '"'
+          })
+          fs.writeFileSync('.env.local', lines.join('\n') + '\n', 'utf8')
+          console.log('Created .env.local with', keys.length, 'variables')
+          EOF
 
       - name: Compiler better-sqlite3 x64 (CFLAGS + npm_config_arch)
         env:
@@ -209,7 +209,7 @@ jobs:
             | `*-arm64.dmg` | **Apple Silicon** M1 / M2 / M3 — MacBook depuis fin 2020 |
             | `*-x64.dmg`   | **Intel Core** — MacBook avant fin 2020 |
 
-            > **Comment savoir ?** Pomme  → À propos de ce Mac
+            > **Comment savoir ?** Pomme → À propos de ce Mac
             > - "Apple M..." → télécharger **arm64**
             > - "Intel Core..." → télécharger **x64**
           files: release/Synoria*-x64.dmg
