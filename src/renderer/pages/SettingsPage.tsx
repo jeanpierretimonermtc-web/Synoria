@@ -1378,15 +1378,8 @@ export default function SettingsPage() {
 
         {/* ════ PLUGIN ════ */}
         {activeTab === 'plugin' && (() => {
-          // Seul "basique" est gratuit et inclus dans l'application.
-          // Tous les autres formulaires sont payants et importés séparément.
-          // Exception : le propriétaire (isOwner) a accès à tous les formulaires bundlés.
-          const FREE_FORM_IDS = ['basique']
-          const officialForms = isOwner
-            ? availablePlugins
-            : FREE_FORM_IDS
-                .map(id => availablePlugins.find(p => p.id === id))
-                .filter((p): p is PluginDefinition => Boolean(p))
+          // Tous les formulaires officiels sont inclus dans l'abonnement actif.
+          const officialForms = availablePlugins
 
           const handleSetDefault = async (form: PluginDefinition) => {
             setPluginError('')
@@ -1399,7 +1392,7 @@ export default function SettingsPage() {
             setPluginLoading(false)
           }
 
-          const importedActive = !isOwner && activePlugin && !FREE_FORM_IDS.includes(activePlugin.id) ? activePlugin : null
+          const importedActive = null
 
           return (
             <div>
@@ -1412,7 +1405,7 @@ export default function SettingsPage() {
               <div className="settings-card">
                 <div className="settings-card-title">
                   <span className="card-title-icon icon-blue">📋</span>
-                  Formulaire gratuit — inclus
+                  Formulaires inclus dans l'abonnement
                 </div>
                 {officialForms.length === 0 ? (
                   <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Chargement des formulaires…</p>
