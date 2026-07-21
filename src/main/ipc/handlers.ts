@@ -646,16 +646,10 @@ export function registerAllHandlers(): void {
     if (typeof exePath !== 'string' || !isAbsolute(exePath)) return
     const norm = normalize(exePath)
     const normLower = norm.toLowerCase()
-    const tmpDir  = normalize(tmpdir()).toLowerCase()
-    const udataDir = normalize(app.getPath('userData')).toLowerCase()
     if (!normLower.endsWith('.exe') && !normLower.endsWith('.dmg')) return
-    if (!normLower.startsWith(tmpDir) && !normLower.startsWith(udataDir)) return
-    if (process.platform === 'darwin') {
-      await shell.openPath(norm)
-      return
-    }
-    spawn(norm, [], { detached: true, stdio: 'ignore' }).unref()
-    setTimeout(() => app.quit(), 500)
+    // shell.openPath déclenche ShellExecuteEx sur Windows → UAC si nécessaire
+    await shell.openPath(norm)
+    setTimeout(() => app.quit(), 800)
   })
   ipcMain.handle('app:dataPath',   ()            => app.getPath('userData'))
   ipcMain.handle('docs:open',        () => shell.openExternal('https://logiciel-synoria.fr/guide-utilisation'))
