@@ -232,6 +232,7 @@
       <li><a href="#patients">Gérer les fiches patients</a></li>
       <li><a href="#seances">Créer et consulter une séance</a></li>
       <li><a href="#calendrier">Calendrier et rendez-vous</a></li>
+      <li><a href="#google-calendar">Synchronisation Google Calendar</a></li>
       <li><a href="#sauvegardes">Sauvegardes et restauration</a></li>
       <li><a href="#compta">Comptabilité et factures</a></li>
       <li><a href="#parametres">Paramètres et plugins</a></li>
@@ -257,6 +258,9 @@
           </a>
           <a class="doc-sidebar-link" href="#calendrier" data-section="calendrier">
             <span class="sbl-icon">📅</span>Calendrier
+          </a>
+          <a class="doc-sidebar-link" href="#google-calendar" data-section="google-calendar">
+            <span class="sbl-icon">🔗</span>Sync Google Calendar
           </a>
           <div class="doc-sidebar-divider"></div>
           <a class="doc-sidebar-link" href="#sauvegardes" data-section="sauvegardes">
@@ -327,6 +331,36 @@
         </ul>
         <h3>Créer la séance depuis un RDV</h3>
         <p>Depuis un rendez-vous planifié, le bouton <strong>Créer la séance</strong> ouvre directement le formulaire de nouvelle séance, pré-rempli avec le patient et la date.</p>
+      </div>
+
+      <div id="google-calendar" class="guide-section">
+        <h2><span class="guide-icon">🔗</span>Synchronisation Google Calendar</h2>
+        <p>Synoria peut synchroniser automatiquement vos rendez-vous avec Google Calendar, ce qui les fait apparaître sur votre téléphone (Android ou iPhone) et dans tout autre outil connecté à votre compte Google.</p>
+        <div class="tip"><strong>Confidentialité :</strong> les événements envoyés dans Google Calendar contiennent uniquement la date et l'heure. Aucune donnée patient (nom, motif, notes) n'est transmise à Google.</div>
+
+        <h3>Avant de connecter — choisir où arrivent vos RDV</h3>
+        <p>Par défaut, si vous vous connectez sans préparation, vos rendez-vous Synoria iront dans votre <strong>calendrier Google principal</strong>. Si vous préférez les garder dans un calendrier séparé :</p>
+        <ol>
+          <li>Ouvrez <strong>Google Calendar</strong> dans votre navigateur (<a href="https://calendar.google.com" style="color:var(--accent)">calendar.google.com</a>)</li>
+          <li>Dans la colonne de gauche, cliquez sur <strong>+</strong> à côté de "Autres agendas"</li>
+          <li>Choisissez <strong>"Créer un agenda"</strong> et nommez-le exactement <strong>Synoria</strong></li>
+          <li>Revenez dans Synoria → Paramètres → Google Cal. et connectez-vous</li>
+        </ol>
+        <p>Synoria détecte automatiquement un calendrier nommé "Synoria" et l'utilise en priorité.</p>
+
+        <h3>Connecter Google Calendar</h3>
+        <ol>
+          <li>Dans Synoria, ouvrez <strong>Paramètres → Google Cal.</strong></li>
+          <li>Cliquez sur <strong>"Connecter Google Calendar"</strong></li>
+          <li>Votre navigateur s'ouvre sur la page d'autorisation Google — acceptez les permissions</li>
+          <li>Revenez dans Synoria : la connexion est confirmée avec votre adresse email</li>
+        </ol>
+
+        <h3>Après connexion</h3>
+        <p>Tous les nouveaux rendez-vous créés dans Synoria seront automatiquement envoyés à Google Calendar. Vous pouvez aussi importer des événements d'autres agendas Google (agenda perso, agenda pro) pour les voir dans la vue Planning de Synoria sans les dupliquer.</p>
+
+        <h3>Déconnecter</h3>
+        <p>Dans <strong>Paramètres → Google Cal.</strong>, le bouton "Déconnecter" supprime la liaison. Les événements déjà créés dans Google Calendar ne sont pas supprimés.</p>
       </div>
 
       <div id="sauvegardes" class="guide-section">

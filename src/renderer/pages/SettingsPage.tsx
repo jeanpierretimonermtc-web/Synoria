@@ -1181,10 +1181,28 @@ export default function SettingsPage() {
             {/* ── Non connecté ── */}
             {!gcalInfo?.connected && (
               <div>
-                <p style={{ marginBottom: 16, color: 'var(--text-muted)', fontSize: 13 }}>
+                <p style={{ marginBottom: 12, color: 'var(--text-muted)', fontSize: 13 }}>
                   Cliquez sur le bouton ci-dessous pour connecter votre compte Google.
                   Votre navigateur s'ouvrira pour vous demander d'autoriser l'accès à Google Calendar.
                 </p>
+                <div style={{
+                  background: 'var(--amber-light, #fffbeb)',
+                  border: '1px solid var(--amber, #f59e0b)',
+                  borderRadius: 8,
+                  padding: '10px 14px',
+                  fontSize: 13,
+                  color: 'var(--text-body)',
+                  marginBottom: 16,
+                  display: 'flex',
+                  gap: 8,
+                }}>
+                  <span>💡</span>
+                  <span>
+                    <strong>Conseil :</strong> si vous souhaitez que vos rendez-vous Synoria arrivent dans un calendrier dédié
+                    (et non dans votre calendrier principal), créez d'abord un calendrier nommé <strong>«&nbsp;Synoria&nbsp;»</strong> dans
+                    Google Calendar, puis connectez-vous ici. Synoria le détectera automatiquement.
+                  </span>
+                </div>
                 <button
                   className="btn btn-primary"
                   onClick={handleGcalConnect}
