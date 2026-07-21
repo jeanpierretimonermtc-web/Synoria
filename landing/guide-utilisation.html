@@ -9,22 +9,187 @@
 <link rel="apple-touch-icon" href="assets/Synoria.png">
 <link rel="stylesheet" href="assets/site.css">
 <style>
-.guide-toc { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:24px 28px; margin:0 0 40px; }
-.guide-toc h3 { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); margin:0 0 12px; }
-.guide-toc ol { margin:0; padding:0 0 0 18px; display:flex; flex-direction:column; gap:6px; }
-.guide-toc li a { color:var(--accent); text-decoration:none; font-size:15px; }
-.guide-toc li a:hover { text-decoration:underline; }
-.guide-section { border-top:1px solid var(--border); padding:48px 0 0; margin:48px 0 0; scroll-margin-top:80px; }
-.guide-section:first-child { border-top:none; margin-top:0; }
-.guide-section h2 { font-size:26px; font-weight:700; margin:0 0 20px; display:flex; align-items:center; gap:12px; }
-.guide-icon { width:36px; height:36px; border-radius:8px; background:var(--accent-light); color:var(--accent-dark); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
-.guide-section h3 { font-size:17px; font-weight:700; margin:28px 0 10px; }
-.guide-section p { font-size:15px; line-height:1.7; color:var(--text-body); margin:0 0 14px; }
-.guide-section ul, .guide-section ol { font-size:15px; line-height:1.7; color:var(--text-body); margin:0 0 14px; padding:0 0 0 20px; }
-.guide-section li { margin-bottom:6px; }
-.tip { background:var(--blue-light,#eff6ff); border-left:3px solid var(--blue,#3b82f6); border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0; font-size:14px; color:var(--text-body); }
-.warn { background:#fff7ed; border-left:3px solid #f97316; border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0; font-size:14px; color:var(--text-body); }
-.kbd { display:inline-block; background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:1px 7px; font-family:monospace; font-size:13px; }
+/* ── Layout doc ── */
+.doc-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 48px;
+  align-items: start;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+/* ── Sidebar ── */
+.doc-sidebar {
+  position: sticky;
+  top: 80px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.doc-sidebar-inner {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 0;
+}
+.doc-sidebar-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--text-muted);
+  padding: 0 20px 12px;
+}
+.doc-sidebar nav {
+  display: flex;
+  flex-direction: column;
+}
+.doc-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px;
+  font-size: 14px;
+  color: var(--text-body);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: background .12s, color .12s, border-color .12s;
+  line-height: 1.3;
+}
+.doc-sidebar-link:hover {
+  background: var(--accent-light, #f0fdf4);
+  color: var(--accent-dark, #166534);
+}
+.doc-sidebar-link.active {
+  background: var(--accent-light, #f0fdf4);
+  color: var(--accent-dark, #166534);
+  border-left-color: var(--accent, #22c55e);
+  font-weight: 600;
+}
+.doc-sidebar-link .sbl-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  width: 22px;
+  text-align: center;
+}
+.doc-sidebar-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 10px 16px;
+}
+
+/* ── Content ── */
+.doc-content {
+  min-width: 0;
+}
+.guide-section {
+  border-top: 1px solid var(--border);
+  padding: 52px 0 0;
+  margin: 52px 0 0;
+  scroll-margin-top: 90px;
+}
+.guide-section:first-child {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+.guide-section h2 {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.guide-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  background: var(--accent-light, #f0fdf4);
+  color: var(--accent-dark, #166534);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  flex-shrink: 0;
+}
+.guide-section h3 {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 28px 0 10px;
+}
+.guide-section p {
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--text-body);
+  margin: 0 0 14px;
+}
+.guide-section ul, .guide-section ol {
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--text-body);
+  margin: 0 0 14px;
+  padding: 0 0 0 20px;
+}
+.guide-section li { margin-bottom: 6px; }
+.tip {
+  background: var(--blue-light, #eff6ff);
+  border-left: 3px solid var(--blue, #3b82f6);
+  border-radius: 0 8px 8px 0;
+  padding: 12px 16px;
+  margin: 16px 0;
+  font-size: 14px;
+  color: var(--text-body);
+}
+.warn {
+  background: #fff7ed;
+  border-left: 3px solid #f97316;
+  border-radius: 0 8px 8px 0;
+  padding: 12px 16px;
+  margin: 16px 0;
+  font-size: 14px;
+  color: var(--text-body);
+}
+
+/* ── Mobile toggle ── */
+.doc-mobile-toc {
+  display: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin: 0 16px 24px;
+  overflow: hidden;
+}
+.doc-mobile-toc summary {
+  padding: 14px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.doc-mobile-toc summary::after { content: "▾"; }
+.doc-mobile-toc[open] summary::after { content: "▴"; }
+.doc-mobile-toc ol {
+  margin: 0;
+  padding: 0 18px 14px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.doc-mobile-toc li a { color: var(--accent); text-decoration: none; font-size: 14px; }
+
+/* ── Responsive ── */
+@media (max-width: 860px) {
+  .doc-layout { grid-template-columns: 1fr; gap: 0; padding: 24px 0 60px; }
+  .doc-sidebar { display: none; }
+  .doc-mobile-toc { display: block; }
+  .doc-content { padding: 0 16px; }
+}
 </style>
 </head>
 <body>
@@ -58,145 +223,183 @@
 </header>
 
 <main>
-<section class="section tight">
-  <div class="inner" style="max-width:800px">
 
-    <div class="guide-toc">
-      <h3>Sommaire</h3>
-      <ol>
-        <li><a href="#premier-lancement">Premier lancement et mot de passe</a></li>
-        <li><a href="#patients">Gérer les fiches patients</a></li>
-        <li><a href="#seances">Créer et consulter une séance</a></li>
-        <li><a href="#calendrier">Calendrier et rendez-vous</a></li>
-        <li><a href="#sauvegardes">Sauvegardes et restauration</a></li>
-        <li><a href="#compta">Comptabilité et factures</a></li>
-        <li><a href="#parametres">Paramètres et plugins</a></li>
-        <li><a href="#securite">Sécurité et verrouillage</a></li>
-      </ol>
-    </div>
+  <!-- Sommaire mobile (accordéon) -->
+  <details class="doc-mobile-toc">
+    <summary>Sommaire</summary>
+    <ol>
+      <li><a href="#premier-lancement">Premier lancement et mot de passe</a></li>
+      <li><a href="#patients">Gérer les fiches patients</a></li>
+      <li><a href="#seances">Créer et consulter une séance</a></li>
+      <li><a href="#calendrier">Calendrier et rendez-vous</a></li>
+      <li><a href="#sauvegardes">Sauvegardes et restauration</a></li>
+      <li><a href="#compta">Comptabilité et factures</a></li>
+      <li><a href="#parametres">Paramètres et plugins</a></li>
+      <li><a href="#securite">Sécurité et verrouillage</a></li>
+    </ol>
+  </details>
 
-    <div id="premier-lancement" class="guide-section">
-      <h2><span class="guide-icon">🔑</span>Premier lancement et mot de passe</h2>
-      <p>Au tout premier lancement de Synoria, le logiciel vous invite à créer un mot de passe. Ce mot de passe chiffre l'intégralité de votre base de données patients avec un algorithme AES-256-GCM.</p>
-      <div class="warn"><strong>Important :</strong> ce mot de passe n'est pas récupérable. Notez-le dans un gestionnaire de mots de passe ou dans un endroit sécurisé. Sans lui, vos données restent inaccessibles même pour le support.</div>
-      <h3>Connexion lors des sessions suivantes</h3>
-      <p>À chaque démarrage, Synoria affiche l'écran de verrouillage. Entrez votre mot de passe pour déchiffrer la base et accéder à vos dossiers.</p>
-      <h3>Changer le mot de passe</h3>
-      <p>Depuis <strong>Paramètres → Sécurité</strong>, vous pouvez changer votre mot de passe à tout moment. L'ancien mot de passe est requis pour valider le changement.</p>
-    </div>
+  <div class="doc-layout">
 
-    <div id="patients" class="guide-section">
-      <h2><span class="guide-icon">👤</span>Gérer les fiches patients</h2>
-      <h3>Créer un nouveau patient</h3>
-      <p>Depuis l'onglet <strong>Patients</strong>, cliquez sur <strong>Nouveau patient</strong>. Renseignez au minimum le prénom et le nom. Les champs profession, médecin traitant, antécédents, médicaments, alertes et notes générales sont optionnels.</p>
-      <h3>Modifier ou archiver</h3>
-      <p>Cliquez sur la fiche d'un patient pour l'ouvrir. Utilisez le bouton <strong>Modifier</strong> pour mettre à jour ses informations. Un patient peut être marqué comme inactif (archivé) sans supprimer ses données.</p>
-      <h3>Consentement RGPD</h3>
-      <p>Chaque fiche patient dispose d'un champ de consentement. Cochez-le dès que le patient a signé votre formulaire de consentement au traitement de ses données personnelles. La date de recueil est enregistrée automatiquement.</p>
-      <div class="tip">Le taux de consentement est visible dans la section RGPD du logiciel.</div>
-    </div>
+    <!-- Sidebar sticky -->
+    <aside class="doc-sidebar" aria-label="Navigation du guide">
+      <div class="doc-sidebar-inner">
+        <div class="doc-sidebar-label">Dans ce guide</div>
+        <nav>
+          <a class="doc-sidebar-link" href="#premier-lancement" data-section="premier-lancement">
+            <span class="sbl-icon">🔑</span>Premier lancement
+          </a>
+          <a class="doc-sidebar-link" href="#patients" data-section="patients">
+            <span class="sbl-icon">👤</span>Fiches patients
+          </a>
+          <a class="doc-sidebar-link" href="#seances" data-section="seances">
+            <span class="sbl-icon">📋</span>Séances
+          </a>
+          <a class="doc-sidebar-link" href="#calendrier" data-section="calendrier">
+            <span class="sbl-icon">📅</span>Calendrier
+          </a>
+          <div class="doc-sidebar-divider"></div>
+          <a class="doc-sidebar-link" href="#sauvegardes" data-section="sauvegardes">
+            <span class="sbl-icon">💾</span>Sauvegardes
+          </a>
+          <a class="doc-sidebar-link" href="#compta" data-section="compta">
+            <span class="sbl-icon">💶</span>Comptabilité
+          </a>
+          <a class="doc-sidebar-link" href="#parametres" data-section="parametres">
+            <span class="sbl-icon">⚙️</span>Paramètres
+          </a>
+          <a class="doc-sidebar-link" href="#securite" data-section="securite">
+            <span class="sbl-icon">🔒</span>Sécurité
+          </a>
+        </nav>
+      </div>
+    </aside>
 
-    <div id="seances" class="guide-section">
-      <h2><span class="guide-icon">📋</span>Créer et consulter une séance</h2>
-      <h3>Nouvelle séance</h3>
-      <p>Depuis la fiche patient ou l'onglet <strong>Nouvelle séance</strong>, sélectionnez le patient concerné et la date. Le formulaire s'adapte selon le plugin actif :</p>
-      <ul>
-        <li><strong>Sans plugin</strong> : formulaire générique (motif, évolution, anamnèse, traitement, réactions).</li>
-        <li><strong>Plugin MTC JP</strong> : formulaire complet MTC (prise de notes, questionnaire systèmes, observation, tests énergétiques, analyse, traitement, barrage).</li>
-        <li><strong>Autre plugin</strong> : formulaire personnalisé selon la spécialité.</li>
-      </ul>
-      <h3>Plan de suivi</h3>
-      <p>En bas du formulaire, la section <strong>Plan de suivi</strong> permet de planifier le prochain rendez-vous directement depuis la séance. Il sera automatiquement ajouté au calendrier.</p>
-      <h3>Historique et résumé</h3>
-      <p>Depuis la fiche patient ou l'onglet <strong>Historique</strong>, accédez à toutes les séances passées. Chaque séance dispose d'une vue résumé avec possibilité d'export en PDF ou Excel.</p>
-      <div class="tip">La barre de formatage en haut du logiciel permet de mettre en gras, italique ou souligné dans les zones de texte enrichi.</div>
-    </div>
+    <!-- Contenu principal -->
+    <div class="doc-content">
 
-    <div id="calendrier" class="guide-section">
-      <h2><span class="guide-icon">📅</span>Calendrier et rendez-vous</h2>
-      <p>L'onglet <strong>Calendrier</strong> affiche une vue mensuelle à gauche et le planning horaire de la journée sélectionnée à droite. Les créneaux sont de 30 minutes, de 08h00 à 19h30.</p>
-      <h3>Créer un rendez-vous</h3>
-      <p>Cliquez sur un créneau horaire pour ouvrir la fenêtre de création. Associez le RDV à un patient existant ou saisissez les coordonnées d'un invité (nom, prénom, téléphone).</p>
-      <h3>Codes couleur</h3>
-      <ul>
-        <li><strong style="color:#3b82f6">Bleu</strong> : rendez-vous planifié</li>
-        <li><strong style="color:#22c55e">Vert</strong> : séance réalisée</li>
-        <li><strong style="color:#f97316">Orange</strong> : en attente de confirmation</li>
-      </ul>
-      <h3>Créer la séance depuis un RDV</h3>
-      <p>Depuis un rendez-vous planifié, le bouton <strong>Créer la séance</strong> ouvre directement le formulaire de nouvelle séance, pré-rempli avec le patient et la date.</p>
-    </div>
+      <div id="premier-lancement" class="guide-section">
+        <h2><span class="guide-icon">🔑</span>Premier lancement et mot de passe</h2>
+        <p>Au tout premier lancement de Synoria, le logiciel vous invite à créer un mot de passe. Ce mot de passe chiffre l'intégralité de votre base de données patients avec un algorithme AES-256-GCM.</p>
+        <div class="warn"><strong>Important :</strong> ce mot de passe n'est pas récupérable. Notez-le dans un gestionnaire de mots de passe ou dans un endroit sécurisé. Sans lui, vos données restent inaccessibles même pour le support.</div>
+        <h3>Connexion lors des sessions suivantes</h3>
+        <p>À chaque démarrage, Synoria affiche l'écran de verrouillage. Entrez votre mot de passe pour déchiffrer la base et accéder à vos dossiers.</p>
+        <h3>Changer le mot de passe</h3>
+        <p>Depuis <strong>Paramètres → Sécurité</strong>, vous pouvez changer votre mot de passe à tout moment. L'ancien mot de passe est requis pour valider le changement.</p>
+      </div>
 
-    <div id="sauvegardes" class="guide-section">
-      <h2><span class="guide-icon">💾</span>Sauvegardes et restauration</h2>
-      <p>Synoria propose deux types de sauvegardes, toutes deux chiffrées (fichiers <code>.json.enc</code>) :</p>
-      <ul>
-        <li><strong>Sauvegarde générale</strong> : tous les patients et toutes les séances. À utiliser pour changer d'ordinateur ou en sauvegarde périodique.</li>
-        <li><strong>Sauvegarde par patient</strong> : un seul dossier patient (utile pour un export individuel).</li>
-      </ul>
-      <h3>Configurer les sauvegardes automatiques</h3>
-      <p>Dans <strong>Paramètres → Sauvegarde</strong>, définissez les dossiers de destination et activez la sauvegarde automatique à la fermeture ou quotidienne.</p>
-      <h3>Restaurer une sauvegarde</h3>
-      <p>Dans <strong>Paramètres → Sauvegarde → Restaurer</strong>, sélectionnez votre fichier <code>.json.enc</code>. La restauration remplace l'intégralité des données actuelles.</p>
-      <div class="warn"><strong>Attention :</strong> la restauration écrase les données existantes. Exportez une sauvegarde de sécurité avant toute restauration.</div>
-      <h3>Changer d'ordinateur</h3>
-      <ol>
-        <li>Effectuez une sauvegarde générale sur l'ancien poste.</li>
-        <li>Copiez le fichier sur le nouveau poste (clé USB, partage réseau…).</li>
-        <li>Installez Synoria sur le nouveau poste.</li>
-        <li>Définissez un nouveau mot de passe au premier lancement.</li>
-        <li>Dans Paramètres → Sauvegarde, restaurez le fichier exporté.</li>
-      </ol>
-    </div>
+      <div id="patients" class="guide-section">
+        <h2><span class="guide-icon">👤</span>Gérer les fiches patients</h2>
+        <h3>Créer un nouveau patient</h3>
+        <p>Depuis l'onglet <strong>Patients</strong>, cliquez sur <strong>Nouveau patient</strong>. Renseignez au minimum le prénom et le nom. Les champs profession, médecin traitant, antécédents, médicaments, alertes et notes générales sont optionnels.</p>
+        <h3>Modifier ou archiver</h3>
+        <p>Cliquez sur la fiche d'un patient pour l'ouvrir. Utilisez le bouton <strong>Modifier</strong> pour mettre à jour ses informations. Un patient peut être marqué comme inactif (archivé) sans supprimer ses données.</p>
+        <h3>Consentement RGPD</h3>
+        <p>Chaque fiche patient dispose d'un champ de consentement. Cochez-le dès que le patient a signé votre formulaire de consentement au traitement de ses données personnelles. La date de recueil est enregistrée automatiquement.</p>
+        <div class="tip">Le taux de consentement est visible dans la section RGPD du logiciel.</div>
+      </div>
 
-    <div id="compta" class="guide-section">
-      <h2><span class="guide-icon">💶</span>Comptabilité et factures</h2>
-      <h3>Saisie des recettes</h3>
-      <p>L'onglet <strong>Comptabilité</strong> présente une vue mensuelle. Renseignez le nombre de consultations par type pour chaque mois. Le chiffre d'affaires et la base URSAF sont calculés automatiquement.</p>
-      <h3>Dépenses variables</h3>
-      <p>L'onglet <strong>Dépenses</strong> permet de saisir les frais mensuels par catégorie (loyer, fournitures, formation…).</p>
-      <h3>Export Excel</h3>
-      <p>Un bouton d'export génère un fichier Excel annuel avec le récapitulatif comptable par mois, prêt pour votre comptable ou votre déclaration URSAF.</p>
-      <h3>Factures</h3>
-      <p>Depuis la page <strong>Factures</strong>, générez des factures PDF numérotées automatiquement. Configurez votre numéro SIRET, le taux de TVA et le dossier de destination dans les paramètres.</p>
-    </div>
+      <div id="seances" class="guide-section">
+        <h2><span class="guide-icon">📋</span>Créer et consulter une séance</h2>
+        <h3>Nouvelle séance</h3>
+        <p>Depuis la fiche patient ou l'onglet <strong>Nouvelle séance</strong>, sélectionnez le patient concerné et la date. Le formulaire s'adapte selon le plugin actif :</p>
+        <ul>
+          <li><strong>Sans plugin</strong> : formulaire générique (motif, évolution, anamnèse, traitement, réactions).</li>
+          <li><strong>Plugin MTC JP</strong> : formulaire complet MTC (prise de notes, questionnaire systèmes, observation, tests énergétiques, analyse, traitement, barrage).</li>
+          <li><strong>Autre plugin</strong> : formulaire personnalisé selon la spécialité.</li>
+        </ul>
+        <h3>Plan de suivi</h3>
+        <p>En bas du formulaire, la section <strong>Plan de suivi</strong> permet de planifier le prochain rendez-vous directement depuis la séance. Il sera automatiquement ajouté au calendrier.</p>
+        <h3>Historique et résumé</h3>
+        <p>Depuis la fiche patient ou l'onglet <strong>Historique</strong>, accédez à toutes les séances passées. Chaque séance dispose d'une vue résumé avec possibilité d'export en PDF ou Excel.</p>
+        <div class="tip">La barre de formatage en haut du logiciel permet de mettre en gras, italique ou souligné dans les zones de texte enrichi.</div>
+      </div>
 
-    <div id="parametres" class="guide-section">
-      <h2><span class="guide-icon">⚙️</span>Paramètres et plugins</h2>
-      <h3>Plugins de spécialité</h3>
-      <p>Les plugins adaptent le formulaire de séance à votre spécialité. Dans <strong>Paramètres → Plugin</strong>, vous pouvez importer un fichier plugin (<code>.plugin.json</code>) fourni par Synoria ou votre praticien référent.</p>
-      <h3>Plugins disponibles</h3>
-      <ul>
-        <li><strong>MTC JP</strong> : Médecine Traditionnelle Chinoise (formulaire complet intégré)</li>
-        <li><strong>Kinésiologie</strong> : formulaire spécifique kinésiologie</li>
-        <li><strong>Ostéopathie</strong> : formulaire adapté ostéopathie</li>
-        <li><strong>Naturopathie</strong> : bilan et suivi naturopathique</li>
-        <li><strong>Basique</strong> : formulaire générique pour toute pratique</li>
-      </ul>
-      <h3>Informations praticien</h3>
-      <p>Dans <strong>Paramètres → Informations</strong>, renseignez votre nom, SIRET et coordonnées. Ces informations apparaissent sur les factures générées.</p>
-      <h3>RGPD</h3>
-      <p>Dans <strong>Paramètres → RGPD</strong>, configurez la durée de conservation des données (défaut : 10 ans), personnalisez la notice d'information Art.13 et générez le registre de traitements Art.30.</p>
-    </div>
+      <div id="calendrier" class="guide-section">
+        <h2><span class="guide-icon">📅</span>Calendrier et rendez-vous</h2>
+        <p>L'onglet <strong>Calendrier</strong> affiche une vue mensuelle à gauche et le planning horaire de la journée sélectionnée à droite. Les créneaux sont de 30 minutes, de 08h00 à 19h30.</p>
+        <h3>Créer un rendez-vous</h3>
+        <p>Cliquez sur un créneau horaire pour ouvrir la fenêtre de création. Associez le RDV à un patient existant ou saisissez les coordonnées d'un invité (nom, prénom, téléphone).</p>
+        <h3>Codes couleur</h3>
+        <ul>
+          <li><strong style="color:#3b82f6">Bleu</strong> : rendez-vous planifié</li>
+          <li><strong style="color:#22c55e">Vert</strong> : séance réalisée</li>
+          <li><strong style="color:#f97316">Orange</strong> : en attente de confirmation</li>
+        </ul>
+        <h3>Créer la séance depuis un RDV</h3>
+        <p>Depuis un rendez-vous planifié, le bouton <strong>Créer la séance</strong> ouvre directement le formulaire de nouvelle séance, pré-rempli avec le patient et la date.</p>
+      </div>
 
-    <div id="securite" class="guide-section">
-      <h2><span class="guide-icon">🔒</span>Sécurité et verrouillage</h2>
-      <p>Synoria verrouille automatiquement la session après <strong>20 minutes d'inactivité</strong>. Votre base de données est rechiffrée et le mot de passe est requis pour reprendre.</p>
-      <h3>Verrouillage manuel</h3>
-      <p>Le bouton de verrouillage en bas de la navigation permet de verrouiller immédiatement la session, utile si vous quittez votre poste.</p>
-      <h3>Fermeture du logiciel</h3>
-      <p>À chaque fermeture, Synoria chiffre la base de données et efface le fichier de travail. Seul le fichier chiffré <code>.sqlite.enc</code> reste sur le disque.</p>
-      <div class="tip">Si vous souhaitez désinstaller Synoria proprement, utilisez l'option "Désinstaller Synoria" depuis le menu démarrer ou les programmes installés de Windows.</div>
-    </div>
+      <div id="sauvegardes" class="guide-section">
+        <h2><span class="guide-icon">💾</span>Sauvegardes et restauration</h2>
+        <p>Synoria propose deux types de sauvegardes, toutes deux chiffrées (fichiers <code>.json.enc</code>) :</p>
+        <ul>
+          <li><strong>Sauvegarde générale</strong> : tous les patients et toutes les séances. À utiliser pour changer d'ordinateur ou en sauvegarde périodique.</li>
+          <li><strong>Sauvegarde par patient</strong> : un seul dossier patient (utile pour un export individuel).</li>
+        </ul>
+        <h3>Configurer les sauvegardes automatiques</h3>
+        <p>Dans <strong>Paramètres → Sauvegarde</strong>, définissez les dossiers de destination et activez la sauvegarde automatique à la fermeture ou quotidienne.</p>
+        <h3>Restaurer une sauvegarde</h3>
+        <p>Dans <strong>Paramètres → Sauvegarde → Restaurer</strong>, sélectionnez votre fichier <code>.json.enc</code>. La restauration remplace l'intégralité des données actuelles.</p>
+        <div class="warn"><strong>Attention :</strong> la restauration écrase les données existantes. Exportez une sauvegarde de sécurité avant toute restauration.</div>
+        <h3>Changer d'ordinateur</h3>
+        <ol>
+          <li>Effectuez une sauvegarde générale sur l'ancien poste.</li>
+          <li>Copiez le fichier sur le nouveau poste (clé USB, partage réseau…).</li>
+          <li>Installez Synoria sur le nouveau poste.</li>
+          <li>Définissez un nouveau mot de passe au premier lancement.</li>
+          <li>Dans Paramètres → Sauvegarde, restaurez le fichier exporté.</li>
+        </ol>
+      </div>
 
-    <div style="margin:56px 0 0;padding:32px;background:var(--surface);border-radius:12px;border:1px solid var(--border);text-align:center">
-      <p style="margin:0 0 6px;font-size:17px;font-weight:700">Une question non couverte par ce guide ?</p>
-      <p style="margin:0 0 20px;color:var(--text-muted)">L'équipe Synoria répond sous 48h ouvrées.</p>
-      <a class="btn btn-primary" href="mailto:contact@logiciel-synoria.fr">Contacter le support</a>
-    </div>
+      <div id="compta" class="guide-section">
+        <h2><span class="guide-icon">💶</span>Comptabilité et factures</h2>
+        <h3>Saisie des recettes</h3>
+        <p>L'onglet <strong>Comptabilité</strong> présente une vue mensuelle. Renseignez le nombre de consultations par type pour chaque mois. Le chiffre d'affaires et la base URSAF sont calculés automatiquement.</p>
+        <h3>Dépenses variables</h3>
+        <p>L'onglet <strong>Dépenses</strong> permet de saisir les frais mensuels par catégorie (loyer, fournitures, formation…).</p>
+        <h3>Export Excel</h3>
+        <p>Un bouton d'export génère un fichier Excel annuel avec le récapitulatif comptable par mois, prêt pour votre comptable ou votre déclaration URSAF.</p>
+        <h3>Factures</h3>
+        <p>Depuis la page <strong>Factures</strong>, générez des factures PDF numérotées automatiquement. Configurez votre numéro SIRET, le taux de TVA et le dossier de destination dans les paramètres.</p>
+      </div>
 
-  </div>
-</section>
+      <div id="parametres" class="guide-section">
+        <h2><span class="guide-icon">⚙️</span>Paramètres et plugins</h2>
+        <h3>Plugins de spécialité</h3>
+        <p>Les plugins adaptent le formulaire de séance à votre spécialité. Dans <strong>Paramètres → Plugin</strong>, vous pouvez importer un fichier plugin (<code>.plugin.json</code>) fourni par Synoria ou votre praticien référent.</p>
+        <h3>Plugins disponibles</h3>
+        <ul>
+          <li><strong>MTC JP</strong> : Médecine Traditionnelle Chinoise (formulaire complet intégré)</li>
+          <li><strong>Kinésiologie</strong> : formulaire spécifique kinésiologie</li>
+          <li><strong>Ostéopathie</strong> : formulaire adapté ostéopathie</li>
+          <li><strong>Naturopathie</strong> : bilan et suivi naturopathique</li>
+          <li><strong>Basique</strong> : formulaire générique pour toute pratique</li>
+        </ul>
+        <h3>Informations praticien</h3>
+        <p>Dans <strong>Paramètres → Informations</strong>, renseignez votre nom, SIRET et coordonnées. Ces informations apparaissent sur les factures générées.</p>
+        <h3>RGPD</h3>
+        <p>Dans <strong>Paramètres → RGPD</strong>, configurez la durée de conservation des données (défaut : 10 ans), personnalisez la notice d'information Art.13 et générez le registre de traitements Art.30.</p>
+      </div>
+
+      <div id="securite" class="guide-section">
+        <h2><span class="guide-icon">🔒</span>Sécurité et verrouillage</h2>
+        <p>Synoria verrouille automatiquement la session après <strong>20 minutes d'inactivité</strong>. Votre base de données est rechiffrée et le mot de passe est requis pour reprendre.</p>
+        <h3>Verrouillage manuel</h3>
+        <p>Le bouton de verrouillage en bas de la navigation permet de verrouiller immédiatement la session, utile si vous quittez votre poste.</p>
+        <h3>Fermeture du logiciel</h3>
+        <p>À chaque fermeture, Synoria chiffre la base de données et efface le fichier de travail. Seul le fichier chiffré <code>.sqlite.enc</code> reste sur le disque.</p>
+        <div class="tip">Pour désinstaller Synoria proprement sur Windows, utilisez <em>"Désinstaller Synoria"</em> depuis le menu Démarrer ou les programmes installés.</div>
+      </div>
+
+      <div style="margin:56px 0 0;padding:32px;background:var(--surface);border-radius:12px;border:1px solid var(--border);text-align:center">
+        <p style="margin:0 0 6px;font-size:17px;font-weight:700">Une question non couverte par ce guide ?</p>
+        <p style="margin:0 0 20px;color:var(--text-muted)">L'équipe Synoria répond sous 48h ouvrées.</p>
+        <a class="btn btn-primary" href="mailto:contact@logiciel-synoria.fr">Contacter le support</a>
+      </div>
+
+    </div><!-- /.doc-content -->
+  </div><!-- /.doc-layout -->
 </main>
 
 <footer class="footer">
@@ -243,6 +446,29 @@
     <span>Local · Chiffré · RGPD</span>
   </div>
 </footer>
+
+<script>
+// Surbrillance automatique de la section active dans la sidebar
+(function () {
+  const links = document.querySelectorAll('.doc-sidebar-link[data-section]')
+  const sections = Array.from(links).map(l => document.getElementById(l.dataset.section)).filter(Boolean)
+
+  function setActive(id) {
+    links.forEach(l => l.classList.toggle('active', l.dataset.section === id))
+  }
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) setActive(entry.target.id)
+    })
+  }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 })
+
+  sections.forEach(s => observer.observe(s))
+
+  // Activer la première section au chargement
+  if (sections.length) setActive(sections[0].id)
+})()
+</script>
 
 </body>
 </html>
