@@ -12,7 +12,8 @@ const CALENDAR_BASE = 'https://www.googleapis.com/calendar/v3'
 
 const SYNORIA_CALENDAR_NAME = 'Synoria'
 const SCOPES = [
-  'https://www.googleapis.com/auth/calendar',
+  'https://www.googleapis.com/auth/calendar.events',   // lecture + écriture événements (sensible, non restreint)
+  'https://www.googleapis.com/auth/calendar.readonly',  // lecture liste des calendriers (sensible, non restreint)
   'https://www.googleapis.com/auth/userinfo.email',
 ].join(' ')
 
@@ -196,28 +197,26 @@ async function ensureSynoriaCalendar(tokenOverride?: string): Promise<GCalConfig
   const cfg = loadConfig()
   if (!cfg?.tokens) throw new Error('Non connecte a Google Calendar')
 
+  // Si un calendrier est déjà configuré, on l'utilise directement
+  if (cfg.calendar_id && cfg.calendar_id !== 'primary') return cfg
+
   try {
     const token = tokenOverride || await getAccessToken()
     const list = await httpsReq('GET', `${CALENDAR_BASE}/users/me/calendarList`, token)
     const calendars = (list?.items ?? []) as CalendarListEntry[]
+
+    // Chercher un calendrier "Synoria" existant créé par une version précédente
     const existing = calendars.find(c =>
       !c.deleted && c.summary.trim().toLowerCase() === SYNORIA_CALENDAR_NAME.toLowerCase()
     )
+    // Sinon utiliser le calendrier principal — on ne crée plus de calendrier (évite le scope restreint)
+    const primary = calendars.find(c => c.primary && !c.deleted)
 
-    let calendarId = existing?.id
-    if (!calendarId) {
-      const created = await httpsReq('POST', `${CALENDAR_BASE}/calendars`, token, {
-        summary: SYNORIA_CALENDAR_NAME,
-        description: 'Calendrier cree automatiquement par Synoria pour les consultations.',
-        timeZone: 'Europe/Paris',
-      })
-      calendarId = created?.id as string | undefined
-    }
-
-    if (!calendarId) throw new Error('Impossible de creer le calendrier Synoria')
+    const calendarId = existing?.id || primary?.id || 'primary'
+    const calendarName = existing?.summary || primary?.summary || 'Calendrier principal'
 
     cfg.calendar_id = calendarId
-    cfg.calendar_name = SYNORIA_CALENDAR_NAME
+    cfg.calendar_name = calendarName
     saveConfig(cfg)
     return cfg
   } catch (e) {
