@@ -1,6 +1,6 @@
 {
   "name": "synoria",
-  "version": "1.5.8",
+  "version": "1.5.9",
   "description": "Synoria - Logiciel de gestion de dossiers patients",
   "main": "dist-electron/main/index.js",
   "scripts": {
