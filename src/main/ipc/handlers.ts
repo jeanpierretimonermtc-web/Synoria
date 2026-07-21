@@ -658,9 +658,9 @@ export function registerAllHandlers(): void {
     setTimeout(() => app.quit(), 500)
   })
   ipcMain.handle('app:dataPath',   ()            => app.getPath('userData'))
-  ipcMain.handle('docs:open',      ()            => shell.openPath(join(app.getAppPath(), 'public', 'documentation.html')))
-  ipcMain.handle('docs:openInstall', ()          => shell.openPath(join(app.getAppPath(), 'public', 'guide-installation.html')))
-  ipcMain.handle('docs:openRgpd',    ()          => shell.openPath(join(app.getAppPath(), 'public', 'guide-rgpd.html')))
+  ipcMain.handle('docs:open',        () => shell.openExternal('https://logiciel-synoria.fr/guide-utilisation'))
+  ipcMain.handle('docs:openInstall', () => shell.openExternal('https://logiciel-synoria.fr/guide-installation'))
+  ipcMain.handle('docs:openRgpd',    () => shell.openExternal('https://logiciel-synoria.fr/guide-rgpd'))
 
   // ─── GOOGLE CALENDAR ──────────────────────────────────────────────────────
   ipcMain.handle('gcal:status',        ()              => gcalSvc.getStatus())

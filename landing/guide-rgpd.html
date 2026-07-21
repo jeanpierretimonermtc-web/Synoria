@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guide RGPD — Synoria</title>
+<meta name="description" content="Guide RGPD pour les praticiens utilisant Synoria : obligations, consentement, conservation des données, registre de traitements Art.30.">
+<link rel="icon" type="image/png" href="assets/Synoria.png">
+<link rel="apple-touch-icon" href="assets/Synoria.png">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+.guide-toc { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:24px 28px; margin:0 0 40px; }
+.guide-toc h3 { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); margin:0 0 12px; }
+.guide-toc ol { margin:0; padding:0 0 0 18px; display:flex; flex-direction:column; gap:6px; }
+.guide-toc li a { color:var(--accent); text-decoration:none; font-size:15px; }
+.guide-toc li a:hover { text-decoration:underline; }
+.guide-section { border-top:1px solid var(--border); padding:48px 0 0; margin:48px 0 0; scroll-margin-top:80px; }
+.guide-section:first-child { border-top:none; margin-top:0; }
+.guide-section h2 { font-size:26px; font-weight:700; margin:0 0 20px; display:flex; align-items:center; gap:12px; }
+.guide-icon { width:36px; height:36px; border-radius:8px; background:var(--accent-light); color:var(--accent-dark); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.guide-section h3 { font-size:17px; font-weight:700; margin:28px 0 10px; }
+.guide-section p { font-size:15px; line-height:1.7; color:var(--text-body); margin:0 0 14px; }
+.guide-section ul, .guide-section ol { font-size:15px; line-height:1.7; color:var(--text-body); margin:0 0 14px; padding:0 0 0 20px; }
+.guide-section li { margin-bottom:6px; }
+.tip { background:var(--blue-light,#eff6ff); border-left:3px solid var(--blue,#3b82f6); border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0; font-size:14px; color:var(--text-body); }
+.warn { background:#fff7ed; border-left:3px solid #f97316; border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0; font-size:14px; color:var(--text-body); }
+.legal-ref { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px 16px; margin:16px 0; font-size:13px; color:var(--text-muted); font-style:italic; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/" aria-label="Accueil Synoria">
+      <img class="brand-logo" src="assets/Synoria.png" alt="">
+      <span class="brand-name">SYNORIA</span>
+    </a>
+    <nav class="nav-links" aria-label="Navigation principale">
+      <a href="/#fonctionnalites">Fonctions</a>
+      <a href="/#captures">Captures</a>
+      <a href="/tarifs">Tarifs</a>
+      <a href="/telechargement">Télécharger</a>
+      <a href="/support">Support</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-outline" href="/abonnement">Mon compte</a>
+      <a class="btn btn-primary" href="/tarifs">Essai gratuit 14 jours</a>
+    </div>
+  </div>
+</nav>
+
+<header class="page-hero">
+  <div class="inner">
+    <div class="section-label">RGPD Praticien</div>
+    <h1>Vos obligations RGPD avec Synoria.</h1>
+    <p class="section-text">Guide pratique pour comprendre et respecter le RGPD dans votre cabinet : consentement, conservation, registre de traitements et droits des patients.</p>
+  </div>
+</header>
+
+<main>
+<section class="section tight">
+  <div class="inner" style="max-width:800px">
+
+    <div class="guide-toc">
+      <h3>Sommaire</h3>
+      <ol>
+        <li><a href="#contexte">Contexte : praticien et RGPD</a></li>
+        <li><a href="#donnees">Données traitées dans Synoria</a></li>
+        <li><a href="#consentement">Recueil du consentement</a></li>
+        <li><a href="#conservation">Durée de conservation</a></li>
+        <li><a href="#registre">Registre de traitements Art.30</a></li>
+        <li><a href="#journal">Journal d'accès</a></li>
+        <li><a href="#droits">Droits des patients</a></li>
+        <li><a href="#securite">Sécurité des données</a></li>
+      </ol>
+    </div>
+
+    <div id="contexte" class="guide-section">
+      <h2><span class="guide-icon">⚖️</span>Contexte : praticien et RGPD</h2>
+      <p>En tant que praticien de santé, vous traitez des <strong>données de santé</strong> qui relèvent des catégories particulières au sens de l'article 9 du RGPD. Celles-ci bénéficient d'une protection renforcée et vous imposent des obligations spécifiques.</p>
+      <p>La base légale de votre traitement est l'<strong>article 9(2)(h) du RGPD</strong> : traitement nécessaire aux fins de la médecine préventive, des diagnostics médicaux, de la prise en charge sanitaire ou sociale.</p>
+      <div class="legal-ref">RGPD Art.9(2)(h) — "Le traitement est nécessaire aux fins de la médecine préventive ou de la médecine du travail, de l'évaluation de la capacité de travail du travailleur, du diagnostic médical, de la prise en charge sanitaire ou sociale, ou de la gestion des systèmes et des services de soins de santé ou de protection sociale."</div>
+      <p>Synoria est conçu pour vous aider à respecter ces obligations directement depuis le logiciel.</p>
+    </div>
+
+    <div id="donnees" class="guide-section">
+      <h2><span class="guide-icon">🗂️</span>Données traitées dans Synoria</h2>
+      <p>Synoria traite exclusivement des données stockées <strong>localement sur votre ordinateur</strong>, chiffrées. Aucune donnée patient n'est transmise à un serveur externe.</p>
+      <h3>Catégories de données</h3>
+      <ul>
+        <li><strong>Identité</strong> : nom, prénom, date de naissance, profession</li>
+        <li><strong>Coordonnées</strong> : téléphone, email, adresse</li>
+        <li><strong>Données de santé</strong> : motifs de consultation, antécédents, médicaments, notes de séances, observations cliniques, traitements effectués</li>
+        <li><strong>Données de gestion</strong> : dates de séances, rendez-vous, facturation</li>
+        <li><strong>Consentement</strong> : date et statut du consentement recueilli</li>
+      </ul>
+      <div class="tip">Aucune donnée biométrique, génétique, ou relative à la vie sexuelle ou aux opinions politiques n'est collectée par Synoria.</div>
+    </div>
+
+    <div id="consentement" class="guide-section">
+      <h2><span class="guide-icon">✅</span>Recueil du consentement</h2>
+      <p>Avant de saisir les données d'un patient, vous devez l'informer et recueillir son consentement au traitement de ses données de santé.</p>
+      <h3>Ce que vous devez faire</h3>
+      <ol>
+        <li>Remettre au patient la <strong>notice d'information</strong> (Art.13 RGPD) expliquant comment ses données sont traitées, par qui, et pour quelle durée. Synoria intègre un modèle de notice que vous pouvez personnaliser dans <em>Paramètres → RGPD → Notice d'information</em>.</li>
+        <li>Obtenir une confirmation explicite de sa part (formulaire papier signé, ou confirmation orale notée).</li>
+        <li>Cocher la case <strong>Consentement recueilli</strong> dans la fiche patient de Synoria dès que ce consentement est formalisé.</li>
+      </ol>
+      <div class="warn">Le RGPD exige que vous puissiez prouver que le consentement a été recueilli. La date est enregistrée automatiquement dans Synoria.</div>
+      <h3>Suivi du consentement</h3>
+      <p>Depuis <strong>RGPD → Consentements</strong>, Synoria affiche le taux de consentement de votre patientèle et liste les patients pour lesquels le consentement est manquant.</p>
+    </div>
+
+    <div id="conservation" class="guide-section">
+      <h2><span class="guide-icon">⏱️</span>Durée de conservation</h2>
+      <p>Les données de santé ne peuvent pas être conservées indéfiniment. La durée légale de conservation des dossiers médicaux est fixée par la réglementation selon la spécialité.</p>
+      <h3>Durée recommandée</h3>
+      <ul>
+        <li><strong>Praticiens de santé</strong> : 10 ans à compter de la dernière consultation (recommandation CNIL et Code de la santé publique)</li>
+        <li><strong>Patients mineurs</strong> : jusqu'à la majorité du patient, plus 10 ans</li>
+      </ul>
+      <h3>Configuration dans Synoria</h3>
+      <p>Dans <strong>Paramètres → RGPD</strong>, définissez la durée de conservation souhaitée (défaut : 10 ans). Synoria surveille automatiquement les dossiers approchant ou dépassant cette limite.</p>
+      <h3>Alertes de conservation</h3>
+      <p>Depuis <strong>RGPD → Alertes</strong>, Synoria liste les patients dont le dossier approche ou a dépassé la durée de conservation configurée. Vous pouvez alors décider de supprimer le dossier ou de prolonger la conservation si une raison légitime le justifie.</p>
+      <div class="tip">La suppression d'un patient dans Synoria supprime toutes ses séances et son journal d'accès. Cette action est irréversible.</div>
+    </div>
+
+    <div id="registre" class="guide-section">
+      <h2><span class="guide-icon">📄</span>Registre de traitements Art.30</h2>
+      <p>L'article 30 du RGPD impose à tout responsable de traitement de tenir un <strong>registre des activités de traitement</strong>. Ce registre documente chaque traitement de données personnelles réalisé dans votre cabinet.</p>
+      <h3>Ce que doit contenir le registre</h3>
+      <ul>
+        <li>Identité du responsable du traitement</li>
+        <li>Finalités du traitement</li>
+        <li>Base légale (Art.9(2)(h))</li>
+        <li>Catégories de personnes concernées et de données traitées</li>
+        <li>Destinataires des données</li>
+        <li>Durée de conservation</li>
+        <li>Mesures de sécurité techniques et organisationnelles</li>
+      </ul>
+      <h3>Générer le registre avec Synoria</h3>
+      <p>Depuis <strong>RGPD → Registre</strong>, cliquez sur <strong>Générer le registre Art.30</strong>. Synoria produit un fichier HTML complet, prêt à être imprimé ou archivé, pré-rempli avec vos informations praticien et les données de traitement utilisées dans le logiciel.</p>
+      <div class="tip">Avant de générer le registre, vérifiez que vos informations praticien sont à jour dans <em>Paramètres → Informations</em>.</div>
+    </div>
+
+    <div id="journal" class="guide-section">
+      <h2><span class="guide-icon">📝</span>Journal d'accès</h2>
+      <p>Synoria enregistre automatiquement un journal des accès aux données patients. Cela vous permet de prouver, en cas de contrôle CNIL, que les données ne sont consultées que dans le cadre du suivi patient.</p>
+      <h3>Événements enregistrés</h3>
+      <ul>
+        <li>Ouverture d'une fiche patient</li>
+        <li>Consultation d'un résumé de séance</li>
+        <li>Création d'une nouvelle séance</li>
+        <li>Export des données (JSON, Excel)</li>
+      </ul>
+      <h3>Consulter le journal</h3>
+      <p>Depuis <strong>RGPD → Journal d'accès</strong>, filtrez par patient ou consultez l'ensemble des accès. Le journal est local et chiffré avec le reste de la base.</p>
+    </div>
+
+    <div id="droits" class="guide-section">
+      <h2><span class="guide-icon">👤</span>Droits des patients</h2>
+      <p>Vos patients disposent de droits qu'ils peuvent exercer auprès de vous en tant que responsable du traitement :</p>
+      <ul>
+        <li><strong>Droit d'accès</strong> : le patient peut demander une copie de ses données. Utilisez l'export JSON ou Excel de Synoria pour répondre à cette demande.</li>
+        <li><strong>Droit de rectification</strong> : le patient peut demander la correction d'informations inexactes. Modifiez la fiche patient directement dans Synoria.</li>
+        <li><strong>Droit à l'effacement</strong> : dans certains cas, le patient peut demander la suppression de ses données. La suppression d'un patient dans Synoria efface toutes ses données.</li>
+        <li><strong>Droit à la portabilité</strong> : fournissez les données dans un format structuré (JSON ou Excel via l'export Synoria).</li>
+      </ul>
+      <div class="warn">Le droit à l'effacement comporte des exceptions pour les données de santé : vous pouvez conserver les données si leur conservation est nécessaire pour des raisons médicales ou légales.</div>
+    </div>
+
+    <div id="securite" class="guide-section">
+      <h2><span class="guide-icon">🔒</span>Sécurité des données</h2>
+      <p>Synoria applique plusieurs mesures techniques et organisationnelles pour protéger les données de santé :</p>
+      <ul>
+        <li><strong>Chiffrement AES-256-GCM</strong> de la base de données avec clé dérivée de votre mot de passe (PBKDF2, 600 000 itérations)</li>
+        <li><strong>Stockage local exclusif</strong> : aucune donnée patient n'est transmise sur internet</li>
+        <li><strong>Verrouillage automatique</strong> après 20 minutes d'inactivité</li>
+        <li><strong>Rechiffrement automatique</strong> à chaque fermeture du logiciel</li>
+        <li><strong>Sauvegardes chiffrées</strong> (fichiers <code>.json.enc</code> avec clé dédiée)</li>
+      </ul>
+      <p>Ces mesures répondent aux exigences de l'article 32 du RGPD relatif à la sécurité du traitement.</p>
+      <div class="tip"><strong>Conseil :</strong> configurez les sauvegardes automatiques dans Paramètres et stockez les fichiers de sauvegarde sur un support externe chiffré (clé USB chiffrée, dossier cloud chiffré).</div>
+    </div>
+
+    <div style="margin:56px 0 0;padding:32px;background:var(--surface);border-radius:12px;border:1px solid var(--border);text-align:center">
+      <p style="margin:0 0 6px;font-size:17px;font-weight:700">Une question sur vos obligations RGPD ?</p>
+      <p style="margin:0 0 20px;color:var(--text-muted)">Ce guide est informatif. Pour des conseils juridiques personnalisés, consultez un avocat spécialisé RGPD ou un DPO.</p>
+      <a class="btn btn-primary" href="mailto:contact@logiciel-synoria.fr">Contacter le support Synoria</a>
+    </div>
+
+  </div>
+</section>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">
+        <img class="footer-brand-logo" src="assets/Synoria.png" alt="">
+        <span class="footer-brand-name">SYNORIA</span>
+      </div>
+      <p class="footer-desc">Logiciel de gestion de dossiers patients pour praticiens indépendants. Données locales, chiffrées et maîtrisées.</p>
+    </div>
+    <div>
+      <h4>Logiciel</h4>
+      <ul>
+        <li><a href="/#fonctionnalites">Fonctionnalités</a></li>
+        <li><a href="/tarifs">Tarifs</a></li>
+        <li><a href="/#securite">Sécurité &amp; RGPD</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Ressources</h4>
+      <ul>
+        <li><a href="/support">Support &amp; FAQ</a></li>
+        <li><a href="/telechargement">Télécharger</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Compte</h4>
+      <ul>
+        <li><a href="/abonnement">Mon abonnement</a></li>
+        <li><a href="/support">Support</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Légal</h4>
+      <ul>
+        <li><a href="/confidentialite">Confidentialité</a></li>
+        <li><a href="/cgv">CGV</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Synoria — Jean-Pierre Timoner (auto-entrepreneur) — SIRET 929 311 496 00012</span>
+    <span>Local · Chiffré · RGPD</span>
+  </div>
+</footer>
+
+</body>
+</html>

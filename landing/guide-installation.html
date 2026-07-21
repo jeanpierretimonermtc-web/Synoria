@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guide d'installation — Synoria</title>
+<meta name="description" content="Guide d'installation de Synoria sur Windows 10/11 et macOS : étapes détaillées, prérequis et premiers pas.">
+<link rel="icon" type="image/png" href="assets/Synoria.png">
+<link rel="apple-touch-icon" href="assets/Synoria.png">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+.guide-section { border-top:1px solid var(--border); padding:48px 0 0; margin:48px 0 0; scroll-margin-top:80px; }
+.guide-section:first-child { border-top:none; margin-top:0; }
+.guide-section h2 { font-size:26px; font-weight:700; margin:0 0 20px; display:flex; align-items:center; gap:12px; }
+.guide-icon { width:36px; height:36px; border-radius:8px; background:var(--accent-light); color:var(--accent-dark); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.guide-section h3 { font-size:17px; font-weight:700; margin:28px 0 10px; }
+.guide-section p { font-size:15px; line-height:1.7; color:var(--text-body); margin:0 0 14px; }
+.guide-section ul, .guide-section ol { font-size:15px; line-height:1.7; color:var(--text-body); margin:0 0 14px; padding:0 0 0 20px; }
+.guide-section li { margin-bottom:6px; }
+.tip { background:var(--blue-light,#eff6ff); border-left:3px solid var(--blue,#3b82f6); border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0; font-size:14px; color:var(--text-body); }
+.warn { background:#fff7ed; border-left:3px solid #f97316; border-radius:0 8px 8px 0; padding:12px 16px; margin:16px 0; font-size:14px; color:var(--text-body); }
+.os-tabs { display:flex; gap:12px; margin:0 0 32px; }
+.os-tab { flex:1; border:2px solid var(--border); border-radius:12px; padding:20px; text-align:center; cursor:pointer; text-decoration:none; color:var(--text-body); transition:border-color .15s; }
+.os-tab:hover { border-color:var(--accent); }
+.os-tab .os-emoji { font-size:32px; display:block; margin:0 0 8px; }
+.os-tab strong { display:block; font-size:15px; }
+.os-tab span { font-size:13px; color:var(--text-muted); }
+.step-list { counter-reset:steps; display:flex; flex-direction:column; gap:16px; }
+.step { display:flex; gap:16px; }
+.step-num { counter-increment:steps; width:32px; height:32px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; flex-shrink:0; margin-top:2px; }
+.step-body { flex:1; }
+.step-body strong { display:block; font-size:15px; font-weight:700; margin:0 0 4px; }
+.step-body p { font-size:14px; color:var(--text-muted); margin:0; line-height:1.6; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/" aria-label="Accueil Synoria">
+      <img class="brand-logo" src="assets/Synoria.png" alt="">
+      <span class="brand-name">SYNORIA</span>
+    </a>
+    <nav class="nav-links" aria-label="Navigation principale">
+      <a href="/#fonctionnalites">Fonctions</a>
+      <a href="/#captures">Captures</a>
+      <a href="/tarifs">Tarifs</a>
+      <a href="/telechargement">Télécharger</a>
+      <a href="/support">Support</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-outline" href="/abonnement">Mon compte</a>
+      <a class="btn btn-primary" href="/tarifs">Essai gratuit 14 jours</a>
+    </div>
+  </div>
+</nav>
+
+<header class="page-hero">
+  <div class="inner">
+    <div class="section-label">Installation</div>
+    <h1>Installer Synoria étape par étape.</h1>
+    <p class="section-text">Guide complet pour installer Synoria sur Windows ou macOS, du téléchargement au premier lancement.</p>
+  </div>
+</header>
+
+<main>
+<section class="section tight">
+  <div class="inner" style="max-width:800px">
+
+    <div class="os-tabs">
+      <a class="os-tab" href="#windows">
+        <span class="os-emoji">🪟</span>
+        <strong>Windows</strong>
+        <span>Windows 10 / 11 — 64 bits</span>
+      </a>
+      <a class="os-tab" href="#macos">
+        <span class="os-emoji">🍎</span>
+        <strong>macOS</strong>
+        <span>Apple Silicon ou Intel</span>
+      </a>
+    </div>
+
+    <div id="windows" class="guide-section">
+      <h2><span class="guide-icon">🪟</span>Installation Windows</h2>
+
+      <h3>Prérequis</h3>
+      <ul>
+        <li>Windows 10 ou Windows 11, version 64 bits</li>
+        <li>Droits administrateur pour l'installation (une confirmation UAC sera demandée)</li>
+        <li>Environ 250 Mo d'espace disque</li>
+      </ul>
+
+      <h3>Étapes d'installation</h3>
+      <div class="step-list">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <strong>Télécharger l'installateur</strong>
+            <p>Rendez-vous sur <a href="/telechargement" style="color:var(--accent)">logiciel-synoria.fr/telechargement</a> et cliquez sur <em>Windows — Installateur</em> pour télécharger le fichier <code>Synoria Setup 1.x.x.exe</code>.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <strong>Lancer l'installateur</strong>
+            <p>Double-cliquez sur le fichier téléchargé. Windows peut afficher un avertissement SmartScreen — cliquez sur <em>"Informations complémentaires"</em> puis <em>"Exécuter quand même"</em>.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <strong>Confirmer l'élévation UAC</strong>
+            <p>Une fenêtre demande l'autorisation d'administrateur. Cliquez sur <em>Oui</em>. L'installation se fait dans <code>C:\Program Files\Synoria\</code>.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <strong>Installation automatique</strong>
+            <p>L'installateur s'exécute en quelques secondes. Un raccourci <em>Synoria</em> est créé sur le bureau et dans le menu Démarrer.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <strong>Premier lancement</strong>
+            <p>Cliquez sur le raccourci Synoria. Définissez votre mot de passe de protection au premier écran, puis commencez à utiliser le logiciel.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip">Vos données sont stockées dans <code>C:\Users\[votre nom]\AppData\Roaming\Synoria\</code>. Ce dossier est indépendant du logiciel : une désinstallation ne l'efface pas.</div>
+
+      <h3>Désinstaller Synoria</h3>
+      <p>Depuis le menu Démarrer, faites un clic droit sur <em>Synoria</em> et choisissez <em>Désinstaller</em>, ou passez par <em>Paramètres Windows → Applications → Synoria</em>. Vos données patients ne sont pas supprimées automatiquement.</p>
+    </div>
+
+    <div id="macos" class="guide-section">
+      <h2><span class="guide-icon">🍎</span>Installation macOS</h2>
+
+      <h3>Prérequis</h3>
+      <ul>
+        <li>macOS 11 (Big Sur) ou version ultérieure</li>
+        <li>Apple Silicon (M1, M2, M3…) → téléchargez le fichier <strong>arm64.dmg</strong></li>
+        <li>Processeur Intel → téléchargez le fichier <strong>x64.dmg</strong></li>
+      </ul>
+      <div class="tip">Pour vérifier votre puce : menu Pomme → <em>À propos de ce Mac</em>. Si vous voyez "Apple M…" → arm64. Si vous voyez "Intel Core…" → x64.</div>
+
+      <h3>Identifier votre version</h3>
+      <p>Cliquez sur le menu <strong>Pomme ()</strong> en haut à gauche de l'écran, puis <strong>À propos de ce Mac</strong>. La puce est indiquée sous le nom du modèle.</p>
+
+      <h3>Étapes d'installation</h3>
+      <div class="step-list">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <strong>Télécharger le bon fichier .dmg</strong>
+            <p>Sur <a href="/telechargement" style="color:var(--accent)">logiciel-synoria.fr/telechargement</a>, choisissez <em>macOS Apple Silicon</em> ou <em>macOS Intel</em> selon votre Mac.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <strong>Ouvrir le fichier .dmg</strong>
+            <p>Double-cliquez sur le fichier téléchargé pour monter l'image disque.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <strong>Glisser Synoria dans Applications</strong>
+            <p>Dans la fenêtre qui s'ouvre, faites glisser l'icône Synoria vers le dossier Applications.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <strong>Autoriser l'application (Gatekeeper)</strong>
+            <p>Au premier lancement, macOS peut bloquer l'application. Ouvrez <em>Réglages système → Confidentialité et sécurité</em> et cliquez sur <em>"Ouvrir quand même"</em> en face de Synoria.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <strong>Premier lancement</strong>
+            <p>Définissez votre mot de passe de protection et commencez à utiliser Synoria.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip">Les données sont stockées dans <code>~/Library/Application Support/Synoria/</code>.</div>
+    </div>
+
+    <div style="margin:56px 0 0;padding:32px;background:var(--surface);border-radius:12px;border:1px solid var(--border);text-align:center">
+      <p style="margin:0 0 6px;font-size:17px;font-weight:700">Un problème lors de l'installation ?</p>
+      <p style="margin:0 0 20px;color:var(--text-muted)">Contactez le support — réponse sous 48h ouvrées.</p>
+      <a class="btn btn-primary" href="mailto:contact@logiciel-synoria.fr">Contacter le support</a>
+    </div>
+
+  </div>
+</section>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">
+        <img class="footer-brand-logo" src="assets/Synoria.png" alt="">
+        <span class="footer-brand-name">SYNORIA</span>
+      </div>
+      <p class="footer-desc">Logiciel de gestion de dossiers patients pour praticiens indépendants. Données locales, chiffrées et maîtrisées.</p>
+    </div>
+    <div>
+      <h4>Logiciel</h4>
+      <ul>
+        <li><a href="/#fonctionnalites">Fonctionnalités</a></li>
+        <li><a href="/tarifs">Tarifs</a></li>
+        <li><a href="/#securite">Sécurité &amp; RGPD</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Ressources</h4>
+      <ul>
+        <li><a href="/support">Support &amp; FAQ</a></li>
+        <li><a href="/telechargement">Télécharger</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Compte</h4>
+      <ul>
+        <li><a href="/abonnement">Mon abonnement</a></li>
+        <li><a href="/support">Support</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Légal</h4>
+      <ul>
+        <li><a href="/confidentialite">Confidentialité</a></li>
+        <li><a href="/cgv">CGV</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Synoria — Jean-Pierre Timoner (auto-entrepreneur) — SIRET 929 311 496 00012</span>
+    <span>Local · Chiffré · RGPD</span>
+  </div>
+</footer>
+
+</body>
+</html>
