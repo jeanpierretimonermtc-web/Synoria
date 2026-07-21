@@ -12,7 +12,10 @@
     { "source": "/confidentialite", "destination": "/confidentialite.html" },
     { "source": "/cgv", "destination": "/cgv.html" },
     { "source": "/support", "destination": "/support.html" },
-    { "source": "/tarifs", "destination": "/tarifs.html" }
+    { "source": "/tarifs", "destination": "/tarifs.html" },
+    { "source": "/guide-utilisation", "destination": "/guide-utilisation.html" },
+    { "source": "/guide-installation", "destination": "/guide-installation.html" },
+    { "source": "/guide-rgpd", "destination": "/guide-rgpd.html" }
   ],
   "headers": [
     {
