@@ -42,7 +42,7 @@
     "wait-on": "^7.2.0"
   },
   "build": {
-    "appId": "com.synoria.app",
+    "appId": "com.synoria.cabinet",
     "productName": "Synoria",
     "icon": "build/icons/icon",
     "directories": {
@@ -68,7 +68,7 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Synoria",
       "uninstallDisplayName": "Synoria",
-      "guid": "9F4A2B1C-8E3D-4F6A-B5C7-D2E8F0A1B3C5"
+      "guid": "C7A3F1E2-9B4D-4E8F-A2C6-D5F7E0B2C4A8"
     },
     "win": {
       "target": [
