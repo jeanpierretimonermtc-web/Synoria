@@ -35,7 +35,7 @@ export default function RichTextArea({ value, onChange, placeholder, style, minH
   const recognitionRef  = useRef<any>(null)
   const isListeningRef  = useRef(false)
   const [isListening, setIsListening] = useState(false)
-  const isSupported = !!(window.SpeechRecognition || (window as any).webkitSpeechRecognition)
+  const isSupported = !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
 
   // Initialisation au montage
   useEffect(() => {

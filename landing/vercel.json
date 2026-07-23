@@ -15,7 +15,8 @@
     { "source": "/tarifs", "destination": "/tarifs.html" },
     { "source": "/guide-utilisation", "destination": "/guide-utilisation.html" },
     { "source": "/guide-installation", "destination": "/guide-installation.html" },
-    { "source": "/guide-rgpd", "destination": "/guide-rgpd.html" }
+    { "source": "/guide-rgpd", "destination": "/guide-rgpd.html" },
+    { "source": "/mentions-legales", "destination": "/mentions-legales.html" }
   ],
   "headers": [
     {
