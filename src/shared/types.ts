@@ -760,6 +760,12 @@ export interface IpcApi {
   getLastUpdateNotification:      () => Promise<{ version: string; dismissedAt: string } | null>
   onUpdateAvailable:              (cb: (result: ReleaseCheckResult) => void) => void
   ownerCheck: () => Promise<boolean>
+  speechStart:     () => Promise<void>
+  speechStop:      () => Promise<void>
+  onSpeechResult:  (cb: (text: string) => void) => void
+  onSpeechStarted: (cb: () => void) => void
+  onSpeechError:   (cb: (msg: string) => void) => void
+  onSpeechStopped: (cb: () => void) => void
 }
 
 declare global {

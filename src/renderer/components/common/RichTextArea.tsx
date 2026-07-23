@@ -1,5 +1,25 @@
 import React, { useRef, useEffect, useCallback, CSSProperties, useState } from 'react'
 
+// ── Module-level speech bridge ──────────────────────────────────────────────
+// Un seul jeu d'écouteurs IPC pour toutes les instances RichTextArea.
+// Seule l'instance qui a démarré la dictée reçoit les résultats.
+type SpeechHandlers = {
+  onResult: (text: string) => void
+  onError:  (msg: string) => void
+  onStop:   () => void
+}
+let activeSpeech: SpeechHandlers | null = null
+let speechBridgeReady = false
+
+function ensureSpeechBridge() {
+  if (speechBridgeReady || !window.mtcApi?.onSpeechResult) return
+  speechBridgeReady = true
+  window.mtcApi.onSpeechResult( (text) => activeSpeech?.onResult(text))
+  window.mtcApi.onSpeechError(  (msg)  => { activeSpeech?.onError(msg);  activeSpeech = null })
+  window.mtcApi.onSpeechStopped(()     => { activeSpeech?.onStop();       activeSpeech = null })
+}
+
+// ── Sanitisation HTML ────────────────────────────────────────────────────────
 function sanitizeHtml(dirty: string): string {
   if (!dirty) return ''
   const div = document.createElement('div')
@@ -30,12 +50,9 @@ interface RichTextAreaProps {
 }
 
 export default function RichTextArea({ value, onChange, placeholder, style, minHeight = 80 }: RichTextAreaProps) {
-  const divRef          = useRef<HTMLDivElement>(null)
-  const internalHtml    = useRef(value || '')
-  const recognitionRef  = useRef<any>(null)
-  const isListeningRef  = useRef(false)
+  const divRef       = useRef<HTMLDivElement>(null)
+  const internalHtml = useRef(value || '')
   const [isListening, setIsListening] = useState(false)
-  const isSupported = !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
 
   // Initialisation au montage
   useEffect(() => {
@@ -46,7 +63,7 @@ export default function RichTextArea({ value, onChange, placeholder, style, minH
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Mise à jour externe (ex: chargement d'une séance existante)
+  // Mise à jour externe (chargement d'une séance existante)
   useEffect(() => {
     if (divRef.current && value !== internalHtml.current) {
       const safe = sanitizeHtml(value || '')
@@ -65,79 +82,52 @@ export default function RichTextArea({ value, onChange, placeholder, style, minH
   }, [onChange])
 
   const stopDictation = useCallback(() => {
-    isListeningRef.current = false
-    recognitionRef.current?.stop()
-    recognitionRef.current = null
+    activeSpeech = null
+    window.mtcApi?.speechStop?.()
     setIsListening(false)
   }, [])
 
+  const showMicError = useCallback((msg: string) => {
+    const wrap = divRef.current?.closest('.richtextarea-wrap')
+    if (wrap) {
+      wrap.setAttribute('data-mic-error', msg)
+      setTimeout(() => wrap.removeAttribute('data-mic-error'), 4000)
+    }
+  }, [])
+
   const startDictation = useCallback(() => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-    if (!SR) return
+    ensureSpeechBridge()
+    if (!window.mtcApi?.speechStart) return
 
-    const recognition = new SR()
-    recognition.lang = 'fr-FR'
-    recognition.interimResults = false
-    recognition.continuous = true
-    recognitionRef.current = recognition
-
-    recognition.onresult = (e: any) => {
-      const text = Array.from(e.results as any[])
-        .slice(e.resultIndex)
-        .filter((r: any) => r.isFinal)
-        .map((r: any) => r[0].transcript)
-        .join('')
-      if (!text || !divRef.current) return
-      divRef.current.focus()
-      const rawText = divRef.current.innerText || ''
-      const prefix = rawText && !/\s$/.test(rawText) ? ' ' : ''
-      document.execCommand('insertText', false, prefix + text)
-    }
-
-    // Auto-restart si Chromium coupe après un silence (comportement normal du navigateur)
-    recognition.onend = () => {
-      if (isListeningRef.current && recognitionRef.current === recognition) {
-        try { recognition.start() } catch { stopDictation() }
-      } else {
-        isListeningRef.current = false
+    activeSpeech = {
+      onResult: (text: string) => {
+        if (!text.trim() || !divRef.current) return
+        divRef.current.focus()
+        const rawText = divRef.current.innerText || ''
+        const prefix = rawText && !/\s$/.test(rawText) ? ' ' : ''
+        document.execCommand('insertText', false, prefix + text)
+      },
+      onError: (msg: string) => {
         setIsListening(false)
-      }
+        showMicError(msg || 'Erreur dictée')
+      },
+      onStop: () => setIsListening(false),
     }
 
-    recognition.onerror = (e: any) => {
-      if (e.error === 'no-speech') return
-      stopDictation()
-      const msg =
-        e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'Permission microphone refusée' :
-        e.error === 'network'        ? 'Connexion internet requise pour la dictée' :
-        e.error === 'audio-capture'  ? 'Microphone introuvable' :
-        e.error === 'aborted'        ? null :
-        `Erreur dictée : ${e.error}`
-      if (msg) {
-        const wrap = divRef.current?.closest('.richtextarea-wrap')
-        if (wrap) {
-          wrap.setAttribute('data-mic-error', msg)
-          setTimeout(() => wrap.removeAttribute('data-mic-error'), 4000)
-        }
-      }
-    }
-
-    try {
-      recognition.start()
-      isListeningRef.current = true
-      setIsListening(true)
-      divRef.current?.focus()
-    } catch {
-      stopDictation()
-    }
-  }, [stopDictation])
+    window.mtcApi.speechStart()
+    setIsListening(true)
+    divRef.current?.focus()
+  }, [showMicError])
 
   const toggleDictation = useCallback(() => {
-    if (isListeningRef.current) stopDictation()
+    if (isListening) stopDictation()
     else startDictation()
-  }, [startDictation, stopDictation])
+  }, [isListening, startDictation, stopDictation])
 
-  useEffect(() => () => { stopDictation() }, [stopDictation])
+  // Nettoyage au démontage
+  useEffect(() => () => {
+    if (activeSpeech) stopDictation()
+  }, [stopDictation])
 
   return (
     <div className="richtextarea-wrap" style={style}>
@@ -150,13 +140,13 @@ export default function RichTextArea({ value, onChange, placeholder, style, minH
         data-placeholder={placeholder}
         style={{ minHeight }}
       />
-      {isSupported && (
+      {typeof window.mtcApi !== 'undefined' && (
         <button
           type="button"
           className={`richtextarea-mic${isListening ? ' listening' : ''}`}
           onMouseDown={e => e.preventDefault()}
           onClick={toggleDictation}
-          title={isListening ? 'Arrêter la dictée (clic)' : 'Dictée vocale'}
+          title={isListening ? 'Arrêter la dictée (clic)' : 'Dictée vocale (hors-ligne)'}
           aria-label={isListening ? 'Arrêter la dictée' : 'Démarrer la dictée vocale'}
         >
           🎤

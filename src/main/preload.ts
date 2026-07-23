@@ -192,6 +192,13 @@ const api: IpcApi = {
   getLastUpdateNotification:      ()             => ipcRenderer.invoke('update:getLastNotification'),
   onUpdateAvailable: (cb) => { ipcRenderer.on('update:available', (_e, result) => cb(result)) },
   ownerCheck: () => ipcRenderer.invoke('owner:check'),
+  // ── Dictée vocale (Windows Speech Recognition) ──
+  speechStart:     ()   => ipcRenderer.invoke('speech:start'),
+  speechStop:      ()   => ipcRenderer.invoke('speech:stop'),
+  onSpeechResult:  (cb) => { ipcRenderer.on('speech:result',  (_e, text) => cb(text)) },
+  onSpeechStarted: (cb) => { ipcRenderer.on('speech:started', ()         => cb())     },
+  onSpeechError:   (cb) => { ipcRenderer.on('speech:error',   (_e, msg)  => cb(msg))  },
+  onSpeechStopped: (cb) => { ipcRenderer.on('speech:stopped', ()         => cb())     },
 }
 
 contextBridge.exposeInMainWorld('mtcApi', api)

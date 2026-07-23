@@ -46,6 +46,7 @@ import { checkOwnerFromSettings, isOwner } from '../services/ownerService'
 import { exportConsentForm }    from '../services/consentFormService'
 import { exportUrssafReport }   from '../services/urssafReportService'
 import { adminVerify, adminGetLogs, adminClearLogs, adminGetSystemInfo, adminDbIntegrity, adminWalCheckpoint, adminDbStats, adminGetSettings, adminForceBackup } from '../services/adminService'
+import { startWindowsSpeech, stopWindowsSpeech } from '../services/speechService'
 
 // ── Slug patient (même logique que backupService) ─────────────────
 function patientSlug(lastName: string, firstName: string): string {
@@ -1135,5 +1136,9 @@ export function registerAllHandlers(): void {
   ipcMain.handle('app:checkForUpdates',           () => updateSvc.checkForUpdates())
   ipcMain.handle('update:dismissNotification',    (_e, version: string) => updateSvc.dismissUpdateNotification(version))
   ipcMain.handle('update:getLastNotification',    () => updateSvc.getLastUpdateNotification())
+
+  // ── Dictée vocale (Windows Speech Recognition, hors-ligne) ───────────────
+  ipcMain.handle('speech:start', () => startWindowsSpeech())
+  ipcMain.handle('speech:stop',  () => stopWindowsSpeech())
 
 }
