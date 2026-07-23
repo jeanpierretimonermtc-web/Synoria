@@ -3243,6 +3243,22 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
   0%   { transform: scale(1);   opacity: 1; }
   100% { transform: scale(1.9); opacity: 0; }
 }
+.richtextarea-wrap[data-mic-error]::after {
+  content: attr(data-mic-error);
+  position: absolute;
+  bottom: 34px;
+  right: 5px;
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+}
 
 /* ─── BOUTONS DE FORMATAGE ────────────────────────────────── */
 .fmt-btn {

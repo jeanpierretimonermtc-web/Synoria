@@ -105,7 +105,16 @@ export default function RichTextArea({ value, onChange, placeholder, style, minH
     }
 
     recognition.onerror = (e: any) => {
-      if (e.error !== 'no-speech') stopDictation()
+      if (e.error === 'no-speech') return
+      stopDictation()
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        console.warn('[Dictée] Permission microphone refusée')
+        const wrap = divRef.current?.closest('.richtextarea-wrap')
+        if (wrap) {
+          wrap.setAttribute('data-mic-error', 'Permission microphone refusée')
+          setTimeout(() => wrap.removeAttribute('data-mic-error'), 3500)
+        }
+      }
     }
 
     try {

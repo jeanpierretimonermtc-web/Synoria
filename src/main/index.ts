@@ -379,8 +379,13 @@ app.whenReady().then(async () => {
   session.defaultSession.setSpellCheckerLanguages(['fr-FR', 'fr'])
 
   // Permission microphone pour la dictée vocale (Web Speech API)
+  // Web Speech API demande 'media' (pas 'microphone') — les deux sont couverts ici.
+  const allowedPerms = new Set(['media', 'microphone'])
   session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
-    callback(permission === 'microphone')
+    callback(allowedPerms.has(permission))
+  })
+  session.defaultSession.setPermissionCheckHandler((_wc, permission) => {
+    return allowedPerms.has(permission)
   })
 
   // Initialiser l'auth Supabase (restaure la session précédente si elle existe)
