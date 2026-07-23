@@ -245,31 +245,13 @@ export default function App() {
   }, [])
   useInactivityLock(handleInactivityLock, authState === 'unlocked')
 
-  // ── Flux de démarrage complet ──────────────────────────────────────
-  // Ordre obligatoire : compte Supabase → licence active → mot de passe DB
+  // ── Flux de démarrage ──────────────────────────────────────────────
+  // Seul prérequis au démarrage : le mot de passe local de la base.
+  // Compte Supabase et licence sont vérifiés en arrière-plan après
+  // déverrouillage — l'app fonctionne hors-ligne sans blocage.
   const checkAuth = async () => {
     setAuthState('checking')
     try {
-      // 1. Compte Supabase obligatoire
-      const acc = await window.mtcApi.accountGetState()
-      if (!acc.isLoggedIn) {
-        setAuthState('account-login')
-        return
-      }
-
-      // 2. Licence : utiliser le jeton local d'abord
-      let lic = await window.mtcApi.licenseGetState()
-      const hasLocalLicense = lic.status === 'active' || lic.status === 'trialing' || lic.status === 'past_due_grace'
-      if (!hasLocalLicense) {
-        // Pas de jeton local valide — vérifier en ligne (peut être un compte déjà abonné)
-        try { lic = await window.mtcApi.licenseVerifyOnline() } catch {}
-      }
-      if (lic.status === 'unknown' || lic.status === 'restricted') {
-        setAuthState('subscription')
-        return
-      }
-
-      // 3. Auth base de données locale
       const { hasPassword, isUnlocked } = await window.mtcApi.authStatus()
       if (!hasPassword) setAuthState('setup')
       else if (isUnlocked) setAuthState('unlocked')
