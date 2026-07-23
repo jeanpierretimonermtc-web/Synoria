@@ -107,12 +107,17 @@ export default function RichTextArea({ value, onChange, placeholder, style, minH
     recognition.onerror = (e: any) => {
       if (e.error === 'no-speech') return
       stopDictation()
-      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-        console.warn('[Dictée] Permission microphone refusée')
+      const msg =
+        e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'Permission microphone refusée' :
+        e.error === 'network'        ? 'Connexion internet requise pour la dictée' :
+        e.error === 'audio-capture'  ? 'Microphone introuvable' :
+        e.error === 'aborted'        ? null :
+        `Erreur dictée : ${e.error}`
+      if (msg) {
         const wrap = divRef.current?.closest('.richtextarea-wrap')
         if (wrap) {
-          wrap.setAttribute('data-mic-error', 'Permission microphone refusée')
-          setTimeout(() => wrap.removeAttribute('data-mic-error'), 3500)
+          wrap.setAttribute('data-mic-error', msg)
+          setTimeout(() => wrap.removeAttribute('data-mic-error'), 4000)
         }
       }
     }

@@ -378,9 +378,9 @@ app.whenReady().then(async () => {
   // Correcteur orthographique en français
   session.defaultSession.setSpellCheckerLanguages(['fr-FR', 'fr'])
 
-  // Permission microphone pour la dictée vocale (Web Speech API)
-  // Web Speech API demande 'media' (pas 'microphone') — les deux sont couverts ici.
-  const allowedPerms = new Set(['media', 'microphone'])
+  // Permissions pour la dictée vocale (Web Speech API)
+  // Electron peut envoyer 'media', 'microphone' ou 'speechRecognition' selon le contexte.
+  const allowedPerms = new Set(['media', 'microphone', 'speechRecognition'])
   session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
     callback(allowedPerms.has(permission))
   })

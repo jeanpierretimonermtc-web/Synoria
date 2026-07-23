@@ -34,6 +34,7 @@ export default function PatientsPage() {
   const R_TIP = 'Mode restreint — abonnement requis'
   // ID patient à ouvrir automatiquement (arrivée depuis le formulaire de séance)
   const pendingOpenRef = useRef<string | null>((location.state as any)?.openPatientId ?? null)
+  const returnTo       = (location.state as any)?.returnTo as string | null ?? null
 
   const load = async () => {
     try { setPatients(await window.mtcApi.getPatients()) }
@@ -73,7 +74,9 @@ export default function PatientsPage() {
         await window.mtcApi.createPatient(form)
         showToast('Patient créé ✓', 'success')
       }
-      setShowModal(false); load()
+      setShowModal(false)
+      if (returnTo) { navigate(returnTo); return }
+      load()
     } catch { showToast('Erreur lors de l\'enregistrement', 'error') }
   }
 
@@ -235,9 +238,9 @@ export default function PatientsPage() {
 
       {/* Modal création / modification */}
       {showModal && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowModal(false); if (returnTo) navigate(returnTo) } }}>
           <div className="modal">
-            <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
+            <button className="modal-close" onClick={() => { setShowModal(false); if (returnTo) navigate(returnTo) }}>×</button>
             <h2>{editPatient ? 'Modifier le patient' : 'Nouveau patient'}</h2>
             <div className="field" style={{ marginBottom: 12 }}>
               <label>Civilité</label>
@@ -309,7 +312,7 @@ export default function PatientsPage() {
             </div>
 
             <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setShowModal(false)}>Annuler</button>
+              <button className="btn btn-secondary" onClick={() => { setShowModal(false); if (returnTo) navigate(returnTo) }}>Annuler</button>
               <button className="btn btn-primary" onClick={handleSave}
                 disabled={editPatient ? !restriction.canModifyPatient : !restriction.canCreatePatient}
                 title={editPatient ? (!restriction.canModifyPatient ? R_TIP : undefined) : (!restriction.canCreatePatient ? R_TIP : undefined)}>Enregistrer</button>

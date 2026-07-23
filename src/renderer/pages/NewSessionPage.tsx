@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useRef, useCallback } from 'react'
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import type { Patient, Session, ConsultationType, SystemesQuestionnaire, EnergyTests, Appointment, SessionFullData } from '../../shared/types'
 import type { PluginDefinition } from '../../shared/pluginTypes'
 import PluginFormRenderer from '../components/plugin/PluginFormRenderer'
@@ -294,6 +294,7 @@ export default function NewSessionPage() {
   const { patientId: routePatientId, sessionId: editSessionId } = useParams()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const showToast = useContext(ToastContext)
   const isEditing = !!editSessionId
   const restriction = useRestriction()
@@ -1277,7 +1278,7 @@ export default function NewSessionPage() {
               </span>
               <button
                 className="btn btn-secondary btn-sm"
-                onClick={() => navigate('/patients', { state: { openPatientId: patientId } })}
+                onClick={() => navigate('/patients', { state: { openPatientId: patientId, returnTo: location.pathname } })}
                 title="Ouvrir et modifier la fiche patient complète"
               >
                 👤 Modifier la fiche →
@@ -1322,7 +1323,7 @@ export default function NewSessionPage() {
                 Aucune information médicale renseignée —{' '}
                 <span
                   style={{ color: 'var(--blue)', cursor: 'pointer', textDecoration: 'underline' }}
-                  onClick={() => navigate('/patients', { state: { openPatientId: patientId } })}
+                  onClick={() => navigate('/patients', { state: { openPatientId: patientId, returnTo: location.pathname } })}
                 >
                   ouvrir la fiche pour en ajouter
                 </span>
