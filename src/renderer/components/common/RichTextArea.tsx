@@ -140,7 +140,7 @@ export default function RichTextArea({ value, onChange, placeholder, style, minH
         data-placeholder={placeholder}
         style={{ minHeight }}
       />
-      {typeof window.mtcApi !== 'undefined' && (
+      {typeof window.mtcApi !== 'undefined' && navigator.platform.startsWith('Win') && (
         <button
           type="button"
           className={`richtextarea-mic${isListening ? ' listening' : ''}`}
