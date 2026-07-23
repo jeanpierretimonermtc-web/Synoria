@@ -378,6 +378,11 @@ app.whenReady().then(async () => {
   // Correcteur orthographique en français
   session.defaultSession.setSpellCheckerLanguages(['fr-FR', 'fr'])
 
+  // Permission microphone pour la dictée vocale (Web Speech API)
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
+    callback(permission === 'microphone')
+  })
+
   // Initialiser l'auth Supabase (restaure la session précédente si elle existe)
   try {
     await initSupabaseAuth()

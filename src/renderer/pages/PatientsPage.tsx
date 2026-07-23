@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useContext, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useEffect, useState, useContext, useCallback, useRef } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import type { Patient } from '../../shared/types'
 import { ToastContext } from '../App'
 import { useRestriction } from '../hooks/useRestriction'
@@ -29,8 +29,11 @@ export default function PatientsPage() {
   const [backingUp, setBackingUp] = useState<string | null>(null)
   const showToast = useContext(ToastContext)
   const navigate = useNavigate()
+  const location = useLocation()
   const restriction = useRestriction()
   const R_TIP = 'Mode restreint — abonnement requis'
+  // ID patient à ouvrir automatiquement (arrivée depuis le formulaire de séance)
+  const pendingOpenRef = useRef<string | null>((location.state as any)?.openPatientId ?? null)
 
   const load = async () => {
     try { setPatients(await window.mtcApi.getPatients()) }
@@ -38,28 +41,6 @@ export default function PatientsPage() {
   }
 
   useEffect(() => { load() }, [])
-
-  const byFilter = patients.filter(p => {
-    if (filter === 'active')   return p.is_active !== 0
-    if (filter === 'archived') return p.is_active === 0
-    return true
-  })
-
-  const filtered = byFilter.filter(p => {
-    const txt = `${p.first_name} ${p.last_name} ${p.email || ''} ${p.phone || ''}`.toLowerCase()
-    if (search && !txt.includes(search.toLowerCase())) return false
-    if (alphFilter && !p.last_name.toUpperCase().startsWith(alphFilter)) return false
-    return true
-  })
-
-  // Lettres présentes dans la liste filtrée par tab
-  const presentLetters = new Set(byFilter.map(p => p.last_name[0]?.toUpperCase()).filter(Boolean))
-
-  const counts = {
-    active:   patients.filter(p => p.is_active !== 0).length,
-    all:      patients.length,
-    archived: patients.filter(p => p.is_active === 0).length,
-  }
 
   const openCreate = () => { setEditPatient(null); setForm({ ...EMPTY_PATIENT }); setShowModal(true) }
   const openEdit = (p: Patient) => {
@@ -94,6 +75,36 @@ export default function PatientsPage() {
       }
       setShowModal(false); load()
     } catch { showToast('Erreur lors de l\'enregistrement', 'error') }
+  }
+
+  // Ouvre automatiquement la fiche si on arrive depuis le formulaire de séance
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!pendingOpenRef.current || patients.length === 0) return
+    const p = patients.find(pt => pt.id === pendingOpenRef.current)
+    if (p) { openEdit(p); pendingOpenRef.current = null }
+  }, [patients])
+
+  const byFilter = patients.filter(p => {
+    if (filter === 'active')   return p.is_active !== 0
+    if (filter === 'archived') return p.is_active === 0
+    return true
+  })
+
+  const filtered = byFilter.filter(p => {
+    const txt = `${p.first_name} ${p.last_name} ${p.email || ''} ${p.phone || ''}`.toLowerCase()
+    if (search && !txt.includes(search.toLowerCase())) return false
+    if (alphFilter && !p.last_name.toUpperCase().startsWith(alphFilter)) return false
+    return true
+  })
+
+  // Lettres présentes dans la liste filtrée par tab
+  const presentLetters = new Set(byFilter.map(p => p.last_name[0]?.toUpperCase()).filter(Boolean))
+
+  const counts = {
+    active:   patients.filter(p => p.is_active !== 0).length,
+    all:      patients.length,
+    archived: patients.filter(p => p.is_active === 0).length,
   }
 
   const handleDelete = async (p: Patient) => {
@@ -355,6 +366,18 @@ function PatientCard({ patient, onEdit, onDelete, onNewSession, onViewSessions, 
               <span className="badge badge-red" style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 ⚠️ {patient.alerts}
               </span>
+            )}
+            {patient.medications && (
+              <span
+                title={patient.medications}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 700, padding: '1px 8px', borderRadius: 10, background: 'rgba(217,119,6,.12)', color: 'var(--amber, #d97706)', cursor: 'help', whiteSpace: 'nowrap', flexShrink: 0 }}
+              >💊 Médicaments</span>
+            )}
+            {patient.antecedents && (
+              <span
+                title={patient.antecedents}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, fontWeight: 700, padding: '1px 8px', borderRadius: 10, background: 'rgba(37,99,235,.1)', color: 'var(--blue, #2563eb)', cursor: 'help', whiteSpace: 'nowrap', flexShrink: 0 }}
+              >📋 Antécédents</span>
             )}
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>

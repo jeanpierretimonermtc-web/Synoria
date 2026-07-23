@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback, CSSProperties } from 'react'
+import React, { useRef, useEffect, useCallback, CSSProperties, useState } from 'react'
 
 function sanitizeHtml(dirty: string): string {
   if (!dirty) return ''
@@ -30,8 +30,12 @@ interface RichTextAreaProps {
 }
 
 export default function RichTextArea({ value, onChange, placeholder, style, minHeight = 80 }: RichTextAreaProps) {
-  const divRef = useRef<HTMLDivElement>(null)
-  const internalHtml = useRef(value || '')
+  const divRef          = useRef<HTMLDivElement>(null)
+  const internalHtml    = useRef(value || '')
+  const recognitionRef  = useRef<any>(null)
+  const isListeningRef  = useRef(false)
+  const [isListening, setIsListening] = useState(false)
+  const isSupported = !!(window.SpeechRecognition || (window as any).webkitSpeechRecognition)
 
   // Initialisation au montage
   useEffect(() => {
@@ -60,6 +64,67 @@ export default function RichTextArea({ value, onChange, placeholder, style, minH
     }
   }, [onChange])
 
+  const stopDictation = useCallback(() => {
+    isListeningRef.current = false
+    recognitionRef.current?.stop()
+    recognitionRef.current = null
+    setIsListening(false)
+  }, [])
+
+  const startDictation = useCallback(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SR) return
+
+    const recognition = new SR()
+    recognition.lang = 'fr-FR'
+    recognition.interimResults = false
+    recognition.continuous = true
+    recognitionRef.current = recognition
+
+    recognition.onresult = (e: any) => {
+      const text = Array.from(e.results as any[])
+        .slice(e.resultIndex)
+        .filter((r: any) => r.isFinal)
+        .map((r: any) => r[0].transcript)
+        .join('')
+      if (!text || !divRef.current) return
+      divRef.current.focus()
+      const rawText = divRef.current.innerText || ''
+      const prefix = rawText && !/\s$/.test(rawText) ? ' ' : ''
+      document.execCommand('insertText', false, prefix + text)
+    }
+
+    // Auto-restart si Chromium coupe après un silence (comportement normal du navigateur)
+    recognition.onend = () => {
+      if (isListeningRef.current && recognitionRef.current === recognition) {
+        try { recognition.start() } catch { stopDictation() }
+      } else {
+        isListeningRef.current = false
+        setIsListening(false)
+      }
+    }
+
+    recognition.onerror = (e: any) => {
+      if (e.error !== 'no-speech') stopDictation()
+    }
+
+    try {
+      recognition.start()
+      isListeningRef.current = true
+      setIsListening(true)
+      divRef.current?.focus()
+    } catch {
+      stopDictation()
+    }
+  }, [stopDictation])
+
+  const toggleDictation = useCallback(() => {
+    if (isListeningRef.current) stopDictation()
+    else startDictation()
+  }, [startDictation, stopDictation])
+
+  useEffect(() => () => { stopDictation() }, [stopDictation])
+
   return (
     <div className="richtextarea-wrap" style={style}>
       <div
@@ -71,6 +136,18 @@ export default function RichTextArea({ value, onChange, placeholder, style, minH
         data-placeholder={placeholder}
         style={{ minHeight }}
       />
+      {isSupported && (
+        <button
+          type="button"
+          className={`richtextarea-mic${isListening ? ' listening' : ''}`}
+          onMouseDown={e => e.preventDefault()}
+          onClick={toggleDictation}
+          title={isListening ? 'Arrêter la dictée (clic)' : 'Dictée vocale'}
+          aria-label={isListening ? 'Arrêter la dictée' : 'Démarrer la dictée vocale'}
+        >
+          🎤
+        </button>
+      )}
     </div>
   )
 }

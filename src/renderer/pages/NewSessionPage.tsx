@@ -387,6 +387,8 @@ export default function NewSessionPage() {
   const [clotureTypeId,    setClotureTypeId]    = useState('')
   const [clotureTypes,     setClotureTypes]     = useState<ConsultationType[]>([])
   const [currentMonthNb,   setCurrentMonthNb]   = useState<number | null>(null)
+  // Mémorise l'état compta d'origine en mode édition pour calculer le delta à appliquer
+  const originalComptaRef = useRef<{ typeId: string; mois: string } | null>(null)
   // Brouillon auto-sauvegardé
   const [draftInfo, setDraftInfo] = useState<{ patientName: string; date: string; autoRestored?: boolean } | null>(null)
   // Systèmes
@@ -730,10 +732,16 @@ export default function NewSessionPage() {
           if (d.pluginSchema && typeof d.pluginSchema === 'object' && !d.pluginIsBuiltin) {
             setActivePlugin(d.pluginSchema as PluginDefinition)
           }
-          // Clôture — restaurer l'état existant pour idempotence
+          // Clôture — restaurer l'état existant et mémoriser l'état d'origine pour le delta
           if (d.comptaTypeId) {
             setClotureTypeId(d.comptaTypeId)
             setEnableCompta(true)
+            originalComptaRef.current = {
+              typeId: d.comptaTypeId,
+              mois:   d.comptaMois || (d.date || session.date).slice(0, 7),
+            }
+          } else {
+            originalComptaRef.current = null
           }
           setAnamnese(d.anamnese || '')
           setSimpleContextVie(d.simpleContextVie || '')
@@ -933,11 +941,40 @@ export default function NewSessionPage() {
           catch { /* silencieux */ }
         }
       }
-      if (enableCompta && clotureTypeId && !isEditing) {
-        try {
-          const [y, m] = date.split('-').map(Number)
-          await window.mtcApi.incrementMonthlyRevenue(y, m, clotureTypeId)
-        } catch { /* silencieux */ }
+      if (!isEditing) {
+        // Création : incrémenter simplement si la case est cochée
+        if (enableCompta && clotureTypeId) {
+          try {
+            const [y, m] = date.split('-').map(Number)
+            await window.mtcApi.incrementMonthlyRevenue(y, m, clotureTypeId)
+          } catch { /* silencieux */ }
+        }
+      } else {
+        // Édition : calculer le delta entre l'état d'origine et le nouvel état
+        const orig       = originalComptaRef.current
+        const newTypeId  = (enableCompta && clotureTypeId) ? clotureTypeId : null
+        const newMois    = newTypeId ? date.slice(0, 7) : null
+        const oldTypeId  = orig?.typeId ?? null
+        const oldMois    = orig?.mois   ?? null
+        // Agir uniquement si quelque chose a changé (type ou mois)
+        if (oldTypeId !== newTypeId || oldMois !== newMois) {
+          try {
+            // Décrémente l'entrée d'origine si elle existait
+            if (oldTypeId && oldMois) {
+              const [oy, om] = oldMois.split('-').map(Number)
+              const data = await window.mtcApi.getComptaYearData(oy)
+              const rev  = (data as any).monthlyRevenue?.find(
+                (r: any) => r.month === om && r.type_id === oldTypeId
+              )
+              await window.mtcApi.setMonthlyRevenue(oy, om, oldTypeId, Math.max(0, (rev?.nb_seances || 0) - 1))
+            }
+            // Incrémente le nouvel état s'il y en a un
+            if (newTypeId && newMois) {
+              const [ny, nm] = newMois.split('-').map(Number)
+              await window.mtcApi.incrementMonthlyRevenue(ny, nm, newTypeId)
+            }
+          } catch { /* silencieux */ }
+        }
       }
       // ────────────────────────────────────────────────────────────────
 
@@ -1230,6 +1267,69 @@ export default function NewSessionPage() {
           </div>
         </div>
 
+        {/* ℹ️ INFO PATIENT — alertes, antécédents, médicaments */}
+        {patientId && (
+          <div className="card" id="sec-info-patient" style={{ borderLeft: '4px solid var(--blue)' }}>
+            <div className="card-title" style={{ justifyContent: 'space-between' }}>
+              <span>
+                <span className="card-title-icon" style={{ background: 'var(--blue-light)', color: 'var(--blue)' }}>ℹ️</span>
+                Info patient
+              </span>
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={() => navigate('/patients', { state: { openPatientId: patientId } })}
+                title="Ouvrir et modifier la fiche patient complète"
+              >
+                👤 Modifier la fiche →
+              </button>
+            </div>
+
+            {patientInfo.alerts && (
+              <div style={{
+                background: 'rgba(220,38,38,.08)', border: '1.5px solid rgba(220,38,38,.3)',
+                borderRadius: 8, padding: '8px 12px', marginBottom: 12,
+                fontSize: 13, color: 'var(--red)', fontWeight: 500,
+              }}>
+                ⚠️ <strong>Alertes :</strong> {patientInfo.alerts}
+              </div>
+            )}
+
+            {(patientInfo.antecedents || patientInfo.medications) ? (
+              <div style={{ display: 'grid', gridTemplateColumns: patientInfo.antecedents && patientInfo.medications ? '1fr 1fr' : '1fr', gap: 12 }}>
+                {patientInfo.antecedents && (
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>
+                      Antécédents / opérations / allergies
+                    </div>
+                    <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '8px 10px', fontSize: 13, whiteSpace: 'pre-wrap', lineHeight: 1.5, color: 'var(--text)' }}>
+                      {patientInfo.antecedents}
+                    </div>
+                  </div>
+                )}
+                {patientInfo.medications && (
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>
+                      Médicaments / compléments en cours
+                    </div>
+                    <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '8px 10px', fontSize: 13, whiteSpace: 'pre-wrap', lineHeight: 1.5, color: 'var(--text)' }}>
+                      {patientInfo.medications}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : !patientInfo.alerts && (
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                Aucune information médicale renseignée —{' '}
+                <span
+                  style={{ color: 'var(--blue)', cursor: 'pointer', textDecoration: 'underline' }}
+                  onClick={() => navigate('/patients', { state: { openPatientId: patientId } })}
+                >
+                  ouvrir la fiche pour en ajouter
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── SÉANCE PRÉCÉDENTE (accordéon de référence) ──────────── */}
         {prevSession && (
@@ -1854,9 +1954,9 @@ export default function NewSessionPage() {
                                           → passera à {afterNb} après enregistrement
                                         </span>
                                       )}
-                                      {isEditing && (
-                                        <span style={{ marginLeft: 6, color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                                          — pas de modification en mode édition
+                                      {isEditing && originalComptaRef.current?.typeId !== (enableCompta && clotureTypeId ? clotureTypeId : null) && (
+                                        <span style={{ marginLeft: 6, color: 'var(--purple)', fontWeight: 600, fontStyle: 'italic' }}>
+                                          — sera mis à jour à la sauvegarde
                                         </span>
                                       )}
                                     </div>
