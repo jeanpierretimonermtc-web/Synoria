@@ -12,8 +12,8 @@ const CALENDAR_BASE = 'https://www.googleapis.com/calendar/v3'
 
 const SYNORIA_CALENDAR_NAME = 'Synoria'
 const SCOPES = [
-  'https://www.googleapis.com/auth/calendar.events',   // lecture + écriture événements (sensible, non restreint)
-  'https://www.googleapis.com/auth/calendar.readonly',  // lecture liste des calendriers (sensible, non restreint)
+  'https://www.googleapis.com/auth/calendar.events',            // lecture + écriture événements
+  'https://www.googleapis.com/auth/calendar.calendarlist.readonly', // lecture liste des calendriers uniquement
   'https://www.googleapis.com/auth/userinfo.email',
 ].join(' ')
 
