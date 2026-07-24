@@ -378,14 +378,8 @@ app.whenReady().then(async () => {
   // Correcteur orthographique en français
   session.defaultSession.setSpellCheckerLanguages(['fr-FR', 'fr'])
 
-  // Permissions pour la dictée vocale (Web Speech API)
-  // Electron peut envoyer 'media', 'microphone' ou 'speechRecognition' selon le contexte.
-  const allowedPerms = new Set(['media', 'microphone', 'speechRecognition'])
-  session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
-    callback(allowedPerms.has(permission))
-  })
-  session.defaultSession.setPermissionCheckHandler((_wc, permission) => {
-    return allowedPerms.has(permission)
+  session.defaultSession.setPermissionRequestHandler((_wc, _permission, callback) => {
+    callback(false)
   })
 
   // Initialiser l'auth Supabase (restaure la session précédente si elle existe)
