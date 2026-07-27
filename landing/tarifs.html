@@ -55,7 +55,7 @@
           <div class="price-feature"><span class="bullet-ck">✓</span> Mises à jour incluses</div>
           <div class="price-feature"><span class="bullet-ck">✓</span> Support par email</div>
         </div>
-        <a class="btn btn-outline btn-block" href="/abonnement">Commencer l'essai gratuit</a>
+        <button type="button" class="btn btn-outline btn-block checkout-btn" data-plan="synoria_6_months">Commencer l'essai gratuit</button>
       </article>
 
       <article class="price-card featured">
@@ -70,7 +70,7 @@
           <div class="price-feature"><span class="bullet-ck">✓</span> Mises à jour incluses</div>
           <div class="price-feature"><span class="bullet-ck">✓</span> Support par email prioritaire</div>
         </div>
-        <a class="btn btn-primary btn-block" href="/abonnement">Commencer l'essai gratuit</a>
+        <button type="button" class="btn btn-primary btn-block checkout-btn" data-plan="synoria_annual">Commencer l'essai gratuit</button>
       </article>
     </div>
 
@@ -237,5 +237,65 @@
   </div>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  var SUPABASE_URL     = 'https://nicyxynczjvoyxaernbr.supabase.co';
+  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5pY3l4eW5jemp2b3l4YWVybmJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5OTg0MDMsImV4cCI6MjA5ODU3NDQwM30.qySY7jGN-kme3K72VFCMsYZ2YyiQ1UUutmB7qZPbKOg';
+  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  var msgEl = document.createElement('p');
+  msgEl.style.cssText = 'text-align:center;color:#c0392b;font-size:13px;margin-top:12px;display:none';
+  document.querySelector('.pricing-grid').after(msgEl);
+
+  function showError(msg) {
+    msgEl.textContent = msg;
+    msgEl.style.display = 'block';
+  }
+
+  document.querySelectorAll('.checkout-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var plan = btn.dataset.plan;
+      btn.disabled = true;
+      btn.textContent = 'Chargement…';
+      msgEl.style.display = 'none';
+
+      sb.auth.getSession().then(function (res) {
+        var session = res.data && res.data.session;
+        if (!session) {
+          // Non connecté → rediriger vers /abonnement pour connexion/inscription
+          window.location.href = '/abonnement';
+          return;
+        }
+        fetch(SUPABASE_URL + '/functions/v1/create-checkout-session', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + session.access_token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ price_code: plan })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.url) {
+            window.location.href = data.url;
+          } else if (data.error === 'ALREADY_SUBSCRIBED') {
+            window.location.href = '/abonnement';
+          } else {
+            btn.disabled = false;
+            btn.textContent = 'Commencer l\'essai gratuit';
+            showError(data.message || 'Une erreur est survenue. Veuillez réessayer.');
+          }
+        })
+        .catch(function () {
+          btn.disabled = false;
+          btn.textContent = 'Commencer l\'essai gratuit';
+          showError('Erreur réseau. Vérifiez votre connexion et réessayez.');
+        });
+      });
+    });
+  });
+})();
+</script>
 </body>
 </html>
