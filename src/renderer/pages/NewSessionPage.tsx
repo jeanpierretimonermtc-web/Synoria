@@ -387,7 +387,8 @@ export default function NewSessionPage() {
   const [enableCompta,     setEnableCompta]     = useState(false)
   const [clotureTypeId,    setClotureTypeId]    = useState('')
   const [clotureTypes,     setClotureTypes]     = useState<ConsultationType[]>([])
-  const [currentMonthNb,   setCurrentMonthNb]   = useState<number | null>(null)
+  const [currentMonthNb,    setCurrentMonthNb]    = useState<number | null>(null)
+  const [currentMonthTotal, setCurrentMonthTotal] = useState<number | null>(null)
   // Mémorise l'état compta d'origine en mode édition pour calculer le delta à appliquer
   const originalComptaRef = useRef<{ typeId: string; mois: string } | null>(null)
   // Brouillon auto-sauvegardé
@@ -464,15 +465,16 @@ export default function NewSessionPage() {
 
   // Charge le décompte déjà enregistré pour ce type/mois dans la compta
   useEffect(() => {
-    if (!clotureTypeId || !date) { setCurrentMonthNb(null); return }
+    if (!clotureTypeId || !date) { setCurrentMonthNb(null); setCurrentMonthTotal(null); return }
     const [y, m] = date.split('-').map(Number)
     if (!y || !m) return
     window.mtcApi.getComptaYearData(y).then(data => {
-      const rev = (data as any).monthlyRevenue?.find(
-        (r: any) => r.month === m && r.type_id === clotureTypeId
-      )
+      const rows: any[] = (data as any).monthlyRevenue ?? []
+      const rev   = rows.find((r: any) => r.month === m && r.type_id === clotureTypeId)
+      const total = rows.filter((r: any) => r.month === m).reduce((s: number, r: any) => s + (r.nb_seances || 0), 0)
       setCurrentMonthNb(rev?.nb_seances ?? 0)
-    }).catch(() => setCurrentMonthNb(null))
+      setCurrentMonthTotal(total)
+    }).catch(() => { setCurrentMonthNb(null); setCurrentMonthTotal(null) })
   }, [clotureTypeId, date])
 
   useEffect(() => {
@@ -525,10 +527,11 @@ export default function NewSessionPage() {
   // ─── AUTO-SAUVEGARDE ──────────────────────────────────────────
   const DRAFT_KEY = 'mtc_session_draft'
 
-  // Ref toujours à jour — évite les stale closures dans blur/unmount
+  // Ref toujours à jour — mis à jour SYNCHRONEMENT dans le corps du composant
+  // (pas dans un useEffect) pour garantir que la valeur est courante au moment du démontage,
+  // même si le composant est démonté dans le même cycle React que le dernier changement d'état.
   const draftRef = useRef<Record<string, unknown>>({})
-  useEffect(() => {
-    if (isEditing) return
+  if (!isEditing) {
     draftRef.current = {
       patientId, date, practitioner, motif, evolutionTags, evolution, problematiques,
       anamnese, simpleContextVie, simpleTraitementsEnCours, simpleObjectifs, simpleNotesEntretien,
@@ -542,15 +545,7 @@ export default function NewSessionPage() {
       activePluginSnapshot: activePlugin && !activePlugin.useBuiltinForm ? activePlugin : null,
       _savedAt: Date.now(),
     }
-  }, [isEditing, patientId, date, practitioner, motif, evolutionTags, evolution, problematiques,
-      anamnese, simpleContextVie, simpleTraitementsEnCours, simpleObjectifs, simpleNotesEntretien,
-      langue, langueNote, pouls, poulsNote, poulsPos, constitution, typeCorps, teint, observation,
-      diagnostic, cinqElements, causes, analyse, principes,
-      points, ptsOreille, techniques, plantes, reactions, traitementNotes,
-      conseils, plan, surveiller,
-      nextSession, nextSessionHeure, nextSessionFin, nextSessionNote, nextSessionApptId,
-      barrageNiv1, barrageNiv2, barrageNiv3, barrageNiv4,
-      systemes, energy, pluginData, activePlugin])
+  }
 
   const saveDraftNow = useCallback(() => {
     const d = draftRef.current
@@ -1295,40 +1290,44 @@ export default function NewSessionPage() {
               </div>
             )}
 
-            {(patientInfo.antecedents || patientInfo.medications) ? (
-              <div style={{ display: 'grid', gridTemplateColumns: patientInfo.antecedents && patientInfo.medications ? '1fr 1fr' : '1fr', gap: 12 }}>
-                {patientInfo.antecedents && (
-                  <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>
-                      Antécédents / opérations / allergies
-                    </div>
-                    <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '8px 10px', fontSize: 13, whiteSpace: 'pre-wrap', lineHeight: 1.5, color: 'var(--text)' }}>
-                      {patientInfo.antecedents}
-                    </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>
+                  Antécédents / opérations / allergies
+                </div>
+                {patientInfo.antecedents ? (
+                  <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '8px 10px', fontSize: 13, whiteSpace: 'pre-wrap', lineHeight: 1.5, color: 'var(--text)' }}>
+                    {patientInfo.antecedents}
                   </div>
-                )}
-                {patientInfo.medications && (
-                  <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>
-                      Médicaments / compléments en cours
-                    </div>
-                    <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '8px 10px', fontSize: 13, whiteSpace: 'pre-wrap', lineHeight: 1.5, color: 'var(--text)' }}>
-                      {patientInfo.medications}
-                    </div>
+                ) : (
+                  <div style={{ background: 'var(--bg)', border: '1px dashed var(--border)', borderRadius: 6, padding: '8px 10px', fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                    Non renseigné —{' '}
+                    <span style={{ color: 'var(--blue)', cursor: 'pointer', textDecoration: 'underline' }}
+                      onClick={() => navigate('/patients', { state: { openPatientId: patientId, returnTo: location.pathname } })}>
+                      compléter la fiche
+                    </span>
                   </div>
                 )}
               </div>
-            ) : !patientInfo.alerts && (
-              <div style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                Aucune information médicale renseignée —{' '}
-                <span
-                  style={{ color: 'var(--blue)', cursor: 'pointer', textDecoration: 'underline' }}
-                  onClick={() => navigate('/patients', { state: { openPatientId: patientId, returnTo: location.pathname } })}
-                >
-                  ouvrir la fiche pour en ajouter
-                </span>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>
+                  Médicaments / compléments en cours
+                </div>
+                {patientInfo.medications ? (
+                  <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '8px 10px', fontSize: 13, whiteSpace: 'pre-wrap', lineHeight: 1.5, color: 'var(--text)' }}>
+                    {patientInfo.medications}
+                  </div>
+                ) : (
+                  <div style={{ background: 'var(--bg)', border: '1px dashed var(--border)', borderRadius: 6, padding: '8px 10px', fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                    Non renseigné —{' '}
+                    <span style={{ color: 'var(--blue)', cursor: 'pointer', textDecoration: 'underline' }}
+                      onClick={() => navigate('/patients', { state: { openPatientId: patientId, returnTo: location.pathname } })}>
+                      compléter la fiche
+                    </span>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         )}
 
@@ -1926,8 +1925,11 @@ export default function NewSessionPage() {
                         {enableCompta && clotureTypeId && (() => {
                           const type = clotureTypes.find(t => t.id === clotureTypeId)
                           const [y, m] = date.split('-')
-                          const alreadyNb = currentMonthNb ?? null
-                          const afterNb   = alreadyNb !== null ? alreadyNb + 1 : null
+                          const alreadyNb    = currentMonthNb ?? null
+                          const afterNb      = alreadyNb !== null ? alreadyNb + 1 : null
+                          const totalMois    = currentMonthTotal ?? null
+                          const afterTotal   = totalMois !== null && !isEditing ? totalMois + 1 : null
+                          const hasOtherTypes = totalMois !== null && alreadyNb !== null && totalMois !== alreadyNb
                           return (
                             <div style={{ marginTop: 10, marginLeft: 26 }}>
                               {/* Résumé du mois actuel */}
@@ -1944,15 +1946,15 @@ export default function NewSessionPage() {
                                   <div>
                                     <div style={{ fontWeight: 700, color: alreadyNb > 0 ? 'var(--amber)' : 'var(--accent)' }}>
                                       {alreadyNb > 0
-                                        ? `Déjà ${alreadyNb} séance${alreadyNb > 1 ? 's' : ''} enregistrée${alreadyNb > 1 ? 's' : ''} ce mois`
-                                        : 'Aucune séance enregistrée ce mois'
+                                        ? `Déjà ${alreadyNb} séance${alreadyNb > 1 ? 's' : ''} enregistrée${alreadyNb > 1 ? 's' : ''} — type "${type?.name}"`
+                                        : `Aucune séance enregistrée — type "${type?.name}"`
                                       }
                                     </div>
                                     <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 1 }}>
-                                      "{type?.name}" · {m}/{y}
+                                      {m}/{y}
                                       {afterNb !== null && !isEditing && (
                                         <span style={{ marginLeft: 6, color: 'var(--purple)', fontWeight: 600 }}>
-                                          → passera à {afterNb} après enregistrement
+                                          → passera à {afterNb} pour ce type
                                         </span>
                                       )}
                                       {isEditing && originalComptaRef.current?.typeId !== (enableCompta && clotureTypeId ? clotureTypeId : null) && (
@@ -1961,6 +1963,14 @@ export default function NewSessionPage() {
                                         </span>
                                       )}
                                     </div>
+                                    {hasOtherTypes && (
+                                      <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 3 }}>
+                                        Total tous types ce mois&nbsp;: <strong style={{ color: 'var(--text)' }}>{totalMois}</strong>
+                                        {afterTotal !== null && (
+                                          <span style={{ marginLeft: 6, color: 'var(--purple)', fontWeight: 600 }}>→ {afterTotal} après enregistrement</span>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               )}
