@@ -1559,7 +1559,7 @@ export default function SettingsPage() {
               </p>
               <div className="settings-actions">
                 <button
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-secondary btn-sm"
                   onClick={() => window.mtcApi.openDocumentation()}
                 >
                   📖 Ouvrir la documentation
