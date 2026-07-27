@@ -1163,7 +1163,17 @@ export default function NewSessionPage() {
             {draftInfo.autoRestored ? (
               <>
                 <span>✅ Brouillon restauré automatiquement — séance du {draftInfo.date || '?'}</span>
-                <button className="btn btn-secondary btn-sm" onClick={resetAllFields}>Ignorer</button>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <button className="btn btn-secondary btn-sm" onClick={resetAllFields}
+                    title="Vider le formulaire et supprimer le brouillon">
+                    Ignorer
+                  </button>
+                  <button
+                    onClick={() => setDraftInfo(null)}
+                    title="Fermer cette notification (le brouillon reste actif)"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: 'var(--text-muted)', lineHeight: 1, padding: '2px 4px' }}
+                  >✕</button>
+                </div>
               </>
             ) : (
               <>
