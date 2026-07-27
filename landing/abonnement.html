@@ -9,6 +9,14 @@
 <link rel="icon" type="image/png" href="assets/Synoria.png">
 <link rel="apple-touch-icon" href="assets/Synoria.png">
 <link rel="stylesheet" href="assets/site.css">
+<style>
+.manage-section-title{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:24px 0 10px}
+.portal-actions{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+.portal-action{background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;padding:0;text-decoration:underline;font-family:inherit;line-height:1.5}
+.portal-action:hover{opacity:.7}
+.trial-notice{display:flex;align-items:flex-start;gap:10px;background:var(--accent-light);border:1px solid rgba(74,123,60,.22);border-radius:8px;padding:12px 16px;font-size:13px;color:var(--accent-dark);line-height:1.55;margin-bottom:16px}
+.trial-notice-icon{flex-shrink:0;margin-top:1px}
+</style>
 </head>
 <body>
 
@@ -97,17 +105,33 @@
         <span>Prochaine échéance</span>
         <span id="account-renew">-</span>
       </div>
-      <div style="display:flex;gap:10px;margin-top:24px;flex-wrap:wrap">
-        <button class="btn btn-primary" id="portal-btn" style="display:none">Gérer mon abonnement</button>
-        <a class="btn btn-primary" id="subscribe-btn" href="/tarifs">Souscrire à Synoria</a>
+      <!-- Abonné actif -->
+      <div id="manage-section" style="display:none;margin-top:20px">
+        <div id="trial-notice" class="trial-notice" style="display:none">
+          <span class="trial-notice-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+          </span>
+          <span><strong>Essai gratuit en cours</strong> — aucune somme n'a encore été prélevée. Votre abonnement débutera automatiquement à l'issue de l'essai. Vous pouvez annuler à tout moment avant l'échéance.</span>
+        </div>
+        <button class="btn btn-primary" id="portal-btn" style="width:100%;justify-content:center">Gérer mon abonnement</button>
+        <div class="portal-actions">
+          <button class="portal-action" id="link-plan">Changer d'offre</button>
+          <button class="portal-action" id="link-payment">Moyen de paiement</button>
+          <button class="portal-action" id="link-cancel">Résilier l'abonnement</button>
+          <button class="portal-action" id="link-invoices">Voir les factures</button>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:8px">Ces actions s'ouvrent dans le portail sécurisé Stripe.</p>
+      </div>
+
+      <!-- Sans abonnement -->
+      <div id="subscribe-section" style="margin-top:20px">
+        <a class="btn btn-primary" id="subscribe-btn" href="/tarifs">Commencer l'essai gratuit de 14 jours</a>
+        <p style="font-size:12px;color:var(--muted);margin-top:10px">Aucun abonnement actif. L'essai est sans engagement.</p>
+      </div>
+
+      <div style="margin-top:14px">
         <button class="btn btn-outline" id="logout-btn">Se déconnecter</button>
       </div>
-      <p id="portal-hint" style="font-size:12px;color:var(--muted);opacity:.8;margin-top:14px;display:none">
-        Modifier le moyen de paiement, changer d'offre ou résilier : utilisez le bouton ci-dessus (portail sécurisé Stripe).
-      </p>
-      <p id="subscribe-hint" style="font-size:12px;color:var(--muted);opacity:.8;margin-top:14px">
-        Aucun abonnement actif. Souscrivez pour accéder à Synoria.
-      </p>
 
       <div class="account-download">
         <p class="account-download-label">Télécharger Synoria</p>
@@ -321,21 +345,19 @@
     accountMsg.className = 'form-msg';
     accountMsg.textContent = '';
 
-    sb.from('licenses').select('status, plan:subscription_id(plan_name, current_period_end)').maybeSingle().then(function (res) {
-      var portalBtn     = document.getElementById('portal-btn');
-      var subscribeBtn  = document.getElementById('subscribe-btn');
-      var portalHint    = document.getElementById('portal-hint');
-      var subscribeHint = document.getElementById('subscribe-hint');
+    var manageSection    = document.getElementById('manage-section');
+    var subscribeSection = document.getElementById('subscribe-section');
+    var trialNotice      = document.getElementById('trial-notice');
 
+    sb.from('licenses').select('status, plan:subscription_id(plan_name, current_period_end)').maybeSingle().then(function (res) {
       if (res.error || !res.data) {
-        document.getElementById('account-status').textContent = 'Non renseigné';
-        document.getElementById('account-status').className = 'status-pill pending';
+        document.getElementById('account-status').textContent = 'Sans abonnement';
+        document.getElementById('account-status').className = 'status-pill error';
         document.getElementById('account-plan').textContent = '-';
         document.getElementById('account-renew').textContent = '-';
-        portalBtn.style.display = 'none';
-        subscribeBtn.style.display = '';
-        portalHint.style.display = 'none';
-        subscribeHint.style.display = '';
+        manageSection.style.display = 'none';
+        subscribeSection.style.display = '';
+        trialNotice.style.display = 'none';
         return;
       }
 
@@ -357,18 +379,21 @@
         : '-';
 
       if (hasActiveSub) {
-        portalBtn.style.display = '';
-        subscribeBtn.style.display = 'none';
-        portalHint.style.display = '';
-        subscribeHint.style.display = 'none';
+        manageSection.style.display = '';
+        subscribeSection.style.display = 'none';
+        trialNotice.style.display = status === 'trialing' ? '' : 'none';
       } else {
-        portalBtn.style.display = 'none';
-        subscribeBtn.style.display = '';
-        portalHint.style.display = 'none';
-        subscribeHint.style.display = '';
+        manageSection.style.display = 'none';
+        subscribeSection.style.display = '';
+        trialNotice.style.display = 'none';
       }
     });
   }
+
+  ['link-plan', 'link-payment', 'link-cancel', 'link-invoices'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('click', function () { document.getElementById('portal-btn').click(); });
+  });
 
   sb.auth.onAuthStateChange(function (event, session) {
     if (session && session.user) {
