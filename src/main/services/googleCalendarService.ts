@@ -429,7 +429,8 @@ function makeEvent(appt: { id?: string; date: string; heure_debut: string; heure
   const end = appt.heure_fin || addOneHour(appt.heure_debut)
   return {
     summary: 'Consultation',
-    description: appt.note || '',
+    // Ne jamais transmettre les notes du rendez-vous ni aucune donnée patient à Google.
+    description: '',
     start: { dateTime: `${appt.date}T${appt.heure_debut}:00`, timeZone: 'Europe/Paris' },
     end:   { dateTime: `${appt.date}T${end}:00`,              timeZone: 'Europe/Paris' },
     // Marque distinctive : reconnaître cet event lors du sync retour

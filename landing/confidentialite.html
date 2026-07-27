@@ -15,7 +15,7 @@
   <div class="nav-inner">
     <a class="brand" href="/" aria-label="Accueil Synoria">
       <img class="brand-logo" src="assets/Synoria.png" alt="">
-      <span class="brand-name">SYNORIA</span>
+      <span class="brand-name">Synoria</span>
     </a>
     <nav class="nav-links" aria-label="Navigation principale">
       <a href="/#fonctionnalites">Fonctions</a>
@@ -109,14 +109,19 @@
       </div>
 
       <h2>5. Intégration Google Calendar</h2>
-      <p>Synoria propose une fonctionnalité optionnelle de synchronisation avec <strong>Google Calendar</strong>. Si vous activez cette intégration, Synoria demande l'accès à votre agenda Google afin de créer, modifier et supprimer des rendez-vous directement depuis le logiciel.</p>
+      <p>Synoria propose une fonctionnalité facultative de synchronisation avec <strong>Google Calendar</strong>. Elle est activée uniquement lorsque l'utilisateur choisit de connecter son propre compte Google depuis les paramètres du logiciel. Synoria demande alors les accès nécessaires pour identifier le compte connecté, présenter les calendriers disponibles et synchroniser les rendez-vous.</p>
       <h3>Données Google accédées</h3>
       <ul>
-        <li>Liste de vos agendas Google Calendar</li>
-        <li>Événements (titre, date, heure, description) dans les agendas que vous sélectionnez</li>
+        <li>Adresse email du compte Google connecté, afin d'indiquer à l'utilisateur quel compte est utilisé</li>
+        <li>Liste de vos agendas Google Calendar, notamment leur identifiant et leur nom</li>
+        <li>Événements des agendas sélectionnés, notamment leur identifiant, leur titre, leur date, leurs heures et leur éventuelle description</li>
       </ul>
       <h3>Utilisation de ces données</h3>
-      <p>Les données Google Calendar sont utilisées <strong>exclusivement</strong> pour synchroniser vos rendez-vous patients entre Synoria et votre agenda Google. Elles ne sont pas stockées sur nos serveurs, ne sont pas partagées avec des tiers, et ne sont pas utilisées à des fins publicitaires ou analytiques.</p>
+      <p>L'adresse email est utilisée uniquement pour afficher le compte Google connecté. La liste des calendriers permet à l'utilisateur de choisir l'agenda dans lequel Synoria synchronise ses rendez-vous et les agendas dont il souhaite afficher les événements.</p>
+      <p>Pour les agendas sélectionnés en lecture, Synoria importe localement les informations nécessaires à leur affichage dans le planning. Pour l'agenda choisi pour la synchronisation, Synoria peut créer, modifier ou supprimer les événements correspondant aux rendez-vous gérés dans le logiciel. Les événements envoyés par Synoria portent le titre générique <strong>« Consultation »</strong> et ne contiennent ni identité du patient ni note de rendez-vous.</p>
+      <h3>Stockage, partage et suppression</h3>
+      <p>Les événements importés sont enregistrés dans la base locale de Synoria sur l'ordinateur de l'utilisateur. Les jetons OAuth, l'adresse email du compte connecté et les calendriers sélectionnés sont également conservés localement dans les données de l'application afin de maintenir la connexion et les préférences de synchronisation. <strong>Aucune donnée Google Calendar n'est stockée sur les serveurs Synoria.</strong></p>
+      <p>Ces données ne sont ni vendues, ni utilisées à des fins publicitaires ou analytiques, ni partagées avec des tiers. Lorsque l'utilisateur déconnecte Google Calendar depuis Synoria, les jetons de connexion, les préférences Google Calendar et les événements importés sont supprimés du stockage local de l'application.</p>
       <p>L'utilisation des données issues des API Google par Synoria est conforme à la <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Politique d'utilisation des données des services API Google</a>, notamment les exigences de la politique d'utilisation limitée (<em>Limited Use</em>).</p>
       <h3>Révocation de l'accès</h3>
       <p>Vous pouvez révoquer l'accès de Synoria à votre Google Calendar à tout moment depuis les <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">paramètres de votre compte Google</a> ou depuis les paramètres du logiciel Synoria.</p>
@@ -155,7 +160,7 @@
     <div>
       <div class="footer-brand">
         <img class="footer-brand-logo" src="assets/Synoria.png" alt="">
-        <span class="footer-brand-name">SYNORIA</span>
+        <span class="footer-brand-name">Synoria</span>
       </div>
       <p class="footer-desc">Logiciel de gestion de dossiers patients pour praticiens indépendants. Données locales, chiffrées et maîtrisées.</p>
     </div>
@@ -186,7 +191,7 @@
       <ul>
         <li><a href="/mentions-legales">Mentions légales</a></li>
         <li><a href="/confidentialite">Confidentialité</a></li>
-        <li><a href="/cgv">CGV</a></li>
+        <li><a href="/cgv">Conditions d'utilisation et de vente</a></li>
       </ul>
     </div>
   </div>

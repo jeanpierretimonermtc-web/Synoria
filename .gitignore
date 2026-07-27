@@ -47,3 +47,4 @@ fix_verify_import.cjs
 # OS
 .DS_Store
 Thumbs.db
+.vercel

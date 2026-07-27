@@ -105,6 +105,17 @@ h2{font-family:Georgia,"Times New Roman",serif;font-size:42px;font-weight:400;li
 .bullet{display:flex;gap:12px;font-size:15px;color:var(--muted);line-height:1.65;align-items:flex-start}
 .bullet-ck{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--accent-light);color:var(--accent);display:grid;place-items:center;font-size:11px;font-weight:900;margin-top:2px}
 .bullet strong{color:var(--ink)}
+.google-calendar-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:28px;font-size:14px}
+.google-calendar-links a{color:var(--accent);font-weight:700}
+.google-calendar-links a:hover{text-decoration:underline}
+.oauth-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:32px;box-shadow:var(--shadow)}
+.oauth-card-icon{width:52px;height:52px;border-radius:14px;background:var(--accent-light);display:grid;place-items:center;font-size:25px;margin-bottom:18px}
+.oauth-card h3{font-size:21px;margin-bottom:18px}
+.oauth-card dl{display:grid;gap:16px;margin:0}
+.oauth-card dl>div{padding-bottom:16px;border-bottom:1px solid var(--border)}
+.oauth-card dt{font-size:14px;font-weight:800;color:var(--ink);margin-bottom:4px}
+.oauth-card dd{font-size:14px;color:var(--muted);line-height:1.6;margin:0}
+.oauth-card>p{font-size:13px;color:var(--muted);line-height:1.65;margin:18px 0 0}
 .screen-frame{border-radius:var(--r);overflow:hidden;border:1px solid var(--border);box-shadow:var(--shadow-lg)}
 .screen-frame img{width:100%;height:auto;display:block}
 .caption{padding:12px 16px;background:var(--white);border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
