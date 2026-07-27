@@ -108,9 +108,9 @@
       <div class="account-download">
         <p class="account-download-label">Télécharger Synoria</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <a class="btn btn-outline btn-sm" href="https://github.com/jeanpierretimonermtc-web/Synoria/releases/download/v1.6.0/Synoria-Setup-1.6.0.exe">🪟 Windows</a>
-          <a class="btn btn-outline btn-sm" href="https://github.com/jeanpierretimonermtc-web/Synoria/releases/download/v1.6.0/Synoria-1.6.0-arm64.dmg">🍎 macOS Apple Silicon</a>
-          <a class="btn btn-outline btn-sm" href="https://github.com/jeanpierretimonermtc-web/Synoria/releases/download/v1.6.0/Synoria-1.6.0-x64.dmg">🍎 macOS Intel</a>
+          <a class="btn btn-outline btn-sm" href="https://github.com/jeanpierretimonermtc-web/Synoria/releases/download/v1.6.2/Synoria-Setup-1.6.2.exe">🪟 Windows</a>
+          <a class="btn btn-outline btn-sm" href="https://github.com/jeanpierretimonermtc-web/Synoria/releases/download/v1.6.2/Synoria-1.6.2-arm64.dmg">🍎 macOS Apple Silicon</a>
+          <a class="btn btn-outline btn-sm" href="https://github.com/jeanpierretimonermtc-web/Synoria/releases/download/v1.6.2/Synoria-1.6.2-x64.dmg">🍎 macOS Intel</a>
         </div>
       </div>
     </div>
@@ -274,12 +274,15 @@
         } else {
           btn.disabled = false;
           btn.textContent = 'Gérer mon abonnement';
-          accountMsg.textContent = 'Impossible d\'accéder au portail. Contactez le support.';
+          var detail = data.message || data.error || 'Erreur inconnue';
+          accountMsg.textContent = 'Impossible d\'accéder au portail : ' + detail;
           accountMsg.className = 'form-msg error';
         }
-      }).catch(function () {
+      }).catch(function (err) {
         btn.disabled = false;
         btn.textContent = 'Gérer mon abonnement';
+        accountMsg.textContent = 'Erreur réseau : ' + (err && err.message ? err.message : 'vérifiez votre connexion.');
+        accountMsg.className = 'form-msg error';
       });
     });
   });
