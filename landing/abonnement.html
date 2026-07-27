@@ -98,11 +98,15 @@
         <span id="account-renew">-</span>
       </div>
       <div style="display:flex;gap:10px;margin-top:24px;flex-wrap:wrap">
-        <button class="btn btn-primary" id="portal-btn">Gérer mon abonnement</button>
+        <button class="btn btn-primary" id="portal-btn" style="display:none">Gérer mon abonnement</button>
+        <a class="btn btn-primary" id="subscribe-btn" href="/tarifs">Souscrire à Synoria</a>
         <button class="btn btn-outline" id="logout-btn">Se déconnecter</button>
       </div>
-      <p style="font-size:12px;color:var(--muted);opacity:.8;margin-top:14px">
+      <p id="portal-hint" style="font-size:12px;color:var(--muted);opacity:.8;margin-top:14px;display:none">
         Modifier le moyen de paiement, changer d'offre ou résilier : utilisez le bouton ci-dessus (portail sécurisé Stripe).
+      </p>
+      <p id="subscribe-hint" style="font-size:12px;color:var(--muted);opacity:.8;margin-top:14px">
+        Aucun abonnement actif. Souscrivez pour accéder à Synoria.
       </p>
 
       <div class="account-download">
@@ -287,32 +291,82 @@
     });
   });
 
+  var STATUS_LABELS = {
+    active:            'Actif',
+    trialing:          'Essai gratuit en cours',
+    past_due:          'Paiement en attente',
+    past_due_grace:    'Paiement en attente',
+    canceled:          'Résilié',
+    cancelled:         'Résilié',
+    expired:           'Expiré',
+    paused:            'En pause',
+    restricted:        'Sans abonnement',
+    offline_grace:     'Accès hors-ligne',
+    revoked:           'Révoqué',
+    incomplete:        'En cours d\'activation',
+    incomplete_expired:'Activation expirée',
+    unpaid:            'Impayé',
+  };
+
+  var PLAN_LABELS = {
+    synoria_annuel: 'Synoria — Annuel',
+    synoria_6mois:  'Synoria — 6 mois',
+    synoria_cabinet:'Synoria Cabinet',
+  };
+
+  var ACTIVE_STATUSES = ['active', 'trialing', 'past_due', 'past_due_grace', 'offline_grace', 'cancelled'];
+
   function loadAccount(user) {
     document.getElementById('account-email').textContent = user.email;
     accountMsg.className = 'form-msg';
     accountMsg.textContent = '';
 
-    // TODO: la table "licenses"/"subscriptions" est deja creee cote Supabase
-    // (supabase/migrations/20260703120000_licensing_schema.sql) mais alimentee
-    // uniquement par les Edge Functions restant a ecrire (stripe-webhook,
-    // verify-license). Tant qu'aucune souscription n'existe, cette requete
-    // renverra "restricted" (statut par defaut a la creation du compte).
     sb.from('licenses').select('status, plan:subscription_id(plan_name, current_period_end)').maybeSingle().then(function (res) {
+      var portalBtn     = document.getElementById('portal-btn');
+      var subscribeBtn  = document.getElementById('subscribe-btn');
+      var portalHint    = document.getElementById('portal-hint');
+      var subscribeHint = document.getElementById('subscribe-hint');
+
       if (res.error || !res.data) {
-        document.getElementById('account-status').textContent = 'Bientôt disponible';
+        document.getElementById('account-status').textContent = 'Non renseigné';
         document.getElementById('account-status').className = 'status-pill pending';
-        document.getElementById('account-plan').textContent = 'Informations bientôt disponibles';
+        document.getElementById('account-plan').textContent = '-';
         document.getElementById('account-renew').textContent = '-';
+        portalBtn.style.display = 'none';
+        subscribeBtn.style.display = '';
+        portalHint.style.display = 'none';
+        subscribeHint.style.display = '';
         return;
       }
+
       var lic = res.data;
+      var status = lic.status || 'restricted';
+      var hasActiveSub = ACTIVE_STATUSES.indexOf(status) !== -1;
+
       var statusEl = document.getElementById('account-status');
-      statusEl.textContent = lic.status === 'active' ? 'Actif' : lic.status;
-      statusEl.className = 'status-pill ' + (lic.status === 'active' ? 'active' : 'pending');
-      document.getElementById('account-plan').textContent = (lic.plan && lic.plan.plan_name) || '-';
+      statusEl.textContent = STATUS_LABELS[status] || status;
+      statusEl.className = 'status-pill ' + (
+        status === 'active' || status === 'trialing' ? 'active' :
+        status === 'restricted' || status === 'expired' || status === 'revoked' ? 'error' : 'pending'
+      );
+
+      var planName = lic.plan && lic.plan.plan_name;
+      document.getElementById('account-plan').textContent = (planName && PLAN_LABELS[planName]) || planName || (hasActiveSub ? 'Synoria' : '-');
       document.getElementById('account-renew').textContent = (lic.plan && lic.plan.current_period_end)
         ? new Date(lic.plan.current_period_end).toLocaleDateString('fr-FR')
         : '-';
+
+      if (hasActiveSub) {
+        portalBtn.style.display = '';
+        subscribeBtn.style.display = 'none';
+        portalHint.style.display = '';
+        subscribeHint.style.display = 'none';
+      } else {
+        portalBtn.style.display = 'none';
+        subscribeBtn.style.display = '';
+        portalHint.style.display = 'none';
+        subscribeHint.style.display = '';
+      }
     });
   }
 
