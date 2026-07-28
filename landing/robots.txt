@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+Disallow: /abonnement
+Disallow: /reset-password
+Disallow: /merci
+Disallow: /paiement-annule
+
+Sitemap: https://logiciel-synoria.fr/sitemap.xml
