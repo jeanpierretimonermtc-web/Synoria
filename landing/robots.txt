@@ -6,4 +6,4 @@ Disallow: /reset-password
 Disallow: /merci
 Disallow: /paiement-annule
 
-Sitemap: https://logiciel-synoria.fr/sitemap.xml
+Sitemap: https://www.logiciel-synoria.fr/sitemap.xml
