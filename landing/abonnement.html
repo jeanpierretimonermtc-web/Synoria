@@ -273,7 +273,7 @@
       showAuthMsg('Renseignez votre email ci-dessus puis cliquez à nouveau sur "Mot de passe oublié".', true);
       return;
     }
-    sb.auth.resetPasswordForEmail(email).then(function (res) {
+    sb.auth.resetPasswordForEmail(email, { redirectTo: 'https://logiciel-synoria.fr/reset-password' }).then(function (res) {
       if (res.error) {
         showAuthMsg(res.error.message, true);
       } else {
