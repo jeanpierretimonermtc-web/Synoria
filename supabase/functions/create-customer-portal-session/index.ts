@@ -22,7 +22,6 @@
 import { corsHeaders, handleCors } from '../_shared/cors.ts'
 import { supabaseAdmin } from '../_shared/supabase-admin.ts'
 import { stripe } from '../_shared/stripe.ts'
-import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const DEFAULT_RETURN_URL = `${Deno.env.get('SITE_URL') ?? 'https://logiciel-synoria.fr'}/abonnement`
 
@@ -43,13 +42,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return json({ error: 'Missing authorization header' }, 401)
   }
 
-  const supabaseClient = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    { global: { headers: { Authorization: authHeader } } },
-  )
-
-  const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+  // auth.getUser() sans token explicite ne fonctionne pas dans Deno Edge Functions
+  // (pas de session localStorage). On passe le JWT directement à supabaseAdmin.
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader
+  const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
   if (authError || !user) {
     return json({
       error: 'Unauthorized',
