@@ -242,13 +242,16 @@
   // Extrait un message lisible depuis n'importe quel objet d'erreur Supabase/réseau.
   function authErrorMsg(err) {
     if (!err) return 'Une erreur est survenue. Réessayez.';
-    var raw = typeof err === 'string' ? err : (err.message || err.error_description || err.error || '');
+    var raw = typeof err === 'string' ? err : (err.message || err.msg || err.error_description || err.error || err.code || '');
     if (!raw || raw === '{}' || raw.trim() === '') return 'Une erreur est survenue. Réessayez.';
-    if (raw === 'Invalid login credentials')      return 'Email ou mot de passe incorrect.';
-    if (raw === 'Email not confirmed')            return 'Adresse email non confirmée — vérifiez votre boîte mail.';
-    if (raw === 'User already registered')        return 'Un compte existe déjà avec cette adresse email.';
-    if (raw.indexOf('Password should be') !== -1) return 'Le mot de passe doit contenir au moins 6 caractères.';
-    if (raw.indexOf('rate limit') !== -1)         return 'Trop de tentatives — attendez quelques minutes avant de réessayer.';
+    if (raw === 'Invalid login credentials')       return 'Email ou mot de passe incorrect.';
+    if (raw === 'Email not confirmed')             return 'Adresse email non confirmée — vérifiez votre boîte mail.';
+    if (raw === 'User already registered')         return 'Un compte existe déjà avec cette adresse email.';
+    if (raw.indexOf('Password should be') !== -1)  return 'Le mot de passe doit contenir au moins 6 caractères.';
+    if (raw.indexOf('rate limit') !== -1 || raw.indexOf('rate_limit') !== -1 || raw === 'over_email_send_rate_limit')
+      return 'Trop de tentatives — attendez quelques minutes avant de réessayer.';
+    if (raw.indexOf('sending') !== -1 || raw === 'unexpected_failure')
+      return 'Erreur technique lors de l\'envoi de l\'email — réessayez dans quelques instants ou contactez le support.';
     return raw;
   }
   function clearAuthMsg() {
@@ -325,10 +328,7 @@
         btn.disabled = false;
         btn.textContent = 'Envoyer le lien';
         if (res.error) {
-          var msg = (res.error.message && res.error.message.length > 2)
-            ? res.error.message
-            : 'Une erreur est survenue. Réessayez dans quelques instants.';
-          showAuthMsg(msg, true);
+          showAuthMsg(authErrorMsg(res.error), true);
         } else {
           showAuthMsg('Lien envoyé à ' + email + '. Vérifiez votre boîte de réception (et les spams).', false);
         }
