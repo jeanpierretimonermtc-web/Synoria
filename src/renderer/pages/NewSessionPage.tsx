@@ -1283,7 +1283,7 @@ export default function NewSessionPage() {
               </span>
               <button
                 className="btn btn-secondary btn-sm"
-                onClick={() => navigate('/patients', { state: { openPatientId: patientId, returnTo: location.pathname } })}
+                onClick={() => { saveDraftNow(); navigate('/patients', { state: { openPatientId: patientId, returnTo: location.pathname } }) }}
                 title="Ouvrir et modifier la fiche patient complète"
               >
                 👤 Modifier la fiche →
@@ -1313,7 +1313,7 @@ export default function NewSessionPage() {
                   <div style={{ background: 'var(--bg)', border: '1px dashed var(--border)', borderRadius: 6, padding: '8px 10px', fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>
                     Non renseigné —{' '}
                     <span style={{ color: 'var(--blue)', cursor: 'pointer', textDecoration: 'underline' }}
-                      onClick={() => navigate('/patients', { state: { openPatientId: patientId, returnTo: location.pathname } })}>
+                      onClick={() => { saveDraftNow(); navigate('/patients', { state: { openPatientId: patientId, returnTo: location.pathname } }) }}>
                       compléter la fiche
                     </span>
                   </div>
@@ -1331,7 +1331,7 @@ export default function NewSessionPage() {
                   <div style={{ background: 'var(--bg)', border: '1px dashed var(--border)', borderRadius: 6, padding: '8px 10px', fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>
                     Non renseigné —{' '}
                     <span style={{ color: 'var(--blue)', cursor: 'pointer', textDecoration: 'underline' }}
-                      onClick={() => navigate('/patients', { state: { openPatientId: patientId, returnTo: location.pathname } })}>
+                      onClick={() => { saveDraftNow(); navigate('/patients', { state: { openPatientId: patientId, returnTo: location.pathname } }) }}>
                       compléter la fiche
                     </span>
                   </div>
