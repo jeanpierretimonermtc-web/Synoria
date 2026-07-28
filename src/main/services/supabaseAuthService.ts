@@ -213,7 +213,7 @@ export async function signOut(): Promise<void> {
 export async function resetPassword(email: string): Promise<{ ok: boolean; error?: string }> {
   // L'email de reset Supabase redirige vers cette URL avec #access_token=...&type=recovery.
   // L'utilisateur atterrit sur la page abonnement qui lui indique de rouvrir l'application.
-  const redirectTo = 'https://logiciel-synoria.fr/abonnement'
+  const redirectTo = 'https://logiciel-synoria.fr/reset-password'
   const { error } = await getClient().auth.resetPasswordForEmail(email, { redirectTo })
   if (error) return { ok: false, error: error.message }
   return { ok: true }

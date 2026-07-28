@@ -22,7 +22,6 @@
 
 import { corsHeaders, handleCors } from '../_shared/cors.ts'
 import { supabaseAdmin } from '../_shared/supabase-admin.ts'
-import { createClient } from 'npm:@supabase/supabase-js@2'
 
 // ── Constantes ─────────────────────────────────────────────────────────────
 
@@ -91,13 +90,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return json({ error: 'Missing authorization header' }, 401)
   }
 
-  const supabaseClient = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    { global: { headers: { Authorization: authHeader } } },
-  )
-
-  const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+  // Extraire le JWT de l'en-tête Authorization et le valider directement via
+  // supabaseAdmin.auth.getUser(token) — méthode fiable dans Deno Edge Functions
+  // (évite le bug d'auth Supabase JS v2 où auth.getUser() sans argument utilise
+  // le token anon au lieu du JWT utilisateur en l'absence de session stockée).
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader
+  const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
   if (authError || !user) {
     return json({ error: 'Unauthorized', message: 'Session expirée ou invalide.' }, 401)
   }
@@ -534,7 +532,20 @@ function evaluateLicense(
 
     // ── Accès refusé ───────────────────────────────────────────────────────
 
-    case 'cancelled':
+    case 'cancelled': {
+      // Annulation à la fin de période : grace_until = current_period_end (défini par le webhook).
+      // L'accès reste complet jusqu'à la fin de la période déjà payée.
+      const graceUntil = license.grace_until ? new Date(license.grace_until) : null
+      if (graceUntil && graceUntil > now) {
+        const daysLeft = Math.ceil((graceUntil.getTime() - now.getTime()) / 86_400_000)
+        return {
+          allowed:     true,
+          mode:        'full',
+          warning:     `Abonnement annulé — accès maintenu encore ${daysLeft} jour(s) ` +
+                       `jusqu'à la fin de la période payée (${graceUntil.toLocaleDateString('fr-FR')}).`,
+          checkResult: 'ok',
+        }
+      }
       return {
         allowed:     false,
         mode:        'restricted',
@@ -543,6 +554,7 @@ function evaluateLicense(
                      'Souscrivez un nouvel abonnement pour accéder à toutes les fonctionnalités.',
         checkResult: 'restricted',
       }
+    }
 
     case 'revoked':
       return {

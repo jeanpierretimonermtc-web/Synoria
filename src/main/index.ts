@@ -440,6 +440,26 @@ app.whenReady().then(async () => {
 
   createWindow()
 
+  // Rafraîchissement de licence au retour dans l'app (après Stripe Checkout ou portail).
+  // Cooldown 5 minutes pour ne pas surcharger l'API à chaque alt-tab.
+  let _lastFocusLicenseCheck = 0
+  win?.on('focus', async () => {
+    try {
+      const user = getCurrentUser()
+      if (!user || isOwner(user?.email)) return
+      const now = Date.now()
+      if (now - _lastFocusLicenseCheck < 5 * 60 * 1000) return
+      _lastFocusLicenseCheck = now
+      const token = getAccessToken()
+      if (!token) return
+      const state = await verifyLicenseOnline(token)
+      setCachedLicenseState(state)
+      win?.webContents.send('license:stateUpdated', state)
+    } catch {
+      // Silencieux — le scheduler prendra le relais
+    }
+  })
+
   ipcMain.handle('win:setMenuBarVisible', (_e, visible: boolean) => {
     nativeMenuVisible = visible
     win?.setMenuBarVisibility(visible)

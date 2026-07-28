@@ -139,6 +139,7 @@
           <button class="portal-action" id="link-invoices">Voir les factures</button>
         </div>
         <p style="font-size:12px;color:var(--muted);margin-top:8px">Ces actions s'ouvrent dans le portail sécurisé Stripe.</p>
+        <p style="margin-top:14px"><button type="button" class="portal-action" id="refresh-account-btn">↻ Actualiser le statut</button></p>
       </div>
 
       <!-- Sans abonnement -->
@@ -237,6 +238,19 @@
     authMsg.textContent = text;
     authMsg.className = 'form-msg ' + (isError ? 'error' : 'success');
   }
+
+  // Extrait un message lisible depuis n'importe quel objet d'erreur Supabase/réseau.
+  function authErrorMsg(err) {
+    if (!err) return 'Une erreur est survenue. Réessayez.';
+    var raw = typeof err === 'string' ? err : (err.message || err.error_description || err.error || '');
+    if (!raw || raw === '{}' || raw.trim() === '') return 'Une erreur est survenue. Réessayez.';
+    if (raw === 'Invalid login credentials')      return 'Email ou mot de passe incorrect.';
+    if (raw === 'Email not confirmed')            return 'Adresse email non confirmée — vérifiez votre boîte mail.';
+    if (raw === 'User already registered')        return 'Un compte existe déjà avec cette adresse email.';
+    if (raw.indexOf('Password should be') !== -1) return 'Le mot de passe doit contenir au moins 6 caractères.';
+    if (raw.indexOf('rate limit') !== -1)         return 'Trop de tentatives — attendez quelques minutes avant de réessayer.';
+    return raw;
+  }
   function clearAuthMsg() {
     authMsg.textContent = '';
     authMsg.className = 'form-msg';
@@ -264,10 +278,11 @@
     btn.disabled = true;
     sb.auth.signInWithPassword({ email: email, password: password }).then(function (res) {
       btn.disabled = false;
-      if (res.error) {
-        showAuthMsg(res.error.message === 'Invalid login credentials' ? 'Email ou mot de passe incorrect.' : res.error.message, true);
-      }
+      if (res.error) { showAuthMsg(authErrorMsg(res.error), true); }
       // Si succes, onAuthStateChange bascule automatiquement vers l'espace connecte.
+    }).catch(function () {
+      btn.disabled = false;
+      showAuthMsg('Erreur réseau. Vérifiez votre connexion et réessayez.', true);
     });
   });
 
@@ -281,7 +296,7 @@
     sb.auth.signUp({ email: email, password: password }).then(function (res) {
       btn.disabled = false;
       if (res.error) {
-        showAuthMsg(res.error.message, true);
+        showAuthMsg(authErrorMsg(res.error), true);
       } else {
         showAuthMsg('Compte créé. Vérifiez votre boîte mail pour confirmer votre adresse avant de vous connecter.', false);
       }
@@ -327,6 +342,19 @@
 
   document.getElementById('logout-btn').addEventListener('click', function () {
     sb.auth.signOut();
+  });
+
+  document.getElementById('refresh-account-btn').addEventListener('click', function () {
+    var btn = this;
+    btn.textContent = '↻ Actualisation…';
+    btn.disabled = true;
+    sb.auth.getSession().then(function (res) {
+      var session = res.data && res.data.session;
+      if (session && session.user) {
+        loadAccount(session.user);
+      }
+      setTimeout(function () { btn.disabled = false; btn.textContent = '↻ Actualiser le statut'; }, 1500);
+    });
   });
 
   document.getElementById('portal-btn').addEventListener('click', function () {
@@ -381,7 +409,7 @@
     synoria_cabinet:'Synoria Cabinet',
   };
 
-  var ACTIVE_STATUSES = ['active', 'trialing', 'past_due', 'past_due_grace', 'offline_grace', 'cancelled'];
+  var ACTIVE_STATUSES = ['active', 'trialing', 'past_due_grace', 'offline_grace', 'cancelled'];
 
   function loadAccount(user) {
     document.getElementById('account-email').textContent = user.email;
@@ -456,6 +484,20 @@
       accountView.style.display = 'block';
       loadAccount(session.user);
     }
+  });
+
+  // Rafraîchit les droits quand l'utilisateur revient sur cet onglet (retour du portail Stripe,
+  // du checkout, ou de toute autre page externe).
+  var _lastVisibilityRefresh = 0;
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState !== 'visible') return;
+    var now = Date.now();
+    if (now - _lastVisibilityRefresh < 30000) return; // cooldown 30s
+    _lastVisibilityRefresh = now;
+    sb.auth.getSession().then(function (res) {
+      var session = res.data && res.data.session;
+      if (session && session.user) loadAccount(session.user);
+    });
   });
 })();
 </script>

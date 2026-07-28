@@ -319,8 +319,11 @@ async function handleSubscriptionDeleted(sub: Stripe.Subscription): Promise<void
   // 'cancelled' (access window still open) vs 'restricted' (access terminated)
   const periodEndMs = sub.current_period_end * 1000
   const licStatus: LicenseStatus = periodEndMs > Date.now() ? 'cancelled' : 'restricted'
+  // Si la période est encore en cours, grace_until = current_period_end pour que
+  // license-check puisse continuer à émettre des jetons valides jusqu'à cette date.
+  const graceUntil = licStatus === 'cancelled' ? new Date(periodEndMs).toISOString() : null
 
-  await updateLicense(organizationId, licStatus, null, null)
+  await updateLicense(organizationId, licStatus, graceUntil, null)
 
   console.log(
     `[sub.deleted] ✓ org=${organizationId} → sub=canceled lic=${licStatus} ` +
