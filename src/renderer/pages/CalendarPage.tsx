@@ -898,7 +898,7 @@ function TimeGridView({ days, todayStr, sessionsByDate, apptByDate, blocksByDate
                     <div
                       key={blk.id}
                       className="cal-block-personal"
-                      style={{ top: y, height: h, zIndex: 3 }}
+                      style={{ top: y, height: h, zIndex: 1 }}
                       onClick={e => { e.stopPropagation(); onBlockClick(blk) }}
                     >
                       <div className="cal-appt-name">⊘ {blk.motif || 'Perso / Indispo'}</div>
@@ -1687,7 +1687,7 @@ export default function CalendarPage() {
                                   border: `1.5px dashed ${BC.border}`,
                                   borderRadius: 7, padding: '5px 8px',
                                   fontSize: 10, color: BC.text, fontStyle: 'italic',
-                                  cursor: 'pointer', overflow: 'hidden', zIndex: 2,
+                                  cursor: 'pointer', overflow: 'hidden', zIndex: 1,
                                 }}
                                 onClick={() => openEditBlock(blk)}
                               >

@@ -1,6 +1,6 @@
 {
   "name": "synoria",
-  "version": "1.6.2",
+  "version": "1.6.3",
   "description": "Synoria - Logiciel de gestion de dossiers patients",
   "main": "dist-electron/main/index.js",
   "scripts": {
@@ -8,6 +8,7 @@
     "build": "tsc && vite build && electron-builder",
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "dev:fresh": "node scripts/reset-dev-data.mjs && concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "seed:test": "electron scripts/seed-complete-sessions.cjs",
     "electron:build": "vite build && electron-builder",
 "postinstall": "electron-rebuild -f -w better-sqlite3"
   },

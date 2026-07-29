@@ -48,3 +48,7 @@ fix_verify_import.cjs
 .DS_Store
 Thumbs.db
 .vercel
+
+# Cache & audits locaux
+.npm-cache/
+audits/

@@ -5,6 +5,7 @@ import { ToastContext } from '../App'
 import { fmtDate, getInitials, getEvolBadgeClass } from '../utils/format'
 import { UsersIcon, ClipboardIcon, CalendarIcon, CheckIcon, CloseIcon } from '../components/common/Icon'
 import EmptyState from '../components/common/EmptyState'
+import { showConfirm } from '../components/common/ConfirmDialog'
 
 const MONTHS_FR    = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
 const MONTHS_FULL  = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
@@ -475,11 +476,51 @@ export default function DashboardPage() {
   const [sendingReminder, setSendingReminder] = useState<string | null>(null)
   const [backupWarning,   setBackupWarning]   = useState<'none' | 'old' | 'never'>('none')
   const [backupDismissed, setBackupDismissed] = useState(false)
+  const [creatingPatient, setCreatingPatient] = useState<string | null>(null)
   const navigate  = useNavigate()
   const showToast = useContext(ToastContext)
 
   const now      = new Date()
   const todayStr = toDateStr(now)
+
+  const handleCreatePatientFromAppt = useCallback(async (appt: Appointment) => {
+    const firstName = appt.guest_first_name || ''
+    const lastName  = appt.guest_last_name  || ''
+    if (!firstName && !lastName) return
+    const fullName = [firstName, lastName].filter(Boolean).join(' ')
+    if (!await showConfirm({ message: `Créer une fiche patient pour ${fullName} ?`, title: 'Nouvelle fiche patient', confirmLabel: 'Créer' })) return
+    setCreatingPatient(appt.id)
+    try {
+      const nowIso = new Date().toISOString().slice(0, 10)
+      const newPatient = await window.mtcApi.createPatient({
+        first_name: firstName || '—',
+        last_name:  lastName  || '—',
+        phone:      appt.guest_phone || undefined,
+        birth_date: undefined, email: undefined, address: undefined,
+        notes_general: undefined, alerts: undefined,
+        regular_doctor: undefined, medications: undefined,
+        antecedents: undefined, profession: undefined,
+        created_at: nowIso, updated_at: nowIso, is_active: 1,
+      } as any)
+      await window.mtcApi.updateAppointment(appt.id, {
+        patient_id:       newPatient.id,
+        guest_last_name:  undefined,
+        guest_first_name: undefined,
+        guest_phone:      undefined,
+      })
+      setPatients(prev => [...prev, newPatient])
+      setUpcomingAppts(prev => prev.map(a =>
+        a.id === appt.id
+          ? { ...a, patient_id: newPatient.id, guest_first_name: undefined, guest_last_name: undefined, guest_phone: undefined }
+          : a
+      ))
+      showToast(`Fiche créée pour ${fullName}`, 'success')
+    } catch {
+      showToast('Erreur lors de la création de la fiche', 'error')
+    } finally {
+      setCreatingPatient(null)
+    }
+  }, [showToast])
 
   useEffect(() => {
     window.mtcApi.getDashboardStats().then(setStats).catch(() => showToast('Erreur chargement stats', 'error'))
@@ -523,7 +564,7 @@ export default function DashboardPage() {
     }).catch(() => window.mtcApi.getOverdueInvoices(30).then(setOverdueInvoices).catch(() => {}))
 
     window.mtcApi.getAppointmentsByMonth(now.getFullYear(), now.getMonth() + 1)
-      .then(a => setMonthApptCount(a.length))
+      .then(a => setMonthApptCount(a.filter(appt => !appt.is_cancelled).length))
       .catch(() => {})
 
     const promises = Array.from({ length: 6 }, (_, i) => {
@@ -774,7 +815,20 @@ export default function DashboardPage() {
                       📅 Calendrier
                     </button>
 
-                    {/* 3. Historique séances + RDV du patient */}
+                    {/* 3. Créer fiche patient — uniquement pour les invités sans fiche */}
+                    {!appt.patient_id && (appt.guest_first_name || appt.guest_last_name) && (
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        title={`Créer une fiche patient pour ${[appt.guest_first_name, appt.guest_last_name].filter(Boolean).join(' ')}`}
+                        disabled={creatingPatient === appt.id}
+                        onClick={e => { e.stopPropagation(); handleCreatePatientFromAppt(appt) }}
+                        style={{ padding: '4px 8px', color: 'var(--teal)', borderColor: 'var(--teal-mid)' }}
+                      >
+                        {creatingPatient === appt.id ? '…' : '👤 Créer fiche'}
+                      </button>
+                    )}
+
+                    {/* 4. Historique séances + RDV du patient */}
                     {pat && (
                       <button
                         className="btn btn-secondary btn-sm"
