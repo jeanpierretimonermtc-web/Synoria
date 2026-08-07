@@ -136,8 +136,14 @@ export async function initSupabaseAuth(): Promise<void> {
   }
 
   client.auth.onAuthStateChange((_event, session) => {
+    const wasNull = !_session
     _session = session
     persistSession(session)
+    // Déclenche un check MAJ dès que la session devient disponible (connexion ou restauration)
+    // pour ne pas dépendre uniquement du timer 15s qui peut tirer avant que le token soit prêt
+    if (session && wasNull) {
+      import('./updateService').then(m => m.checkForUpdates().catch(() => {}))
+    }
   })
 }
 
