@@ -691,7 +691,7 @@ function FormattingPopup() {
 
   const exec = (cmd: string, arg?: string) => {
     document.execCommand(cmd, false, arg)
-    const el = document.activeElement
+    const el = document.activeElement as HTMLElement | null
     if (el?.isContentEditable) el.dispatchEvent(new Event('input', { bubbles: true }))
   }
 
@@ -771,7 +771,7 @@ function FormattingToolbar() {
 
   const exec = (cmd: string, val?: string) => {
     document.execCommand(cmd, false, val)
-    const el = document.activeElement
+    const el = document.activeElement as HTMLElement | null
     if (el?.isContentEditable) el.dispatchEvent(new Event('input', { bubbles: true }))
   }
 

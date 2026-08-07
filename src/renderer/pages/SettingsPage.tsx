@@ -290,7 +290,7 @@ export default function SettingsPage() {
     const skipped = result.sessionsSkipped ?? 0
     showToast(
       `Import terminé ✓ — ${result.patientsUpserted} patient(s), ${result.sessionsUpserted} séance(s)${skipped > 0 ? ` · ${skipped} doublon(s) ignoré(s)` : ''}`,
-      skipped > 0 ? 'warning' : 'success',
+      'success',
     )
     if (skipped > 0) {
       setTimeout(() => window.alert(
@@ -1410,7 +1410,7 @@ export default function SettingsPage() {
             setPluginLoading(false)
           }
 
-          const importedActive = null
+          const importedActive = null as PluginDefinition | null
 
           return (
             <div>

@@ -10,7 +10,7 @@
 
 Application desktop **Electron + React + TypeScript** de gestion de dossiers patients pour praticiens de santé (MTC, Kinésiologie, Ostéopathie, etc.).
 
-- **Version actuelle :** 1.3.0
+- **Version actuelle :** 1.6.3
 - **Plateforme :** Windows 10/11 (64 bits). Mac possible mais non buildé.
 - **Distribution :** installateur NSIS (.exe Setup) + version portable (.exe sans installation) + version clé USB.
 - **Auteur :** Jean-Pierre Timoner — jeanpierre.timoner.mtc@gmail.com
