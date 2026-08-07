@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useCallback, useRef, Component } from 'react'
+import React, { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo, Component } from 'react'
 import { Routes, Route, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { logoLightSrc, logoDarkSrc, textLightSrc, textDarkSrc } from './assets/logoAssets'
 import { ConfirmDialog } from './components/common/ConfirmDialog'
@@ -30,6 +30,13 @@ import type { RestrictionState } from '../shared/types'
 
 export const ToastContext = React.createContext<(msg: string, type?: 'success' | 'error') => void>(() => {})
 
+// Guard de navigation : NewSessionPage enregistre une fonction de confirmation
+// que la sidebar appelle avant de naviguer
+export const NavigationGuardContext = React.createContext<{
+  register: (guard: () => Promise<boolean>) => void
+  unregister: () => void
+}>({ register: () => {}, unregister: () => {} })
+
 const DEFAULT_RESTRICTION: RestrictionState = {
   mode: 'restricted', status: 'unknown',
   canReadData: true, canExportData: true, canBackupData: true,
@@ -50,6 +57,13 @@ export default function App() {
   const [restriction,   setRestriction]   = useState<RestrictionState>(DEFAULT_RESTRICTION)
   const [updateResult,  setUpdateResult]  = useState<import('../shared/types').ReleaseCheckResult | null>(null)
   const navigate = useNavigate()
+
+  // Guard de navigation — stocké en ref pour ne pas provoquer de re-render
+  const navGuardRef = useRef<(() => Promise<boolean>) | null>(null)
+  const navGuardCtx = useMemo(() => ({
+    register:   (fn: () => Promise<boolean>) => { navGuardRef.current = fn },
+    unregister: () => { navGuardRef.current = null },
+  }), [])
 
   type ThemeMode = 'light' | 'dark' | 'system'
   const getSystemPref = () => window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
@@ -305,6 +319,7 @@ export default function App() {
   }
 
   return (
+    <NavigationGuardContext.Provider value={navGuardCtx}>
     <RestrictionContext.Provider value={restriction}>
     <ToastContext.Provider value={showToast}>
       <FormattingPopup />
@@ -396,7 +411,19 @@ export default function App() {
 
           {/* ── SIDEBAR ── */}
           <aside className="app-sidebar">
-            <nav className="sidebar-nav">
+            <nav className="sidebar-nav" onClickCapture={async e => {
+              if (!navGuardRef.current) return
+              const link = (e.target as Element).closest('a')
+              if (!link) return
+              e.preventDefault()
+              e.stopPropagation()
+              const href = link.getAttribute('href') || ''
+              const ok = await navGuardRef.current()
+              if (ok) {
+                navGuardRef.current = null
+                navigate(href.replace(/^#/, '') || '/')
+              }
+            }}>
 
               {/* Groupe principal */}
               <NavLink to="/" end className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}>
@@ -576,6 +603,7 @@ export default function App() {
       </div>
     </ToastContext.Provider>
     </RestrictionContext.Provider>
+    </NavigationGuardContext.Provider>
   )
 }
 

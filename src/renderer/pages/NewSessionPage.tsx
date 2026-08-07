@@ -4,7 +4,7 @@ import type { Patient, Session, ConsultationType, SystemesQuestionnaire, EnergyT
 import type { PluginDefinition } from '../../shared/pluginTypes'
 import PluginFormRenderer from '../components/plugin/PluginFormRenderer'
 import { showConfirm } from '../components/common/ConfirmDialog'
-import { ToastContext } from '../App'
+import { ToastContext, NavigationGuardContext } from '../App'
 import { useRestriction } from '../hooks/useRestriction'
 import RichTextArea from '../components/common/RichTextArea'
 import { defaultSystemes, defaultEnergyTests, migrateSystemes, MV_LIST, RECHAUFFEURS, FOYERS, POINTS_MU, SYNDROMES_BASE, SYNDROMES_CLIMAT, PENETRATION_LEVELS } from '../utils/sessionData'
@@ -301,6 +301,7 @@ export default function NewSessionPage() {
   const canSave = isEditing ? restriction.canModifySession : restriction.canCreateSession
   const R_TIP = 'Mode restreint — abonnement requis'
 
+
   const urlApptId = searchParams.get('apptId') || ''
 
   const [patients, setPatients] = useState<Patient[]>([])
@@ -392,7 +393,7 @@ export default function NewSessionPage() {
   // Mémorise l'état compta d'origine en mode édition pour calculer le delta à appliquer
   const originalComptaRef = useRef<{ typeId: string; mois: string } | null>(null)
   // Brouillon auto-sauvegardé
-  const [draftInfo, setDraftInfo] = useState<{ patientName: string; date: string; autoRestored?: boolean } | null>(null)
+  const [draftInfo, setDraftInfo] = useState<{ patientName: string; date: string; autoRestored?: boolean; isEditDraft?: boolean } | null>(null)
   // Systèmes
   const [systemes, setSystemes] = useState<SystemesQuestionnaire>(defaultSystemes())
   // Tests énergétiques
@@ -526,53 +527,65 @@ export default function NewSessionPage() {
 
   // ─── AUTO-SAUVEGARDE ──────────────────────────────────────────
   const DRAFT_KEY = 'mtc_session_draft'
+  // En mode édition, clé propre à la séance pour ne pas écraser le brouillon "nouvelle séance"
+  const activeDraftKey = isEditing && editSessionId
+    ? `mtc_session_draft_edit_${editSessionId}`
+    : DRAFT_KEY
+  // Ref stable qui reflète toujours activeDraftKey (valeur courante disponible dans les cleanups [])
+  const activeDraftKeyRef = useRef<string>(activeDraftKey)
+  activeDraftKeyRef.current = activeDraftKey
+
+  // Suivi du dirty state en mode édition
+  const editLoadedRef = useRef(false) // true une fois que la séance a été chargée depuis la DB
+  const editDirtyRef  = useRef(false) // true dès qu'une modification est détectée après le chargement
 
   // Ref toujours à jour — mis à jour SYNCHRONEMENT dans le corps du composant
   // (pas dans un useEffect) pour garantir que la valeur est courante au moment du démontage,
   // même si le composant est démonté dans le même cycle React que le dernier changement d'état.
   const draftRef = useRef<Record<string, unknown>>({})
-  if (!isEditing) {
-    draftRef.current = {
-      patientId, date, practitioner, motif, evolutionTags, evolution, problematiques,
-      anamnese, simpleContextVie, simpleTraitementsEnCours, simpleObjectifs, simpleNotesEntretien,
-      langue, langueNote, pouls, poulsNote, poulsPos, constitution, typeCorps, teint, observation,
-      diagnostic, cinqElements, causes, analyse, principes,
-      points, ptsOreille, techniques, plantes, reactions, traitementNotes,
-      conseils, plan, surveiller,
-      nextSession, nextSessionHeure, nextSessionFin, nextSessionNote, nextSessionApptId,
-      barrageNiv1, barrageNiv2, barrageNiv3, barrageNiv4,
-      systemes, energy, pluginData,
-      activePluginSnapshot: activePlugin && !activePlugin.useBuiltinForm ? activePlugin : null,
-      _savedAt: Date.now(),
-    }
+  draftRef.current = {
+    patientId, date, practitioner, motif, evolutionTags, evolution, problematiques,
+    anamnese, simpleContextVie, simpleTraitementsEnCours, simpleObjectifs, simpleNotesEntretien,
+    langue, langueNote, pouls, poulsNote, poulsPos, constitution, typeCorps, teint, observation,
+    diagnostic, cinqElements, causes, analyse, principes,
+    points, ptsOreille, techniques, plantes, reactions, traitementNotes,
+    conseils, plan, surveiller,
+    nextSession, nextSessionHeure, nextSessionFin, nextSessionNote, nextSessionApptId,
+    barrageNiv1, barrageNiv2, barrageNiv3, barrageNiv4,
+    systemes, energy, pluginData,
+    activePluginSnapshot: activePlugin && !activePlugin.useBuiltinForm ? activePlugin : null,
+    _savedAt: Date.now(),
+  }
+  // Marquer le formulaire comme modifié dès le premier render post-chargement en mode édition
+  if (isEditing && editLoadedRef.current) {
+    editDirtyRef.current = true
   }
 
   const saveDraftNow = useCallback(() => {
     const d = draftRef.current
     if (!d?.patientId) return
-    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)) } catch {}
+    try { localStorage.setItem(activeDraftKeyRef.current, JSON.stringify(d)) } catch {}
   }, [])
 
   // 1. Sauvegarde synchrone au DÉMONTAGE du composant
   //    C'est la seule garantie pour le verrou inactif (pas de blur OS, pas de visibilitychange)
-  //    isEditing est stable pendant le cycle de vie → safe dans un [] cleanup
+  //    activeDraftKeyRef est stable → safe dans un [] cleanup
   useEffect(() => {
     return () => {
-      if (isEditing) return
       const d = draftRef.current
       if (!d?.patientId) return
-      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)) } catch {}
+      try { localStorage.setItem(activeDraftKeyRef.current, JSON.stringify(d)) } catch {}
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // [] → cleanup uniquement au démontage final
 
   // 2. Debounce 4 s après chaque changement (frappe normale sans lock)
   useEffect(() => {
-    if (isEditing || !patientId) return
+    if (!patientId) return
     const t = setTimeout(saveDraftNow, 4_000)
     return () => clearTimeout(t)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEditing, patientId, date, practitioner, motif, evolutionTags, evolution, problematiques,
+  }, [patientId, date, practitioner, motif, evolutionTags, evolution, problematiques,
       anamnese, simpleContextVie, simpleTraitementsEnCours, simpleObjectifs, simpleNotesEntretien,
       langue, langueNote, pouls, poulsNote, poulsPos, constitution, typeCorps, teint, observation,
       diagnostic, cinqElements, causes, analyse, principes,
@@ -584,7 +597,6 @@ export default function NewSessionPage() {
 
   // 3. Perte de focus OS (alt-tab, minimiser) → sauvegarde immédiate
   useEffect(() => {
-    if (isEditing) return
     const onHide = () => saveDraftNow()
     window.addEventListener('blur', onHide)
     document.addEventListener('visibilitychange', onHide)
@@ -592,14 +604,36 @@ export default function NewSessionPage() {
       window.removeEventListener('blur', onHide)
       document.removeEventListener('visibilitychange', onHide)
     }
-  }, [isEditing, saveDraftNow])
+  }, [saveDraftNow])
 
   // 4. Filet de sécurité : intervalle toutes les 30 s
   useEffect(() => {
-    if (isEditing) return
     const id = setInterval(saveDraftNow, 30_000)
     return () => clearInterval(id)
-  }, [isEditing, saveDraftNow])
+  }, [saveDraftNow])
+
+  // ─── GUARD DE NAVIGATION ─────────────────────────────────────
+  // Enregistre un guard dans le contexte App — intercepté par onClickCapture de la sidebar
+  const { register: registerGuard, unregister: unregisterGuard } = useContext(NavigationGuardContext)
+  const isEditingRef = useRef(isEditing)
+  isEditingRef.current = isEditing
+  const patientIdRef = useRef(patientId)
+  patientIdRef.current = patientId
+
+  useEffect(() => {
+    registerGuard(async () => {
+      const dirty = isEditingRef.current ? editDirtyRef.current : !!patientIdRef.current
+      if (!dirty) return true
+      return showConfirm({
+        title: 'Modifications non sauvegardées',
+        message: 'Vous avez des modifications non enregistrées. Voulez-vous vraiment quitter cette page ?',
+        confirmLabel: 'Quitter sans sauvegarder',
+        cancelLabel: 'Rester',
+      })
+    })
+    return () => unregisterGuard()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // ─── DÉTECTION DU BROUILLON AU DÉMARRAGE ──────────────────────
   useEffect(() => {
@@ -610,7 +644,7 @@ export default function NewSessionPage() {
       const d = JSON.parse(raw)
       if (!d.patientId) return
       const savedAt = d._savedAt ? Date.now() - d._savedAt : Infinity
-      const isRecent = savedAt < 4 * 60 * 60 * 1000 // moins de 4 heures
+      const isRecent = savedAt < 24 * 60 * 60 * 1000 // moins de 24 heures
       // Auto-restaure si : même patient que l'URL, ou retour après verrou (pas de patient dans l'URL)
       const samePatient = d.patientId === routePatientId
       const freshStart  = !routePatientId && !urlApptId
@@ -681,6 +715,7 @@ export default function NewSessionPage() {
       if (!session) { showToast('Séance introuvable', 'error'); return }
 
       // Priorité : full_data_json qui contient l'état complet du formulaire
+      let loaded = false
       if (session.full_data_json) {
         try {
           const d = JSON.parse(session.full_data_json)
@@ -752,47 +787,64 @@ export default function NewSessionPage() {
             if (typeof e.penetrationComp === 'string') e.penetrationComp = e.penetrationComp ? [e.penetrationComp as unknown as string] : []
             setEnergy(e)
           }
-          return
+          loaded = true
         } catch {}
       }
 
       // Fallback sur les colonnes individuelles
-      setPatientId(session.patient_id)
-      setDate(session.date)
-      setPractitioner(session.practitioner || '')
-      setMotif(session.motif || '')
-      setEvolutionTags(session.evolution_tags ? session.evolution_tags.split(', ').filter(Boolean) : [])
-      setEvolution(session.evolution || '')
-      setProblematiques(session.problematiques || '')
-      setLangue(session.langue ? session.langue.split(', ').filter(Boolean) : [])
-      setPouls(session.pouls ? session.pouls.split(', ').filter(Boolean) : [])
-      setConstitution(session.constitution || '')
-      setTypeCorps(session.type_corps || '')
-      setTeint(session.teint || '')
-      setObservation(session.observation || '')
-      setDiagnostic(session.diagnostic_mtc || '')
-      setCinqElements(session.cinq_elements || '')
-      setCauses(session.causes || '')
-      setAnalyse(session.analyse || '')
-      setPrincipes(session.principes || '')
-      setPoints(session.points || '')
-      setPtsOreille(session.pts_oreille || '')
-      setTechniques(session.techniques ? session.techniques.split(', ').filter(Boolean) : [])
-      setPlantes(session.plantes || '')
-      setReactions(session.reactions || '')
-      setTraitementNotes(session.traitement_notes || '')
-      setConseils(session.conseils || '')
-      setPlan(session.plan || '')
-      setSurveiller(session.surveiller || '')
-      if (session.systemes_json) { try { setSystemes(migrateSystemes(JSON.parse(session.systemes_json))) } catch {} }
-      if (session.energy_tests_json) {
-        try {
-          const e: EnergyTests = { ...defaultEnergyTests(), ...JSON.parse(session.energy_tests_json) }
-          if (typeof e.penetrationEmp === 'string') e.penetrationEmp = e.penetrationEmp ? [e.penetrationEmp as unknown as string] : []
-          if (typeof e.penetrationComp === 'string') e.penetrationComp = e.penetrationComp ? [e.penetrationComp as unknown as string] : []
-          setEnergy(e)
-        } catch {}
+      if (!loaded) {
+        setPatientId(session.patient_id)
+        setDate(session.date)
+        setPractitioner(session.practitioner || '')
+        setMotif(session.motif || '')
+        setEvolutionTags(session.evolution_tags ? session.evolution_tags.split(', ').filter(Boolean) : [])
+        setEvolution(session.evolution || '')
+        setProblematiques(session.problematiques || '')
+        setLangue(session.langue ? session.langue.split(', ').filter(Boolean) : [])
+        setPouls(session.pouls ? session.pouls.split(', ').filter(Boolean) : [])
+        setConstitution(session.constitution || '')
+        setTypeCorps(session.type_corps || '')
+        setTeint(session.teint || '')
+        setObservation(session.observation || '')
+        setDiagnostic(session.diagnostic_mtc || '')
+        setCinqElements(session.cinq_elements || '')
+        setCauses(session.causes || '')
+        setAnalyse(session.analyse || '')
+        setPrincipes(session.principes || '')
+        setPoints(session.points || '')
+        setPtsOreille(session.pts_oreille || '')
+        setTechniques(session.techniques ? session.techniques.split(', ').filter(Boolean) : [])
+        setPlantes(session.plantes || '')
+        setReactions(session.reactions || '')
+        setTraitementNotes(session.traitement_notes || '')
+        setConseils(session.conseils || '')
+        setPlan(session.plan || '')
+        setSurveiller(session.surveiller || '')
+        if (session.systemes_json) { try { setSystemes(migrateSystemes(JSON.parse(session.systemes_json))) } catch {} }
+        if (session.energy_tests_json) {
+          try {
+            const e: EnergyTests = { ...defaultEnergyTests(), ...JSON.parse(session.energy_tests_json) }
+            if (typeof e.penetrationEmp === 'string') e.penetrationEmp = e.penetrationEmp ? [e.penetrationEmp as unknown as string] : []
+            if (typeof e.penetrationComp === 'string') e.penetrationComp = e.penetrationComp ? [e.penetrationComp as unknown as string] : []
+            setEnergy(e)
+          } catch {}
+        }
       }
+
+      // Signaler que la séance est chargée, puis chercher un brouillon édition non sauvegardé
+      editLoadedRef.current = true
+      try {
+        const draftKey = editSessionId
+          ? `mtc_session_draft_edit_${editSessionId}`
+          : DRAFT_KEY
+        const raw = localStorage.getItem(draftKey)
+        if (raw) {
+          const draft = JSON.parse(raw)
+          if (draft.patientId && draft._savedAt) {
+            setDraftInfo({ patientName: draft.patientId, date: draft.date || '', isEditDraft: true })
+          }
+        }
+      } catch {}
     })
   }, [editSessionId])
 
@@ -974,8 +1026,9 @@ export default function NewSessionPage() {
       }
       // ────────────────────────────────────────────────────────────────
 
-      try { localStorage.removeItem(DRAFT_KEY) } catch {}
+      try { localStorage.removeItem(activeDraftKey) } catch {}
       draftRef.current = {}
+      editDirtyRef.current = false
       setDraftInfo(null)
 
       // Si un prochain RDV a été créé/lié, ouvrir le calendrier sur cette date
@@ -1001,8 +1054,9 @@ export default function NewSessionPage() {
     setPluginData({})
     setBarrageNiv1(''); setBarrageNiv2(''); setBarrageNiv3(''); setBarrageNiv4('')
     setSystemes(defaultSystemes()); setEnergy(defaultEnergyTests())
-    try { localStorage.removeItem(DRAFT_KEY) } catch {}
+    try { localStorage.removeItem(activeDraftKeyRef.current) } catch {}
     draftRef.current = {}
+    editDirtyRef.current = false
     setDraftInfo(null)
   }, [])
 
@@ -1018,7 +1072,7 @@ export default function NewSessionPage() {
 
   const restoreDraft = () => {
     try {
-      const raw = localStorage.getItem(DRAFT_KEY)
+      const raw = localStorage.getItem(activeDraftKeyRef.current)
       if (!raw) return
       const d = JSON.parse(raw)
       setPatientId(d.patientId || '')
@@ -1158,9 +1212,20 @@ export default function NewSessionPage() {
       {/* ─── CONTENU PRINCIPAL ──────────────────────────────── */}
       <section className="session-main">
         {/* BANDEAU BROUILLON */}
-        {draftInfo && !isEditing && (
+        {draftInfo && (
           <div className="draft-banner">
-            {draftInfo.autoRestored ? (
+            {draftInfo.isEditDraft ? (
+              <>
+                <span>💾 Modifications non sauvegardées trouvées — séance du {draftInfo.date || '?'}</span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn btn-primary btn-sm" onClick={restoreDraft}>Restaurer</button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => {
+                    try { localStorage.removeItem(activeDraftKey) } catch {}
+                    setDraftInfo(null)
+                  }}>Ignorer</button>
+                </div>
+              </>
+            ) : draftInfo.autoRestored ? (
               <>
                 <span>✅ Brouillon restauré automatiquement — séance du {draftInfo.date || '?'}</span>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -1181,7 +1246,7 @@ export default function NewSessionPage() {
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button className="btn btn-primary btn-sm" onClick={restoreDraft}>Restaurer</button>
                   <button className="btn btn-secondary btn-sm" onClick={() => {
-                    try { localStorage.removeItem(DRAFT_KEY) } catch {}
+                    try { localStorage.removeItem(activeDraftKey) } catch {}
                     setDraftInfo(null)
                   }}>Ignorer</button>
                 </div>
@@ -1202,7 +1267,13 @@ export default function NewSessionPage() {
               {isEditing ? '💾 Mettre à jour la séance' : '💾 Enregistrer la séance'}
             </button>
             {!isEditing && <button className="btn btn-secondary" onClick={handleClear}>↺ Vider le formulaire</button>}
-            {isEditing && <button className="btn btn-secondary" onClick={() => navigate('/seances')}>✕ Annuler</button>}
+            {isEditing && <button className="btn btn-secondary" onClick={async () => {
+              if (editDirtyRef.current) {
+                const ok = await showConfirm({ title: 'Modifications non sauvegardées', message: 'Voulez-vous vraiment annuler sans sauvegarder ?', confirmLabel: 'Annuler quand même', cancelLabel: 'Rester' })
+                if (!ok) return
+              }
+              navigate('/seances')
+            }}>✕ Annuler</button>}
 
           </div>
         </div>
