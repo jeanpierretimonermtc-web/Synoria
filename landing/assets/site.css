@@ -31,13 +31,24 @@ figure{margin:0}
 
 /* ── NAV ─────────────────────────────────── */
 .nav{position:fixed;top:0;left:0;right:0;z-index:40;background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-bottom:1px solid rgba(221,232,217,.9)}
-.nav-inner{max-width:var(--max);margin:0 auto;height:64px;padding:0 28px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.nav-inner{position:relative;max-width:var(--max);margin:0 auto;height:64px;padding:0 28px;display:flex;align-items:center;justify-content:space-between;gap:18px}
 .brand{display:flex;align-items:center;gap:10px}
 .brand-logo{width:32px;height:32px;object-fit:contain}
 .brand-name{font-family:Georgia,"Times New Roman",serif;font-size:20px;font-weight:700;color:var(--accent-dark);letter-spacing:-.3px}
 .nav-links{display:flex;gap:24px;font-size:14px;font-weight:600;color:var(--muted)}
 .nav-links a:hover{color:var(--accent)}
 .nav-actions{display:flex;gap:10px}
+
+/* ── NAV MOBILE (menu hamburger, CSS pur) ─── */
+.nav-toggle-input{display:none}
+.nav-toggle-btn{
+  display:none;flex-direction:column;justify-content:center;align-items:flex-end;gap:5px;
+  width:34px;height:34px;flex-shrink:0;cursor:pointer;order:5;
+}
+.nav-toggle-btn span{display:block;width:22px;height:2px;border-radius:2px;background:var(--ink);transition:transform .2s ease,opacity .15s ease}
+.nav-toggle-input:checked ~ .nav-toggle-btn span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.nav-toggle-input:checked ~ .nav-toggle-btn span:nth-child(2){opacity:0}
+.nav-toggle-input:checked ~ .nav-toggle-btn span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
 
 /* ── BUTTONS ─────────────────────────────── */
 .btn{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 18px;border-radius:8px;border:1.5px solid transparent;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;transition:background .15s,border-color .15s,color .15s,transform .1s}
@@ -236,7 +247,17 @@ h2{font-family:Georgia,"Times New Roman",serif;font-size:42px;font-weight:400;li
 
 /* ── RESPONSIVE ──────────────────────────── */
 @media(max-width:980px){
-  .nav-links{display:none}
+  .nav-toggle-btn{display:flex}
+  .nav-links{
+    display:flex;flex-direction:column;gap:4px;
+    position:absolute;top:64px;left:0;right:0;
+    background:var(--white);border-bottom:1px solid var(--border);
+    padding:10px 28px 18px;
+    max-height:0;overflow:hidden;opacity:0;pointer-events:none;
+    transition:max-height .25s ease,opacity .2s ease;
+  }
+  .nav-links a{padding:10px 0;border-bottom:1px solid var(--soft)}
+  .nav-toggle-input:checked ~ .nav-links{max-height:420px;opacity:1;pointer-events:auto}
   h1{font-size:48px}
   h2{font-size:34px}
   .features,.security-grid,.pricing-grid,.contact-grid{grid-template-columns:repeat(2,1fr)}
@@ -251,6 +272,7 @@ h2{font-family:Georgia,"Times New Roman",serif;font-size:42px;font-weight:400;li
   .page-hero{padding:112px 16px 40px}
   .section{padding:60px 16px}
   .nav-inner{padding:0 16px}
+  .nav-links{padding-left:16px;padding-right:16px}
   .nav-actions .btn-outline{display:none}
   .hero-lead{font-size:16px}
   .hero-actions .btn{width:100%}
