@@ -238,5 +238,265 @@ export async function seedDevDataIfEmpty(): Promise<void> {
     } catch (e) { console.error('[DEV] Erreur patient 3:', e) }
   }
 
+  // ── PATIENTS MARKETING (captures d'écran / vidéos de présentation) ─
+  // 3 profils fictifs, un par formulaire, chaque section entièrement remplie.
+  await seedMarketingProfilesIfMissing()
+
   console.log('[DEV] ✓ Données de test à jour')
+}
+
+async function seedMarketingProfilesIfMissing(): Promise<void> {
+  const db = getDb()
+
+  const existsRoux     = db.prepare("SELECT id FROM patients WHERE last_name = 'ROUX' AND first_name = 'Isabelle'").get()
+  const existsBernard  = db.prepare("SELECT id FROM patients WHERE last_name = 'BERNARD' AND first_name = 'Thomas'").get()
+  const existsFontaine = db.prepare("SELECT id FROM patients WHERE last_name = 'FONTAINE' AND first_name = 'Nadia'").get()
+
+  if (existsRoux && existsBernard && existsFontaine) return
+
+  console.log('[DEV] Création des profils marketing manquants...')
+  const now = new Date().toISOString()
+
+  // Lit les schémas de plugins réels pour un pluginSchema fidèle (captures cohérentes
+  // avec l'app telle qu'elle sera présentée). Chemin relatif à la racine du projet (dev only).
+  const { readFileSync } = require('fs')
+  const { join: pathJoin } = require('path')
+  const loadPlugin = (file: string) => {
+    try { return JSON.parse(readFileSync(pathJoin(process.cwd(), 'public', 'plugins', file), 'utf8')) }
+    catch { return null }
+  }
+  const kinesioSchema = loadPlugin('kinesio.plugin.json')
+  const douleurSchema = loadPlugin('douleur_evolution.plugin.json')
+
+  // ── PATIENT MARKETING 1 — MTC intégré : Isabelle ROUX ──────────────
+  if (!existsRoux) {
+    try {
+      const p = patientRepo.createPatient({
+        first_name: 'Isabelle', last_name: 'ROUX',
+        birth_date: '1985-04-12', phone: '06 45 12 78 33', email: 'isabelle.roux@email.fr',
+        address: '22 rue du Faubourg Saint-Antoine, 75011 Paris', profession: 'Architecte',
+        notes_general: 'Patiente rigoureuse, prend des notes pendant les séances.',
+        alerts: 'Aucune allergie connue', medications: 'Contraception orale',
+        antecedents: 'Troubles digestifs chroniques depuis 2021. Cycles menstruels irréguliers.',
+        regular_doctor: 'Dr Chevalier — Médecin généraliste Paris 11e',
+        is_active: 1, consent_given: 1, consent_date: D(-90), civility: 'Mme',
+        created_at: now, updated_at: now,
+      } as any)
+
+      const apptDate = D(21)
+      const appt = appointmentRepo.createAppointment({
+        patient_id: p.id, date: apptDate, heure_debut: '10:00', heure_fin: '11:00',
+        note: 'Bilan digestif, réévaluer le pouls', is_done: 0,
+      })
+
+      const langue = ['Pâle', 'Enduit blanc', 'Gonflée']
+      const pouls  = ['Faible', 'Glissant']
+      const techniques = ['Acupuncture', 'Moxibustion', 'Diététique']
+      const poulsPos = { droitAvant: 'Faible', droitMilieu: 'Glissant', droitArriere: 'Profond', gaucheAvant: 'Normal', gaucheMilieu: 'Faible', gaucheArriere: 'Faible' }
+
+      sessionRepo.createSession({
+        patient_id: p.id, date: D(0), practitioner: 'Jean-Pierre TIMONER',
+        motif: '<p>Suivi mensuel — troubles digestifs et fatigue chronique</p>',
+        evolution_tags: '↗ Légère amélioration',
+        evolution: "<p>Transit plus régulier depuis la dernière séance. Moins de ballonnements après les repas. Fatigue en fin de journée persistante.</p>",
+        problematiques: 'Troubles digestifs, fatigue chronique, cycles irréguliers',
+        langue: langue.join(', '), pouls: pouls.join(', '),
+        constitution: 'Terre 🌍', type_corps: 'Longiligne, tonus musculaire moyen', teint: 'Légèrement jaunâtre',
+        observation: 'Cernes marqués, ongles cassants, ventre légèrement distendu à la palpation',
+        diagnostic_mtc: 'Vide de Rate-Estomac avec accumulation d\'Humidité',
+        cinq_elements: 'Terre déficiente, légère stagnation du Bois',
+        causes: 'Alimentation irrégulière, surmenage professionnel, rythme de vie déséquilibré',
+        analyse: 'Le Qi de Rate ne transforme plus efficacement les aliments, d\'où les ballonnements et la fatigue post-prandiale. Le stress professionnel entretient une légère stagnation du Foie qui envahit la Rate.',
+        principes: 'Tonifier la Rate et l\'Estomac, drainer l\'Humidité, harmoniser Foie-Rate',
+        points: 'Rte6, E36, Rte9, F3, VC12', pts_oreille: 'Shen Men, Estomac, Rate',
+        techniques: techniques.join(', '),
+        plantes: 'Si Jun Zi Tang — 6 comprimés 2x/jour pendant 3 semaines, à distance des repas',
+        reactions: '<p>Légère somnolence en fin de séance, sensation de chaleur dans l\'abdomen. Bon signe de mobilisation du Qi.</p>',
+        traitement_notes: '<p>Insister sur la régularité des repas, éviter le froid et le cru.</p>',
+        conseils: 'Manger à heures régulières, privilégier les aliments cuits et tièdes, réduire les crudités et le froid.',
+        plan: 'Objectif : stabiliser le transit et retrouver l\'énergie de fin de journée d\'ici 2 mois, à raison d\'une séance toutes les 3 semaines.',
+        surveiller: 'Réapparition des ballonnements en période de stress professionnel intense.',
+        next_session_date: apptDate,
+        full_data_json: JSON.stringify({
+          sessionNum: 4, patientId: p.id, date: D(0), practitioner: 'Jean-Pierre TIMONER',
+          motif: '<p>Suivi mensuel — troubles digestifs et fatigue chronique</p>',
+          evolutionTags: ['↗ Légère amélioration'],
+          evolution: "<p>Transit plus régulier depuis la dernière séance. Moins de ballonnements après les repas. Fatigue en fin de journée persistante.</p>",
+          problematiques: 'Troubles digestifs, fatigue chronique, cycles irréguliers',
+          anamnese: "<p>Patiente <strong>architecte</strong>, rythme de travail soutenu. Alimentation irrégulière en semaine. Se plaint de ballonnements post-prandiaux et de fatigue en fin d'après-midi. Sommeil correct mais réveils nocturnes occasionnels.</p>",
+          langue, langueNote: 'Empreintes dentaires sur les bords, enduit légèrement épais au centre',
+          pouls, poulsNote: 'Pouls un peu faible aux deux Guan, légèrement glissant', poulsPos,
+          constitution: 'Terre 🌍', typeCorps: 'Longiligne, tonus musculaire moyen', teint: 'Légèrement jaunâtre',
+          observation: 'Cernes marqués, ongles cassants, ventre légèrement distendu à la palpation',
+          diagnostic: 'Vide de Rate-Estomac avec accumulation d\'Humidité',
+          cinqElements: 'Terre déficiente, légère stagnation du Bois',
+          causes: 'Alimentation irrégulière, surmenage professionnel, rythme de vie déséquilibré',
+          analyse: 'Le Qi de Rate ne transforme plus efficacement les aliments, d\'où les ballonnements et la fatigue post-prandiale. Le stress professionnel entretient une légère stagnation du Foie qui envahit la Rate.',
+          principes: 'Tonifier la Rate et l\'Estomac, drainer l\'Humidité, harmoniser Foie-Rate',
+          points: 'Rte6, E36, Rte9, F3, VC12', ptsOreille: 'Shen Men, Estomac, Rate',
+          techniques,
+          plantes: 'Si Jun Zi Tang — 6 comprimés 2x/jour pendant 3 semaines, à distance des repas',
+          reactions: '<p>Légère somnolence en fin de séance, sensation de chaleur dans l\'abdomen. Bon signe de mobilisation du Qi.</p>',
+          traitementNotes: '<p>Insister sur la régularité des repas, éviter le froid et le cru.</p>',
+          conseils: 'Manger à heures régulières, privilégier les aliments cuits et tièdes, réduire les crudités et le froid.',
+          plan: 'Objectif : stabiliser le transit et retrouver l\'énergie de fin de journée d\'ici 2 mois, à raison d\'une séance toutes les 3 semaines.',
+          surveiller: 'Réapparition des ballonnements en période de stress professionnel intense.',
+          nextSession: apptDate, nextSessionHeure: '10:00', nextSessionNote: 'Bilan digestif, réévaluer le pouls',
+          nextSessionApptId: appt.id,
+          pluginId: MTC_PLUGIN_ID, pluginIsBuiltin: true,
+        }),
+        created_at: now, updated_at: now,
+      } as any)
+
+      console.log('[DEV] ✓ Profil marketing MTC — ROUX Isabelle créé')
+    } catch (e) { console.error('[DEV] Erreur profil marketing MTC:', e) }
+  }
+
+  // ── PATIENT MARKETING 2 — Kinésiologie : Thomas BERNARD ────────────
+  if (!existsBernard) {
+    try {
+      const p = patientRepo.createPatient({
+        first_name: 'Thomas', last_name: 'BERNARD',
+        birth_date: '1990-09-03', phone: '06 78 90 12 34', email: 'thomas.bernard@email.fr',
+        address: '15 rue de la République, 33000 Bordeaux', profession: 'Développeur informatique',
+        notes_general: 'Client réservé au début, se livre davantage après la 2e séance.',
+        alerts: '', antecedents: 'Anxiété généralisée diagnostiquée en 2023. Aucun traitement médicamenteux actuellement.',
+        regular_doctor: 'Dr Lambert — Médecin généraliste Bordeaux',
+        is_active: 1, consent_given: 1, consent_date: D(-14), civility: 'M',
+        created_at: now, updated_at: now,
+      } as any)
+
+      const apptDate = D(7)
+      const appt = appointmentRepo.createAppointment({
+        patient_id: p.id, date: apptDate, heure_debut: '11:00', heure_fin: '12:00',
+        note: 'Suivi respiration et gestion du stress', is_done: 0,
+      })
+
+      const pluginData = {
+        objetRdv: "<p>Client en reconversion professionnelle, ressent une <strong>anxiété importante</strong> face au changement de carrière. Recherche un accompagnement pour gérer le stress et clarifier ses objectifs.</p>",
+        contexteFamilial: 'En couple depuis 6 ans, pas d\'enfants. Compagne très soutenante mais le client culpabilise de son mal-être.',
+        contexteProfessionnel: 'Développeur depuis 8 ans, envisage une reconversion vers l\'enseignement. Démission prévue dans 3 mois, forte pression financière ressentie.',
+        suiviMedical: 'Aucun traitement en cours. A consulté un psychologue pendant 6 mois en 2023.',
+        stressScore: 4,
+        qualiteSommeil: 'Perturbée',
+        sommeil: 'Endormissement difficile (30-45 min), réveil vers 4h du matin avec ruminations sur l\'avenir professionnel.',
+        emotions: 'Anxiété, peur de l\'échec, culpabilité, par moments soulagement à l\'idée du changement.',
+        visionAvenir: 'Envie sincère de se reconvertir mais peur de ne pas y arriver financièrement et de décevoir son entourage.',
+        motivationAide: 'Le déclic est venu après une crise d\'angoisse au travail il y a 3 semaines. Veut apprendre à gérer le stress avant la transition.',
+        objectifsPrincipaux: 'Se sentir en confiance dans sa décision de reconversion, retrouver un sommeil réparateur, aborder la transition sereinement.',
+        indicateursReussite: 'Dormir une nuit complète sans réveil, pouvoir parler de sa reconversion sans anxiété, sentiment de calme intérieur.',
+        techniquesEquilibrage: ['Test musculaire', 'Respiration consciente', 'Ancrage / enracinement', 'Visualisation', 'Affirmation positive'],
+        derouléSeance: '<p>Test musculaire initial révélant un stress marqué autour du thème "sécurité financière". Travail sur l\'ancrage et la respiration. Visualisation guidée de la nouvelle carrière. Le client a exprimé un fort soulagement après l\'exercice de respiration.</p>',
+        resultatPercu: 'Positif',
+        stressApres: 3,
+        bilanSeance: 'Bonne réceptivité aux techniques de respiration et d\'ancrage. Le thème de la sécurité financière reste central à retravailler.',
+        conseilsEntreSeances: 'Pratiquer la respiration 4-7-8 chaque soir avant le coucher. Noter les pensées anxieuses dans un carnet plutôt que de les ruminer.',
+        axesTravailProchain: 'Approfondir le travail sur la peur de l\'échec et la légitimité professionnelle.',
+        frequencePreconisee: '1 fois par semaine',
+        anamnèseProchainRdv: 'Faire le point sur la pratique de la respiration, réévaluer le niveau de stress avant la démission.',
+      }
+
+      sessionRepo.createSession({
+        patient_id: p.id, date: D(0), practitioner: 'Jean-Pierre TIMONER',
+        motif: '<p>Anxiété liée à une reconversion professionnelle</p>',
+        evolution_tags: '🌱 1ère consultation',
+        evolution: '<p>Première séance d\'anamnèse complète avant le démarrage de l\'accompagnement.</p>',
+        next_session_date: apptDate,
+        full_data_json: JSON.stringify({
+          sessionNum: 1, patientId: p.id, date: D(0), practitioner: 'Jean-Pierre TIMONER',
+          motif: '<p>Anxiété liée à une reconversion professionnelle</p>',
+          evolutionTags: ['🌱 1ère consultation'],
+          evolution: '<p>Première séance d\'anamnèse complète avant le démarrage de l\'accompagnement.</p>',
+          nextSession: apptDate, nextSessionHeure: '11:00', nextSessionNote: 'Suivi respiration et gestion du stress',
+          nextSessionApptId: appt.id,
+          pluginData,
+          pluginId: KINESIO_PLUGIN_ID, pluginIsBuiltin: false,
+          pluginSchema: kinesioSchema,
+        }),
+        created_at: now, updated_at: now,
+      } as any)
+
+      console.log('[DEV] ✓ Profil marketing Kinésiologie — BERNARD Thomas créé')
+    } catch (e) { console.error('[DEV] Erreur profil marketing Kinésiologie:', e) }
+  }
+
+  // ── PATIENT MARKETING 3 — Suivi douleur : Nadia FONTAINE ───────────
+  if (!existsFontaine) {
+    try {
+      const p = patientRepo.createPatient({
+        first_name: 'Nadia', last_name: 'FONTAINE',
+        birth_date: '1978-01-27', phone: '06 56 78 90 12', email: 'nadia.fontaine@email.fr',
+        address: '9 boulevard Victor Hugo, 06000 Nice', profession: 'Coiffeuse',
+        notes_general: 'Patiente très active, a du mal à respecter les temps de repos prescrits.',
+        alerts: '', antecedents: 'Tendinopathie de l\'épaule droite diagnostiquée il y a 8 mois. Pas de chirurgie.',
+        regular_doctor: 'Dr Giraud — Médecin du sport, Nice',
+        is_active: 1, consent_given: 1, consent_date: D(-45), civility: 'Mme',
+        created_at: now, updated_at: now,
+      } as any)
+
+      const apptDate = D(7)
+      const appt = appointmentRepo.createAppointment({
+        patient_id: p.id, date: apptDate, heure_debut: '15:00', heure_fin: '16:00',
+        note: 'Réévaluer douleur épaule, ajuster renforcement', is_done: 0,
+      })
+
+      const pluginData = {
+        motifPrincipal: '<p>Douleur persistante à l\'épaule droite, gênant le travail au quotidien (gestes répétitifs de coiffure). Demande un soulagement rapide avant la haute saison.</p>',
+        anciennete: '6 mois à 1 an',
+        circonstances: 'Apparition progressive liée aux gestes répétitifs du métier (bras levés toute la journée), sans traumatisme initial identifié.',
+        antecedentsLies: 'Tendinopathie de la coiffe des rotateurs diagnostiquée par échographie il y a 8 mois. Pas de chirurgie, kinésithérapie ponctuelle.',
+        traitementsEnCours: ['Anti-inflammatoires ponctuels', 'Kinésithérapie 1x/semaine'],
+        schemaCorps: {
+          front: ['Épaule droite'], back: [], left: [], right: [],
+          details: { 'front:Épaule droite': { intensity: 7, symptom: 'Douleur', laterality: 'Droit', note: 'Douleur à l\'abduction et à l\'élévation du bras' } },
+        },
+        irradiation: 'Irradiation occasionnelle vers le deltoïde et le haut du bras droit, jusqu\'au coude lors des pics douloureux.',
+        lateralite: 'Droit',
+        notesLocalisation: 'Douleur profonde, localisée sous l\'acromion, reproduite à la palpation du sus-épineux.',
+        douleurAvantApres: { before: 7, after: 4 },
+        frequence: 'Quotidienne',
+        evolutionDepuis: 'Légère amélioration',
+        limitationFonctionnelle: ['Travail', 'Sommeil', 'Sport / activité physique'],
+        impactSommeil: 6,
+        impactActivites: 7,
+        facteursAggravants: 'Gestes répétitifs bras levés (coiffure), port de charges, position couchée sur le côté droit la nuit.',
+        facteursAmeliorants: 'Repos, chaleur locale, anti-inflammatoires, étirements doux le matin.',
+        sensibilitesExterieures: ['Froid', 'Mouvement'],
+        momentJournee: ['Le soir', 'À l\'effort', 'Après l\'effort'],
+        testsRealises: [
+          { nom: 'Test de Jobe', note: 'Positif à droite, douleur reproduite' },
+          { nom: 'Test de Neer', note: 'Positif, conflit sous-acromial suspecté' },
+        ],
+        traitementEffectue: '<p>Massage transverse profond du sus-épineux, mobilisation gléno-humérale douce, étirements de la coiffe des rotateurs, taping de soutien.</p>',
+        reactionsSeance: '<p>Diminution immédiate de la douleur après la séance (7→4). Légère sensibilité résiduelle au palper.</p>',
+        conseilsDonnes: 'Éviter le port de charges lourdes cette semaine, dormir sur le côté gauche, glace 10 min après le travail si besoin.',
+        objectifProchaine: 'Poursuivre le renforcement progressif de la coiffe des rotateurs, réévaluer l\'amplitude articulaire.',
+        exercicesRecommandations: 'Étirements pendulaires matin et soir, renforcement isométrique doux 2x/jour, éviter les mouvements au-dessus de la tête pendant 1 semaine.',
+        frequenceRecommandee: '1 fois par semaine',
+        notesFinSeance: 'Bonne tolérance au traitement manuel. Prévoir un travail sur la posture de travail (hauteur du poste de coiffure).',
+      }
+
+      sessionRepo.createSession({
+        patient_id: p.id, date: D(0), practitioner: 'Jean-Pierre TIMONER',
+        motif: '<p>Douleur chronique épaule droite — coiffeuse</p>',
+        evolution_tags: '↗ Légère amélioration',
+        evolution: '<p>Douleur passée de 7/10 à 4/10 en fin de séance. Patiente encouragée par le résultat.</p>',
+        next_session_date: apptDate,
+        full_data_json: JSON.stringify({
+          sessionNum: 3, patientId: p.id, date: D(0), practitioner: 'Jean-Pierre TIMONER',
+          motif: '<p>Douleur chronique épaule droite — coiffeuse</p>',
+          evolutionTags: ['↗ Légère amélioration'],
+          evolution: '<p>Douleur passée de 7/10 à 4/10 en fin de séance. Patiente encouragée par le résultat.</p>',
+          nextSession: apptDate, nextSessionHeure: '15:00', nextSessionNote: 'Réévaluer douleur épaule, ajuster renforcement',
+          nextSessionApptId: appt.id,
+          pluginData,
+          pluginId: 'douleur_evolution', pluginIsBuiltin: false,
+          pluginSchema: douleurSchema,
+        }),
+        created_at: now, updated_at: now,
+      } as any)
+
+      console.log('[DEV] ✓ Profil marketing Suivi douleur — FONTAINE Nadia créé')
+    } catch (e) { console.error('[DEV] Erreur profil marketing Suivi douleur:', e) }
+  }
 }

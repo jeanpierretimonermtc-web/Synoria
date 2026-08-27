@@ -21,7 +21,13 @@ export function createPatient(data: Omit<Patient, 'id' | 'created_at' | 'updated
     VALUES (@id, @first_name, @last_name, @birth_date, @phone, @email, @address,
       @notes_general, @alerts, @regular_doctor, @medications, @antecedents, @profession,
       @civility, @is_active, @consent_given, @consent_date, @created_at, @updated_at)
-  `).run({ civility: '', consent_given: 0, consent_date: null, ...patient })
+  `).run({
+    birth_date: null, phone: null, email: null, address: null,
+    notes_general: null, alerts: null, regular_doctor: null, medications: null,
+    antecedents: null, profession: null,
+    civility: '', consent_given: 0, consent_date: null,
+    ...patient,
+  })
   return patient
 }
 

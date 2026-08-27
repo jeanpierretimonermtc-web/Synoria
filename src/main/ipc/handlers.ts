@@ -31,6 +31,7 @@ import {
   exportSessionExcelCanonical,
 } from '../services/exports/sessionExportPipeline'
 import { initDatabase, closeDatabase, isDatabaseOpen } from '../database/connection'
+import { seedDevDataIfEmpty }         from '../database/seedDevData'
 import * as auth                      from '../services/authService'
 import * as pluginSvc                 from '../services/pluginService'
 import * as profileSvc               from '../services/profileService'
@@ -513,7 +514,7 @@ export function registerAllHandlers(): void {
       auth.decryptDb()      // déchiffre pour la session courante
       initDatabase()
       if (!app.isPackaged) {
-        try { const { seedDevDataIfEmpty } = require('../database/seedDevData'); seedDevDataIfEmpty() } catch {}
+        try { seedDevDataIfEmpty() } catch {}
       }
       return { ok: true }
     } catch (e: any) {
@@ -539,7 +540,6 @@ export function registerAllHandlers(): void {
     // En mode dev : compléter les données de test si des patients manquent
     if (!app.isPackaged) {
       try {
-        const { seedDevDataIfEmpty } = require('../database/seedDevData')
         seedDevDataIfEmpty()
       } catch (e) { console.error('[DEV] Seed after login:', e) }
     }

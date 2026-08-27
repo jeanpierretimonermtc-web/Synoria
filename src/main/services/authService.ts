@@ -13,7 +13,7 @@
  */
 
 import { pbkdf2Sync, randomBytes, createCipheriv, createDecipheriv } from 'crypto'
-import { readFileSync, writeFileSync, existsSync, unlinkSync, mkdirSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, unlinkSync, mkdirSync, renameSync } from 'fs'
 import { join, dirname } from 'path'
 import { app } from 'electron'
 
@@ -148,6 +148,21 @@ export function decryptDb(): void {
   const enc = dbEncPath()
   if (!existsSync(enc)) return  // pas encore de fichier enc (première mise en place)
   mkdirSync(dirname(dbPath()), { recursive: true })
+
+  // Un fichier de travail déjà présent ici signale un arrêt non propre
+  // (crash, fermeture forcée) : il peut contenir des écritures plus récentes
+  // que le dernier .enc (rechiffré toutes les 3 min, cf. startAutoSaveEncrypted).
+  // On le préserve au lieu de l'écraser silencieusement.
+  if (existsSync(dbPath())) {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+    for (const suffix of ['', '-wal', '-shm']) {
+      const src = dbPath() + suffix
+      if (existsSync(src)) {
+        try { renameSync(src, `${src}.recovered-${stamp}`) } catch { /* best-effort */ }
+      }
+    }
+  }
+
   writeFileSync(dbPath(), aesDecrypt(readFileSync(enc, 'utf8'), _key))
 }
 

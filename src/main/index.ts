@@ -43,11 +43,13 @@ function migrateUserDataIfNeeded(): void {
   // Si auth.json existe déjà → pas de migration nécessaire
   if (existsSync(authInCurrent)) return
 
-  // Chemins alternatifs connus — inclut 'Synoria Dev' (anciens builds Mac défectueux)
+  // Chemins alternatifs connus. Ne JAMAIS inclure 'Synoria Dev' : c'est le dossier
+  // dédié au mode développement (voir plus haut), présent sur toute machine de
+  // développeur — l'inclure ferait migrer des données de test dans une installation
+  // de production dès que celle-ci n'a pas encore de auth.json.
   const candidates = [
     join(appData, app.getName()),
     join(appData, 'Synoria'),
-    join(appData, 'Synoria Dev'),        // anciens builds Mac avec mauvais productName
     join(appData, 'Dossier Patient MTC'), // très ancienne version
     join(appData, 'synoria'),
   ].filter(p => p !== currentPath)

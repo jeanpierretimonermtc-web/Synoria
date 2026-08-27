@@ -1605,39 +1605,38 @@ export default function NewSessionPage() {
                     {/* Table positions Cun / Guan / Chi */}
                     {(() => {
                       const cols = [
-                        { label: 'Cun (avant)',   hBg: 'var(--amber)', hText: '#fff', cellBg: 'var(--amber-light)', border: '#C17B2A'          },
-                        { label: 'Guan (milieu)', hBg: 'var(--teal)',  hText: '#fff', cellBg: 'var(--teal-light)',  border: 'var(--teal-mid)'   },
-                        { label: 'Chi (arrière)', hBg: 'var(--blue)',  hText: '#fff', cellBg: 'var(--blue-light)',  border: 'var(--blue-mid)'   },
+                        { label: 'Cun (avant)',   text: 'var(--amber)' },
+                        { label: 'Guan (milieu)', text: 'var(--teal)'  },
+                        { label: 'Chi (arrière)', text: 'var(--blue)'  },
                       ]
                       const rows = [
-                        { side: 'Droite', fields: ['droitAvant','droitMilieu','droitArriere'] as const,   placeholders: ['P / Gros int.','Rate / Estomac','Mingmen / RMC'] },
-                        { side: 'Gauche', fields: ['gaucheAvant','gaucheMilieu','gaucheArriere'] as const, placeholders: ['C / IG','Foie / VB','Reins / V'] },
+                        { side: 'Droite', fields: ['droitAvant','droitMilieu','droitArriere'] as const },
+                        { side: 'Gauche', fields: ['gaucheAvant','gaucheMilieu','gaucheArriere'] as const },
                       ]
                       return (
-                        <div style={{ overflowX: 'auto', marginBottom: 8, borderRadius: 8, border: '1px solid var(--border)', overflow: 'hidden' }}>
-                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                        <div style={{ overflowX: 'auto', marginBottom: 8, borderRadius: 10, border: '1px solid var(--border)', overflow: 'hidden' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                             <thead>
                               <tr>
-                                <th style={{ padding: '7px 10px', background: 'var(--bg)', borderBottom: '1px solid var(--border)', width: '13%' }} />
-                                {cols.map(c => (
-                                  <th key={c.label} style={{ padding: '8px 10px', textAlign: 'center', borderBottom: `2px solid ${c.border}`, background: c.hBg, color: c.hText, fontWeight: 700, fontSize: 11, letterSpacing: '.05em', textTransform: 'uppercase' }}>
+                                <th style={{ padding: '8px 10px', background: 'var(--surface)', borderBottom: '1px solid var(--border)', width: '13%' }} />
+                                {cols.map((c, i) => (
+                                  <th key={c.label} style={{ padding: '8px 10px', textAlign: 'center', borderBottom: `3px solid ${c.text}`, borderLeft: i > 0 ? `2px solid ${c.text}` : undefined, background: 'var(--surface)', color: c.text, fontWeight: 700, fontSize: 11, letterSpacing: '.05em', textTransform: 'uppercase' }}>
                                     {c.label}
                                   </th>
                                 ))}
                               </tr>
                             </thead>
                             <tbody>
-                              {rows.map(({ side, fields, placeholders }, ri) => (
-                                <tr key={side} style={{ background: ri % 2 === 1 ? 'var(--bg)' : 'transparent' }}>
-                                  <td style={{ padding: '6px 10px', fontWeight: 700, fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap', borderRight: '1px solid var(--border)' }}>{side}</td>
+                              {rows.map(({ side, fields }, ri) => (
+                                <tr key={side} style={{ background: ri % 2 === 1 ? 'var(--bg)' : 'var(--surface)' }}>
+                                  <td style={{ padding: '8px 10px', fontWeight: 700, fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap', borderRight: '1px solid var(--border)' }}>{side}</td>
                                   {fields.map((f, i) => (
-                                    <td key={f} style={{ padding: '5px 7px', borderRight: i < 2 ? `1px solid ${cols[i].border}` : undefined, background: cols[i].cellBg }}>
+                                    <td key={f} style={{ padding: '6px 8px', borderLeft: i > 0 ? `2px solid ${cols[i].text}` : undefined }}>
                                       <input
                                         type="text"
                                         value={poulsPos[f]}
                                         onChange={e => setPoulsPos(prev => ({ ...prev, [f]: e.target.value }))}
-                                        placeholder={placeholders[i]}
-                                        style={{ width: '100%', fontSize: 12, background: 'var(--surface)', border: `1px solid ${cols[i].border}`, borderRadius: 5, padding: '3px 7px' }}
+                                        style={{ width: '100%', fontSize: 13, background: 'var(--input-bg)', border: '1.5px solid var(--border)', borderRadius: 8, padding: '7px 10px' }}
                                       />
                                     </td>
                                   ))}

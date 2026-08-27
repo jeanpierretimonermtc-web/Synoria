@@ -11,6 +11,11 @@
     <priority>0.9</priority>
   </url>
   <url>
+    <loc>https://www.logiciel-synoria.fr/mtc</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.logiciel-synoria.fr/telechargement</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
