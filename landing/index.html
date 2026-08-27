@@ -42,7 +42,7 @@
     "@type": "Organization",
     "name": "Synoria"
   },
-  "softwareVersion": "1.3.0",
+  "softwareVersion": "1.6.4",
   "inLanguage": "fr"
 }
 </script>
@@ -87,291 +87,276 @@
 <header class="hero" id="accueil">
   <div class="hero-badge">
     <span class="hero-badge-dot"></span>
-    Logiciel de bureau · Windows &amp; macOS
+    Logiciel de cabinet · Windows &amp; macOS
   </div>
-  <h1><em>Synoria</em> — le logiciel de gestion de cabinet pour les praticiens indépendants.</h1>
-  <p class="hero-lead">Application de bureau pour Windows et macOS, Synoria centralise dossiers patients, séances, rendez-vous, agenda professionnel, facturation et suivi d'activité. Les données du cabinet restent sur votre ordinateur, chiffrées et maîtrisées.</p>
+  <h1><em>Synoria</em> — le logiciel de gestion de cabinet où vos dossiers patients restent sur votre ordinateur.</h1>
+  <p class="hero-lead">Synoria centralise vos dossiers patients, séances, rendez-vous et factures dans une application de bureau sécurisée.</p>
+  <p class="hero-lead" style="font-weight:600;color:var(--ink);max-width:680px">Vos dossiers patients sont enregistrés localement sur votre ordinateur, pas dans un cloud Synoria. Et parce que chaque praticien travaille différemment, Synoria peut s'adapter à votre spécialité et à votre méthode de consultation.</p>
   <div class="hero-actions">
     <a class="btn btn-primary btn-lg" href="/tarifs">Commencer l'essai gratuit</a>
-    <a class="btn btn-outline btn-lg" href="#captures">Voir les captures</a>
+    <a class="btn btn-outline btn-lg" href="#difference">Découvrir Synoria</a>
   </div>
   <div class="hero-proof">
-    <span class="proof-pill"><span class="proof-check">✓</span> Données patients en local</span>
-    <span class="proof-pill"><span class="proof-check">✓</span> Chiffrement AES-256-GCM</span>
-    <span class="proof-pill"><span class="proof-check">✓</span> Plugins métier</span>
-    <span class="proof-pill"><span class="proof-check">✓</span> Conforme RGPD</span>
-    <span class="proof-pill"><span class="proof-check">✓</span> Essai gratuit 14 jours</span>
+    <span class="proof-pill"><span class="proof-check">✓</span> Données patients stockées localement</span>
+    <span class="proof-pill"><span class="proof-check">✓</span> Base de données chiffrée</span>
+    <span class="proof-pill"><span class="proof-check">✓</span> Formulaires métier</span>
+    <span class="proof-pill"><span class="proof-check">✓</span> Outils RGPD intégrés</span>
+    <span class="proof-pill"><span class="proof-check">✓</span> 14 jours d'essai</span>
   </div>
   <div class="hero-screen">
-    <div class="screen-bar">
-      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-    </div>
+    <div class="screen-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
     <img src="assets/screens/Dashboard.png" alt="Interface Synoria — tableau de bord">
   </div>
 </header>
 
-<!-- TRUST BAR -->
-<div class="trust-bar">
-  <div class="trust-inner">
-    <div class="trust-item"><span class="trust-icon">🔒</span> Chiffrement AES-256-GCM</div>
-    <div class="trust-item"><span class="trust-icon">💾</span> Données patients locales</div>
-    <div class="trust-item"><span class="trust-icon">🔌</span> Plugins métier personnalisables</div>
-    <div class="trust-item"><span class="trust-icon">🇪🇺</span> Conforme RGPD</div>
-  </div>
-</div>
-
 <main>
 
-<!-- PRÉSENTATION -->
-<section class="section tight" id="presentation" aria-labelledby="presentation-title">
+<!-- SECTION 2 — LA DIFFÉRENCE SYNORIA -->
+<section class="section" id="difference">
   <div class="inner">
     <div class="section-head center">
-      <div class="section-label">Qu'est-ce que Synoria ?</div>
-      <h2 id="presentation-title">Un logiciel de bureau pour gérer son cabinet au même endroit.</h2>
-      <p class="section-text center">Synoria s'adresse aux praticiens indépendants qui souhaitent organiser leurs dossiers patients, leurs séances, leurs rendez-vous, leur facturation et leur activité quotidienne depuis une seule application. Il fonctionne sur Windows et macOS et conserve les données du cabinet localement sur le poste du praticien.</p>
+      <div class="section-label">La différence Synoria</div>
+      <h2>Un logiciel pensé autrement pour les praticiens indépendants.</h2>
+      <p class="section-text center">Vous confiez à votre logiciel des informations sensibles et une grande partie de l'organisation de votre cabinet. Synoria a donc été conçu autour de deux principes simples.</p>
+    </div>
+    <div class="principles">
+      <div class="principle">
+        <h3>Vos données patients restent chez vous.</h3>
+        <p>Les dossiers patients et les séances sont enregistrés sur votre ordinateur dans une base locale chiffrée.</p>
+        <p>Vos données cliniques ne sont pas hébergées sur les serveurs Synoria.</p>
+      </div>
+      <div class="principle">
+        <h3>Synoria s'adapte à votre pratique.</h3>
+        <p>Médecine traditionnelle chinoise, ostéopathie, kinésiologie, naturopathie… chaque pratique possède ses propres méthodes d'anamnèse et de suivi.</p>
+        <p>Synoria propose des formulaires métier adaptés à différentes spécialités et peut répondre à des besoins plus spécifiques lorsque votre méthode de travail nécessite une structure différente.</p>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- FONCTIONNALITÉS -->
-<section class="section" id="fonctionnalites">
+<!-- SECTION 3 — STOCKAGE LOCAL -->
+<section class="section alt" id="stockage">
   <div class="inner">
     <div class="section-head center">
-      <div class="section-label">Fonctionnalités</div>
-      <h2>Tout ce dont un praticien a besoin au quotidien.</h2>
-      <p class="section-text">Synoria évite de disperser les informations entre un agenda, des notes, un tableur et des modèles de facture.</p>
+      <div class="section-label">Stockage local</div>
+      <h2>Vos dossiers patients n'ont pas besoin d'être stockés dans notre cloud.</h2>
+      <p class="section-text center">Avec Synoria, votre base patients reste sur votre ordinateur.</p>
     </div>
-    <div class="features">
-      <article class="feature">
-        <div class="feature-icon" style="background:#ebf2f9">🗂️</div>
-        <h3>Patients</h3>
-        <p>Coordonnées, antécédents, alertes, consentement RGPD, notes et historique complet des séances.</p>
-      </article>
-      <article class="feature">
-        <div class="feature-icon" style="background:#ebf5e6">📋</div>
-        <h3>Séances</h3>
-        <p>Historique complet, texte enrichi, duplication, dossier patient PDF et exports Excel, JSON et impression.</p>
-      </article>
-      <article class="feature">
-        <div class="feature-icon" style="background:#fef6ea">📅</div>
-        <h3>Agenda</h3>
-        <p>Planning horaire, rendez-vous patients ou invités, rappels J-1 et synchronisation Google Calendar.</p>
-      </article>
-      <article class="feature">
-        <div class="feature-icon" style="background:#edf0f9">💶</div>
-        <h3>Facturation</h3>
-        <p>Factures numérotées, suivi des paiements, dépenses, recettes mensuelles et export URSAF comptable.</p>
-      </article>
+    <div class="security-grid">
+      <div class="security-card"><div class="security-num">1</div><h3>Sur votre ordinateur</h3><p>Les dossiers patients, séances et informations de suivi sont enregistrés localement.</p></div>
+      <div class="security-card"><div class="security-num">2</div><h3>Chiffrés</h3><p>La base de données est protégée par un chiffrement AES-256-GCM.</p></div>
+      <div class="security-card"><div class="security-num">3</div><h3>Sous votre maîtrise</h3><p>Synoria n'héberge pas votre base de données patients sur ses serveurs.</p></div>
+      <div class="security-card"><div class="security-num">4</div><h3>Sauvegardables</h3><p>Des sauvegardes chiffrées permettent de sécuriser et restaurer vos données.</p></div>
     </div>
-    <div style="text-align:center;margin-top:44px">
-      <a class="btn btn-primary btn-lg" href="/tarifs">Commencer l'essai gratuit — 14 jours</a>
+    <div class="callout">
+      <p><strong>Et Internet ?</strong> Synoria reste une application de bureau. Une connexion Internet est notamment utilisée pour certaines fonctions comme la vérification du compte et de la licence ou, si vous choisissez de l'activer, la synchronisation avec Google Calendar. Vos dossiers patients restent néanmoins stockés localement.</p>
     </div>
   </div>
 </section>
 
-<!-- GOOGLE CALENDAR -->
-<section class="section alt" id="google-calendar" aria-labelledby="google-calendar-title">
-  <div class="inner showcase">
-    <div class="showcase-copy">
-      <div class="section-label">Intégration facultative</div>
-      <h2 id="google-calendar-title">Synoria et Google Calendar.</h2>
-      <p class="section-text">L'utilisateur peut connecter son propre compte Google pour synchroniser son agenda professionnel. Cette connexion est facultative et peut être révoquée à tout moment.</p>
-      <div class="bullets">
-        <div class="bullet"><span class="bullet-ck">✓</span><span><strong>Compte connecté</strong> : l'adresse email sert uniquement à identifier le compte Google Calendar sélectionné.</span></div>
-        <div class="bullet"><span class="bullet-ck">✓</span><span><strong>Choix des agendas</strong> : Synoria consulte la liste des calendriers afin que l'utilisateur choisisse ceux qu'il souhaite afficher ou synchroniser.</span></div>
-        <div class="bullet"><span class="bullet-ck">✓</span><span><strong>Synchronisation des événements</strong> : Synoria lit les événements des calendriers sélectionnés et peut créer, modifier ou supprimer les rendez-vous qu'il synchronise dans le calendrier choisi.</span></div>
-        <div class="bullet"><span class="bullet-ck">✓</span><span><strong>Traitement local</strong> : les données Google Calendar nécessaires à la synchronisation sont traitées sur l'ordinateur de l'utilisateur et ne sont pas stockées sur les serveurs Synoria.</span></div>
-      </div>
-      <p class="google-calendar-links">
-        <a href="/confidentialite">Consulter la politique de confidentialité</a>
-        <span aria-hidden="true">·</span>
-        <a href="/cgv">Conditions d'utilisation et de vente</a>
-      </p>
-    </div>
-    <div class="oauth-card">
-      <div class="oauth-card-icon" aria-hidden="true">📅</div>
-      <h3>Ce que l'utilisateur autorise</h3>
-      <dl>
-        <div>
-          <dt>Adresse email</dt>
-          <dd>Afficher le compte Google connecté.</dd>
-        </div>
-        <div>
-          <dt>Liste des calendriers</dt>
-          <dd>Présenter les agendas disponibles et enregistrer le choix de l'utilisateur.</dd>
-        </div>
-        <div>
-          <dt>Événements</dt>
-          <dd>Lire les événements sélectionnés et synchroniser les rendez-vous créés dans Synoria.</dd>
-        </div>
-      </dl>
-      <p>Aucune donnée Google n'est vendue, utilisée à des fins publicitaires ou partagée avec des tiers.</p>
-    </div>
-  </div>
-</section>
-
-<!-- SHOWCASE — Patients -->
-<section class="section alt" id="captures">
-  <div class="inner showcase">
-    <div class="showcase-copy">
-      <div class="section-label">Tableau de bord</div>
-      <h2>Une vision claire de votre activité en un coup d'œil.</h2>
-      <p class="section-text">Le tableau de bord centralise l'essentiel : statistiques, graphique d'activité sur 6 mois et prochains rendez-vous à venir.</p>
-      <div class="bullets">
-        <div class="bullet"><span class="bullet-ck">✓</span><span><strong>Statistiques clés</strong> : patients actifs, séances totales et rendez-vous à venir.</span></div>
-        <div class="bullet"><span class="bullet-ck">✓</span><span><strong>Graphique d'activité</strong> sur les 6 derniers mois pour suivre la progression du cabinet.</span></div>
-        <div class="bullet"><span class="bullet-ck">✓</span><span><strong>Prochains rendez-vous</strong> avec accès direct à la nouvelle séance, au calendrier et à la fiche patient.</span></div>
-      </div>
-    </div>
-    <figure class="screen-frame">
-      <div class="screen-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
-      <img src="assets/screens/Dashboard.png" alt="Tableau de bord Synoria">
-      <figcaption class="caption"><strong>Tableau de bord.</strong> Vue d'ensemble de l'activité, prochains rendez-vous et statistiques.</figcaption>
-    </figure>
-  </div>
-</section>
-
-<!-- SHOWCASE — Séances -->
-<section class="section">
-  <div class="inner showcase reverse">
-    <div class="showcase-copy">
-      <div class="section-label">Séances</div>
-      <h2>Une anamnèse structurée, adaptée à la pratique.</h2>
-      <p class="section-text">Synoria fonctionne en formulaire généraliste ou via des plugins métier : MTC, ostéopathie, kinésiologie et naturopathie.</p>
-      <div class="bullets">
-        <div class="bullet"><span class="bullet-ck">✓</span><span><strong>Formulaires spécialisés</strong> avec sections et progression.</span></div>
-        <div class="bullet"><span class="bullet-ck">✓</span><span><strong>Texte enrichi</strong> pour garder des notes claires et nuancées.</span></div>
-        <div class="bullet"><span class="bullet-ck">✓</span><span><strong>Exports</strong> JSON, Excel, rapport patient et impression.</span></div>
-      </div>
-    </div>
-    <figure class="screen-frame">
-      <div class="screen-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
-      <img src="assets/screens/session.png" alt="Formulaire de séance Synoria">
-      <figcaption class="caption"><strong>Séance.</strong> Formulaire clinique, texte enrichi et plan de suivi.</figcaption>
-    </figure>
-  </div>
-</section>
-
-<!-- PLUGINS / SPÉCIALITÉS -->
-<section class="section" id="plugins">
+<!-- SECTION 4 — FORMULAIRES ET ANAMNÈSE -->
+<section class="section" id="formulaires">
   <div class="inner">
     <div class="section-head center">
-      <div class="section-label">Formulaires métier</div>
-      <h2>Adapté à votre spécialité, du premier jour.</h2>
-      <p class="section-text center">Synoria inclut des formulaires spécialisés pour les principales pratiques de santé naturelle.</p>
+      <div class="section-label">Formulaires et anamnèse</div>
+      <h2>Votre méthode de travail ne devrait pas s'adapter à votre logiciel.</h2>
+      <p class="section-text center">Un praticien en médecine chinoise ne réalise pas la même anamnèse qu'un ostéopathe. Et deux praticiens d'une même spécialité peuvent eux-mêmes utiliser des méthodes très différentes. C'est pourquoi Synoria ne repose pas sur un unique formulaire imposé à tout le monde.</p>
     </div>
     <div class="features">
       <a class="feature" href="/mtc" style="text-decoration:none;color:inherit;cursor:pointer">
         <div class="feature-icon" style="background:#ebf5e6">🌿</div>
         <h3>Médecine traditionnelle chinoise</h3>
-        <p>Bilan énergétique, langue, pouls, cinq éléments, diagnostic MTC, points d'acupuncture et plantes.</p>
+        <p>Anamnèse, pouls, langue, diagnostic MTC, principes de traitement, points, techniques, plantes et autres éléments propres à la pratique.</p>
       </a>
-      <article class="feature">
-        <div class="feature-icon" style="background:#ebf2f9">⚡</div>
-        <h3>Kinésiologie</h3>
-        <p>Bilan musculaire, corrections énergétiques, protocoles de séance et plan de suivi personnalisé.</p>
-      </article>
       <article class="feature">
         <div class="feature-icon" style="background:#fef6ea">🦴</div>
         <h3>Ostéopathie</h3>
-        <p>Zones traitées sur carte corporelle, techniques structurelles, compte-rendu de consultation et plan de traitement.</p>
+        <p>Anamnèse, cartographie corporelle, zones examinées ou traitées, techniques et suivi de séance.</p>
+      </article>
+      <article class="feature">
+        <div class="feature-icon" style="background:#ebf2f9">⚡</div>
+        <h3>Kinésiologie</h3>
+        <p>Bilan, tests, corrections, observations et suivi adaptés à la pratique.</p>
       </article>
       <article class="feature">
         <div class="feature-icon" style="background:#f0f4ff">🌱</div>
         <h3>Naturopathie</h3>
-        <p>Anamnèse complète, bilan vitalité, protocoles naturopathiques, compléments et hygiène de vie.</p>
+        <p>Anamnèse, habitudes de vie, bilan et recommandations structurées.</p>
       </article>
     </div>
-    <div style="text-align:center;margin-top:44px">
-      <a class="btn btn-primary btn-lg" href="/tarifs">Essai gratuit — 14 jours</a>
+    <div class="custom-cta" style="background:linear-gradient(135deg,var(--accent-dark) 0%,var(--accent) 100%);border-radius:var(--r);padding:36px 40px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-top:36px">
+      <div>
+        <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:400;color:#fff;margin-bottom:8px">Votre façon de travailler est différente ?</h3>
+        <p style="font-size:15px;color:rgba(255,255,255,.72);margin:0;max-width:460px">Votre pratique peut nécessiter d'autres rubriques, d'autres champs ou une organisation spécifique de l'anamnèse. Un formulaire adapté à votre méthode peut être étudié et créé sur demande.</p>
+      </div>
+      <a class="btn btn-lg" style="background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.35);flex-shrink:0" href="mailto:jeanpierre.timoner.mtc@gmail.com?subject=Besoin%20d%27un%20formulaire%20adapt%C3%A9">Parler de mon besoin →</a>
     </div>
   </div>
 </section>
 
-<!-- SCREENS GRID — Calendrier + Factures -->
-<section class="section alt">
-  <div class="inner screens-grid">
+<!-- SECTION 5 — FONCTIONNALITÉS -->
+<section class="section alt" id="fonctionnalites">
+  <div class="inner">
+    <div class="section-head center">
+      <div class="section-label">Fonctionnalités</div>
+      <h2>L'essentiel du cabinet dans une seule application.</h2>
+      <p class="section-text center">Plus besoin de disperser vos informations entre plusieurs fichiers, notes, agendas et tableurs.</p>
+    </div>
+    <div class="features">
+      <article class="feature">
+        <div class="feature-icon" style="background:#ebf2f9">🗂️</div>
+        <h3>Patients</h3>
+        <p>Coordonnées, informations importantes, consentement, notes et historique des séances.</p>
+      </article>
+      <article class="feature">
+        <div class="feature-icon" style="background:#ebf5e6">📋</div>
+        <h3>Séances</h3>
+        <p>Anamnèse, observations, traitement, conseils, historique et formulaires adaptés à votre pratique.</p>
+      </article>
+      <article class="feature">
+        <div class="feature-icon" style="background:#fef6ea">📅</div>
+        <h3>Agenda</h3>
+        <p>Planning des rendez-vous, rappels et accès direct au dossier patient.</p>
+      </article>
+      <article class="feature">
+        <div class="feature-icon" style="background:#edf0f9">💶</div>
+        <h3>Facturation</h3>
+        <p>Création des factures, suivi des paiements et journal des factures.</p>
+      </article>
+      <article class="feature">
+        <div class="feature-icon" style="background:#fdecec">📊</div>
+        <h3>Suivi d'activité</h3>
+        <p>Tableau de bord, activité du cabinet, dépenses, recettes et exports.</p>
+      </article>
+      <article class="feature">
+        <div class="feature-icon" style="background:#e6f5f2">💾</div>
+        <h3>Sauvegardes et exports</h3>
+        <p>Sauvegardes chiffrées et exports pour conserver la maîtrise de vos informations.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 6 — CAPTURES DU LOGICIEL -->
+<section class="section" id="captures">
+  <div class="inner">
+    <div class="section-head center">
+      <div class="section-label">Captures du logiciel</div>
+      <h2>Un outil conçu pour rester simple au quotidien.</h2>
+      <p class="section-text center">Synoria rassemble les informations importantes sans transformer chaque consultation en travail administratif.</p>
+    </div>
+  </div>
+  <div class="inner showcase" style="margin-top:44px">
+    <div class="showcase-copy">
+      <div class="section-label">Tableau de bord</div>
+      <h2>Votre activité en un coup d'œil.</h2>
+      <p class="section-text">Retrouvez vos patients actifs, vos dernières séances, vos prochains rendez-vous et les principaux indicateurs du cabinet depuis le tableau de bord.</p>
+    </div>
     <figure class="screen-frame">
       <div class="screen-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
-      <img src="assets/screens/calendar.png" alt="Calendrier Synoria">
-      <figcaption class="caption"><strong>Calendrier.</strong> Planning horaire, rendez-vous patients ou invités et synchronisation Google Calendar.</figcaption>
+      <img src="assets/screens/Dashboard.png" alt="Tableau de bord Synoria">
     </figure>
-    <div class="screens-stack">
-      <div>
-        <div class="section-label">Planning &amp; finances</div>
-        <h2>Le cabinet reste organisé.</h2>
-        <p class="section-text">Rendez-vous, consultations réalisées et factures sont reliés au dossier patient pour garder une vision cohérente de l'activité.</p>
-      </div>
-      <figure class="screen-frame">
-        <div class="screen-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
-        <img src="assets/screens/billing.png" alt="Factures Synoria">
-        <figcaption class="caption"><strong>Factures.</strong> Suivi des montants, statuts et actions rapides.</figcaption>
-      </figure>
+  </div>
+  <div class="inner showcase reverse" style="margin-top:44px">
+    <div class="showcase-copy">
+      <div class="section-label">Dossier patient</div>
+      <h2>Le dossier patient au centre.</h2>
+      <p class="section-text">Retrouvez rapidement les informations du patient et l'historique de ses consultations.</p>
     </div>
+    <figure class="screen-frame">
+      <div class="screen-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <img src="assets/screens/patients.png" alt="Dossier patient Synoria">
+    </figure>
+  </div>
+  <div class="inner showcase" style="margin-top:44px">
+    <div class="showcase-copy">
+      <div class="section-label">Formulaire de séance</div>
+      <h2>Une séance structurée selon votre pratique.</h2>
+      <p class="section-text">Consignez votre anamnèse, vos observations, votre analyse, votre traitement et votre suivi dans un formulaire adapté à votre activité.</p>
+    </div>
+    <figure class="screen-frame">
+      <div class="screen-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <img src="assets/screens/session.png" alt="Formulaire de séance Synoria">
+    </figure>
+  </div>
+  <div class="inner showcase reverse" style="margin-top:44px">
+    <div class="showcase-copy">
+      <div class="section-label">Facturation &amp; suivi d'activité</div>
+      <h2>Le cabinet reste organisé.</h2>
+      <p class="section-text">Factures, revenus, dépenses et taux URSAF centralisés pour garder une vision cohérente de l'activité du cabinet.</p>
+    </div>
+    <figure class="screen-frame">
+      <div class="screen-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <img src="assets/screens/billing.png" alt="Suivi d'activité et facturation Synoria">
+      <figcaption class="caption"><strong>Facturation.</strong> Suivi des montants, statuts et actions rapides.</figcaption>
+    </figure>
   </div>
 </section>
 
-<!-- SÉCURITÉ -->
-<section class="section" id="securite">
+<!-- SECTION 7 — SÉCURITÉ -->
+<section class="section alt" id="securite">
   <div class="inner">
     <div class="section-head center">
-      <div class="section-label">Sécurité &amp; RGPD</div>
-      <h2>Les données restent chez le praticien.</h2>
-      <p class="section-text">Synoria est conçu pour une utilisation locale : mot de passe, chiffrement de la base, verrouillage automatique, sauvegardes chiffrées et registre RGPD intégré.</p>
+      <div class="section-label">Sécurité</div>
+      <h2>Des données sensibles qui restent sous votre contrôle.</h2>
     </div>
     <div class="security-grid">
-      <div class="security-card">
-        <div class="security-num">1</div>
-        <h3>Local</h3>
-        <p>Aucun cloud obligatoire. Les données ne quittent jamais le poste du praticien.</p>
-      </div>
-      <div class="security-card">
-        <div class="security-num">2</div>
-        <h3>Chiffré</h3>
-        <p>Base de données protégée par AES-256-GCM et dérivation PBKDF2 du mot de passe.</p>
-      </div>
-      <div class="security-card">
-        <div class="security-num">3</div>
-        <h3>RGPD</h3>
-        <p>Consentements patients, journal d'accès et registre de traitement Article 30.</p>
-      </div>
-      <div class="security-card">
-        <div class="security-num">4</div>
-        <h3>Sauvegardes</h3>
-        <p>Exports chiffrés, vérification d'intégrité et restauration des données.</p>
-      </div>
+      <div class="security-card"><div class="security-num">1</div><h3>Stockage local</h3><p>Les dossiers et données patients restent enregistrés sur votre ordinateur.</p></div>
+      <div class="security-card"><div class="security-num">2</div><h3>Chiffrement</h3><p>La base locale est protégée par AES-256-GCM avec dérivation de clé sécurisée.</p></div>
+      <div class="security-card"><div class="security-num">3</div><h3>Verrouillage</h3><p>L'application peut se verrouiller automatiquement après une période d'inactivité.</p></div>
+      <div class="security-card"><div class="security-num">4</div><h3>Sauvegardes chiffrées</h3><p>Créez des sauvegardes protégées et vérifiez leur intégrité.</p></div>
+      <div class="security-card"><div class="security-num">5</div><h3>Outils RGPD intégrés</h3><p>Consentement patient, journal d'accès, alertes de conservation et registre des traitements permettent de structurer plus facilement vos obligations.</p></div>
     </div>
   </div>
 </section>
 
-<!-- FAQ -->
-<section class="section" id="faq">
+<!-- SECTION 8 — GOOGLE CALENDAR -->
+<section class="section" id="google-calendar">
+  <div class="inner showcase">
+    <div class="showcase-copy">
+      <div class="section-label">Google Calendar</div>
+      <h2>Votre agenda Synoria peut aussi communiquer avec Google Calendar.</h2>
+      <p class="section-text">La synchronisation Google Calendar est <strong>facultative</strong>. Si vous l'activez, vous choisissez le calendrier à utiliser pour retrouver vos rendez-vous Synoria dans votre environnement Google. La connexion peut être désactivée à tout moment.</p>
+      <div class="callout" style="margin:24px 0 0">
+        <p><strong>Important :</strong> Google Calendar est une intégration optionnelle. Votre base patients Synoria reste stockée localement sur votre ordinateur.</p>
+      </div>
+    </div>
+    <figure class="screen-frame">
+      <div class="screen-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <img src="assets/screens/calendar.png" alt="Calendrier Synoria synchronisé avec Google Calendar">
+      <figcaption class="caption"><strong>Calendrier.</strong> Planning horaire, rendez-vous patients ou invités et synchronisation Google Calendar.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- SECTION 9 — POUR QUI ? -->
+<section class="section alt" id="pour-qui">
   <div class="inner">
     <div class="section-head center">
-      <div class="section-label">Questions fréquentes</div>
-      <h2>Ce que les praticiens demandent avant d'essayer.</h2>
+      <div class="section-label">Pour qui ?</div>
+      <h2>Synoria est conçu pour les praticiens indépendants.</h2>
     </div>
-    <div style="max-width:760px;margin:0 auto">
-      <details class="faq-item">
-        <summary>Mes données patients sont-elles envoyées sur internet ?</summary>
-        <p>Non. Les dossiers patients sont stockés sur votre ordinateur uniquement, chiffrés par AES-256-GCM. Ils ne quittent jamais votre poste. Seules les informations de compte et de licence (email, statut) transitent par nos serveurs.</p>
-      </details>
-      <details class="faq-item">
-        <summary>Synoria est-il conforme au RGPD ?</summary>
-        <p>Oui. Synoria intègre la gestion du consentement patient, un journal d'accès automatique, des alertes de conservation et un registre de traitement Article 30 exportable en HTML. Vos données restant locales, vous êtes le seul responsable de traitement — Synoria n'est pas sous-traitant.</p>
-      </details>
-      <details class="faq-item">
-        <summary>Puis-je utiliser Synoria sans connexion internet ?</summary>
-        <p>Oui. Le logiciel fonctionne entièrement hors ligne au quotidien. Une connexion est nécessaire uniquement pour la vérification de licence périodique (environ une fois par semaine). En cas d'absence prolongée de réseau, un mode de grâce maintient l'accès complet.</p>
-      </details>
-      <details class="faq-item">
-        <summary>Puis-je essayer sans être facturé ?</summary>
-        <p>Oui. L'essai dure 14 jours, aucun prélèvement n'est effectué avant son terme. Annulation possible à tout moment depuis votre espace "Mon abonnement", sans frais ni justification.</p>
-      </details>
-      <details class="faq-item">
-        <summary>Que se passe-t-il si j'oublie mon mot de passe d'application ?</summary>
-        <p>Le mot de passe protège le chiffrement de votre base de données — il n'est pas récupérable par notre équipe. Notez-le dans un gestionnaire de mots de passe. Il est différent du mot de passe de votre espace "Mon abonnement", lui, récupérable par email.</p>
-      </details>
+    <div class="who-grid">
+      <div class="who-card"><strong>Médecine traditionnelle chinoise</strong><span>Un suivi détaillé sans sacrifier la richesse de l'anamnèse.</span></div>
+      <div class="who-card"><strong>Ostéopathie</strong><span>Une organisation claire des consultations et du suivi patient.</span></div>
+      <div class="who-card"><strong>Kinésiologie</strong><span>Des formulaires structurés adaptés aux protocoles de séance.</span></div>
+      <div class="who-card"><strong>Naturopathie</strong><span>Une anamnèse complète et un historique facile à retrouver.</span></div>
+      <div class="who-card"><strong>Autres pratiques</strong><span>Votre activité utilise une méthode particulière ? Étudions ensemble la structure dont vous avez besoin.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 10 — ESSAI -->
+<section class="section" id="essai">
+  <div class="inner">
+    <div class="section-head center">
+      <div class="section-label">Essai gratuit</div>
+      <h2>Essayez Synoria avec votre propre façon de travailler.</h2>
+      <p class="section-text center">Découvrez le logiciel pendant <strong>14 jours</strong> et vérifiez s'il correspond réellement à votre organisation de cabinet.</p>
+    </div>
+    <div style="text-align:center">
+      <a class="btn btn-primary btn-lg" href="/tarifs">Commencer mon essai gratuit</a>
+      <p style="font-size:13px;color:var(--muted);margin-top:16px">Windows &amp; macOS</p>
     </div>
   </div>
 </section>
@@ -407,6 +392,41 @@
   </div>
 </section>
 
+<!-- FAQ -->
+<section class="section" id="faq">
+  <div class="inner">
+    <div class="section-head center">
+      <div class="section-label">Questions fréquentes</div>
+    </div>
+    <div style="max-width:760px;margin:0 auto">
+      <details class="faq-item">
+        <summary>Où sont stockées mes données patients ?</summary>
+        <p>Les dossiers et données patients Synoria sont enregistrés localement sur votre ordinateur dans une base de données chiffrée. Ils ne sont pas hébergés dans le cloud Synoria.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Synoria envoie-t-il des données sur Internet ?</summary>
+        <p>Les informations nécessaires au fonctionnement de votre compte et de votre licence peuvent transiter par les services Synoria. Si vous activez Google Calendar, les informations nécessaires à la synchronisation des rendez-vous sont également transmises à Google. Votre base de données patients reste stockée localement sur votre ordinateur.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Que se passe-t-il si mon ordinateur tombe en panne ?</summary>
+        <p>Comme pour toute donnée enregistrée localement, une stratégie de sauvegarde est indispensable. Synoria permet de créer des sauvegardes chiffrées afin de pouvoir restaurer vos informations en cas de problème informatique.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Puis-je utiliser ma propre anamnèse ?</summary>
+        <p>Synoria propose plusieurs formulaires adaptés aux spécialités disponibles. Si votre méthode nécessite une organisation différente, un formulaire spécifique peut être étudié afin de correspondre au plus près à votre façon de travailler.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Puis-je créer moi-même mon formulaire ?</summary>
+        <p>Les formulaires métier sont actuellement fournis par Synoria. Si votre pratique nécessite un formulaire particulier, vous pouvez nous contacter afin d'étudier sa création.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Synoria m'aide-t-il pour le RGPD ?</summary>
+        <p>Synoria intègre plusieurs outils permettant de faciliter la gestion de vos obligations : consentement patient, journal d'accès, alertes de conservation et registre des traitements. La conformité RGPD dépend néanmoins également des pratiques et procédures mises en place au sein de votre cabinet.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
 </main>
 
 <!-- FOOTER -->
@@ -423,8 +443,9 @@
       <h4>Logiciel</h4>
       <ul>
         <li><a href="#fonctionnalites">Fonctionnalités</a></li>
+        <li><a href="#formulaires">Formulaires</a></li>
         <li><a href="/tarifs">Tarifs</a></li>
-        <li><a href="#securite">Sécurité &amp; RGPD</a></li>
+        <li><a href="#securite">Sécurité</a></li>
       </ul>
     </div>
     <div>
@@ -432,13 +453,6 @@
       <ul>
         <li><a href="/support">Support &amp; FAQ</a></li>
         <li><a href="/telechargement">Télécharger</a></li>
-      </ul>
-    </div>
-    <div>
-      <h4>Compte</h4>
-      <ul>
-        <li><a href="/abonnement">Mon abonnement</a></li>
-        <li><a href="/support">Support</a></li>
       </ul>
     </div>
     <div>
