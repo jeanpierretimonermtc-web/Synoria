@@ -172,6 +172,69 @@ export async function exportPatientReport(patientId: string): Promise<string> {
             rowHtml('Observation générale', s.observation),
           ])
 
+          // Questionnaire par systèmes
+          if (s.systemes_json) {
+            try {
+              const sys = JSON.parse(s.systemes_json) as Record<string, any>
+              const SYS_LABELS: Record<string, string> = {
+                cardio: 'Cardiaque / Sommeil', pulmo: 'Pulmonaire', mental: 'Santé mentale',
+                vision: 'Vision & Audition', reins: 'Reins / Vessie', rate: 'Système de la Rate',
+                estomac: "Système de l'Estomac", grosIntestin: 'Gros Intestin', peau: 'Santé de la Peau',
+                tete: 'Maux de tête', temp: 'Température', musculo: 'Musculo-squelettique',
+                feminin: 'Santé Féminine', fertilite: 'Fertilité', masculin: 'Santé Masculine',
+                digestif: 'Digestif (ancien)',
+              }
+              const sysRows = Object.entries(sys).map(([k, v]) => {
+                if (!v || typeof v !== 'object') return ''
+                const vv = v as Record<string, any>
+                const lines: string[] = []
+                if (Array.isArray(vv.checked) && vv.checked.length) lines.push(vv.checked.join(', '))
+                if (k === 'mental') {
+                  if (vv.stress)  lines.push(`Stress : ${vv.stress}/10`)
+                  if (vv.anxiete) lines.push(`Anxiété : ${vv.anxiete}/10`)
+                }
+                if (k === 'rate' || k === 'digestif') {
+                  if (vv.energie)           lines.push(`Énergie : ${vv.energie}/10`)
+                  if (vv.regimeAlimentaire) lines.push(`Régime alimentaire : ${vv.regimeAlimentaire}`)
+                }
+                if (k === 'musculo') {
+                  if (vv.douleur)      lines.push(`Douleur : ${vv.douleur}/10`)
+                  if (vv.localisation) lines.push(`Localisation : ${vv.localisation}`)
+                }
+                if (k === 'peau') {
+                  if (vv.emplacementAcne)   lines.push(`Emplacement acné : ${vv.emplacementAcne}`)
+                  if (vv.emplacementEczema) lines.push(`Emplacement eczéma : ${vv.emplacementEczema}`)
+                }
+                if (k === 'feminin') {
+                  if (vv.ageMenarche)   lines.push(`Ménarche : ${vv.ageMenarche} ans`)
+                  if (vv.jourCycle)     lines.push(`Jour du cycle : ${vv.jourCycle}`)
+                  if (vv.longueurCycle) lines.push(`Longueur cycle : ${vv.longueurCycle}`)
+                  if (vv.dureeMin || vv.dureeMax) lines.push(`Durée menstruations : ${vv.dureeMin || '?'}–${vv.dureeMax || '?'} j`)
+                  if (vv.couleurSang)   lines.push(`Couleur sang : ${vv.couleurSang}`)
+                  if (vv.ecoulement)    lines.push(`Écoulement : ${vv.ecoulement}`)
+                  if (Array.isArray(vv.caillots) && vv.caillots.length) lines.push(`Caillots : ${vv.caillots.join(', ')}`)
+                  if (Array.isArray(vv.crampes)  && vv.crampes.length)  lines.push(`Crampes : ${vv.crampes.join(', ')}`)
+                  if (Array.isArray(vv.spm)      && vv.spm.length)      lines.push(`SPM : ${vv.spm.join(', ')}`)
+                }
+                if (k === 'fertilite') {
+                  if (vv.essaiConception) lines.push(`Essai conception : ${vv.essaiConception}`)
+                  if (vv.testsSanguins)   lines.push(`Tests sanguins : ${vv.testsSanguins}`)
+                  if (vv.resultatTests)   lines.push(`Résultats tests : ${vv.resultatTests}`)
+                  if (Array.isArray(vv.diagnosticFertilite) && vv.diagnosticFertilite.length)
+                    lines.push(`Diagnostic fertilité : ${vv.diagnosticFertilite.join(', ')}`)
+                  if (vv.debutMenopause)  lines.push(`Début ménopause : ${vv.debutMenopause} ans`)
+                  if (vv.enceinte)        lines.push(`Enceinte${vv.nbSemaines ? ` (${vv.nbSemaines} sem.)` : ''}`)
+                  if (vv.cesarienne)      lines.push('Césarienne : oui')
+                  if (vv.datePrevue)      lines.push(`Date prévue accouchement : ${vv.datePrevue}`)
+                  if (vv.enfants)         lines.push('Enfants : oui')
+                }
+                if (vv.note) lines.push(vv.note)
+                return lines.length ? row(SYS_LABELS[k] || k, lines.join(' · ')) : ''
+              })
+              body += renderGroup('Questionnaire par systèmes', sysRows)
+            } catch { /* full_data_json malformé — ignoré, comme le reste du fichier */ }
+          }
+
           // Analyse
           body += renderGroup('Analyse & Diagnostic', [
             row('Diagnostic MTC', s.diagnostic_mtc),
@@ -180,6 +243,45 @@ export async function exportPatientReport(patientId: string): Promise<string> {
             rowHtml('Analyse / Mécanisme', s.analyse),
             row('Principes de traitement', s.principes),
           ])
+
+          // Tests énergétiques
+          if (s.energy_tests_json) {
+            try {
+              const et = JSON.parse(s.energy_tests_json) as Record<string, any>
+              const rech = ((et.rechauffeurs || []) as any[]).filter(x => x.active)
+                .map(x => `${x.key} (${x.polarite || '?'})`).join(', ')
+              const foyers = ((et.foyers || []) as any[]).filter(x => x.active)
+                .map(x => `${x.key}${x.subs?.length ? `: ${x.subs.join(', ')}` : ''}`).join(' | ')
+              const mvList = ((et.merveilleuxVaisseaux || []) as any[])
+                .filter(m => m.fonctionExterne || m.axeDistribution || m.fonctionInterne || m.note)
+                .map(m => `${m.name}: ${[m.fonctionExterne && 'Ext.', m.axeDistribution && 'Axe', m.fonctionInterne && 'Int.', m.note].filter(Boolean).join('/')}`)
+                .join(' | ')
+              const penEmp  = Array.isArray(et.penetrationEmp)  ? et.penetrationEmp.join(', ')  : (et.penetrationEmp  || '')
+              const penComp = Array.isArray(et.penetrationComp) ? et.penetrationComp.join(', ') : (et.penetrationComp || '')
+              const ec = et.energieComp || {}
+              const gmVal = ec.gmMeridien
+                ? `${ec.gmMeridien}${ec.gmType?.length ? ` — ${ec.gmType.join(', ')}` : ''}${ec.gmNotes ? ` — ${ec.gmNotes}` : ''}`
+                : ''
+              body += renderGroup("Tests énergétiques — Protocole de l'entonnoir", [
+                row('Réchauffeurs', rech),
+                row('Foyers', foyers),
+                row('Merveilleux Vaisseaux', mvList),
+                et.pointsMu?.length ? row('Points Mu', et.pointsMu.join(', ')) : '',
+                et.empereur ? row('Empereur', `${et.empereur} (${et.empereurPolarite || '?'})`) : '',
+                row('Pénétration Empereur', penEmp),
+                row('Pénétration Énergie comp.', penComp),
+                et.syndrome?.length ? row('Syndrome', et.syndrome.join(', ')) : '',
+                et.syndromeClimat?.length ? row('Climat / Wu Shu', et.syndromeClimat.join(', ')) : '',
+                row('Biao Li', ec.biaoli),
+                row('Midi / Minuit', ec.midiMinuit),
+                row('Grand Méridien', gmVal),
+                ec.cinqMouvements?.length ? row('5 Mouvements', ec.cinqMouvements.join(', ')) : '',
+                row('Élément compensateur', ec.element),
+                row('Notes énergie comp.', ec.notes),
+                row('Notes tests', et.testsNotes),
+              ])
+            } catch { /* full_data_json malformé — ignoré, comme le reste du fichier */ }
+          }
 
           // Traitement
           body += renderGroup('Traitement', [
