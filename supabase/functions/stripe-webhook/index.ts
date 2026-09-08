@@ -192,7 +192,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
       trial_end: stripeSub.trial_end
         ? new Date(stripeSub.trial_end * 1000).toISOString()
         : null,
-      current_period_end:   new Date(stripeSub.current_period_end * 1000).toISOString(),
+      current_period_end:   toIsoOrNull(getCurrentPeriodEnd(stripeSub)),
       cancel_at_period_end: stripeSub.cancel_at_period_end,
     }, { onConflict: 'organization_id' })
     .select('id')
@@ -270,7 +270,7 @@ async function handleSubscriptionUpdated(sub: Stripe.Subscription): Promise<void
       trial_end: sub.trial_end
         ? new Date(sub.trial_end * 1000).toISOString()
         : null,
-      current_period_end:   new Date(sub.current_period_end * 1000).toISOString(),
+      current_period_end:   toIsoOrNull(getCurrentPeriodEnd(sub)),
       cancel_at_period_end: sub.cancel_at_period_end,
     })
     .eq('stripe_subscription_id', sub.id)
@@ -317,17 +317,19 @@ async function handleSubscriptionDeleted(sub: Stripe.Subscription): Promise<void
     .eq('stripe_subscription_id', sub.id)
 
   // 'cancelled' (access window still open) vs 'restricted' (access terminated)
-  const periodEndMs = sub.current_period_end * 1000
-  const licStatus: LicenseStatus = periodEndMs > Date.now() ? 'cancelled' : 'restricted'
+  const periodEnd = getCurrentPeriodEnd(sub)
+  const periodEndMs = periodEnd !== null ? periodEnd * 1000 : null
+  // Absence de date connue → traité comme terminé (repli sûr, pas d'accès prolongé par erreur)
+  const licStatus: LicenseStatus = periodEndMs !== null && periodEndMs > Date.now() ? 'cancelled' : 'restricted'
   // Si la période est encore en cours, grace_until = current_period_end pour que
   // license-check puisse continuer à émettre des jetons valides jusqu'à cette date.
-  const graceUntil = licStatus === 'cancelled' ? new Date(periodEndMs).toISOString() : null
+  const graceUntil = licStatus === 'cancelled' && periodEndMs !== null ? new Date(periodEndMs).toISOString() : null
 
   await updateLicense(organizationId, licStatus, graceUntil, null)
 
   console.log(
     `[sub.deleted] ✓ org=${organizationId} → sub=canceled lic=${licStatus} ` +
-    `(period_end=${new Date(periodEndMs).toISOString()})`,
+    `(period_end=${periodEndMs !== null ? new Date(periodEndMs).toISOString() : 'inconnu'})`,
   )
 }
 
@@ -543,7 +545,7 @@ async function upsertSubscriptionRow(
       trial_end: sub.trial_end
         ? new Date(sub.trial_end * 1000).toISOString()
         : null,
-      current_period_end:   new Date(sub.current_period_end * 1000).toISOString(),
+      current_period_end:   toIsoOrNull(getCurrentPeriodEnd(sub)),
       cancel_at_period_end: sub.cancel_at_period_end,
     }, { onConflict: 'organization_id' })
 
@@ -630,6 +632,41 @@ async function resolveOrgFromInvoice(
     .maybeSingle()
 
   return { organizationId: row?.organization_id ?? null, stripeSubId }
+}
+
+// ── Extraction robuste de current_period_end (compat multi-versions API) ───
+//
+// Cause du bug diagnostiqué le 2026-09-05 : le client Stripe ci-dessus est
+// figé sur l'API '2025-05-28.basil', mais l'endpoint webhook (configuré côté
+// dashboard Stripe, version indépendante du SDK) livre les événements dans
+// une version ultérieure ('2026-06-24.dahlia' constaté) où le champ
+// `current_period_end` n'est plus garanti au niveau de l'abonnement — il a
+// été déplacé sur les lignes d'abonnement (`items.data[].current_period_end`)
+// avec la facturation multi-articles. `sub.current_period_end` y est alors
+// `undefined`, et `new Date(undefined * 1000).toISOString()` lève
+// "RangeError: Invalid time value", avortant le handler AVANT la mise à jour
+// de licenses/subscriptions (erreur silencieusement absorbée par le catch
+// englobant de Deno.serve, qui répond quand même 200 à Stripe).
+//
+// Ces deux helpers rendent l'extraction tolérante aux deux formes, avec repli
+// gracieux (null) plutôt qu'une exception si la donnée est absente des deux
+// côtés.
+
+function getCurrentPeriodEnd(sub: Stripe.Subscription): number | null {
+  const direct = (sub as unknown as { current_period_end?: number }).current_period_end
+  if (typeof direct === 'number' && Number.isFinite(direct)) return direct
+
+  const itemLevel = (sub.items?.data?.[0] as unknown as { current_period_end?: number } | undefined)
+    ?.current_period_end
+  if (typeof itemLevel === 'number' && Number.isFinite(itemLevel)) return itemLevel
+
+  return null
+}
+
+/** new Date(unixSeconds * 1000).toISOString() sans jamais lever "Invalid time value". */
+function toIsoOrNull(unixSeconds: number | null | undefined): string | null {
+  if (typeof unixSeconds !== 'number' || !Number.isFinite(unixSeconds)) return null
+  return new Date(unixSeconds * 1000).toISOString()
 }
 
 // ── Mapping statuts Stripe → enums Supabase ────────────────────────────────
