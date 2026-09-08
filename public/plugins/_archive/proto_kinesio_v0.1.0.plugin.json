@@ -1,13 +1,13 @@
 {
-  "id": "kinesio_charlotte",
-  "name": "Kinésiologie",
-  "specialty": "Kinésiologie",
-  "version": "2.0.0",
-  "isNative": true,
+  "id": "proto_kinesio",
+  "name": "Proto Kinesio",
+  "specialty": "Kinésiologie (prototype)",
+  "version": "0.1.0",
+  "status": "draft",
+  "description": "Prototype expérimental d'une nouvelle organisation de l'anamnèse Kinésiologie (conducteur de séance, mode Première consultation / Suivi). N'affecte pas le formulaire officiel kinesio_charlotte.",
+  "icon": "🧭",
+  "accentColor": "#8B6F9E",
   "hideGlobalMotif": true,
-  "description": "Conducteur de séance de kinésiologie : type de séance (première consultation / suivi), motif, contexte, historique, objectif, équilibrage et suivi.",
-  "icon": "🔬",
-  "accentColor": "#7A9E7E",
   "sections": [
 
     {
@@ -15,7 +15,7 @@
       "title": "Type de séance",
       "placement": "pre-motif",
       "icon": "🧭",
-      "accentColor": "#7A9E7E",
+      "accentColor": "#8B6F9E",
       "fields": [
         {
           "id": "type_seance",
@@ -290,31 +290,6 @@
           "minHeight": 70
         },
         {
-          "id": "reactions_depuis_derniere_seance",
-          "type": "checkboxgroup",
-          "label": "Réactions / évolutions rapportées depuis la dernière séance",
-          "hint": "Sélectionner uniquement les réactions ou évolutions rapportées depuis la dernière séance et jugées pertinentes pour le suivi.",
-          "options": [
-            "Aucune réaction particulière",
-            "Crise d'évacuation",
-            "Crise d'évolution",
-            "Résistance au changement",
-            "Phase salutaire",
-            "Émergence d'autres blocages",
-            "Défense de substitution",
-            "Autre"
-          ],
-          "width": "full"
-        },
-        {
-          "id": "reactions_depuis_derniere_seance_details",
-          "type": "textarea",
-          "label": "Précisions sur les réactions / évolutions",
-          "hint": "Décrire les réactions, leur contexte, leur évolution et tout élément utile au suivi.",
-          "width": "full",
-          "minHeight": 70
-        },
-        {
           "id": "evolution_objectif_precedent",
           "type": "select",
           "label": "Évolution de l'objectif précédent",
@@ -341,6 +316,25 @@
           "label": "Priorité / demande aujourd'hui",
           "width": "full",
           "minHeight": 80
+        }
+      ]
+    },
+
+    {
+      "id": "etat_debut_seance",
+      "title": "État au début de la séance",
+      "placement": "notes",
+      "icon": "📍",
+      "accentColor": "#5A7E9E",
+      "fields": [
+        {
+          "id": "stress_debut",
+          "type": "rating",
+          "label": "Stress / tension ressentie au début",
+          "min": 0,
+          "max": 10,
+          "width": "third",
+          "hint": "0 = très calme / aucune tension · 10 = tension maximale ressentie"
         }
       ]
     },
@@ -386,34 +380,6 @@
     },
 
     {
-      "id": "etat_debut_seance",
-      "title": "État au début de la séance",
-      "placement": "notes",
-      "icon": "📍",
-      "accentColor": "#5A7E9E",
-      "fields": [
-        {
-          "id": "cen_debut",
-          "type": "number",
-          "label": "CEN — Charge émotionnelle négative (%)",
-          "min": 0,
-          "max": 100,
-          "width": "half",
-          "hint": "Évaluation en pourcentage selon la pratique du kinésiologue."
-        },
-        {
-          "id": "cep_debut",
-          "type": "number",
-          "label": "CEP — Charge émotionnelle positive (%)",
-          "min": 0,
-          "max": 100,
-          "width": "half",
-          "hint": "Évaluation en pourcentage selon la pratique du kinésiologue."
-        }
-      ]
-    },
-
-    {
       "id": "equilibrage_effectue",
       "title": "Équilibrage effectué",
       "placement": "traitement",
@@ -425,11 +391,18 @@
           "type": "checkboxgroup",
           "label": "Techniques utilisées",
           "options": [
-            "Touch for Health",
-            "Edu-K",
-            "TIOC",
-            "Réflexes archaïques",
-            "Transpersonnelle",
+            "Test musculaire",
+            "Points neuro-lymphatiques",
+            "Points neuro-vasculaires",
+            "Respiration consciente",
+            "Mouvements oculaires",
+            "Acupression",
+            "Ancrage / enracinement",
+            "Visualisation",
+            "Affirmation positive",
+            "Libération émotionnelle",
+            "Mouvement intégrateur",
+            "Intégration neurologique",
             "Autre"
           ],
           "width": "full"
@@ -437,7 +410,7 @@
         {
           "id": "technique_autre",
           "type": "text",
-          "label": "Autre technique / approche — préciser",
+          "label": "Autre technique — préciser",
           "width": "half",
           "visibleWhen": [{ "fieldId": "techniques_equilibrage", "operator": "includes", "value": "Autre" }]
         },
@@ -460,22 +433,13 @@
       "accentColor": "#5A7E9E",
       "fields": [
         {
-          "id": "cen_fin",
-          "type": "number",
-          "label": "CEN — Charge émotionnelle négative (%)",
+          "id": "stress_fin",
+          "type": "rating",
+          "label": "Stress / tension ressentie en fin de séance",
           "min": 0,
-          "max": 100,
-          "width": "half",
-          "hint": "Évaluation en pourcentage en fin de séance."
-        },
-        {
-          "id": "cep_fin",
-          "type": "number",
-          "label": "CEP — Charge émotionnelle positive (%)",
-          "min": 0,
-          "max": 100,
-          "width": "half",
-          "hint": "Évaluation en pourcentage en fin de séance."
+          "max": 10,
+          "width": "third",
+          "hint": "0 = très calme / aucune tension · 10 = tension maximale ressentie"
         },
         {
           "id": "ressenti_fin",
@@ -520,7 +484,7 @@
           "id": "changements_fin_seance",
           "type": "textarea",
           "label": "Changements observés entre le début et la fin de séance",
-          "hint": "Évolution ressentie ou observée au cours de la séance : CEN/CEP, émotion, perception, posture ou autre changement pertinent.",
+          "hint": "Évolution ressentie ou observée au cours de la séance : tension, émotion, perception, posture ou autre changement pertinent.",
           "width": "half",
           "minHeight": 60
         },

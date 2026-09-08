@@ -1,0 +1,255 @@
+{
+  "id": "kinesio_charlotte",
+  "name": "Kinésiologie",
+  "specialty": "Kinésiologie",
+  "version": "1.1.0",
+  "isNative": true,
+  "hideGlobalMotif": true,
+  "description": "Fiche d'anamnèse kinésiologique : contexte, état psycho-émotionnel, motivation, objectifs et équilibrage.",
+  "icon": "🔬",
+  "accentColor": "#7A9E7E",
+
+  "sections": [
+
+    {
+      "id": "contexte_rdv",
+      "title": "Contexte du rendez-vous",
+      "placement": "motif",
+      "icon": "📋",
+      "accentColor": "#7A9E7E",
+      "fields": [
+        {
+          "id": "objetRdv",
+          "type": "richtext",
+          "label": "Objet du rendez-vous",
+          "placeholder": "Raison principale de la venue, demande exprimée par le client…",
+          "width": "full",
+          "minHeight": 100
+        },
+        {
+          "id": "contexteFamilial",
+          "type": "richtext",
+          "label": "Situation et contexte familial actuel",
+          "placeholder": "Situation maritale, enfants, relations familiales, événements récents…",
+          "width": "half",
+          "minHeight": 110
+        },
+        {
+          "id": "contexteProfessionnel",
+          "type": "richtext",
+          "label": "Situation et contexte professionnel actuel",
+          "placeholder": "Emploi, relations professionnelles, stress au travail, projets…",
+          "width": "half",
+          "minHeight": 110
+        },
+        {
+          "id": "suiviMedical",
+          "type": "richtext",
+          "label": "Traitement ou suivi médical en cours",
+          "placeholder": "Médicaments, thérapies, médecins, spécialistes consultés…",
+          "width": "full",
+          "minHeight": 80
+        }
+      ]
+    },
+
+    {
+      "id": "signes_psycho_physiques",
+      "title": "Signes psychologiques et physiques actuels",
+      "placement": "notes",
+      "icon": "💫",
+      "accentColor": "#5A7E9E",
+      "fields": [
+        {
+          "id": "stressScore",
+          "type": "rating",
+          "label": "Stress et anxiété",
+          "min": 1,
+          "max": 5,
+          "width": "third",
+          "hint": "1 = très faible · 5 = très élevé"
+        },
+        {
+          "id": "qualiteSommeil",
+          "type": "radio",
+          "label": "Qualité du sommeil",
+          "options": ["Très mauvaise", "Mauvaise", "Perturbée", "Correcte", "Bonne"],
+          "width": "half"
+        },
+        {
+          "id": "sep1", "type": "separator", "label": ""
+        },
+        {
+          "id": "sommeil",
+          "type": "richtext",
+          "label": "Sommeil — détail",
+          "placeholder": "Difficultés d'endormissement, réveils nocturnes, cauchemars, horaires…",
+          "width": "full",
+          "minHeight": 80
+        },
+        {
+          "id": "emotions",
+          "type": "richtext",
+          "label": "Émotions présentes majoritairement",
+          "placeholder": "Émotions dominantes ressenties ces dernières semaines ou ces derniers mois…",
+          "width": "half",
+          "minHeight": 100
+        },
+        {
+          "id": "visionAvenir",
+          "type": "richtext",
+          "label": "Vision de l'avenir",
+          "placeholder": "Comment le client perçoit son avenir proche et lointain, ses craintes, ses espoirs…",
+          "width": "half",
+          "minHeight": 100
+        }
+      ]
+    },
+
+    {
+      "id": "motivation_objectifs",
+      "title": "Motivation & Objectifs",
+      "placement": "notes",
+      "icon": "🎯",
+      "accentColor": "#9E7A5A",
+      "fields": [
+        {
+          "id": "motivationAide",
+          "type": "richtext",
+          "label": "Motivation principale à chercher de l'aide",
+          "placeholder": "Pourquoi le client fait cette démarche maintenant, déclic, événement déclencheur…",
+          "width": "full",
+          "minHeight": 90
+        },
+        {
+          "id": "objectifsPrincipaux",
+          "type": "richtext",
+          "label": "Objectifs principaux et futur lumineux",
+          "placeholder": "Ce que le client souhaite atteindre, sa vision de lui-même après les séances, son futur idéal…",
+          "width": "half",
+          "minHeight": 110
+        },
+        {
+          "id": "indicateursReussite",
+          "type": "richtext",
+          "label": "Indicateurs de réussites",
+          "placeholder": "Comment le client saura-t-il que l'objectif est atteint ? Signes concrets de changement…",
+          "width": "half",
+          "minHeight": 110
+        }
+      ]
+    },
+
+    {
+      "id": "equilibrage_effectue",
+      "title": "Équilibrage effectué",
+      "placement": "traitement",
+      "icon": "⚖️",
+      "accentColor": "#7A5A9E",
+      "fields": [
+        {
+          "id": "techniquesEquilibrage",
+          "type": "checkboxgroup",
+          "label": "Techniques d'équilibrage utilisées",
+          "options": [
+            "Test musculaire",
+            "Points neuro-lymphatiques",
+            "Points neuro-vasculaires",
+            "Respiration consciente",
+            "Mouvements oculaires",
+            "Acupression",
+            "Ancrage / enracinement",
+            "Visualisation",
+            "Affirmation positive",
+            "Libération émotionnelle",
+            "Mouvement intégrateur",
+            "Intégration neurologique",
+            "Autre"
+          ],
+          "width": "full"
+        },
+        {
+          "id": "derouléSeance",
+          "type": "richtext",
+          "label": "Déroulé et observations de séance",
+          "placeholder": "Éléments travaillés, réactions du client, moments clés, découvertes, phrases importantes du client…",
+          "width": "full",
+          "minHeight": 140
+        },
+        {
+          "id": "resultatPercu",
+          "type": "radio",
+          "label": "Ressenti global en fin de séance",
+          "options": ["Très positif", "Positif", "Neutre", "Émotionnel(le)", "Fatigué(e)", "À surveiller"],
+          "width": "half"
+        },
+        {
+          "id": "stressApres",
+          "type": "rating",
+          "label": "Niveau de stress en fin de séance",
+          "min": 0,
+          "max": 10,
+          "width": "third",
+          "hint": "0 = très calme · 10 = très stressé(e)"
+        }
+      ]
+    },
+
+    {
+      "id": "suivi_anamnese",
+      "title": "Suivi & Anamnèse séance suivante",
+      "placement": "plan",
+      "icon": "📅",
+      "accentColor": "#5A7E9E",
+      "fields": [
+        {
+          "id": "bilanSeance",
+          "type": "richtext",
+          "label": "Bilan de la séance",
+          "placeholder": "Ce qui a bien fonctionné, pistes à approfondir, découvertes importantes, niveau d'intégration…",
+          "width": "full",
+          "minHeight": 90
+        },
+        {
+          "id": "conseilsEntreSeances",
+          "type": "richtext",
+          "label": "Conseils entre les séances",
+          "placeholder": "Pratiques à maintenir, exercices, points de vigilance, auto-soin, ancrage…",
+          "width": "half",
+          "minHeight": 90
+        },
+        {
+          "id": "axesTravailProchain",
+          "type": "richtext",
+          "label": "Axes de travail pour la prochaine séance",
+          "placeholder": "Thèmes à explorer, objectifs intermédiaires, suivi des effets de cette séance…",
+          "width": "half",
+          "minHeight": 90
+        },
+        {
+          "id": "frequencePreconisee",
+          "type": "select",
+          "label": "Fréquence préconisée",
+          "options": [
+            "2 fois par semaine",
+            "1 fois par semaine",
+            "Toutes les 2 semaines",
+            "1 fois par mois",
+            "À la demande",
+            "Fin de suivi"
+          ],
+          "width": "half"
+        },
+        {
+          "id": "anamnèseProchainRdv",
+          "type": "richtext",
+          "label": "Points à aborder au prochain rendez-vous",
+          "placeholder": "Questions à poser, éléments à réévaluer, anamnèse complémentaire, contexte de vie à suivre…",
+          "width": "half",
+          "minHeight": 80
+        }
+      ]
+    }
+
+  ]
+}

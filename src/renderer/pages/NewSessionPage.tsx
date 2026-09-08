@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext, useRef, useCallback } from 'rea
 import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import type { Patient, Session, ConsultationType, SystemesQuestionnaire, EnergyTests, Appointment, SessionFullData } from '../../shared/types'
 import type { PluginDefinition } from '../../shared/pluginTypes'
+import { isVisible } from '../../shared/pluginConditions'
 import PluginFormRenderer from '../components/plugin/PluginFormRenderer'
 import { showConfirm } from '../components/common/ConfirmDialog'
 import { ToastContext, NavigationGuardContext } from '../App'
@@ -70,6 +71,111 @@ function PrevSessionAccordion({ session: s, open, onToggle }: {
   const isMtcBuiltin = !!(fd.pluginIsBuiltin) || pluginId === 'mtc_jp'
   const hasPlugin    = !!pluginId && !isMtcBuiltin && !!pluginSchema
   const pluginSchemaMissing = !!pluginId && !isMtcBuiltin && !pluginSchema
+
+  // MTC intégré : Observation (langue/pouls), Questionnaire par systèmes, Tests énergétiques
+  // (mêmes données que l'export Excel / le résumé de séance — précédemment absentes de cet accordéon)
+  const langueNote = fd.langueNote || ''
+  const poulsNote  = fd.poulsNote  || ''
+  const poulsPos: Record<string, string> = (fd.poulsPos as Record<string, string>) || {}
+  let systemes: Record<string, any> = {}
+  let energy: Record<string, any> = {}
+  try { if (s.systemes_json)     systemes = JSON.parse(s.systemes_json) }     catch {}
+  try { if (s.energy_tests_json) energy   = JSON.parse(s.energy_tests_json) } catch {}
+
+  const poulsPosLines: string[] = []
+  if (poulsPos.droitAvant || poulsPos.droitMilieu || poulsPos.droitArriere)
+    poulsPosLines.push(`Droite — Cun : ${poulsPos.droitAvant || '—'} · Guan : ${poulsPos.droitMilieu || '—'} · Chi : ${poulsPos.droitArriere || '—'}`)
+  if (poulsPos.gaucheAvant || poulsPos.gaucheMilieu || poulsPos.gaucheArriere)
+    poulsPosLines.push(`Gauche — Cun : ${poulsPos.gaucheAvant || '—'} · Guan : ${poulsPos.gaucheMilieu || '—'} · Chi : ${poulsPos.gaucheArriere || '—'}`)
+
+  const SYS_LABELS: Record<string, string> = {
+    cardio: 'Cardiaque / Sommeil', pulmo: 'Pulmonaire', mental: 'Santé mentale',
+    vision: 'Vision & Audition', reins: 'Reins / Vessie', rate: 'Système de la Rate',
+    estomac: "Système de l'Estomac", grosIntestin: 'Gros Intestin', peau: 'Santé de la Peau',
+    tete: 'Maux de tête', temp: 'Température', musculo: 'Musculo-squelettique',
+    feminin: 'Santé Féminine', fertilite: 'Fertilité', masculin: 'Santé Masculine',
+    digestif: 'Digestif (ancien)',
+  }
+  const systemesLines: Array<[string, string]> = Object.entries(systemes).map(([k, v]) => {
+    if (!v || typeof v !== 'object') return [k, ''] as [string, string]
+    const vv = v as Record<string, any>
+    const parts: string[] = []
+    if (Array.isArray(vv.checked) && vv.checked.length) parts.push(vv.checked.join(', '))
+    if (k === 'mental') {
+      if (vv.stress)  parts.push(`Stress : ${vv.stress}/10`)
+      if (vv.anxiete) parts.push(`Anxiété : ${vv.anxiete}/10`)
+    }
+    if (k === 'rate' || k === 'digestif') {
+      if (vv.energie)           parts.push(`Énergie : ${vv.energie}/10`)
+      if (vv.regimeAlimentaire) parts.push(`Régime alimentaire : ${vv.regimeAlimentaire}`)
+    }
+    if (k === 'musculo') {
+      if (vv.douleur)      parts.push(`Douleur : ${vv.douleur}/10`)
+      if (vv.localisation) parts.push(`Localisation : ${vv.localisation}`)
+    }
+    if (k === 'peau') {
+      if (vv.emplacementAcne)   parts.push(`Emplacement acné : ${vv.emplacementAcne}`)
+      if (vv.emplacementEczema) parts.push(`Emplacement eczéma : ${vv.emplacementEczema}`)
+    }
+    if (k === 'feminin') {
+      if (vv.ageMenarche)   parts.push(`Ménarche : ${vv.ageMenarche} ans`)
+      if (vv.jourCycle)     parts.push(`Jour du cycle : ${vv.jourCycle}`)
+      if (vv.longueurCycle) parts.push(`Longueur cycle : ${vv.longueurCycle}`)
+      if (vv.dureeMin || vv.dureeMax) parts.push(`Durée menstruations : ${vv.dureeMin || '?'}–${vv.dureeMax || '?'} j`)
+      if (vv.couleurSang)   parts.push(`Couleur sang : ${vv.couleurSang}`)
+      if (vv.ecoulement)    parts.push(`Écoulement : ${vv.ecoulement}`)
+      if (Array.isArray(vv.caillots) && vv.caillots.length) parts.push(`Caillots : ${vv.caillots.join(', ')}`)
+      if (Array.isArray(vv.crampes)  && vv.crampes.length)  parts.push(`Crampes : ${vv.crampes.join(', ')}`)
+      if (Array.isArray(vv.spm)      && vv.spm.length)      parts.push(`SPM : ${vv.spm.join(', ')}`)
+    }
+    if (k === 'fertilite') {
+      if (vv.essaiConception) parts.push(`Essai conception : ${vv.essaiConception}`)
+      if (vv.testsSanguins)   parts.push(`Tests sanguins : ${vv.testsSanguins}`)
+      if (vv.resultatTests)   parts.push(`Résultats tests : ${vv.resultatTests}`)
+      if (Array.isArray(vv.diagnosticFertilite) && vv.diagnosticFertilite.length)
+        parts.push(`Diagnostic fertilité : ${vv.diagnosticFertilite.join(', ')}`)
+      if (vv.debutMenopause)  parts.push(`Début ménopause : ${vv.debutMenopause} ans`)
+      if (vv.enceinte)        parts.push(`Enceinte${vv.nbSemaines ? ` (${vv.nbSemaines} sem.)` : ''}`)
+      if (vv.cesarienne)      parts.push('Césarienne : oui')
+      if (vv.datePrevue)      parts.push(`Date prévue accouchement : ${vv.datePrevue}`)
+      if (vv.enfants)         parts.push('Enfants : oui')
+    }
+    if (vv.note) parts.push(vv.note)
+    return [SYS_LABELS[k] || k, parts.join(' · ')] as [string, string]
+  }).filter(([, v]) => v)
+
+  const rechauffeursTxt = ((energy.rechauffeurs || []) as any[]).filter(x => x.active)
+    .map(x => `${x.key} (${x.polarite || '?'})`).join(', ')
+  const foyersTxt = ((energy.foyers || []) as any[]).filter(x => x.active)
+    .map(x => `${x.key}${x.subs?.length ? `: ${x.subs.join(', ')}` : ''}`).join(' | ')
+  const mvTxt = ((energy.merveilleuxVaisseaux || []) as any[])
+    .filter(m => m.fonctionExterne || m.axeDistribution || m.fonctionInterne || m.note)
+    .map(m => `${m.name}: ${[m.fonctionExterne && 'Ext.', m.axeDistribution && 'Axe', m.fonctionInterne && 'Int.', m.note].filter(Boolean).join('/')}`)
+    .join(' | ')
+  const penEmp  = Array.isArray(energy.penetrationEmp)  ? energy.penetrationEmp.join(', ')  : (energy.penetrationEmp  || '')
+  const penComp = Array.isArray(energy.penetrationComp) ? energy.penetrationComp.join(', ') : (energy.penetrationComp || '')
+  const ecMtc = energy.energieComp || {}
+  const gmVal = ecMtc.gmMeridien
+    ? `${ecMtc.gmMeridien}${ecMtc.gmType?.length ? ` — ${ecMtc.gmType.join(', ')}` : ''}${ecMtc.gmNotes ? ` — ${ecMtc.gmNotes}` : ''}`
+    : ''
+  const energyLines: Array<[string, string]> = ([
+    ['Réchauffeurs', rechauffeursTxt],
+    ['Foyers', foyersTxt],
+    ['Merveilleux Vaisseaux', mvTxt],
+    ['Points Mu', (energy.pointsMu || []).join(', ')],
+    ['Empereur', energy.empereur ? `${energy.empereur} (${energy.empereurPolarite || '?'})` : ''],
+    ['Pénétration Empereur', penEmp],
+    ['Pénétration Énergie comp.', penComp],
+    ['Syndrome', (energy.syndrome || []).join(', ')],
+    ['Climat / Wu Shu', (energy.syndromeClimat || []).join(', ')],
+    ['Biao Li', ecMtc.biaoli || ''],
+    ['Midi / Minuit', ecMtc.midiMinuit || ''],
+    ['Grand Méridien', gmVal],
+    ['5 Mouvements', (ecMtc.cinqMouvements || []).join(', ')],
+    ['Élément compensateur', ecMtc.element || ''],
+    ['Notes énergie comp.', ecMtc.notes || ''],
+    ['Notes tests', energy.testsNotes || ''],
+  ] as Array<[string, string]>).filter(([, v]) => v)
 
   // Aperçu tronqué du motif pour le header
   const motifPreview = s.motif
@@ -177,6 +283,32 @@ function PrevSessionAccordion({ session: s, open, onToggle }: {
                   <PrevField label="Prise de notes / Anamnèse" value={anamnese} />
                 </div>
               )}
+
+              {(s.langue || langueNote || s.pouls || poulsPosLines.length > 0 || poulsNote || s.constitution || s.type_corps || s.teint) && (
+                <div style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 10, marginBottom: 8 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>Observation MTC</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 20px' }}>
+                    <PrevField label="Langue" value={s.langue} />
+                    <PrevField label="Pouls — qualités" value={s.pouls} />
+                    <PrevField label="Langue — notes" value={langueNote} />
+                    <PrevField label="Pouls — notes" value={poulsNote} />
+                    <PrevField label="Constitution" value={s.constitution} />
+                    <PrevField label="Type de corps" value={s.type_corps} />
+                    <PrevField label="Teint" value={s.teint} />
+                  </div>
+                  {poulsPosLines.length > 0 && <PrevField label="Positions du pouls" value={poulsPosLines.join(' · ')} />}
+                </div>
+              )}
+
+              {systemesLines.length > 0 && (
+                <div style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 10, marginBottom: 8 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>Questionnaire par systèmes</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 20px' }}>
+                    {systemesLines.map(([label, value]) => <PrevField key={label} label={label} value={value} />)}
+                  </div>
+                </div>
+              )}
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 20px', borderTop: '1px solid var(--border-soft)', paddingTop: 10 }}>
                 <div>
                   <PrevField label="Diagnostic MTC" value={s.diagnostic_mtc} />
@@ -202,6 +334,15 @@ function PrevSessionAccordion({ session: s, open, onToggle }: {
                   )}
                 </div>
               </div>
+
+              {energyLines.length > 0 && (
+                <div style={{ borderTop: '1px solid var(--border-soft)', paddingTop: 10, marginBottom: 8 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--purple)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 6 }}>Tests énergétiques</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 20px' }}>
+                    {energyLines.map(([label, value]) => <PrevField key={label} label={label} value={value} />)}
+                  </div>
+                </div>
+              )}
             </>
           )}
 
@@ -1145,21 +1286,37 @@ export default function NewSessionPage() {
                   ['sec-info-patient',   'ℹ️ Info patient'],
                 ]
                 let n = 1
-                pre.forEach(s => items.push([`sec-pre-${s.id}`, `${n++}. ${s.title}`]))
-                items.push(['sec-motif', mots.length > 0 ? `${n++}. ${mots[0].title}` : `${n++}. Motif`])
+                // Chaque emplacement conserve son numéro structurel (comme le rendu
+                // principal) — seule l'INCLUSION d'une entrée dans le sommaire dépend
+                // de visibleWhen, pour que la numérotation reste alignée avec les
+                // titres affichés à l'écran. Sections sans visibleWhen : toujours
+                // incluses, comme avant (isVisible retourne true par défaut).
+                pre.forEach(s => {
+                  const num = n++
+                  if (isVisible(s.visibleWhen, pluginData)) items.push([`sec-pre-${s.id}`, `${num}. ${s.title}`])
+                })
+                {
+                  const motifNum = n++
+                  const visibleMots = mots.filter(s => isVisible(s.visibleWhen, pluginData))
+                  if (visibleMots.length > 0) items.push(['sec-motif', `${motifNum}. ${visibleMots[0].title}`])
+                  else if (mots.length === 0 && !activePlugin.hideGlobalMotif) items.push(['sec-motif', `${motifNum}. Motif`])
+                }
                 items.push(['sec-evolution', `${n++}. Évolution`])
                 if (notes.length > 0) {
                   notes.forEach((s, idx) => {
+                    const num = n++
+                    if (!isVisible(s.visibleWhen, pluginData)) return
                     const id = idx === 0 ? 'sec-anamnese' : `sec-notes-${s.id}`
-                    items.push([id, `${n++}. ${s.title}`])
+                    items.push([id, `${num}. ${s.title}`])
                   })
                 } else {
                   items.push(['sec-anamnese', `${n++}. Notes de séance`])
                 }
-                if (trait.length > 0) {
-                  items.push(['sec-traitement', `${n++}. ${trait[0].title}`])
-                } else {
-                  items.push(['sec-traitement', `${n++}. Traitement effectué`])
+                {
+                  const traitNum = n++
+                  const visibleTrait = trait.filter(s => isVisible(s.visibleWhen, pluginData))
+                  if (visibleTrait.length > 0) items.push(['sec-traitement', `${traitNum}. ${visibleTrait[0].title}`])
+                  else if (trait.length === 0) items.push(['sec-traitement', `${traitNum}. Traitement effectué`])
                 }
                 if (showR) items.push(['sec-reactions', `${n++}. Résultats & Réactions`])
                 items.push(['sec-suivi',      `${n++}. Plan de suivi`])

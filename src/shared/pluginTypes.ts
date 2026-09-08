@@ -135,6 +135,10 @@ export interface PluginSection {
   fields: PluginField[]
   visibleWhen?: PluginCondition[]   // affiche cette section seulement si la condition est satisfaite
   placement?: PluginSectionPlacement  // position dans le formulaire (défaut : 'notes')
+  /** Rendu 'inline' uniquement : masque le sous-titre + séparateur de section (utile
+   *  quand la section est le seul contenu d'un bloc core déjà titré, ex. placement
+   *  'plan'). Optionnel, défaut false — n'affecte aucun plugin existant. */
+  hideTitle?: boolean
 }
 
 export type PluginCategory =

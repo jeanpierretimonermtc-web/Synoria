@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import type { PluginCondition, PluginDefinition, PluginSection, PluginField } from '../../../shared/pluginTypes'
+import type { PluginDefinition, PluginSection, PluginField } from '../../../shared/pluginTypes'
+import { isVisible } from '../../../shared/pluginConditions'
 import RichTextArea from '../common/RichTextArea'
 import MtcSystemesModule     from './modules/MtcSystemesModule'
 import MtcFiveElementsModule  from './modules/MtcFiveElementsModule'
@@ -18,36 +19,6 @@ function useIsDark(): boolean {
     return () => window.removeEventListener('synoria-theme-change', handler)
   }, [])
   return dark
-}
-
-function evaluateCondition(condition: PluginCondition, data: Record<string, any>): boolean {
-  const currentValue = data[condition.fieldId]
-  const operator = condition.operator || 'truthy'
-
-  switch (operator) {
-    case 'eq':
-      return currentValue === condition.value
-    case 'neq':
-      return currentValue !== condition.value
-    case 'includes':
-      if (Array.isArray(currentValue)) return currentValue.includes(condition.value)
-      if (typeof currentValue === 'string' && typeof condition.value === 'string') return currentValue.includes(condition.value)
-      return false
-    case 'excludes':
-      if (Array.isArray(currentValue)) return !currentValue.includes(condition.value)
-      if (typeof currentValue === 'string' && typeof condition.value === 'string') return !currentValue.includes(condition.value)
-      return false
-    case 'falsy':
-      return !currentValue
-    case 'truthy':
-    default:
-      return !!currentValue
-  }
-}
-
-function isVisible(conditions: PluginCondition[] | undefined, data: Record<string, any>): boolean {
-  if (!conditions || conditions.length === 0) return true
-  return conditions.every(condition => evaluateCondition(condition, data))
 }
 
 // ── COMPOSANT PRINCIPAL ────────────────────────────────────────────────────
@@ -127,6 +98,13 @@ function PluginSectionCard({ section, data, onChange, asCard, inline, sectionNum
   const accent = section.accentColor || 'var(--accent)'
 
   if (inline) {
+    // hideTitle : évite un sous-titre + séparateur redondants quand la section est le
+    // seul contenu d'un bloc core déjà titré (ex. placement "plan" dans "Plan de suivi").
+    // Optionnel, rétrocompatible (défaut : false → comportement inchangé pour tous les
+    // plugins existants qui ne définissent pas cette propriété).
+    if (section.hideTitle) {
+      return <FieldsGrid fields={section.fields} data={data} onChange={onChange} />
+    }
     return (
       <div
         className="plugin-section-inline"
