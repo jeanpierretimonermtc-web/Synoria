@@ -141,8 +141,8 @@ Deno.serve(async (req) => {
         },
       },
 
-      // Carte obligatoire immédiatement, même en période d'essai
-      payment_method_types: ['card'],
+      // Carte ou PayPal obligatoire immédiatement, même en période d'essai
+      payment_method_types: ['card', 'paypal'],
       payment_method_collection: 'always',
 
       // Métadonnées sur la session (pour checkout.session.completed)
