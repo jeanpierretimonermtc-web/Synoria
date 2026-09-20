@@ -39,6 +39,24 @@ figure{margin:0}
 .nav-links a:hover{color:var(--accent)}
 .nav-actions{display:flex;gap:10px}
 
+/* ── NAV DROPDOWN (Spécialités, CSS pur) ───── */
+.nav-dropdown{position:relative}
+.nav-dropdown-trigger{background:none;border:none;padding:0;margin:0;font:inherit;font-weight:600;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.nav-dropdown-trigger:hover{color:var(--accent)}
+.nav-dropdown-caret{font-size:10px;line-height:1;transition:transform .15s ease}
+.nav-dropdown:hover .nav-dropdown-caret,.nav-dropdown:focus-within .nav-dropdown-caret{transform:rotate(180deg)}
+.nav-dropdown-menu{
+  position:absolute;top:100%;left:50%;margin-top:12px;transform:translateX(-50%) translateY(4px);
+  background:var(--white);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-lg);
+  padding:8px;min-width:240px;display:flex;flex-direction:column;gap:2px;
+  opacity:0;pointer-events:none;transition:opacity .15s ease,transform .15s ease;
+}
+.nav-dropdown:hover .nav-dropdown-menu,.nav-dropdown:focus-within .nav-dropdown-menu{
+  opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0);
+}
+.nav-dropdown-menu a{padding:9px 12px;border-radius:7px;font-weight:600;white-space:nowrap;color:var(--ink)}
+.nav-dropdown-menu a:hover{background:var(--soft);color:var(--accent)}
+
 /* ── NAV MOBILE (menu hamburger, CSS pur) ─── */
 .nav-toggle-input{display:none}
 .nav-toggle-btn{
@@ -270,7 +288,14 @@ h2{font-family:Georgia,"Times New Roman",serif;font-size:42px;font-weight:400;li
     transition:max-height .25s ease,opacity .2s ease;
   }
   .nav-links a{padding:10px 0;border-bottom:1px solid var(--soft)}
-  .nav-toggle-input:checked ~ .nav-links{max-height:420px;opacity:1;pointer-events:auto}
+  .nav-toggle-input:checked ~ .nav-links{max-height:520px;opacity:1;pointer-events:auto}
+  .nav-dropdown{display:flex;flex-direction:column}
+  .nav-dropdown-trigger{width:100%;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--soft)}
+  .nav-dropdown-menu{
+    position:static;margin-top:0;transform:none;opacity:1;pointer-events:auto;
+    box-shadow:none;border:none;border-radius:0;padding:0 0 0 14px;
+  }
+  .nav-dropdown-menu a{padding:8px 0;border-bottom:1px solid var(--soft)}
   h1{font-size:48px}
   h2{font-size:34px}
   .features,.security-grid,.pricing-grid,.contact-grid{grid-template-columns:repeat(2,1fr)}
