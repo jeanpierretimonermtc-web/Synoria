@@ -2,7 +2,7 @@ import { getDb } from '../connection'
 import { randomUUID } from 'crypto'
 import type {
   ConsultationType, MonthlyRevenue, UrsafRate,
-  ExpenseConfig, MonthlyVarExpense, InvoiceLog,
+  ExpenseConfig, MonthlyVarExpense, MonthlyFixedExpense, InvoiceLog,
 } from '../../../shared/types'
 
 // ── Consultation types ─────────────────────────────────────────────
@@ -45,22 +45,29 @@ export function getMonthlyRevenue(year: number): MonthlyRevenue[] {
   ).all(year) as MonthlyRevenue[]
 }
 
+// Le nom et le tarif du type sont figés uniquement à la CRÉATION de la ligne
+// (year, month, type_id) — la clause ON CONFLICT ne touche jamais label/price,
+// donc renommer ou re-tarifer un type ensuite ne change plus les mois déjà saisis.
 export function setMonthlyRevenue(
   year: number, month: number, typeId: string, nbSeances: number
 ): void {
   getDb().prepare(`
-    INSERT INTO monthly_revenue (year, month, type_id, nb_seances)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO monthly_revenue (year, month, type_id, nb_seances, label, price)
+    VALUES (?, ?, ?, ?,
+      (SELECT name  FROM consultation_types WHERE id = ?),
+      (SELECT price FROM consultation_types WHERE id = ?))
     ON CONFLICT(year, month, type_id) DO UPDATE SET nb_seances = excluded.nb_seances
-  `).run(year, month, typeId, nbSeances)
+  `).run(year, month, typeId, nbSeances, typeId, typeId)
 }
 
 export function incrementMonthlyRevenue(year: number, month: number, typeId: string): void {
   getDb().prepare(`
-    INSERT INTO monthly_revenue (year, month, type_id, nb_seances)
-    VALUES (?, ?, ?, 1)
+    INSERT INTO monthly_revenue (year, month, type_id, nb_seances, label, price)
+    VALUES (?, ?, ?, 1,
+      (SELECT name  FROM consultation_types WHERE id = ?),
+      (SELECT price FROM consultation_types WHERE id = ?))
     ON CONFLICT(year, month, type_id) DO UPDATE SET nb_seances = nb_seances + 1
-  `).run(year, month, typeId)
+  `).run(year, month, typeId, typeId, typeId)
 }
 
 // ── URSAF rates ────────────────────────────────────────────────────
@@ -107,6 +114,43 @@ export function saveExpenseConfig(configs: ExpenseConfig[]): void {
     currentIds.filter(id => !newIds.includes(id)).forEach(id => del.run(id))
     // Upsert les charges actives
     configs.forEach((c, i) => upsert.run({ months: null, ...c, sort_order: i }))
+  })
+  run()
+}
+
+// ── Monthly fixed expenses (photographie figée) ────────────────────
+
+export function getMonthlyFixedExpenses(year: number): MonthlyFixedExpense[] {
+  return getDb().prepare(
+    'SELECT * FROM monthly_fixed_expenses WHERE year = ? ORDER BY sort_order'
+  ).all(year) as MonthlyFixedExpense[]
+}
+
+// Fige la configuration ACTUELLE des charges fixes pour un mois donné,
+// une seule fois (si des lignes existent déjà pour ce mois, ne fait rien) —
+// c'est ce qui garantit que modifier une charge plus tard ne change plus
+// les mois déjà figés.
+export function ensureMonthlyFixedExpensesSnapshot(year: number, month: number): void {
+  const db = getDb()
+  const already = db.prepare(
+    'SELECT 1 FROM monthly_fixed_expenses WHERE year = ? AND month = ? LIMIT 1'
+  ).get(year, month)
+  if (already) return
+
+  const configs = getExpenseConfig()
+  if (configs.length === 0) return
+
+  const insert = db.prepare(`
+    INSERT INTO monthly_fixed_expenses (year, month, config_id, label, monthly_amount, is_shared, sort_order)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(year, month, config_id) DO NOTHING
+  `)
+  const run = db.transaction(() => {
+    for (const c of configs) {
+      const active = !c.months || c.months.split(',').map(Number).includes(month)
+      if (!active) continue
+      insert.run(year, month, c.id, c.label, c.monthly_amount, c.is_shared, c.sort_order)
+    }
   })
   run()
 }

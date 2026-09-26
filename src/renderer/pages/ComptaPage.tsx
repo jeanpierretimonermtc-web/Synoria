@@ -115,25 +115,53 @@ export default function ComptaPage() {
     </div>
   )
 
-  const types = data.consultationTypes.filter(t => t.is_active)
+  // Types affichés : les types actifs actuels + tout type historique présent
+  // dans les revenus de l'année (même désactivé/supprimé depuis), sous peine
+  // de faire disparaître silencieusement son chiffre d'affaires des totaux.
+  const types = (() => {
+    const map = new Map<string, { id: string; name: string; price: number }>()
+    for (const t of data.consultationTypes.filter(t => t.is_active)) {
+      map.set(t.id, { id: t.id, name: t.name, price: t.price })
+    }
+    for (const r of data.monthlyRevenue) {
+      if (!map.has(r.type_id)) map.set(r.type_id, { id: r.type_id, name: r.label || r.type_id, price: r.price ?? 0 })
+    }
+    return [...map.values()]
+  })()
 
   // ── Getters ─────────────────────────────────────────────────────
 
-  const getNb = (m: number, tid: string) =>
-    data.monthlyRevenue.find(r => r.month === m && r.type_id === tid)?.nb_seances ?? 0
+  const getRevRow = (m: number, tid: string) =>
+    data.monthlyRevenue.find(r => r.month === m && r.type_id === tid)
+
+  const getNb = (m: number, tid: string) => getRevRow(m, tid)?.nb_seances ?? 0
+
+  // Tarif figé au moment de la saisie de ce mois précis ; à défaut (mois pas
+  // encore saisi), le tarif courant du type sert de simple aperçu.
+  const getPrice = (m: number, tid: string, fallback: number) =>
+    getRevRow(m, tid)?.price ?? fallback
 
   const getRate = (m: number) =>
     data.ursafRates.find(u => u.month === m)?.rate ?? 0.256
 
-  const fixedTotal = data.expenseConfig.reduce(
-    (s, e) => s + (e.is_shared ? e.monthly_amount / 2 : e.monthly_amount), 0
-  )
+  // Charges fixes figées par mois ; si un mois n'a pas encore de photographie
+  // (mois futur), on retombe sur la configuration actuelle en aperçu.
+  const fixedForMonth = (m: number) => {
+    const rows = data.monthlyFixedExpenses.filter(f => f.month === m)
+    if (rows.length > 0) {
+      return rows.reduce((s, f) => s + (f.is_shared ? f.monthly_amount / 2 : f.monthly_amount), 0)
+    }
+    return data.expenseConfig.reduce((s, e) => {
+      if (e.months && !e.months.split(',').map(Number).includes(m)) return s
+      return s + (e.is_shared ? e.monthly_amount / 2 : e.monthly_amount)
+    }, 0)
+  }
 
   const getVar = (m: number, cat: string) =>
     data.monthlyVarExpenses.find(v => v.month === m && v.category === cat)?.amount ?? 0
 
-  const monthRev  = (m: number) => types.reduce((s, t) => s + getNb(m, t.id) * t.price, 0)
-  const monthDep  = (m: number) => fixedTotal + VAR_CATS.reduce((s, c) => s + getVar(m, c.key), 0)
+  const monthRev  = (m: number) => types.reduce((s, t) => s + getNb(m, t.id) * getPrice(m, t.id, t.price), 0)
+  const monthDep  = (m: number) => fixedForMonth(m) + VAR_CATS.reduce((s, c) => s + getVar(m, c.key), 0)
   const monthUrs  = (m: number) => monthRev(m) * getRate(m)
   const monthNet1 = (m: number) => monthRev(m) - monthDep(m)
   const monthNet2 = (m: number) => monthNet1(m) - monthUrs(m)
@@ -280,7 +308,7 @@ export default function ComptaPage() {
                 <td className="compta-td-tarif">{t.price} €</td>
                 {Array.from({length: 12}, (_, i) => i + 1).map(m => {
                   const nb  = getNb(m, t.id)
-                  const rev = nb * t.price
+                  const rev = nb * getPrice(m, t.id, t.price)
                   return (
                     <td key={m} className="compta-td">
                       <EditCell value={nb} onChange={v => setNb(m, t.id, Math.round(v))} readonly={ro} />
@@ -290,7 +318,7 @@ export default function ComptaPage() {
                 })}
                 <td className="compta-td-annual">
                   <div>{Array.from({length:12},(_,i)=>getNb(i+1,t.id)).reduce((a,b)=>a+b,0)}</div>
-                  <div className="compta-sub-rev">{(Array.from({length:12},(_,i)=>getNb(i+1,t.id)*t.price).reduce((a,b)=>a+b,0)).toFixed(0)} €</div>
+                  <div className="compta-sub-rev">{(Array.from({length:12},(_,i)=>getNb(i+1,t.id)*getPrice(i+1,t.id,t.price)).reduce((a,b)=>a+b,0)).toFixed(0)} €</div>
                 </td>
               </tr>
             ))}
@@ -312,15 +340,15 @@ export default function ComptaPage() {
             <tr className="compta-row">
               <td className="compta-td-label">
                 Loyer + Assurance
-                <div style={{ fontSize: 10, color: 'var(--text-hint)' }}>{euro(fixedTotal)}/mois</div>
+                <div style={{ fontSize: 10, color: 'var(--text-hint)' }}>{euro(fixedForMonth(new Date().getMonth() + 1))}/mois (actuel)</div>
               </td>
               <td />
               {Array.from({length:12},(_,i)=>i+1).map(m => (
                 <td key={m} className="compta-td">
-                  <div className="compta-cell-val compta-cell-eur">{euro(fixedTotal)}</div>
+                  <div className="compta-cell-val compta-cell-eur">{euro(fixedForMonth(m))}</div>
                 </td>
               ))}
-              <td className="compta-td-annual">{euro(fixedTotal * 12)}</td>
+              <td className="compta-td-annual">{euro(Array.from({length:12},(_,i)=>fixedForMonth(i+1)).reduce((a,b)=>a+b,0))}</td>
             </tr>
 
             {/* Dépenses variables */}

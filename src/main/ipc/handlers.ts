@@ -459,15 +459,25 @@ export function registerAllHandlers(): void {
 
   // ─── COMPTABILITÉ ──────────────────────────────────────────────────────────
   ipcMain.handle('compta:yearData', (_e, year) => {
-    const [consultationTypes, monthlyRevenue, ursafRates, expenseConfig, monthlyVarExpenses, years] = [
+    // Fige la config actuelle des charges fixes pour tout mois déjà écoulé
+    // (années passées entières, mois déjà passés de l'année en cours) — les
+    // mois futurs restent dynamiques tant qu'ils n'ont pas eu lieu.
+    const now = new Date()
+    const lastMonthToFreeze =
+      year <  now.getFullYear() ? 12 :
+      year === now.getFullYear() ? now.getMonth() + 1 : 0
+    for (let m = 1; m <= lastMonthToFreeze; m++) comptaRepo.ensureMonthlyFixedExpensesSnapshot(year, m)
+
+    const [consultationTypes, monthlyRevenue, ursafRates, expenseConfig, monthlyVarExpenses, monthlyFixedExpenses, years] = [
       comptaRepo.getConsultationTypes(),
       comptaRepo.getMonthlyRevenue(year),
       comptaRepo.getUrsafRates(year),
       comptaRepo.getExpenseConfig(),
       comptaRepo.getMonthlyVarExpenses(year),
+      comptaRepo.getMonthlyFixedExpenses(year),
       comptaRepo.getComptaYears(),
     ]
-    return { consultationTypes, monthlyRevenue, ursafRates, expenseConfig, monthlyVarExpenses, years }
+    return { consultationTypes, monthlyRevenue, ursafRates, expenseConfig, monthlyVarExpenses, monthlyFixedExpenses, years }
   })
   ipcMain.handle('compta:setMonthlyRevenue',    (_e, y, m, tid, nb)       => { licenseSvc.assertNotRestricted(); return comptaRepo.setMonthlyRevenue(y, m, tid, nb) })
   ipcMain.handle('compta:incrementRevenue',     (_e, y, m, tid)           => { licenseSvc.assertNotRestricted(); return comptaRepo.incrementMonthlyRevenue(y, m, tid) })

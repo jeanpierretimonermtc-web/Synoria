@@ -12,6 +12,7 @@ import { mkdirSync, writeFileSync } from 'fs'
 import {
   getConsultationTypes, getMonthlyRevenue, getUrsafRates,
   getExpenseConfig, getMonthlyVarExpenses, getInvoicesLog,
+  getMonthlyFixedExpenses, ensureMonthlyFixedExpensesSnapshot,
 } from '../database/repositories/comptaRepository'
 import { getSettings } from './settingsService'
 
@@ -109,23 +110,53 @@ const MONTHS3 = MONTHS.map(m => m.slice(0, 3).toUpperCase())
 
 // ── Données partagées (calculées une fois) ───────────────────────
 
-function buildComptaData(year: number) {
-  const types    = getConsultationTypes().filter(t => t.is_active)
-  const revenues = getMonthlyRevenue(year)
-  const ursafs   = getUrsafRates(year)
-  const fixedExp = getExpenseConfig()
-  const varExp   = getMonthlyVarExpenses(year)
+// Fige la config actuelle des charges fixes pour tout mois déjà écoulé avant
+// de lire les photographies — même logique que le handler IPC compta:yearData.
+function freezeElapsedMonths(year: number): void {
+  const now = new Date()
+  const lastMonthToFreeze =
+    year <  now.getFullYear() ? 12 :
+    year === now.getFullYear() ? now.getMonth() + 1 : 0
+  for (let m = 1; m <= lastMonthToFreeze; m++) ensureMonthlyFixedExpensesSnapshot(year, m)
+}
 
-  const getNb = (m: number, tid: string) =>
-    revenues.find(r => r.month === m && r.type_id === tid)?.nb_seances ?? 0
+function buildComptaData(year: number) {
+  freezeElapsedMonths(year)
+
+  const revenues  = getMonthlyRevenue(year)
+  const ursafs    = getUrsafRates(year)
+  const fixedExp  = getExpenseConfig()
+  const fixedSnap = getMonthlyFixedExpenses(year)
+  const varExp    = getMonthlyVarExpenses(year)
+
+  // Types affichés : actifs actuels + tout type historique présent dans les
+  // revenus de l'année (même désactivé/supprimé depuis), pour ne pas faire
+  // disparaître son chiffre d'affaires des totaux exportés.
+  const typeMap = new Map<string, { id: string; name: string; price: number }>()
+  for (const t of getConsultationTypes().filter(t => t.is_active)) typeMap.set(t.id, { id: t.id, name: t.name, price: t.price })
+  for (const r of revenues) {
+    if (!typeMap.has(r.type_id)) typeMap.set(r.type_id, { id: r.type_id, name: r.label || r.type_id, price: r.price ?? 0 })
+  }
+  const types = [...typeMap.values()]
+
+  const getRevRow = (m: number, tid: string) => revenues.find(r => r.month === m && r.type_id === tid)
+  const getNb     = (m: number, tid: string) => getRevRow(m, tid)?.nb_seances ?? 0
+  // Tarif figé au moment de la saisie de ce mois ; à défaut, tarif courant en aperçu.
+  const getPrice  = (m: number, tid: string, fallback: number) => getRevRow(m, tid)?.price ?? fallback
 
   const getRate = (m: number) =>
     ursafs.find(u => u.month === m)?.rate ?? 0.256
 
-  const fixedForMonth = (m: number) => fixedExp.reduce((s, e) => {
-    if (e.months && !e.months.split(',').map(Number).includes(m)) return s
-    return s + (e.is_shared ? e.monthly_amount / 2 : e.monthly_amount)
-  }, 0)
+  // Charges fixes figées par mois ; repli sur la config actuelle pour les
+  // mois futurs (pas encore de photographie).
+  const fixedForMonth = (m: number) => {
+    const rows = fixedSnap.filter(f => f.month === m)
+    if (rows.length > 0) return rows.reduce((s, f) => s + (f.is_shared ? f.monthly_amount / 2 : f.monthly_amount), 0)
+    return fixedExp.reduce((s, e) => {
+      if (e.months && !e.months.split(',').map(Number).includes(m)) return s
+      return s + (e.is_shared ? e.monthly_amount / 2 : e.monthly_amount)
+    }, 0)
+  }
 
   const varCats    = ['publicite', 'logiciel', 'dasri']
   const varLabels: Record<string, string> = { publicite: 'Publicité', logiciel: 'Logiciel', dasri: 'DASRI' }
@@ -134,17 +165,17 @@ function buildComptaData(year: number) {
   const getVarTotal = (m: number) =>
     varExp.filter(v => v.month === m).reduce((s, v) => s + v.amount, 0)
 
-  const caForMonth = (m: number) => types.reduce((s, t) => s + getNb(m, t.id) * t.price, 0)
+  const caForMonth = (m: number) => types.reduce((s, t) => s + getNb(m, t.id) * getPrice(m, t.id, t.price), 0)
   const nbForMonth = (m: number) => types.reduce((s, t) => s + getNb(m, t.id), 0)
 
-  return { types, revenues, ursafs, fixedExp, varExp, varCats, varLabels, getNb, getRate, fixedForMonth, getVarCat, getVarTotal, caForMonth, nbForMonth }
+  return { types, revenues, ursafs, fixedExp, fixedSnap, varExp, varCats, varLabels, getNb, getPrice, getRate, fixedForMonth, getVarCat, getVarTotal, caForMonth, nbForMonth }
 }
 
 // ── Feuille 1 : COMPTABILITÉ (vue générale) ───────────────────────
 
 function buildComptaSheet(year: number) {
   const d = buildComptaData(year)
-  const { types, getNb, getRate, fixedForMonth, getVarCat, varCats, varLabels } = d
+  const { types, getNb, getPrice, getRate, fixedForMonth, getVarCat, varCats, varLabels, caForMonth } = d
 
   const ws_data: unknown[][] = []
   let ri = 0
@@ -171,7 +202,7 @@ function buildComptaSheet(year: number) {
     const row: unknown[] = [labelCell(t.name, 1), numCell(t.price, true)]
     for (let m = 1; m <= 12; m++) {
       const nb = getNb(m, t.id)
-      row.push(numCell(nb), numCell(nb * t.price, true))
+      row.push(numCell(nb), numCell(nb * getPrice(m, t.id, t.price), true))
     }
     ws_data.push(row); ri++
   }
@@ -181,7 +212,7 @@ function buildComptaSheet(year: number) {
   for (let m = 1; m <= 12; m++) {
     totRevRow.push(
       numCell(types.reduce((s, t) => s + getNb(m, t.id), 0), false, true),
-      totalCell(types.reduce((s, t) => s + getNb(m, t.id) * t.price, 0), C.green)
+      totalCell(caForMonth(m), C.green)
     )
   }
   ws_data.push(totRevRow); ri++
@@ -191,11 +222,23 @@ function buildComptaSheet(year: number) {
   // Dépenses
   ws_data.push([hdr('DÉPENSES', C.amber, C.white), ...Array(25).fill(hdr('', C.amber))]); ri++
 
-  for (const exp of d.fixedExp) {
+  // Union config actuelle + toute charge figée historiquement (même supprimée depuis)
+  const fixedRowsMap = new Map<string, { id: string; label: string }>()
+  for (const e of d.fixedExp) fixedRowsMap.set(e.id, { id: e.id, label: e.label })
+  for (const f of d.fixedSnap) if (!fixedRowsMap.has(f.config_id)) fixedRowsMap.set(f.config_id, { id: f.config_id, label: f.label })
+
+  for (const exp of fixedRowsMap.values()) {
     const expRow: unknown[] = [labelCell(exp.label), cell('')]
     for (let m = 1; m <= 12; m++) {
-      const active = !exp.months || exp.months.split(',').map(Number).includes(m)
-      const val    = active ? (exp.is_shared ? exp.monthly_amount / 2 : exp.monthly_amount) : 0
+      const snap = d.fixedSnap.find(f => f.month === m && f.config_id === exp.id)
+      let val = 0
+      if (snap) {
+        val = snap.is_shared ? snap.monthly_amount / 2 : snap.monthly_amount
+      } else {
+        const cfg = d.fixedExp.find(e => e.id === exp.id)
+        const active = cfg && (!cfg.months || cfg.months.split(',').map(Number).includes(m))
+        val = active && cfg ? (cfg.is_shared ? cfg.monthly_amount / 2 : cfg.monthly_amount) : 0
+      }
       expRow.push(cell(''), numCell(val, true))
     }
     ws_data.push(expRow); ri++
@@ -224,8 +267,7 @@ function buildComptaSheet(year: number) {
 
   const coutRow: unknown[] = [labelCell('Coût URSAF'), cell('')]
   for (let m = 1; m <= 12; m++) {
-    const rev = types.reduce((s, t) => s + getNb(m, t.id) * t.price, 0)
-    coutRow.push(cell(''), numCell(rev * getRate(m), true))
+    coutRow.push(cell(''), numCell(caForMonth(m) * getRate(m), true))
   }
   ws_data.push(coutRow); ri++
 
@@ -235,9 +277,9 @@ function buildComptaSheet(year: number) {
   ws_data.push([hdr('RÉSULTATS', C.navy, C.white), ...Array(25).fill(hdr('', C.navy))]); ri++
 
   const resultRows = [
-    { label: 'CA BRUT',             fn: (m: number) => types.reduce((s, t) => s + getNb(m, t.id) * t.price, 0), bg: C.teal },
-    { label: 'CA NET (hors URSAF)', fn: (m: number) => types.reduce((s, t) => s + getNb(m, t.id) * t.price, 0) - fixedForMonth(m) - d.getVarTotal(m), bg: C.teal },
-    { label: 'CA NET (après URSAF)',fn: (m: number) => { const ca = types.reduce((s, t) => s + getNb(m, t.id) * t.price, 0); return ca - fixedForMonth(m) - d.getVarTotal(m) - ca * getRate(m) }, bg: C.navy },
+    { label: 'CA BRUT',             fn: (m: number) => caForMonth(m), bg: C.teal },
+    { label: 'CA NET (hors URSAF)', fn: (m: number) => caForMonth(m) - fixedForMonth(m) - d.getVarTotal(m), bg: C.teal },
+    { label: 'CA NET (après URSAF)',fn: (m: number) => { const ca = caForMonth(m); return ca - fixedForMonth(m) - d.getVarTotal(m) - ca * getRate(m) }, bg: C.navy },
   ]
   for (const { label, fn, bg } of resultRows) {
     const r: unknown[] = [labelCell(label, 0, true, C.bg), cell('')]
@@ -249,9 +291,9 @@ function buildComptaSheet(year: number) {
   ws_data.push([hdr('TOTAUX ANNUELS', C.navy, C.white), ...Array(25).fill(hdr('', C.navy))]); ri++
 
   const annualRows = [
-    { label: 'CA BRUT ANNUEL',                fn: () => Array.from({length:12},(_,i) => types.reduce((s,t)=>s+getNb(i+1,t.id)*t.price,0)).reduce((a,b)=>a+b,0) },
-    { label: 'CA NET ANNUEL (hors URSAF)',     fn: () => Array.from({length:12},(_,i) => types.reduce((s,t)=>s+getNb(i+1,t.id)*t.price,0) - fixedForMonth(i+1) - d.getVarTotal(i+1)).reduce((a,b)=>a+b,0) },
-    { label: 'CA NET ANNUEL (après URSAF)',    fn: () => Array.from({length:12},(_,i) => { const ca=types.reduce((s,t)=>s+getNb(i+1,t.id)*t.price,0); return ca-fixedForMonth(i+1)-d.getVarTotal(i+1)-ca*getRate(i+1) }).reduce((a,b)=>a+b,0) },
+    { label: 'CA BRUT ANNUEL',                fn: () => Array.from({length:12},(_,i) => caForMonth(i+1)).reduce((a,b)=>a+b,0) },
+    { label: 'CA NET ANNUEL (hors URSAF)',     fn: () => Array.from({length:12},(_,i) => caForMonth(i+1) - fixedForMonth(i+1) - d.getVarTotal(i+1)).reduce((a,b)=>a+b,0) },
+    { label: 'CA NET ANNUEL (après URSAF)',    fn: () => Array.from({length:12},(_,i) => { const ca=caForMonth(i+1); return ca-fixedForMonth(i+1)-d.getVarTotal(i+1)-ca*getRate(i+1) }).reduce((a,b)=>a+b,0) },
   ]
   for (const { label, fn } of annualRows) {
     ws_data.push([labelCell(label, 0, true, C.bg), totalCell(fn(), C.navy), ...Array(24).fill(cell(''))])
@@ -277,6 +319,9 @@ function buildComptaSheet(year: number) {
 function buildDepensesSheet(year: number) {
   const fixedExp = getExpenseConfig()
   const varExp   = getMonthlyVarExpenses(year)
+  // Charges fixes figées par mois (déjà écoulé), pour un total exact même si
+  // la configuration a changé depuis — voir buildComptaData().
+  const { fixedForMonth } = buildComptaData(year)
   const rows: unknown[][] = []
 
   // ─ Charges fixes
@@ -308,16 +353,15 @@ function buildDepensesSheet(year: number) {
     rows.push(row)
   }
 
-  // Total charges fixes
+  // Total charges fixes (valeurs figées mois par mois — voir fixedForMonth)
   const totFixeRow: unknown[] = [labelCell('TOTAL CHARGES FIXES', 0, true, C.bg), cell(''), cell(''), cell('')]
+  let totalAnnuelFixeFige = 0
   for (let m = 1; m <= 12; m++) {
-    const total = fixedExp.reduce((s, e) => {
-      const active = !e.months || e.months.split(',').map(Number).includes(m)
-      return s + (active ? (e.is_shared ? e.monthly_amount / 2 : e.monthly_amount) : 0)
-    }, 0)
+    const total = fixedForMonth(m)
+    totalAnnuelFixeFige += total
     totFixeRow.push(totalCell(total, C.amber))
   }
-  totFixeRow.push(totalCell(totalAnnuelFixe, C.amber))
+  totFixeRow.push(totalCell(totalAnnuelFixeFige, C.amber))
   rows.push(totFixeRow)
 
   rows.push(emptyRow(16))
@@ -352,7 +396,7 @@ function buildDepensesSheet(year: number) {
   rows.push([
     labelCell('TOTAL DÉPENSES (fixes + variables)', 0, true, C.bg),
     cell(''), cell(''),
-    totalCell(totalAnnuelFixe + totalVar, C.navy),
+    totalCell(totalAnnuelFixeFige + totalVar, C.navy),
   ])
 
   const ws = XLSX.utils.aoa_to_sheet(rows)

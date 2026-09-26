@@ -335,4 +335,50 @@ export function runMigrations(db: Database.Database): void {
     `)
     console.log('[DB] Migration v16 done')
   }
+
+  if (currentVersion < 17) {
+    console.log('[DB] Running migration v17 (compta : figer les valeurs déjà enregistrées)...')
+    db.exec(`
+      -- Fige le nom et le tarif du type de consultation au moment où le mois est saisi,
+      -- pour que renommer/re-tarifer un type ne modifie plus les mois déjà enregistrés.
+      ALTER TABLE monthly_revenue ADD COLUMN label TEXT;
+      ALTER TABLE monthly_revenue ADD COLUMN price REAL;
+
+      UPDATE monthly_revenue
+      SET label = (SELECT name  FROM consultation_types WHERE id = monthly_revenue.type_id),
+          price = (SELECT price FROM consultation_types WHERE id = monthly_revenue.type_id)
+      WHERE label IS NULL;
+
+      -- Photographie mensuelle des charges fixes (loyer, assurance…), pour que modifier
+      -- une charge dans les paramètres n'altère plus les mois déjà passés.
+      CREATE TABLE IF NOT EXISTS monthly_fixed_expenses (
+        year            INTEGER NOT NULL,
+        month           INTEGER NOT NULL,
+        config_id       TEXT NOT NULL,
+        label           TEXT NOT NULL,
+        monthly_amount  REAL NOT NULL DEFAULT 0,
+        is_shared       INTEGER NOT NULL DEFAULT 0,
+        sort_order      INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (year, month, config_id)
+      );
+
+      -- Fige immédiatement tous les mois déjà utilisés (revenus, dépenses variables
+      -- ou taux URSAF déjà saisis) avec la configuration actuelle des charges fixes.
+      INSERT INTO monthly_fixed_expenses (year, month, config_id, label, monthly_amount, is_shared, sort_order)
+      SELECT DISTINCT ym.year, ym.month, ec.id, ec.label, ec.monthly_amount, ec.is_shared, ec.sort_order
+      FROM (
+        SELECT year, month FROM monthly_revenue
+        UNION
+        SELECT year, month FROM monthly_var_expenses
+        UNION
+        SELECT year, month FROM ursaf_rates
+      ) ym
+      CROSS JOIN expense_config ec
+      WHERE ec.months IS NULL OR ',' || ec.months || ',' LIKE '%,' || ym.month || ',%'
+      ON CONFLICT(year, month, config_id) DO NOTHING;
+
+      INSERT INTO schema_version(version) VALUES(17);
+    `)
+    console.log('[DB] Migration v17 done')
+  }
 }

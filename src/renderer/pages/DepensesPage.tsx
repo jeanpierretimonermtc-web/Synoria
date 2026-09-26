@@ -343,6 +343,8 @@ export default function DepensesPage() {
         </div>
         <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14 }}>
           Ces types et tarifs sont utilisés dans le tableau comptable. Cochez la case pour les rendre actifs.
+          <br />
+          💡 Modifier un intitulé ou un tarif ne change que les <strong>nouveaux</strong> mois saisis — les mois déjà enregistrés dans la comptabilité gardent le tarif et le nom d'origine.
         </p>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
@@ -407,6 +409,8 @@ export default function DepensesPage() {
         <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14 }}>
           Chaque charge peut être limitée à certains mois (abonnement saisonnier, loyer temporaire…).
           Activez "Partagé ÷2" pour les charges partagées avec un collègue.
+          <br />
+          💡 Modifier un montant ou un intitulé ne change que les <strong>nouveaux</strong> mois — les mois déjà passés dans la comptabilité restent figés avec les valeurs d'origine.
         </p>
 
         {configs.length === 0 ? (

@@ -326,6 +326,8 @@ export interface MonthlyRevenue {
   month: number
   type_id: string
   nb_seances: number
+  label?: string | null   // nom du type figé au moment de la saisie (v17)
+  price?: number | null   // tarif figé au moment de la saisie (v17)
 }
 
 export interface UrsafRate {
@@ -350,6 +352,18 @@ export interface MonthlyVarExpense {
   category: string
   label: string
   amount: number
+}
+
+// Photographie mensuelle d'une charge fixe (v17) — figée au moment de la saisie
+// du mois, indépendante de toute modification ultérieure de expense_config.
+export interface MonthlyFixedExpense {
+  year: number
+  month: number
+  config_id: string
+  label: string
+  monthly_amount: number
+  is_shared: number
+  sort_order: number
 }
 
 export interface InvoiceLog {
@@ -387,6 +401,7 @@ export interface ComptaYearData {
   ursafRates: UrsafRate[]
   expenseConfig: ExpenseConfig[]
   monthlyVarExpenses: MonthlyVarExpense[]
+  monthlyFixedExpenses: MonthlyFixedExpense[]
   years: number[]
 }
 
