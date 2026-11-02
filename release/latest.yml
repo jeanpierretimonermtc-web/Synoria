@@ -1,9 +1,9 @@
-version: 1.6.5
+version: 1.6.6
 files:
-  - url: Synoria-Setup-1.6.5.exe
-    sha512: QccI4RX1/2dBvRebOn1MUkpGke9myrZvIJEsAONmNSO+YPrapp8En7IMjWTzksAUbTedLiqDMj6oeVjAWTzywA==
-    size: 115414364
+  - url: Synoria-Setup-1.6.6.exe
+    sha512: 5FmnnCkk1Epyp0VV4ab5h1yUPihRgiDz4GgzhE38R4TQHuuFRekOTPVc/fyFgyXr/kOUs8MxdgM3G3GtxRG7FQ==
+    size: 115414019
     isAdminRightsRequired: true
-path: Synoria-Setup-1.6.5.exe
-sha512: QccI4RX1/2dBvRebOn1MUkpGke9myrZvIJEsAONmNSO+YPrapp8En7IMjWTzksAUbTedLiqDMj6oeVjAWTzywA==
-releaseDate: '2026-09-08T18:51:43.737Z'
+path: Synoria-Setup-1.6.6.exe
+sha512: 5FmnnCkk1Epyp0VV4ab5h1yUPihRgiDz4GgzhE38R4TQHuuFRekOTPVc/fyFgyXr/kOUs8MxdgM3G3GtxRG7FQ==
+releaseDate: '2026-11-02T18:53:53.589Z'
