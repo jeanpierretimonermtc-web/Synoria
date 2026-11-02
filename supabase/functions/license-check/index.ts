@@ -36,6 +36,8 @@ const OWNER_EMAILS = [
   'jeanpierre.timoner.mtc@gmail.com',
   'jean-pierre.timoner@wanadoo.fr',
   'charlotte.therapie09@gmail.com',
+  'yuweimtc@gmail.com',
+  'timjp09@gmail.com',
 ]
 
 // ── Types ──────────────────────────────────────────────────────────────────
