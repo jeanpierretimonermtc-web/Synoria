@@ -8,6 +8,7 @@
     { "source": "/merci", "destination": "/merci.html" },
     { "source": "/paiement-annule", "destination": "/paiement-annule.html" },
     { "source": "/abonnement", "destination": "/abonnement.html" },
+    { "source": "/reset-password", "destination": "/reset-password.html" },
     { "source": "/telechargement", "destination": "/telechargement.html" },
     { "source": "/confidentialite", "destination": "/confidentialite.html" },
     { "source": "/cgv", "destination": "/cgv.html" },
