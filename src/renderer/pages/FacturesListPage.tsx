@@ -105,12 +105,12 @@ function EmailModal({ inv, onClose, onEditInv }: {
           <>
             <div className="field" style={{ marginBottom: 10 }}>
               <label>Destinataire</label>
-              <input value={to} readOnly style={{ opacity: 0.7 }} />
+              <input type="text" value={to} readOnly style={{ opacity: 0.7 }} />
             </div>
 
             <div className="field" style={{ marginBottom: 10 }}>
               <label>Objet</label>
-              <input value={subject} onChange={e => setSubject(e.target.value)} />
+              <input type="text" value={subject} onChange={e => setSubject(e.target.value)} />
             </div>
 
             <div className="field" style={{ marginBottom: 14 }}>
@@ -194,6 +194,15 @@ function EditModal({ inv, onClose, onSaved }: {
   const [description,  setDescription]  = useState(inv.description       || '')
   const [montantStr,   setMontantStr]   = useState(String(inv.montant).replace('.', ','))
 
+  useEffect(() => {
+    if (!inv.description) {
+      window.mtcApi.getSettings().then(s => {
+        const activity = s.practitionerActivity?.trim()
+        if (activity) setDescription(activity)
+      })
+    }
+  }, [])
+
   const handleSave = async () => {
     const montant = parseFloat(montantStr.replace(',', '.'))
     if (isNaN(montant) || montant <= 0) {
@@ -249,10 +258,10 @@ function EditModal({ inv, onClose, onSaved }: {
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 540 }}>
+      <div className="modal" style={{ maxWidth: 580 }}>
         <button className="modal-close" onClick={onClose}>×</button>
         {/* En-tête */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22 }}>
           <span style={{ fontSize: 20 }}>✏️</span>
           <div>
             <h2 style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>Modifier la facture</h2>
@@ -262,27 +271,35 @@ function EditModal({ inv, onClose, onSaved }: {
           </div>
         </div>
 
-        {/* Dates */}
-        <div className="grid2" style={{ marginBottom: 14 }}>
-          <div className="field">
+        {/* ── Section Facture (dates) ── */}
+        <div className="card-title" style={{ marginBottom: 14 }}>
+          <span className="card-title-icon icon-teal">📅</span>
+          Facture
+        </div>
+        <div className="grid2" style={{ marginBottom: 22 }}>
+          <div className="field" style={{ margin: 0 }}>
             <label>Date d'émission</label>
             <input type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} />
           </div>
-          <div className="field">
+          <div className="field" style={{ margin: 0 }}>
             <label>Date de séance</label>
             <input type="date" value={sessionDate} onChange={e => setSessionDate(e.target.value)} />
           </div>
         </div>
 
-        {/* Patient */}
+        {/* ── Section Client ── */}
+        <div className="card-title" style={{ marginBottom: 14 }}>
+          <span className="card-title-icon icon-purple">👤</span>
+          Client
+        </div>
         <div className="grid2" style={{ marginBottom: 14 }}>
-          <div className="field">
+          <div className="field" style={{ margin: 0 }}>
             <label>Prénom patient</label>
-            <input value={firstName} onChange={e => setFirstName(e.target.value)} />
+            <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} />
           </div>
-          <div className="field">
+          <div className="field" style={{ margin: 0 }}>
             <label>Nom patient</label>
-            <input value={lastName} onChange={e => setLastName(e.target.value)} />
+            <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} />
           </div>
         </div>
 
@@ -291,37 +308,56 @@ function EditModal({ inv, onClose, onSaved }: {
           <textarea value={address} onChange={e => setAddress(e.target.value)} rows={2} style={{ resize: 'vertical' }} />
         </div>
 
-        <div className="grid2" style={{ marginBottom: 14 }}>
-          <div className="field">
+        <div className="grid2" style={{ marginBottom: 22 }}>
+          <div className="field" style={{ margin: 0 }}>
             <label>Email</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} />
           </div>
-          <div className="field">
+          <div className="field" style={{ margin: 0 }}>
             <label>Téléphone</label>
-            <input value={phone} onChange={e => setPhone(e.target.value)} />
+            <input type="text" value={phone} onChange={e => setPhone(e.target.value)} />
           </div>
         </div>
 
-        <div className="field" style={{ marginBottom: 14 }}>
-          <label>Désignation</label>
-          <input value={description} onChange={e => setDescription(e.target.value)} />
+        {/* ── Section Montant (bloc total mis en valeur) ── */}
+        <div className="card-title" style={{ marginBottom: 14 }}>
+          <span className="card-title-icon icon-blue">💰</span>
+          Prestation &amp; montant
         </div>
-
-        <div className="field" style={{ marginBottom: 20 }}>
-          <label>Montant (€)</label>
-          <input
-            type="text" inputMode="decimal"
-            value={montantStr}
-            onChange={e => setMontantStr(e.target.value)}
-            style={{ fontSize: 20, fontWeight: 800, textAlign: 'right', color: 'var(--blue)' }}
-          />
+        <div style={{
+          background: 'var(--blue-light)',
+          border: '1px solid rgba(42,90,138,.18)',
+          borderRadius: 12, padding: '16px 18px',
+          marginBottom: 20,
+        }}>
+          <div className="field" style={{ margin: 0, marginBottom: 14 }}>
+            <label>Désignation</label>
+            <input type="text" value={description} onChange={e => setDescription(e.target.value)} />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <label style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--blue)' }}>Montant total</label>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+              <input
+                type="text" inputMode="decimal"
+                value={montantStr}
+                onChange={e => setMontantStr(e.target.value)}
+                style={{
+                  width: 130, fontSize: 28, fontWeight: 800, textAlign: 'right',
+                  color: 'var(--blue)', background: 'transparent',
+                  border: 'none', borderBottom: '2px solid var(--blue)',
+                  borderRadius: 0, padding: '0 2px 2px',
+                }}
+              />
+              <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--blue)' }}>€</span>
+            </div>
+          </div>
         </div>
 
         <div style={{
-          background: 'var(--blue-light)',
-          border: '1px solid rgba(42,90,138,.15)',
+          background: 'var(--amber-light)',
+          border: '1px solid rgba(180,120,0,.2)',
           borderRadius: 8, padding: '8px 12px',
-          fontSize: 11, color: 'var(--blue)', marginBottom: 20,
+          fontSize: 11, color: 'var(--amber)', marginBottom: 20,
         }}>
           💡 Après enregistrement, il vous sera proposé de régénérer le PDF.
         </div>

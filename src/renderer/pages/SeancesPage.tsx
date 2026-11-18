@@ -576,11 +576,6 @@ export default function SeancesPage() {
         <InvoiceModal
           patient={selectedPatient}
           sessionDate={selectedSession.date}
-          description={(() => {
-            const tmp = document.createElement('div')
-            tmp.innerHTML = selectedSession.motif || ''
-            return tmp.textContent?.trim() || ''
-          })()}
           onClose={() => setShowInvoice(false)}
           showToast={showToast}
           onGenerated={async (invoiceNumber) => {

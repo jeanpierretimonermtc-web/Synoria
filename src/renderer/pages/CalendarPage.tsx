@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useContext, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { Session, Patient, Appointment, CalendarBlock, GCalCalendar } from '../../shared/types'
 import { ToastContext } from '../App'
@@ -49,41 +50,100 @@ function monthSlotH(start: string, end?: string | null): number {
   return Math.max(MONTH_SLOT_H, Math.min(maxDiff * (MONTH_SLOT_H / 30), diff * (MONTH_SLOT_H / 30)))
 }
 
-/** Calcule la mise en colonnes pour les RDV qui se chevauchent.
- *  Utilisé dans la vue mois (panneau jour) ET les vues semaine/jour.
- *  Retourne pour chaque appt.id : { col, totalCols }  */
-function buildApptLayout(appts: Appointment[]): Map<string, { col: number; totalCols: number }> {
-  if (appts.length === 0) return new Map()
+interface TimedLayoutItem { id: string; heure_debut?: string; heure_fin?: string }
 
-  const getEnd = (a: Appointment): string =>
+/** Calcule la mise en colonnes pour les RDV ET les blocs perso qui se
+ *  chevauchent, afin qu'ils s'affichent côte à côte plutôt que superposés.
+ *  Utilisé dans la vue mois (panneau jour) ET les vues semaine/jour.
+ *  Retourne pour chaque id : { col, totalCols }  */
+function buildApptLayout(items: TimedLayoutItem[]): Map<string, { col: number; totalCols: number }> {
+  const valid = items.filter((i): i is TimedLayoutItem & { heure_debut: string } => !!i.heure_debut)
+  if (valid.length === 0) return new Map()
+
+  const getEnd = (a: { heure_debut: string; heure_fin?: string }): string =>
     a.heure_fin && a.heure_fin > a.heure_debut
       ? a.heure_fin
       : `${String(+a.heure_debut.slice(0, 2) + 1).padStart(2, '0')}:${a.heure_debut.slice(3)}`
 
-  const overlaps = (a: Appointment, b: Appointment): boolean =>
+  const overlaps = (a: { heure_debut: string; heure_fin?: string }, b: { heure_debut: string; heure_fin?: string }): boolean =>
     a.heure_debut < getEnd(b) && getEnd(a) > b.heure_debut
 
-  const sorted = [...appts].sort((a, b) => a.heure_debut.localeCompare(b.heure_debut))
-  const columns: Appointment[][] = []
+  const sorted = [...valid].sort((a, b) => a.heure_debut.localeCompare(b.heure_debut))
+  const columns: (typeof valid)[] = []
 
-  for (const appt of sorted) {
+  for (const item of sorted) {
     let placed = false
     for (let c = 0; c < columns.length; c++) {
-      if (!columns[c].some(ex => overlaps(appt, ex))) {
-        columns[c].push(appt); placed = true; break
+      if (!columns[c].some(ex => overlaps(item, ex))) {
+        columns[c].push(item); placed = true; break
       }
     }
-    if (!placed) columns.push([appt])
+    if (!placed) columns.push([item])
   }
 
   const layout = new Map<string, { col: number; totalCols: number }>()
   for (let c = 0; c < columns.length; c++) {
-    for (const appt of columns[c]) {
-      const totalCols = columns.filter(col => col.some(a => overlaps(appt, a))).length
-      layout.set(appt.id, { col: c, totalCols })
+    for (const item of columns[c]) {
+      const totalCols = columns.filter(col => col.some(x => overlaps(item, x))).length
+      layout.set(item.id, { col: c, totalCols })
     }
   }
   return layout
+}
+
+/** Nom affiché, téléphone et motif à montrer dans l'infobulle au survol d'un RDV. */
+function apptTooltipInfo(appt: Appointment, patient?: Patient): { name: string; phone: string; note: string } {
+  const name  = patient
+    ? `${patient.first_name} ${patient.last_name}`
+    : [appt.guest_first_name, appt.guest_last_name].filter(Boolean).join(' ') || '—'
+  const phone = patient?.phone || appt.guest_phone || ''
+  return { name, phone, note: appt.note || '' }
+}
+
+function ApptTooltip({ name, time, phone, note, statusLabel }: {
+  name: string; time: string; phone?: string; note?: string; statusLabel?: string
+}) {
+  return (
+    <div className="cal-appt-tooltip">
+      <div className="cal-appt-tooltip-name">{name}</div>
+      <div className="cal-appt-tooltip-row">🕐 {time}{statusLabel ? ` · ${statusLabel}` : ''}</div>
+      {phone && <div className="cal-appt-tooltip-row">📞 {phone}</div>}
+      {note && <div className="cal-appt-tooltip-note">{note}</div>}
+    </div>
+  )
+}
+
+function BlockTooltip({ motif, time }: { motif: string; time: string }) {
+  return (
+    <div className="cal-appt-tooltip">
+      <div className="cal-appt-tooltip-name">⊘ {motif}</div>
+      <div className="cal-appt-tooltip-row">🕐 {time}</div>
+    </div>
+  )
+}
+
+/** Affiche une infobulle au survol via un portail (document.body), positionnée
+ *  en position:fixed près du curseur — nécessaire car les conteneurs de la
+ *  grille calendrier ont overflow:hidden et rogneraient une infobulle enfant. */
+function useHoverTooltip() {
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; content: React.ReactNode } | null>(null)
+  const show = (e: React.MouseEvent, content: React.ReactNode) => {
+    const x = Math.min(e.clientX + 14, window.innerWidth - 270)
+    const y = Math.min(e.clientY + 16, window.innerHeight - 130)
+    setTooltip({ x, y, content })
+  }
+  const hide = () => setTooltip(null)
+  return { tooltip, show, hide }
+}
+
+function TooltipPortal({ tooltip }: { tooltip: { x: number; y: number; content: React.ReactNode } | null }) {
+  if (!tooltip) return null
+  return createPortal(
+    <div style={{ position: 'fixed', left: tooltip.x, top: tooltip.y, zIndex: 1000, pointerEvents: 'none' }}>
+      {tooltip.content}
+    </div>,
+    document.body,
+  )
 }
 
 type CalView = 'month' | 'week' | 'day'
@@ -720,6 +780,7 @@ function TimeGridView({ days, todayStr, sessionsByDate, apptByDate, blocksByDate
   const BC = blockColor(dark)
   const [nowY, setNowY] = useState<number | null>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
+  const { tooltip, show: showTip, hide: hideTip } = useHoverTooltip()
 
   const getPatient = useCallback((id?: string) => id ? patients.find(p => p.id === id) : undefined, [patients])
   const getApptLabel = (appt: Appointment): string => {
@@ -890,71 +951,102 @@ function TimeGridView({ days, todayStr, sessionsByDate, apptByDate, blocksByDate
                   )
                 }))}
 
-                {/* Blocs personnels / indisponibilités */}
-                {slotBlocks.map(blk => {
-                  const y = blk.heure_debut ? timeToY(blk.heure_debut) : 0
-                  const h = durationPx(blk.heure_debut || '00:00', blk.heure_fin)
-                  return (
-                    <div
-                      key={blk.id}
-                      className="cal-block-personal"
-                      style={{ top: y, height: h, zIndex: 1 }}
-                      onClick={e => { e.stopPropagation(); onBlockClick(blk) }}
-                    >
-                      <div className="cal-appt-name">⊘ {blk.motif || 'Perso / Indispo'}</div>
-                      {h >= 32 && blk.heure_debut && (
-                        <div className="cal-appt-time">
-                          {blk.heure_debut}{blk.heure_fin ? ` – ${blk.heure_fin}` : ''}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-
-                {/* Blocs RDV — côte à côte si chevauchement */}
+                {/* Mise en colonnes partagée RDV + blocs perso, pour s'afficher côte à côte en cas de chevauchement */}
                 {(() => {
-                  const layout = buildApptLayout(appts)
-                  return appts.map(appt => {
-                    const y   = timeToY(appt.heure_debut)
-                    const h   = durationPx(appt.heure_debut, appt.heure_fin)
-                    const c   = apptColor(appt, todayStr, googleCalendarColor(appt, googleImportCalendars), dark)
-                    const lbl = getApptLabel(appt)
-                    const { col, totalCols } = layout.get(appt.id) ?? { col: 0, totalCols: 1 }
-                    const gap = 3
-                    return (
-                      <div
-                        key={appt.id}
-                        className="cal-appt-block"
-                        style={{
-                          top: y, height: h,
-                          background: c.bg, borderColor: c.border, color: c.text, zIndex: 2,
-                          ...(totalCols > 1 ? {
-                            left: `calc(${gap}px + ${col} * (100% - ${(totalCols + 1) * gap}px) / ${totalCols} + ${col * gap}px)`,
-                            width: `calc((100% - ${(totalCols + 1) * gap}px) / ${totalCols})`,
-                            right: 'auto',
-                          } : {}),
-                        }}
-                        onClick={e => { e.stopPropagation(); onApptClick(appt) }}
-                      >
-                        <div className="cal-appt-name">{lbl}</div>
-                        {h >= 22 && (
-                          <div className="cal-appt-time">
-                            {appt.heure_debut}{appt.heure_fin ? ` – ${appt.heure_fin}` : ''}
+                  const sharedLayout = buildApptLayout([...slotBlocks, ...appts])
+                  const gap = 3
+                  return (
+                    <>
+                      {/* Blocs personnels / indisponibilités */}
+                      {slotBlocks.map(blk => {
+                        const y = blk.heure_debut ? timeToY(blk.heure_debut) : 0
+                        const h = durationPx(blk.heure_debut || '00:00', blk.heure_fin)
+                        const { col, totalCols } = sharedLayout.get(blk.id) ?? { col: 0, totalCols: 1 }
+                        return (
+                          <div
+                            key={blk.id}
+                            className="cal-block-personal"
+                            style={{
+                              top: y, height: h, zIndex: 1,
+                              ...(totalCols > 1 ? {
+                                left: `calc(${gap}px + ${col} * (100% - ${(totalCols + 1) * gap}px) / ${totalCols} + ${col * gap}px)`,
+                                width: `calc((100% - ${(totalCols + 1) * gap}px) / ${totalCols})`,
+                                right: 'auto',
+                              } : {}),
+                            }}
+                            onClick={e => { e.stopPropagation(); hideTip(); onBlockClick(blk) }}
+                            onMouseEnter={e => showTip(e, (
+                              <BlockTooltip
+                                motif={blk.motif || 'Perso / Indispo'}
+                                time={`${blk.heure_debut || ''}${blk.heure_fin ? ` – ${blk.heure_fin}` : ''}`}
+                              />
+                            ))}
+                            onMouseLeave={hideTip}
+                          >
+                            <div className="cal-appt-name">⊘ {blk.motif || 'Perso / Indispo'}</div>
+                            {h >= 32 && blk.heure_debut && (
+                              <div className="cal-appt-time">
+                                {blk.heure_debut}{blk.heure_fin ? ` – ${blk.heure_fin}` : ''}
+                              </div>
+                            )}
                           </div>
-                        )}
-                        {h >= 40 && appt.note && (
-                          <div style={{
-                            fontSize: 10, lineHeight: 1.3, marginTop: 2,
-                            overflow: 'hidden', display: '-webkit-box',
-                            WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const,
-                            opacity: .85,
-                          }}>
-                            {appt.note}
+                        )
+                      })}
+
+                      {/* Blocs RDV — côte à côte si chevauchement (avec les blocs perso aussi) */}
+                      {appts.map(appt => {
+                        const y   = timeToY(appt.heure_debut)
+                        const h   = durationPx(appt.heure_debut, appt.heure_fin)
+                        const c   = apptColor(appt, todayStr, googleCalendarColor(appt, googleImportCalendars), dark)
+                        const lbl = getApptLabel(appt)
+                        const tip = apptTooltipInfo(appt, getPatient(appt.patient_id))
+                        const { col, totalCols } = sharedLayout.get(appt.id) ?? { col: 0, totalCols: 1 }
+                        return (
+                          <div
+                            key={appt.id}
+                            className="cal-appt-block"
+                            style={{
+                              top: y, height: h,
+                              background: c.bg, borderColor: c.border, color: c.text, zIndex: 2,
+                              ...(totalCols > 1 ? {
+                                left: `calc(${gap}px + ${col} * (100% - ${(totalCols + 1) * gap}px) / ${totalCols} + ${col * gap}px)`,
+                                width: `calc((100% - ${(totalCols + 1) * gap}px) / ${totalCols})`,
+                                right: 'auto',
+                              } : {}),
+                            }}
+                            onClick={e => { e.stopPropagation(); hideTip(); onApptClick(appt) }}
+                            onMouseEnter={e => showTip(e, (
+                              <ApptTooltip
+                                name={tip.name}
+                                time={`${appt.heure_debut}${appt.heure_fin ? ` – ${appt.heure_fin}` : ''}`}
+                                phone={tip.phone}
+                                note={tip.note}
+                                statusLabel={appt.is_done ? 'Réalisé' : appt.date < todayStr ? 'En attente' : 'Planifié'}
+                              />
+                            ))}
+                            onMouseLeave={hideTip}
+                          >
+                            <div className="cal-appt-name">{lbl}</div>
+                            {h >= 22 && (
+                              <div className="cal-appt-time">
+                                {appt.heure_debut}{appt.heure_fin ? ` – ${appt.heure_fin}` : ''}
+                              </div>
+                            )}
+                            {h >= 40 && appt.note && (
+                              <div style={{
+                                fontSize: 10, lineHeight: 1.3, marginTop: 2,
+                                overflow: 'hidden', display: '-webkit-box',
+                                WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const,
+                                opacity: .85,
+                              }}>
+                                {appt.note}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    )
-                  })
+                        )
+                      })}
+                    </>
+                  )
                 })()}
 
                 {/* Indicateur heure courante */}
@@ -968,6 +1060,7 @@ function TimeGridView({ days, todayStr, sessionsByDate, apptByDate, blocksByDate
           })}
         </div>
       </div>
+      <TooltipPortal tooltip={tooltip} />
     </div>
   )
 }
@@ -993,6 +1086,7 @@ export default function CalendarPage() {
   const [modalSlot,    setModalSlot]    = useState<string | undefined>()
   const [blockModalOpen, setBlockModalOpen] = useState(false)
   const [editBlock,      setEditBlock]      = useState<CalendarBlock | undefined>()
+  const { tooltip, show: showTip, hide: hideTip } = useHoverTooltip()
   const [blockModalDate, setBlockModalDate] = useState<string>(todayStr)
   const [blockModalSlot, setBlockModalSlot] = useState<string | undefined>()
   const [gcalConnected,  setGcalConnected]  = useState(false)
@@ -1006,6 +1100,7 @@ export default function CalendarPage() {
   const navigate    = useNavigate()
   const location    = useLocation()
   const restriction = useRestriction()
+  const [returnTo, setReturnTo] = useState<string | null>(null)
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -1054,7 +1149,9 @@ export default function CalendarPage() {
 
   // Quand on arrive depuis une séance avec un prochain RDV, aller sur cette date
   useEffect(() => {
-    const focusDate = (location.state as any)?.focusDate as string | undefined
+    const st = location.state as any
+    if (st?.returnTo) setReturnTo(st.returnTo)
+    const focusDate = st?.focusDate as string | undefined
     if (!focusDate) return
     const d = new Date(focusDate + 'T12:00:00')
     if (isNaN(d.getTime())) return
@@ -1263,6 +1360,15 @@ export default function CalendarPage() {
 
   return (
     <div>
+      {/* ── Retour à la séance en cours (venu du formulaire Nouvelle séance) ── */}
+      {returnTo && (
+        <div style={{ marginBottom: 12 }}>
+          <button className="btn btn-secondary btn-sm" onClick={() => navigate(returnTo)}>
+            ← Retour à la séance en cours
+          </button>
+        </div>
+      )}
+
       {/* ── Barre de contrôle principale ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
 
@@ -1435,10 +1541,11 @@ export default function CalendarPage() {
                       </div>
                       {(() => {
                         const visible = appts.filter(a => !a.is_cancelled)
-                        const total   = visible.length + (blkDay.length > 0 ? 1 : 0)
+                        const hasBlk  = blkDay.length > 0
+                        const total   = visible.length + (hasBlk ? 1 : 0)
                         if (total > 3) {
                           return (
-                            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 2 }}>
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3, marginTop: 2 }}>
                               <span style={{
                                 fontSize: 10, fontWeight: 700, lineHeight: 1,
                                 padding: '2px 5px', borderRadius: 10,
@@ -1446,8 +1553,14 @@ export default function CalendarPage() {
                                 color: isSel ? '#fff' : 'var(--accent)',
                                 border: `1px solid ${isSel ? 'rgba(255,255,255,.4)' : 'var(--accent-mid)'}`,
                               }}>
-                                {total} RDV
+                                {visible.length} RDV
                               </span>
+                              {hasBlk && (
+                                <span
+                                  title="Bloc perso ce jour-là"
+                                  style={{ width: 6, height: 6, borderRadius: '50%', background: isSel ? 'rgba(255,255,255,.9)' : BC.border }}
+                                />
+                              )}
                             </div>
                           )
                         }
@@ -1603,7 +1716,7 @@ export default function CalendarPage() {
 
                         {/* ── Couche absolue : RDV avec leur vraie durée ── */}
                         {(() => {
-                          const apptLayout = buildApptLayout(dayAppointments)
+                          const apptLayout = buildApptLayout([...dayAppointments, ...timedBlks])
                           return (
                         <div style={{ position: 'absolute', top: 0, bottom: 0, left: LABEL_W, right: 0, pointerEvents: 'none' }}>
 
@@ -1627,8 +1740,10 @@ export default function CalendarPage() {
                             const { col, totalCols } = apptLayout.get(appt.id) ?? { col: 0, totalCols: 1 }
                             const colW    = `calc((100% - ${(totalCols + 1) * 3}px) / ${totalCols})`
                             const colL    = `calc(3px + (${col} * (100% - ${(totalCols + 1) * 3}px) / ${totalCols}) + ${col * 3}px)`
+                            const tip     = apptTooltipInfo(appt, getPatient(appt.patient_id))
                             return (
                               <div key={appt.id}
+                                className="cal-appt-block"
                                 style={{
                                   position: 'absolute', top: yTop, height: hPx,
                                   left: colL, width: colW,
@@ -1642,7 +1757,17 @@ export default function CalendarPage() {
                                   zIndex: 2,
                                   boxShadow: '0 2px 8px rgba(0,0,0,.07)',
                                 }}
-                                onClick={() => openEditAppt(appt)}
+                                onClick={() => { hideTip(); openEditAppt(appt) }}
+                                onMouseEnter={e => showTip(e, (
+                                  <ApptTooltip
+                                    name={tip.name}
+                                    time={`${appt.heure_debut}${appt.heure_fin ? ` – ${appt.heure_fin}` : ''}`}
+                                    phone={tip.phone}
+                                    note={tip.note}
+                                    statusLabel={label}
+                                  />
+                                ))}
+                                onMouseLeave={hideTip}
                               >
                                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, height: '100%' }}>
                                   <div className="initials" style={{ width: 22, height: 22, fontSize: 9, flexShrink: 0, background: cols.border, color: 'white', marginTop: 1 }}>
@@ -1672,16 +1797,20 @@ export default function CalendarPage() {
                             )
                           })}
 
-                          {/* Blocs perso horaires */}
+                          {/* Blocs perso horaires — côte à côte avec les RDV en cas de chevauchement */}
                           {timedBlks.map(blk => {
                             if (!blk.heure_debut) return null
                             const yTop = monthSlotY(blk.heure_debut)
                             const hPx  = monthSlotH(blk.heure_debut, blk.heure_fin)
+                            const { col, totalCols } = apptLayout.get(blk.id) ?? { col: 0, totalCols: 1 }
+                            const colW = `calc((100% - ${(totalCols + 1) * 3}px) / ${totalCols})`
+                            const colL = `calc(3px + (${col} * (100% - ${(totalCols + 1) * 3}px) / ${totalCols}) + ${col * 3}px)`
                             return (
                               <div key={blk.id}
+                                className="cal-block-personal"
                                 style={{
                                   position: 'absolute', top: yTop, height: hPx,
-                                  left: 4, right: 4,
+                                  left: colL, width: colW,
                                   pointerEvents: 'auto',
                                   background: 'repeating-linear-gradient(-45deg,rgba(90,74,122,.06) 0,rgba(90,74,122,.06) 4px,rgba(240,237,247,.92) 4px,rgba(240,237,247,.92) 12px)',
                                   border: `1.5px dashed ${BC.border}`,
@@ -1689,7 +1818,14 @@ export default function CalendarPage() {
                                   fontSize: 10, color: BC.text, fontStyle: 'italic',
                                   cursor: 'pointer', overflow: 'hidden', zIndex: 1,
                                 }}
-                                onClick={() => openEditBlock(blk)}
+                                onClick={() => { hideTip(); openEditBlock(blk) }}
+                                onMouseEnter={e => showTip(e, (
+                                  <BlockTooltip
+                                    motif={blk.motif || 'Perso / Indispo'}
+                                    time={`${blk.heure_debut || ''}${blk.heure_fin ? ` – ${blk.heure_fin}` : ''}`}
+                                  />
+                                ))}
+                                onMouseLeave={hideTip}
                               >
                                 <div style={{ fontWeight: 700, fontSize: 11 }}>⊘ {blk.motif || 'Perso / Indispo'}</div>
                                 {blk.heure_debut && (
@@ -1840,6 +1976,7 @@ export default function CalendarPage() {
           onClose={() => setBlockModalOpen(false)}
         />
       )}
+      <TooltipPortal tooltip={tooltip} />
     </div>
   )
 }

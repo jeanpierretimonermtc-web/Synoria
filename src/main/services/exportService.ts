@@ -187,6 +187,7 @@ export function exportSessionExcel(sessionId: string, outputDir?: string): strin
   const simpleTraitemEnCours:  string = (fd.simpleTraitementsEnCours as string) || ''
   const simpleObjectifs:       string = (fd.simpleObjectifs       as string) || ''
   const simpleNotesEntretien:  string = (fd.simpleNotesEntretien  as string) || ''
+  const dietetique:            string = (fd.dietetique            as string) || ''
   const hasConsult = session.motif || anamnese || session.problematiques || session.evolution_tags || session.evolution
   if (hasConsult) {
     ws_data.push(sectionHeader('CONSULTATION', C.amber)); ri++
@@ -398,13 +399,14 @@ export function exportSessionExcel(sessionId: string, outputDir?: string): strin
 
   // ── TRAITEMENT ────────────────────────────────────────────────────
   const hasTrait = session.points || session.pts_oreille || session.techniques ||
-    session.plantes || session.reactions || session.traitement_notes
+    session.plantes || dietetique || session.reactions || session.traitement_notes
   if (hasTrait) {
     ws_data.push(sectionHeader('TRAITEMENT', C.green)); ri++
     push(ws_data, row('Points acupuncture',        session.points,           C.greenLight)); if (session.points)           ri++
     push(ws_data, row('Points oreille',            session.pts_oreille,      C.greenLight)); if (session.pts_oreille)      ri++
     push(ws_data, row('Techniques utilisees',      session.techniques,       C.greenLight)); if (session.techniques)       ri++
     push(ws_data, row('Plantes / Formule',         session.plantes,          C.greenLight)); if (session.plantes)          ri++
+    push(ws_data, row('Conseils dietetiques',      dietetique,               C.greenLight)); if (dietetique)               ri++
     push(ws_data, row('Reactions / observations',  session.reactions,        C.greenLight)); if (session.reactions)        ri++
     push(ws_data, row('Notes traitement',          session.traitement_notes, C.greenLight)); if (session.traitement_notes) ri++
     ws_data.push(gap()); ri++

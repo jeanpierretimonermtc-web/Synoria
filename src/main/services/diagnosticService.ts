@@ -1,5 +1,5 @@
 import { existsSync, statSync, readdirSync, mkdirSync, writeFileSync, readFileSync } from 'fs'
-import { join } from 'path'
+import { join, basename } from 'path'
 import * as os from 'os'
 import { app } from 'electron'
 import { isDatabaseOpen, getDb } from '../database/connection'
@@ -273,6 +273,10 @@ function timestamp(): string {
 
 export function generateRecoveryDoc(): string {
   const userData = app.getPath('userData')
+  // Affiche %APPDATA%\<dossier> plutôt que le chemin absolu complet — évite
+  // d'exposer le nom du compte Windows dans ce document, tout en restant
+  // reconnu tel quel si on le colle dans la barre d'adresse de l'Explorateur.
+  const userDataDisplay = `%APPDATA%\\${basename(userData)}`
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -365,7 +369,7 @@ export function generateRecoveryDoc(): string {
         <div class="step-desc">
           Trouvez le fichier <strong>.json.enc</strong> le plus récent dans votre dossier de sauvegardes.<br>
           Si vous avez configuré un chemin personnalisé, cherchez là-bas. Sinon, cherchez dans :
-          <div class="step-path">${userData.replace(/\\/g, '\\\\')}\\exports\\</div>
+          <div class="step-path">${userDataDisplay}\\exports\\</div>
           <div class="step-warn">⚠️ Conservez ce fichier en lieu sûr avant de continuer.</div>
         </div>
       </div>
@@ -377,7 +381,7 @@ export function generateRecoveryDoc(): string {
         <div class="step-title">Supprimez les fichiers de verrouillage</div>
         <div class="step-desc">
           Dans l'Explorateur Windows, naviguez vers le dossier de données de l'application :<br>
-          <div class="step-path">${userData.replace(/\\/g, '\\\\')}</div>
+          <div class="step-path">${userDataDisplay}</div>
           Supprimez (ou renommez) ces deux fichiers :
           <ul style="margin: 8px 0 0 16px; font-size: 11.5px; color: #4a5568;">
             <li><strong>auth.json</strong> — le vérificateur du mot de passe</li>

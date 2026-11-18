@@ -89,10 +89,9 @@ function SummaryBlock({ title, icon, color, children }: { title: string; icon?: 
 
 /* ─── Modal facturation (depuis séance) ─────────────────────────────────── */
 
-export function InvoiceModal({ patient, sessionDate: initSessionDate, description: initDesc, onClose, showToast, onGenerated }: {
+export function InvoiceModal({ patient, sessionDate: initSessionDate, onClose, showToast, onGenerated }: {
   patient: Patient
   sessionDate: string
-  description: string
   onClose: () => void
   showToast: (msg: string, type?: 'success' | 'error') => void
   onGenerated?: (invoiceNumber: string) => void
@@ -103,7 +102,7 @@ export function InvoiceModal({ patient, sessionDate: initSessionDate, descriptio
   const [profileEmpty, setProfileEmpty] = useState<boolean | null>(null)
   const [sessionDate,  setSessionDate]  = useState(initSessionDate)
   const [invoiceDate,  setInvoiceDate]  = useState(today)
-  const [description,  setDescription]  = useState(initDesc)
+  const [description,  setDescription]  = useState('')
   const [montantStr,   setMontantStr]   = useState('')
   const [generating,   setGenerating]   = useState(false)
 
@@ -111,7 +110,7 @@ export function InvoiceModal({ patient, sessionDate: initSessionDate, descriptio
     window.mtcApi.getSettings().then(s => {
       const hasName = !!(s.practitionerFirstName?.trim() || s.practitionerLastName?.trim())
       setProfileEmpty(!hasName)
-      if (hasName && !initDesc) setDescription(s.practitionerActivity?.trim() || '')
+      if (hasName) setDescription(s.practitionerActivity?.trim() || '')
     })
   }, [])
 
@@ -338,11 +337,6 @@ export default function SummaryPage() {
         <InvoiceModal
           patient={patient}
           sessionDate={session.date}
-          description={(() => {
-            const tmp = document.createElement('div')
-            tmp.innerHTML = session.motif || ''
-            return tmp.textContent?.trim() || ''
-          })()}
           onClose={() => setShowInvoice(false)}
           showToast={showToast}
         />
@@ -576,8 +570,8 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
           {/* Autres observations */}
           <div className="summary-grid" style={{ marginTop: 10 }}>
             <Row     label="Constitution"        value={s.constitution} />
-            <Row     label="Type de corps"       value={s.type_corps} />
-            <Row     label="Teint"               value={s.teint} />
+            <HtmlRow label="Type de corps"       value={s.type_corps} />
+            <HtmlRow label="Teint"               value={s.teint} />
             <HtmlRow label="Observation générale" value={s.observation} />
           </div>
         </div>
@@ -696,11 +690,11 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
       {/* ─── 4. DIAGNOSTIC MTC ───────────────────────────────────── */}
       {showMtcSections && (s.diagnostic_mtc || s.cinq_elements || s.causes || s.analyse || s.principes) && (
         <SummaryBlock title="Diagnostic MTC" icon="🔵" color="var(--purple)">
-          <Row     label="Diagnostic MTC principal" value={s.diagnostic_mtc} />
-          <Row     label="5 Éléments"               value={s.cinq_elements} />
-          <Row     label="Causes"                   value={s.causes} />
+          <HtmlRow label="Diagnostic MTC principal" value={s.diagnostic_mtc} />
+          <HtmlRow label="5 Éléments"               value={s.cinq_elements} />
+          <HtmlRow label="Causes"                   value={s.causes} />
           <HtmlRow label="Mécanisme / terrain"       value={s.analyse} />
-          <Row     label="Principes de traitement"   value={s.principes} />
+          <HtmlRow label="Principes de traitement"   value={s.principes} />
         </SummaryBlock>
       )}
 
@@ -821,12 +815,13 @@ export function SummaryContent({ session: s, patient: p, activePlugin }: {
       )}
 
       {/* ─── 6. TRAITEMENT ───────────────────────────────────────── */}
-      {showMtcSections && (s.points || s.pts_oreille || s.techniques || s.plantes || s.reactions || s.traitement_notes) && (
+      {showMtcSections && (s.points || s.pts_oreille || s.techniques || s.plantes || fd.dietetique || s.reactions || s.traitement_notes) && (
         <SummaryBlock title="Traitement du jour" icon="🌿" color="var(--accent)">
-          <Row     label="Points d'acupuncture"     value={s.points} />
-          <Row     label="Points d'oreille"         value={s.pts_oreille} />
+          <HtmlRow label="Points d'acupuncture"     value={s.points} />
+          <HtmlRow label="Points d'oreille"         value={s.pts_oreille} />
           <Row     label="Techniques utilisées"     value={s.techniques} />
-          <Row     label="Plantes / Formule"        value={s.plantes} />
+          <HtmlRow label="Plantes / Formule"        value={s.plantes} />
+          <HtmlRow label="Conseils diététiques"     value={fd.dietetique} />
           <HtmlRow label="Réactions / observations" value={s.reactions} />
           <HtmlRow label="Notes traitement"         value={s.traitement_notes} />
         </SummaryBlock>

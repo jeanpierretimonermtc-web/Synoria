@@ -7,6 +7,33 @@ export interface AccessLog {
   timestamp: string
 }
 
+// ─── IMPORT DE PATIENTS (CSV/Excel) ─────────────────────────────────────────
+export interface ImportParsedFile {
+  headers: string[]
+  rows: Record<string, string>[]
+  rowCount: number
+}
+
+export type PatientImportFieldKey =
+  | 'first_name' | 'last_name' | 'birth_date' | 'phone' | 'email' | 'address'
+  | 'notes_general' | 'antecedents' | 'medications' | 'regular_doctor'
+
+export type SessionImportFieldKey = 'session_date' | 'motif' | 'anamnese'
+
+export interface PatientImportMapping {
+  patientFields: Partial<Record<PatientImportFieldKey, string>>  // champ -> en-tête de colonne
+  sessionFields: Partial<Record<SessionImportFieldKey, string>>  // champ -> en-tête de colonne
+}
+
+export interface PatientImportResult {
+  patientsCreated: number
+  sessionsCreated: number
+  duplicatesSkipped: number
+  missingSessionDate: number
+  nameConflicts: Array<{ name: string; detail: string }>
+  errors: Array<{ row: number; message: string }>
+}
+
 export interface Patient {
   id: string
   first_name: string
@@ -244,6 +271,7 @@ export interface SessionFullData {
   plantes?: string
   reactions?: string
   traitementNotes?: string
+  dietetique?: string
   // Barrage homéopathique
   barrageNiv1?: string
   barrageNiv2?: string
@@ -608,6 +636,10 @@ export interface IpcApi {
   createPatient: (data: Omit<Patient, 'id' | 'created_at' | 'updated_at'>) => Promise<Patient>
   updatePatient: (id: string, data: Partial<Patient>) => Promise<Patient>
   deletePatient: (id: string) => Promise<void>
+  // Import de patients (CSV/Excel)
+  parseImportFile: (filePath: string) => Promise<ImportParsedFile>
+  importPatientsBatch: (rows: Record<string, string>[], mapping: PatientImportMapping) => Promise<PatientImportResult>
+  writeImportTemplate: (filePath: string) => Promise<string>
   // Sessions
   getSessions: (patientId?: string) => Promise<Session[]>
   getSessionById: (id: string) => Promise<Session | null>

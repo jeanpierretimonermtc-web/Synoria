@@ -105,7 +105,7 @@
         },
         {
           "id": "notesLocalisation",
-          "type": "textarea",
+          "type": "richtext",
           "label": "Notes complémentaires de localisation",
           "placeholder": "Profondeur, caractère superficiel ou profond, zones adjacentes…",
           "width": "full",
@@ -328,7 +328,7 @@
         },
         {
           "id": "notesFinSeance",
-          "type": "textarea",
+          "type": "richtext",
           "label": "Notes de fin",
           "placeholder": "Observations cliniques, points de vigilance, bilan de la séance…",
           "width": "full",

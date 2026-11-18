@@ -318,6 +318,43 @@ function MtcAideInterrogatoire({ label }: { label?: string }) {
   )
 }
 
+// ── PENSE-BÊTE QUESTIONNAIRE DES SYSTÈMES (rappel, sans saisie) ──────────────
+
+const MTC_AIDE_SYSTEMES_ITEMS = [
+  { icon: '🫀', label: 'Cardiaque / Sommeil',    hint: 'Endormissement, réveils nocturnes, rêves, palpitations, sueurs nocturnes' },
+  { icon: '🫁', label: 'Pulmonaire',              hint: 'Essoufflement, toux, rhumes fréquents, allergies, sinus, apnée' },
+  { icon: '🧠', label: 'Santé mentale',           hint: 'Stress, anxiété, mémoire, concentration, humeur, lâcher-prise' },
+  { icon: '👁', label: 'Vision et audition',      hint: 'Acouphènes, douleur auriculaire, vision floue, yeux secs, vertiges' },
+  { icon: '♀',  label: 'Santé féminine',          hint: 'Cycle, règles, douleurs, SPM, ménopause' },
+  { icon: '💧', label: 'Reins / Vessie',          hint: 'Urines, mictions, cheveux, os, œdèmes' },
+  { icon: '🌱', label: 'Fertilité',               hint: 'Conception, tests hormonaux, grossesse, ménopause' },
+  { icon: '♂',  label: 'Santé masculine',         hint: 'Libido, érection, prostate, spermatozoïdes' },
+  { icon: '🌿', label: 'Système de la rate',      hint: 'Énergie, digestion, appétit, envies alimentaires, régime' },
+  { icon: '🫙', label: "Système de l'estomac",    hint: 'Aphtes, reflux, soif, faim, nausées, digestion des graisses' },
+  { icon: '✨', label: 'Santé de la peau',        hint: 'Acné, eczéma, psoriasis, peau grasse/sèche, éruptions' },
+  { icon: '🔄', label: 'Gros intestin',           hint: 'Constipation, diarrhée, selles, gaz, ballonnements' },
+  { icon: '🗡', label: 'Maux de tête',            hint: 'Localisation, migraines, facteurs améliorants' },
+  { icon: '🌡', label: 'Température',             hint: 'Mains/pieds froids ou chauds, préférences saisonnières' },
+  { icon: '🦴', label: 'Musculo-squelettique',    hint: 'Douleur, raideur, localisation, facteurs améliorants' },
+]
+
+function MtcAideSystemes({ label }: { label?: string }) {
+  return (
+    <div className="anamnese-pensebete" style={{ position: 'static', margin: 0 }}>
+      <div className="pensebete-title">{label || '📌 Systèmes à passer en revue'}</div>
+      {MTC_AIDE_SYSTEMES_ITEMS.map(({ icon, label: l, hint }) => (
+        <div key={l} className="pensebete-item">
+          <div className="pensebete-item-header">
+            <span className="pensebete-icon">{icon}</span>
+            <span className="pensebete-label">{l}</span>
+          </div>
+          <div className="pensebete-hint">{hint}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ── RENDU D'UN CHAMP PAR TYPE ──────────────────────────────────────────────
 
 function DynamicField({ field, value, onChange }: {
@@ -449,6 +486,9 @@ function DynamicField({ field, value, onChange }: {
     // ── Aide-mémoire MTC ──────────────────────────────────────────────────────
     case 'mtc_aide_interrogatoire':
       return <MtcAideInterrogatoire label={field.label} />
+
+    case 'mtc_aide_systemes':
+      return <MtcAideSystemes label={field.label} />
 
     // ── Modules MTC ──────────────────────────────────────────────────────────
     case 'mtc_systemes':

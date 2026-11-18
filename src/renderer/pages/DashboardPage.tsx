@@ -179,6 +179,71 @@ function TodaySection({ appts, patients, onNavigate }: {
   )
 }
 
+// ── CollapsibleCard — carte "card" avec bouton replier/déplier ────
+// L'état (replié ou non) est mémorisé par section dans localStorage.
+
+function CollapsibleCard({ storageKey, icon, iconClass, title, count, countBg, countColor, actions, style, children }: {
+  storageKey: string
+  icon: React.ReactNode
+  iconClass?: string
+  title: string
+  count?: number
+  countBg?: string
+  countColor?: string
+  actions?: React.ReactNode
+  style?: React.CSSProperties
+  children: React.ReactNode
+}) {
+  const lsKey = `dash-collapsed-${storageKey}`
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem(lsKey) === '1' } catch { return false }
+  })
+  const toggle = () => {
+    setCollapsed(c => {
+      const next = !c
+      try { localStorage.setItem(lsKey, next ? '1' : '0') } catch { /* ignore */ }
+      return next
+    })
+  }
+
+  return (
+    <div className="card" style={style}>
+      <div className="card-title" style={{ cursor: 'pointer' }} onClick={toggle}>
+        <span className={`card-title-icon ${iconClass || ''}`}>{icon}</span>
+        {title}
+        {count !== undefined && (
+          <span className="page-header-count" style={{ background: countBg, color: countColor, marginLeft: 6 }}>
+            {count}
+          </span>
+        )}
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+          {actions && <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: 8 }}>{actions}</div>}
+          <button
+            onClick={e => { e.stopPropagation(); toggle() }}
+            title={collapsed ? 'Déplier la section' : 'Replier la section'}
+            aria-label={collapsed ? 'Déplier la section' : 'Replier la section'}
+            style={{
+              background: 'var(--bg)', border: '1.5px solid var(--border)', borderRadius: 8,
+              cursor: 'pointer', color: 'var(--text-muted)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 32, height: 32, padding: 0, flexShrink: 0,
+              transition: 'background .15s, border-color .15s, color .15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent-light)'; e.currentTarget.style.borderColor = 'var(--accent-mid)'; e.currentTarget.style.color = 'var(--accent)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg)'; e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)' }}
+          >
+            <span style={{
+              display: 'inline-block', fontSize: 18, lineHeight: 1,
+              transition: 'transform .15s ease', transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+            }}>▾</span>
+          </button>
+        </div>
+      </div>
+      {!collapsed && children}
+    </div>
+  )
+}
+
 // ── FollowUpSection ───────────────────────────────────────────────
 
 function FollowUpSection({ followUp, onNavigate }: {
@@ -188,14 +253,12 @@ function FollowUpSection({ followUp, onNavigate }: {
   if (followUp.length === 0) return null
 
   return (
-    <div className="card">
-      <div className="card-title">
-        <span className="card-title-icon icon-amber">⏰</span>
-        Patients à revoir
-        <span className="page-header-count" style={{ background: 'var(--amber-light)', color: 'var(--amber)', marginLeft: 6 }}>
-          {followUp.length}
-        </span>
-      </div>
+    <CollapsibleCard
+      storageKey="followup"
+      icon="⏰" iconClass="icon-amber"
+      title="Patients à revoir"
+      count={followUp.length} countBg="var(--amber-light)" countColor="var(--amber)"
+    >
       <div className="recent-sessions-list">
         {followUp.map((item, idx) => {
           const days = item.daysSince
@@ -235,7 +298,7 @@ function FollowUpSection({ followUp, onNavigate }: {
           )
         })}
       </div>
-    </div>
+    </CollapsibleCard>
   )
 }
 
@@ -718,12 +781,12 @@ export default function DashboardPage() {
 
       {/* ── Prochains rendez-vous (source : table appointments = calendrier) ── */}
       {upcomingAppts.length > 0 && (
-        <div className="card">
-          <div className="card-title">
-            <span className="card-title-icon icon-teal">📅</span>
-            Prochains rendez-vous
-            <span className="page-header-count" style={{ background: 'var(--teal-light)', color: 'var(--teal)', marginLeft: 6 }}>{upcomingAppts.length}</span>
-          </div>
+        <CollapsibleCard
+          storageKey="upcoming-appts"
+          icon="📅" iconClass="icon-teal"
+          title="Prochains rendez-vous"
+          count={upcomingAppts.length} countBg="var(--teal-light)" countColor="var(--teal)"
+        >
           <div className="recent-sessions-list">
             {upcomingAppts.map((appt, idx) => {
               const pat = patients.find(p => p.id === appt.patient_id)
@@ -844,19 +907,18 @@ export default function DashboardPage() {
               )
             })}
           </div>
-        </div>
+        </CollapsibleCard>
       )}
 
       {/* ── Rappels email J-1 ── */}
       {pendingReminders.length > 0 && (
-        <div className="card" style={{ borderLeft: '4px solid var(--blue)' }}>
-          <div className="card-title">
-            <span className="card-title-icon icon-blue">✉️</span>
-            Rappels à envoyer — RDV demain
-            <span className="page-header-count" style={{ background: 'var(--blue-light)', color: 'var(--blue)', marginLeft: 6 }}>
-              {pendingReminders.length}
-            </span>
-          </div>
+        <CollapsibleCard
+          storageKey="reminders"
+          icon="✉️" iconClass="icon-blue"
+          title="Rappels à envoyer — RDV demain"
+          count={pendingReminders.length} countBg="var(--blue-light)" countColor="var(--blue)"
+          style={{ borderLeft: '4px solid var(--blue)' }}
+        >
           <div className="recent-sessions-list">
             {pendingReminders.map((r, idx) => (
               <div key={r.appointment_id} className="recent-session-row" style={{ animationDelay: `${idx * 30}ms` }}>
@@ -911,19 +973,18 @@ export default function DashboardPage() {
               </button>
             </div>
           )}
-        </div>
+        </CollapsibleCard>
       )}
 
       {/* ── Alertes factures en retard ── */}
       {overdueInvoices.length > 0 && (
-        <div className="card" style={{ borderLeft: '4px solid var(--amber)' }}>
-          <div className="card-title">
-            <span className="card-title-icon icon-amber">⚠️</span>
-            Factures non payées — plus de 30 jours
-            <span className="page-header-count" style={{ background: 'var(--amber-light)', color: 'var(--amber)', marginLeft: 6 }}>
-              {overdueInvoices.length}
-            </span>
-          </div>
+        <CollapsibleCard
+          storageKey="overdue-invoices"
+          icon="⚠️" iconClass="icon-amber"
+          title="Factures non payées — plus de 30 jours"
+          count={overdueInvoices.length} countBg="var(--amber-light)" countColor="var(--amber)"
+          style={{ borderLeft: '4px solid var(--amber)' }}
+        >
           <div className="recent-sessions-list">
             {overdueInvoices.slice(0, 5).map((inv, idx) => {
               const daysOld = Math.round((Date.now() - new Date(inv.invoice_date).getTime()) / 86400000)
@@ -968,7 +1029,7 @@ export default function DashboardPage() {
               <button className="btn btn-secondary btn-sm" style={{ marginLeft: 8 }} onClick={() => navigate('/factures-liste')}>Tout voir</button>
             </div>
           )}
-        </div>
+        </CollapsibleCard>
       )}
 
       {/* ── Patients à revoir ── */}
@@ -978,15 +1039,15 @@ export default function DashboardPage() {
       />
 
       {/* ── Séances récentes ── */}
-      <div className="card">
-        <div className="card-title">
-          <span className="card-title-icon icon-green">📋</span>
-          Dernières séances
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-            <button className="btn btn-secondary btn-sm" onClick={() => navigate('/seances')}>Voir tout</button>
-            <button className="btn btn-primary btn-sm" onClick={() => navigate('/nouvelle')}>＋ Nouvelle</button>
-          </div>
-        </div>
+      <CollapsibleCard
+        storageKey="recent-sessions"
+        icon="📋" iconClass="icon-green"
+        title="Dernières séances"
+        actions={<>
+          <button className="btn btn-secondary btn-sm" onClick={() => navigate('/seances')}>Voir tout</button>
+          <button className="btn btn-primary btn-sm" onClick={() => navigate('/nouvelle')}>＋ Nouvelle</button>
+        </>}
+      >
         {stats.recent_sessions.length === 0 ? (
           <EmptyState
             icon={<ClipboardIcon size={30} />}
@@ -1015,7 +1076,7 @@ export default function DashboardPage() {
             ))}
           </div>
         )}
-      </div>
+      </CollapsibleCard>
 
       {/* ── Drawer RDV ── */}
       {drawerOpen && (

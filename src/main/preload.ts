@@ -19,6 +19,9 @@ const api: IpcApi = {
   updatePatient:          (id, data)=> ipcRenderer.invoke('patients:update', id, data),
   deletePatient:          (id)      => ipcRenderer.invoke('patients:delete', id),
   getPatientsToFollowUp:  (days)    => ipcRenderer.invoke('patients:followUp', days),
+  parseImportFile:        (filePath)        => ipcRenderer.invoke('patients:parseImportFile', filePath),
+  importPatientsBatch:    (rows, mapping)   => ipcRenderer.invoke('patients:importBatch', rows, mapping),
+  writeImportTemplate:    (filePath)        => ipcRenderer.invoke('patients:writeImportTemplate', filePath),
 
   // ─── SESSIONS ────────────────────────────────────────────────────────────────
   getSessions:          (patientId) => ipcRenderer.invoke('sessions:getAll', patientId),

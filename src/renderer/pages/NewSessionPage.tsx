@@ -32,6 +32,39 @@ function TagBtn({ label, active, colorClass, onClick }: { label: string; active:
   )
 }
 
+// Encadré repliable individuellement — la technique reste cochée même replié
+function CollapsibleField({ label, collapsed, onToggle, children }: {
+  label: string
+  collapsed: boolean
+  onToggle: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <div className="field">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: collapsed ? 0 : 6 }}>
+        <label style={{ margin: 0, flex: 1 }}>{label}</label>
+        <button
+          type="button"
+          onClick={onToggle}
+          title={collapsed ? 'Déplier cet encadré' : 'Replier cet encadré'}
+          style={{
+            background: 'var(--bg)', border: '1.5px solid var(--border)', borderRadius: 7,
+            cursor: 'pointer', color: 'var(--text-muted)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 26, height: 26, padding: 0, flexShrink: 0,
+          }}
+        >
+          <span style={{
+            display: 'inline-block', fontSize: 14, lineHeight: 1,
+            transition: 'transform .15s ease', transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+          }}>▾</span>
+        </button>
+      </div>
+      {!collapsed && children}
+    </div>
+  )
+}
+
 /* ─── ACCORDÉON SÉANCE PRÉCÉDENTE ───────────────────────────── */
 
 function PrevField({ label, value }: { label: string; value?: string | null }) {
@@ -61,6 +94,7 @@ function PrevSessionAccordion({ session: s, open, onToggle }: {
   const barrageNiv3 = fd.barrageNiv3 || ''
   const barrageNiv4 = fd.barrageNiv4 || ''
   const nextNote              = fd.nextSessionNote          || ''
+  const prevDietetique        = fd.dietetique               || ''
   const prevSimpleContextVie  = fd.simpleContextVie         || ''
   const prevSimpleTraitements = fd.simpleTraitementsEnCours || ''
   const prevSimpleObjectifs   = fd.simpleObjectifs          || ''
@@ -322,6 +356,7 @@ function PrevSessionAccordion({ session: s, open, onToggle }: {
                   <PrevField label="Points d'oreille"     value={s.pts_oreille} />
                   <PrevField label="Techniques"           value={s.techniques} />
                   <PrevField label="Plantes / Formule"    value={s.plantes} />
+                  <PrevField label="Conseils diététiques" value={prevDietetique} />
                   <PrevField label="Réactions"            value={s.reactions} />
                   <PrevField label="Notes traitement"     value={s.traitement_notes} />
                   {(barrageNiv1 || barrageNiv2 || barrageNiv3 || barrageNiv4) && (
@@ -479,8 +514,12 @@ export default function NewSessionPage() {
   const [ptsOreille, setPtsOreille] = useState('')
   const [techniques, setTechniques] = useState<string[]>([])
   const [plantes, setPlantes] = useState('')
+  const [dietetique, setDietetique] = useState('')
   const [reactions, setReactions] = useState('')
   const [traitementNotes, setTraitementNotes] = useState('')
+  // Encadrés techniques repliés manuellement (indépendant des techniques cochées)
+  const [collapsedTraitFields, setCollapsedTraitFields] = useState<Record<string, boolean>>({})
+  const toggleTraitField = (key: string) => setCollapsedTraitFields(prev => ({ ...prev, [key]: !prev[key] }))
   // Suivi
   const [conseils, setConseils] = useState('')
   const [plan, setPlan] = useState('')
@@ -689,7 +728,7 @@ export default function NewSessionPage() {
     anamnese, simpleContextVie, simpleTraitementsEnCours, simpleObjectifs, simpleNotesEntretien,
     langue, langueNote, pouls, poulsNote, poulsPos, constitution, typeCorps, teint, observation,
     diagnostic, cinqElements, causes, analyse, principes,
-    points, ptsOreille, techniques, plantes, reactions, traitementNotes,
+    points, ptsOreille, techniques, plantes, dietetique, reactions, traitementNotes,
     conseils, plan, surveiller,
     nextSession, nextSessionHeure, nextSessionFin, nextSessionNote, nextSessionApptId,
     barrageNiv1, barrageNiv2, barrageNiv3, barrageNiv4,
@@ -730,7 +769,7 @@ export default function NewSessionPage() {
       anamnese, simpleContextVie, simpleTraitementsEnCours, simpleObjectifs, simpleNotesEntretien,
       langue, langueNote, pouls, poulsNote, poulsPos, constitution, typeCorps, teint, observation,
       diagnostic, cinqElements, causes, analyse, principes,
-      points, ptsOreille, techniques, plantes, reactions, traitementNotes,
+      points, ptsOreille, techniques, plantes, dietetique, reactions, traitementNotes,
       conseils, plan, surveiller,
       nextSession, nextSessionHeure, nextSessionFin, nextSessionNote, nextSessionApptId,
       barrageNiv1, barrageNiv2, barrageNiv3, barrageNiv4,
@@ -815,6 +854,7 @@ export default function NewSessionPage() {
         setPtsOreille(d.ptsOreille || '')
         setTechniques(d.techniques || [])
         setPlantes(d.plantes || '')
+        setDietetique(d.dietetique || '')
         setReactions(d.reactions || '')
         setTraitementNotes(d.traitementNotes || '')
         setConseils(d.conseils || '')
@@ -885,6 +925,7 @@ export default function NewSessionPage() {
           setPtsOreille(d.ptsOreille || '')
           setTechniques(d.techniques || [])
           setPlantes(d.plantes || '')
+          setDietetique(d.dietetique || '')
           setReactions(d.reactions || '')
           setTraitementNotes(d.traitementNotes || '')
           setConseils(d.conseils || '')
@@ -1094,7 +1135,7 @@ export default function NewSessionPage() {
           sessionNum, patientId, date, practitioner, motif, evolutionTags, evolution,
           problematiques, anamnese, langue, langueNote, pouls, poulsNote, poulsPos,
           constitution, typeCorps, teint, observation, diagnostic, cinqElements, causes,
-          analyse, principes, points, ptsOreille, techniques, plantes, reactions,
+          analyse, principes, points, ptsOreille, techniques, plantes, dietetique, reactions,
           traitementNotes, conseils, plan, surveiller, nextSession, nextSessionHeure,
           nextSessionFin, nextSessionNote,
           nextSessionApptId: resolvedApptId,
@@ -1189,7 +1230,7 @@ export default function NewSessionPage() {
     setPoulsPos({ droitAvant: '', droitMilieu: '', droitArriere: '', gaucheAvant: '', gaucheMilieu: '', gaucheArriere: '' })
     setConstitution(''); setTypeCorps(''); setTeint(''); setObservation('')
     setDiagnostic(''); setCinqElements(''); setCauses(''); setAnalyse(''); setPrincipes('')
-    setPoints(''); setPtsOreille(''); setTechniques([]); setPlantes(''); setReactions(''); setTraitementNotes('')
+    setPoints(''); setPtsOreille(''); setTechniques([]); setPlantes(''); setDietetique(''); setReactions(''); setTraitementNotes('')
     setConseils(''); setPlan(''); setSurveiller('')
     setNextSession(''); setNextSessionHeure('09:00'); setNextSessionFin(''); setNextSessionNote(''); setNextSessionApptId('')
     setPluginData({})
@@ -1740,12 +1781,11 @@ export default function NewSessionPage() {
                           onClick={() => setLangue(toggleArr(langue, opt))} />
                       ))}
                     </div>
-                    <textarea
+                    <RichTextArea
                       value={langueNote}
-                      onChange={e => setLangueNote(e.target.value)}
+                      onChange={setLangueNote}
                       placeholder="Notes complémentaires sur la langue…"
-                      rows={2}
-                      style={{ width: '100%', resize: 'vertical' }}
+                      minHeight={50}
                     />
                   </div>
 
@@ -1805,12 +1845,11 @@ export default function NewSessionPage() {
                       )
                     })()}
 
-                    <textarea
+                    <RichTextArea
                       value={poulsNote}
-                      onChange={e => setPoulsNote(e.target.value)}
+                      onChange={setPoulsNote}
                       placeholder="Notes complémentaires sur le pouls…"
-                      rows={2}
-                      style={{ width: '100%', resize: 'vertical' }}
+                      minHeight={50}
                     />
                   </div>
 
@@ -1827,11 +1866,11 @@ export default function NewSessionPage() {
                     </div>
                     <div className="field">
                       <label>Type de corps</label>
-                      <input type="text" value={typeCorps} onChange={e => setTypeCorps(e.target.value)} placeholder="Ex : longiligne, massif…" />
+                      <RichTextArea value={typeCorps} onChange={setTypeCorps} placeholder="Ex : longiligne, massif…" minHeight={24} />
                     </div>
                     <div className="field">
                       <label>Teint</label>
-                      <input type="text" value={teint} onChange={e => setTeint(e.target.value)} placeholder="Ex : pâle, jaunâtre, rouge…" />
+                      <RichTextArea value={teint} onChange={setTeint} placeholder="Ex : pâle, jaunâtre, rouge…" minHeight={24} />
                     </div>
                   </div>
 
@@ -1858,32 +1897,31 @@ export default function NewSessionPage() {
 
                   <div className="field">
                     <label>Diagnostic MTC principal</label>
-                    <textarea
+                    <RichTextArea
                       value={diagnostic}
-                      onChange={e => setDiagnostic(e.target.value)}
+                      onChange={setDiagnostic}
                       placeholder="Ex : Vide de Yin du Rein, Stagnation du Qi du Foie…"
-                      rows={2}
-                      style={{ width: '100%', resize: 'vertical' }}
+                      minHeight={50}
                     />
                   </div>
 
                   <div className="grid2">
                     <div className="field">
                       <label>5 Éléments</label>
-                      <input
-                        type="text"
+                      <RichTextArea
                         value={cinqElements}
-                        onChange={e => setCinqElements(e.target.value)}
+                        onChange={setCinqElements}
                         placeholder="Ex : Bois++, Eau–…"
+                        minHeight={24}
                       />
                     </div>
                     <div className="field">
                       <label>Causes</label>
-                      <input
-                        type="text"
+                      <RichTextArea
                         value={causes}
-                        onChange={e => setCauses(e.target.value)}
+                        onChange={setCauses}
                         placeholder="Ex : émotions, alimentation, fatigue…"
+                        minHeight={24}
                       />
                     </div>
                   </div>
@@ -1900,12 +1938,11 @@ export default function NewSessionPage() {
 
                   <div className="field">
                     <label>Principes de traitement</label>
-                    <textarea
+                    <RichTextArea
                       value={principes}
-                      onChange={e => setPrincipes(e.target.value)}
+                      onChange={setPrincipes}
                       placeholder="Ex : Tonifier le Yin du Rein, disperser la chaleur du Foie…"
-                      rows={2}
-                      style={{ width: '100%', resize: 'vertical' }}
+                      minHeight={50}
                     />
                   </div>
                 </div>
@@ -1933,26 +1970,6 @@ export default function NewSessionPage() {
                     /* ── Version MTC intégrée ── */
                     <>
                       <div className="field">
-                        <label>Points d'acupuncture</label>
-                        <textarea
-                          value={points}
-                          onChange={e => setPoints(e.target.value)}
-                          placeholder="Ex : P7, MC6, E36, Rte6, V23…"
-                          rows={2}
-                          style={{ width: '100%', resize: 'vertical', minHeight: 44 }}
-                        />
-                      </div>
-                      <div className="field">
-                        <label>Points d'oreille</label>
-                        <textarea
-                          value={ptsOreille}
-                          onChange={e => setPtsOreille(e.target.value)}
-                          placeholder="Ex : Shen Men, Rein, Foie…"
-                          rows={2}
-                          style={{ width: '100%', resize: 'vertical', minHeight: 44 }}
-                        />
-                      </div>
-                      <div className="field">
                         <label>Techniques utilisées</label>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                           {['Acupuncture','Moxibustion','Ventouses','Tuina','Gua sha','Auriculothérapie','Diététique','Plantes'].map(opt => (
@@ -1960,37 +1977,93 @@ export default function NewSessionPage() {
                               onClick={() => setTechniques(toggleArr(techniques, opt))} />
                           ))}
                         </div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                          Cochez une technique pour afficher l'encadré correspondant ci-dessous. Vous pouvez replier un encadré avec ▾ sans décocher la technique.
+                        </div>
                       </div>
-                      <div className="field">
-                        <label>Formule à base de plantes / dosage</label>
-                        <textarea
-                          value={plantes}
-                          onChange={e => setPlantes(e.target.value)}
-                          placeholder="Nom de la formule, ingrédients, dosage, fréquence de prise, durée du traitement…"
-                          rows={3}
-                          style={{ width: '100%', resize: 'vertical', minHeight: 80 }}
-                        />
-                      </div>
+
+                      {/* Encadré partagé : Acupuncture, Moxibustion, Ventouses, Tuina, Gua sha */}
+                      {(techniques.some(t => ['Acupuncture','Moxibustion','Ventouses','Tuina','Gua sha'].includes(t)) || !!points) && (
+                        <CollapsibleField
+                          label="Points / zones traitées — Acupuncture, Moxibustion, Ventouses, Tuina, Gua sha"
+                          collapsed={!!collapsedTraitFields.points}
+                          onToggle={() => toggleTraitField('points')}
+                        >
+                          <RichTextArea
+                            value={points}
+                            onChange={setPoints}
+                            placeholder="Ex : P7, MC6, E36, Rte6, V23… zones de moxibustion, ventouses, tuina, gua sha…"
+                            minHeight={60}
+                          />
+                        </CollapsibleField>
+                      )}
+
+                      {/* Encadré Auriculothérapie */}
+                      {(techniques.includes('Auriculothérapie') || !!ptsOreille) && (
+                        <CollapsibleField
+                          label="Points d'oreille"
+                          collapsed={!!collapsedTraitFields.ptsOreille}
+                          onToggle={() => toggleTraitField('ptsOreille')}
+                        >
+                          <RichTextArea
+                            value={ptsOreille}
+                            onChange={setPtsOreille}
+                            placeholder="Ex : Shen Men, Rein, Foie…"
+                            minHeight={60}
+                          />
+                        </CollapsibleField>
+                      )}
+
+                      {/* Encadré Plantes */}
+                      {(techniques.includes('Plantes') || !!plantes) && (
+                        <CollapsibleField
+                          label="Formule à base de plantes / dosage"
+                          collapsed={!!collapsedTraitFields.plantes}
+                          onToggle={() => toggleTraitField('plantes')}
+                        >
+                          <RichTextArea
+                            value={plantes}
+                            onChange={setPlantes}
+                            placeholder="Nom de la formule, ingrédients, dosage, fréquence de prise, durée du traitement…"
+                            minHeight={80}
+                          />
+                        </CollapsibleField>
+                      )}
+
+                      {/* Encadré Diététique */}
+                      {(techniques.includes('Diététique') || !!dietetique) && (
+                        <CollapsibleField
+                          label="Conseils diététiques"
+                          collapsed={!!collapsedTraitFields.dietetique}
+                          onToggle={() => toggleTraitField('dietetique')}
+                        >
+                          <RichTextArea
+                            value={dietetique}
+                            onChange={setDietetique}
+                            placeholder="Conseils alimentaires, aliments à privilégier/éviter, recommandations diététiques…"
+                            minHeight={80}
+                          />
+                        </CollapsibleField>
+                      )}
+
                       <div className="field">
                         <label>Réactions / observations pendant le soin</label>
-                        <textarea
+                        <RichTextArea
                           value={reactions}
-                          onChange={e => setReactions(e.target.value)}
+                          onChange={setReactions}
                           placeholder="Réactions du patient, sensations, observations…"
-                          rows={3}
-                          style={{ width: '100%', resize: 'vertical', minHeight: 80 }}
+                          minHeight={80}
                         />
                       </div>
                       <div className="field">
                         <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span>📝</span> Notes libres – Traitement
                         </div>
-                        <textarea
+                        <RichTextArea
                           value={traitementNotes}
-                          onChange={e => setTraitementNotes(e.target.value)}
+                          onChange={setTraitementNotes}
                           placeholder="Notes libres sur le traitement…"
-                          rows={3}
-                          style={{ width: '100%', resize: 'vertical', minHeight: 80 }}
+                          minHeight={80}
                         />
                       </div>
                     </>
@@ -2087,6 +2160,15 @@ export default function NewSessionPage() {
                   nextSessionApptId={nextSessionApptId} setNextSessionApptId={setNextSessionApptId}
                   patientAppts={patientAppts}
                   onApptDeleted={id => setPatientAppts(prev => prev.filter(a => a.id !== id))}
+                  onViewCalendar={() => {
+                    saveDraftNow()
+                    navigate('/calendrier', {
+                      state: {
+                        focusDate: nextSession || date,
+                        returnTo: location.pathname + location.search,
+                      },
+                    })
+                  }}
                 />
 
                 {/* ── Clôture séance : RDV réalisé + Comptabilité ─── */}
@@ -2476,6 +2558,7 @@ interface NextRdvProps {
   nextSessionApptId: string;  setNextSessionApptId: (v: string) => void
   patientAppts: Appointment[]
   onApptDeleted: (id: string) => void
+  onViewCalendar: () => void
 }
 
 function NextRdvSection({
@@ -2484,7 +2567,7 @@ function NextRdvSection({
   nextSessionFin, setNextSessionFin,
   nextSessionNote, setNextSessionNote,
   nextSessionApptId, setNextSessionApptId,
-  patientAppts, onApptDeleted,
+  patientAppts, onApptDeleted, onViewCalendar,
 }: NextRdvProps) {
 
   const fmtApptDate = (d: string) => {
@@ -2524,6 +2607,18 @@ function NextRdvSection({
             Synchronisé avec le calendrier
           </span>
         )}
+        <button
+          type="button"
+          onClick={onViewCalendar}
+          style={{
+            marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer',
+            color: 'var(--teal)', fontSize: 11, fontWeight: 700, textDecoration: 'underline',
+            padding: 0,
+          }}
+          title="Ouvrir le calendrier pour vérifier les créneaux déjà pris (votre saisie est sauvegardée automatiquement)"
+        >
+          Voir le calendrier →
+        </button>
       </label>
 
       {/* Champs date + heure */}

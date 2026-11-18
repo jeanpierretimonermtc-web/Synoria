@@ -337,7 +337,15 @@ async function printToPdf(html: string, filePath: string): Promise<void> {
       printBackground: true,
       margins: { marginType: 'none' },
     })
-    writeFileSync(filePath, pdfBuf)
+    try {
+      writeFileSync(filePath, pdfBuf)
+    } catch (e: any) {
+      if (e?.code === 'EBUSY' || e?.code === 'EPERM') {
+        const fileName = filePath.split(/[\\/]/).pop()
+        throw new Error(`Impossible d'écrire le fichier : "${fileName}" est actuellement ouvert dans un autre programme (visionneuse PDF, etc.). Fermez-le puis réessayez.`)
+      }
+      throw e
+    }
   } finally {
     try { win.close() } catch { /* ignore */ }
     try { unlinkSync(tmpPath) } catch { /* ignore */ }

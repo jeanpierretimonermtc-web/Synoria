@@ -79,6 +79,7 @@ const CORE_GROUP: Record<string, GroupId> = {
   'core.pts_oreille':      'intervention',
   'core.techniques':       'intervention',
   'core.plantes':          'intervention',
+  'core.dietetique':       'intervention',
   'core.traitement_notes': 'intervention',
   'core.barrageNiv1':      'intervention',
   'core.barrageNiv2':      'intervention',

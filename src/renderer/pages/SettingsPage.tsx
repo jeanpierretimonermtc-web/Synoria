@@ -1410,7 +1410,11 @@ export default function SettingsPage() {
             setPluginLoading(false)
           }
 
-          const importedActive = null as PluginDefinition | null
+          // Actif = un formulaire importé (acheté/personnel) uniquement si son id
+          // ne correspond à aucun des 6 formulaires officiels affichés au-dessus.
+          const importedActive = (activePlugin && !officialForms.some(f => f.id === activePlugin.id))
+            ? activePlugin
+            : null
 
           return (
             <div>

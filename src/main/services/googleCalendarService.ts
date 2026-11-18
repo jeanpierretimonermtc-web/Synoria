@@ -475,7 +475,6 @@ async function findAllEventsByPrivateProperty(token: string, calendarId: string,
 async function findEventByPrivateProperty(token: string, calendarId: string, key: string, value: string): Promise<string | null> {
   const ids = await findAllEventsByPrivateProperty(token, calendarId, key, value)
   return ids[0] || null
-  return item?.id || null
 }
 
 /**

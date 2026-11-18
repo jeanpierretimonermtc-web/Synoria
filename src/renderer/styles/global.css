@@ -3666,6 +3666,45 @@ hr { border: none; border-top: 1px solid var(--border-soft); margin: 1rem 0; }
   opacity: .8;
 }
 
+/* Infobulle au survol d'un RDV / bloc perso — surtout utile quand plusieurs
+   RDV se partagent la largeur côte à côte et que le texte est tronqué.
+   Affichée via un portail (document.body), positionnée en JS avec
+   position:fixed, pour ne pas être rognée par l'overflow:hidden des
+   conteneurs de la grille calendrier. */
+.cal-appt-tooltip {
+  min-width: 190px;
+  max-width: 260px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 11px;
+  box-shadow: 0 10px 28px rgba(0,0,0,.18);
+}
+.cal-appt-tooltip-name {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 4px;
+  white-space: normal;
+}
+.cal-appt-tooltip-row {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+}
+.cal-appt-tooltip-note {
+  font-size: 11px;
+  color: var(--text);
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid var(--border);
+  white-space: normal;
+  line-height: 1.4;
+}
+
 /* Indicateur heure courante */
 .cal-now-line {
   position: absolute;

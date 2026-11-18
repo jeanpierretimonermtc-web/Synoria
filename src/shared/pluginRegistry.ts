@@ -113,6 +113,11 @@ export const PLUGIN_TYPE_REGISTRY: readonly PluginTypeEntry[] = [
     desc: 'Panneau aide-mémoire des questions MTC (display seul, sans données) — à placer à droite d\'un champ texte en ½ largeur',
     isModule: true, isSeparator: false, hasOptions: false, hasRange: false },
 
+  { type: 'mtc_aide_systemes', label: 'Pense-bête systèmes', icon: '📌', color: '#C17B2A',
+    specialty: 'MTC',
+    desc: 'Panneau aide-mémoire des systèmes à passer en revue (display seul, sans données) — à placer à droite d\'un champ texte en ½ largeur',
+    isModule: true, isSeparator: false, hasOptions: false, hasRange: false },
+
   // ── Modules Ostéo ─────────────────────────────────────────────────────────
   { type: 'osteo_ortho_tests', label: 'Tests Orthopédiques',    icon: '🦴', color: '#0D9488',
     specialty: 'Ostéo',

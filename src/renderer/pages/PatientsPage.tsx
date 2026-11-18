@@ -8,6 +8,7 @@ import { fmtDate, getInitials, calcAge } from '../utils/format'
 import PageHeader from '../components/common/PageHeader'
 import EmptyState from '../components/common/EmptyState'
 import { UsersIcon, SearchIcon } from '../components/common/Icon'
+import ImportPatientsModal from '../components/patients/ImportPatientsModal'
 
 
 type FilterTab = 'active' | 'all' | 'archived'
@@ -24,6 +25,7 @@ export default function PatientsPage() {
   const [filter, setFilter] = useState<FilterTab>('active')
   const [alphFilter, setAlphFilter] = useState('')
   const [showModal, setShowModal] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
   const [editPatient, setEditPatient] = useState<Patient | null>(null)
   const [form, setForm] = useState({ ...EMPTY_PATIENT })
   const [backingUp, setBackingUp] = useState<string | null>(null)
@@ -152,7 +154,12 @@ export default function PatientsPage() {
         title="Patients"
         count={counts.active}
         subtitle={counts.active === 0 ? 'Aucun patient actif' : `${counts.active} patient${counts.active > 1 ? 's' : ''} actif${counts.active > 1 ? 's' : ''}`}
-        action={<button className="btn btn-primary" onClick={openCreate} disabled={!restriction.canCreatePatient} title={!restriction.canCreatePatient ? R_TIP : undefined}>+ Nouveau patient</button>}
+        action={(
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-secondary" onClick={() => setShowImportModal(true)} disabled={!restriction.canCreatePatient} title={!restriction.canCreatePatient ? R_TIP : undefined}>📥 Importer</button>
+            <button className="btn btn-primary" onClick={openCreate} disabled={!restriction.canCreatePatient} title={!restriction.canCreatePatient ? R_TIP : undefined}>+ Nouveau patient</button>
+          </div>
+        )}
       />
 
       {/* Barre de recherche */}
@@ -202,7 +209,12 @@ export default function PatientsPage() {
             icon={<UsersIcon size={30} />}
             title="Aucun patient enregistré"
             description="Ajoutez votre premier patient pour commencer à gérer vos dossiers."
-            action={<button className="btn btn-primary" onClick={openCreate} disabled={!restriction.canCreatePatient} title={!restriction.canCreatePatient ? R_TIP : undefined}>+ Nouveau patient</button>}
+            action={(
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-secondary" onClick={() => setShowImportModal(true)} disabled={!restriction.canCreatePatient} title={!restriction.canCreatePatient ? R_TIP : undefined}>📥 Importer</button>
+                <button className="btn btn-primary" onClick={openCreate} disabled={!restriction.canCreatePatient} title={!restriction.canCreatePatient ? R_TIP : undefined}>+ Nouveau patient</button>
+              </div>
+            )}
           />
         ) : (
           <EmptyState
@@ -235,6 +247,14 @@ export default function PatientsPage() {
             onInvoice={p => navigate('/factures-liste', { state: { patientName: `${p.first_name} ${p.last_name}` } })}
           />
         ))}
+
+      {/* Modal import CSV/Excel */}
+      {showImportModal && (
+        <ImportPatientsModal
+          onClose={() => setShowImportModal(false)}
+          onImported={load}
+        />
+      )}
 
       {/* Modal création / modification */}
       {showModal && (

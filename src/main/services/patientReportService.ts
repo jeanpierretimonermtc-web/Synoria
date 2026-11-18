@@ -9,6 +9,7 @@ import { mkdirSync, writeFileSync } from 'fs'
 import { getPatientById }   from '../database/repositories/patientRepository'
 import { getAllSessions }    from '../database/repositories/sessionRepository'
 import { getSettings }      from './settingsService'
+import { stripKnownRichTags } from '../../shared/richTextDetect'
 
 const MONTHS_FR = ['janvier','février','mars','avril','mai','juin',
                    'juillet','août','septembre','octobre','novembre','décembre']
@@ -77,7 +78,7 @@ function renderGroup(title: string, rows: string[]): string {
 
 function row(label: string, value?: string | null): string {
   if (!value?.trim() || value === '<br>') return ''
-  const clean = value.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').replace(/\s+/g,' ').trim()
+  const clean = stripKnownRichTags(value).replace(/\s+/g,' ').trim()
   if (!clean) return ''
   return `<div class="row"><span class="lbl">${label}</span><span class="val">${escHtml(clean)}</span></div>`
 }
@@ -121,6 +122,7 @@ export async function exportPatientReport(patientId: string): Promise<string> {
         const barrageNiv2 = (fd.barrageNiv2 as string) || ''
         const barrageNiv3 = (fd.barrageNiv3 as string) || ''
         const barrageNiv4 = (fd.barrageNiv4 as string) || ''
+        const dietetique  = (fd.dietetique as string) || ''
 
         // Badge spécialité
         const specialty = isBuiltin ? 'MTC'
@@ -155,20 +157,20 @@ export async function exportPatientReport(patientId: string): Promise<string> {
         // ── Mode MTC intégré ──
         if (isBuiltin) {
           // Observation
-          const langueDisplay = [s.langue, langueNote].filter(Boolean).join(' — ')
-          const poulsDisplay  = [s.pouls, poulsNote].filter(Boolean).join(' — ')
           let poulsPosTxt = ''
           if (poulsPos) {
             const pp = Object.entries(poulsPos).filter(([,v]) => v).map(([k,v]) => `${k}: ${v}`).join(' | ')
             if (pp) poulsPosTxt = pp
           }
           body += renderGroup('Observation clinique', [
-            row('Langue', langueDisplay),
-            row('Pouls', poulsDisplay),
+            row('Langue', s.langue),
+            rowHtml('Langue — notes', langueNote),
+            row('Pouls', s.pouls),
+            rowHtml('Pouls — notes', poulsNote),
             poulsPosTxt ? `<div class="row"><span class="lbl">Positions pouls</span><span class="val" style="font-size:11px">${escHtml(poulsPosTxt)}</span></div>` : '',
             row('Constitution', s.constitution),
-            row('Type de corps', s.type_corps),
-            row('Teint', s.teint),
+            rowHtml('Type de corps', s.type_corps),
+            rowHtml('Teint', s.teint),
             rowHtml('Observation générale', s.observation),
           ])
 
@@ -237,11 +239,11 @@ export async function exportPatientReport(patientId: string): Promise<string> {
 
           // Analyse
           body += renderGroup('Analyse & Diagnostic', [
-            row('Diagnostic MTC', s.diagnostic_mtc),
-            row('5 Éléments', s.cinq_elements),
-            row('Causes', s.causes),
+            rowHtml('Diagnostic MTC', s.diagnostic_mtc),
+            rowHtml('5 Éléments', s.cinq_elements),
+            rowHtml('Causes', s.causes),
             rowHtml('Analyse / Mécanisme', s.analyse),
-            row('Principes de traitement', s.principes),
+            rowHtml('Principes de traitement', s.principes),
           ])
 
           // Tests énergétiques
@@ -285,10 +287,11 @@ export async function exportPatientReport(patientId: string): Promise<string> {
 
           // Traitement
           body += renderGroup('Traitement', [
-            row('Points d\'acupuncture', s.points),
-            row('Points d\'oreille', s.pts_oreille),
+            rowHtml('Points d\'acupuncture', s.points),
+            rowHtml('Points d\'oreille', s.pts_oreille),
             row('Techniques', s.techniques),
-            row('Plantes / Formule', s.plantes),
+            rowHtml('Plantes / Formule', s.plantes),
+            rowHtml('Conseils diététiques', dietetique),
             rowHtml('Réactions', s.reactions),
             rowHtml('Notes traitement', s.traitement_notes),
           ])

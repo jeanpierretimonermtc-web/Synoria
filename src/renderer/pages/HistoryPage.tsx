@@ -4,6 +4,8 @@ import type { Session, Patient, ConsultationType } from '../../shared/types'
 import { ToastContext } from '../App'
 import { showConfirm } from '../components/common/ConfirmDialog'
 import { fmtDate, getInitials, getEvolBadgeClass } from '../utils/format'
+import { sanitizeRichTextHtml } from '../utils/sanitizeHtml'
+import { looksLikeRichTextHtml } from '../../shared/richTextDetect'
 
 /* ── MODAL COMPTABILITÉ ─────────────────────────────────────────── */
 
@@ -354,12 +356,18 @@ function SessionDetail({ session: s }: { session: Session }) {
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 24px', paddingTop: 8 }}>
-      {items.map(([k, v]) => (
-        <div key={k}>
-          <div className="detail-label">{k}</div>
-          <div className="detail-value">{v}</div>
-        </div>
-      ))}
+      {items.map(([k, v]) => {
+        const hasHtml = looksLikeRichTextHtml(v)
+        return (
+          <div key={k}>
+            <div className="detail-label">{k}</div>
+            {hasHtml
+              ? <div className="detail-value" dangerouslySetInnerHTML={{ __html: sanitizeRichTextHtml(v) }} />
+              : <div className="detail-value">{v}</div>
+            }
+          </div>
+        )
+      })}
     </div>
   )
 }

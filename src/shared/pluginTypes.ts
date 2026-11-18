@@ -46,6 +46,7 @@ export type PluginFieldType =
   | 'mtc_five_elements'       // Roue des 5 éléments — référence + annotation
   | 'mtc_tongue_pulse'        // Langue et Pouls — diagnostic MTC
   | 'mtc_aide_interrogatoire' // Pense-bête questions MTC (display-only, pas de données)
+  | 'mtc_aide_systemes'       // Pense-bête des systèmes à passer en revue (display-only, pas de données)
   // ── Modules Ostéo ────────────────────────────────────────────────────────────
   | 'osteo_ortho_tests'  // Tests orthopédiques — liste dynamique saisie praticien
   | 'osteo_posture'      // Bilan postural — 4 vues avec observations cochables

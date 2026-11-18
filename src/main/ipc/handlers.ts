@@ -43,6 +43,7 @@ import { logError }                             from '../services/logService'
 import { getAllBlocks, getBlocksByMonth, createBlock, updateBlock, deleteBlock } from '../database/repositories/calendarBlockRepository'
 import { generateDiagnosticReport, generateSupportDoc, generateRecoveryDoc } from '../services/diagnosticService'
 import { exportPatientReport }  from '../services/patientReportService'
+import { parseImportFile, importPatients, writeImportTemplate } from '../services/patientImportService'
 import { checkOwnerFromSettings, isOwner } from '../services/ownerService'
 import { exportConsentForm }    from '../services/consentFormService'
 import { exportUrssafReport }   from '../services/urssafReportService'
@@ -127,6 +128,9 @@ export function registerAllHandlers(): void {
   ipcMain.handle('patients:update',    (_e, id, d)  => { licenseSvc.assertNotRestricted(); return patientRepo.updatePatient(id, d) })
   ipcMain.handle('patients:delete',    (_e, id)     => { licenseSvc.assertNotRestricted(); return patientRepo.deletePatient(id) })
   ipcMain.handle('patients:followUp',  (_e, days)   => patientRepo.getPatientsToFollowUp(days))
+  ipcMain.handle('patients:parseImportFile',   (_e, filePath)      => parseImportFile(filePath))
+  ipcMain.handle('patients:importBatch',       (_e, rows, mapping) => { licenseSvc.assertNotRestricted(); return importPatients(rows, mapping) })
+  ipcMain.handle('patients:writeImportTemplate', (_e, filePath) => { writeImportTemplate(filePath); return filePath })
 
   // ─── SESSIONS ──────────────────────────────────────────────────────────────
   ipcMain.handle('sessions:getAll',        (_e, pid)    => sessionRepo.getAllSessions(pid))
