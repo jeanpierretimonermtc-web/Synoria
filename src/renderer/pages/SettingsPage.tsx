@@ -1321,7 +1321,8 @@ export default function SettingsPage() {
                   <div className="settings-section-title">Calendriers à importer</div>
                   <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
                     Les événements de ces calendriers apparaîtront dans Synoria à titre d'information (non modifiables).
-                    Choisissez une couleur distincte pour chaque calendrier.
+                    Choisissez une couleur distincte pour chaque calendrier. Vous pouvez aussi importer le calendrier
+                    utilisé pour l'export (ex : si c'est votre calendrier principal) — vos RDV Synoria n'y seront pas dupliqués.
                   </p>
                   <button
                     className="btn btn-secondary btn-sm"
@@ -1343,14 +1344,13 @@ export default function SettingsPage() {
                               padding: '8px 12px', borderRadius: 'var(--radius)',
                               border: `1.5px solid ${state.selected ? state.color : 'var(--border-soft)'}`,
                               background: state.selected ? `${state.color}10` : 'var(--bg)',
-                              opacity: gcalInfo?.calendarId === cal.id ? .55 : 1,
                               transition: 'border-color .15s, background .15s',
                             }}>
                               {/* Couleur */}
                               <input
                                 type="color"
                                 value={state.color}
-                                disabled={!state.selected || gcalInfo?.calendarId === cal.id}
+                                disabled={!state.selected}
                                 title="Couleur des RDV importés"
                                 style={{ width: 28, height: 28, border: 'none', borderRadius: 6, cursor: state.selected ? 'pointer' : 'not-allowed', padding: 2 }}
                                 onChange={e => setGcalImportState(prev => ({
@@ -1362,22 +1362,24 @@ export default function SettingsPage() {
                               <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>
                                 {cal.summary}
                                 {cal.primary && <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 6 }}>· Principal</span>}
-                                {gcalInfo?.calendarId === cal.id && <span style={{ fontSize: 10, color: 'var(--accent)', marginLeft: 6 }}>· Utilisé pour export</span>}
+                                {gcalInfo?.calendarId === cal.id && (
+                                  <span style={{ fontSize: 10, color: 'var(--accent)', marginLeft: 6 }} title="Vos RDV Synoria y sont déjà poussés automatiquement — ils ne seront pas dupliqués si vous importez aussi ce calendrier">
+                                    · Utilisé pour export
+                                  </span>
+                                )}
                               </span>
                               {/* Toggle */}
-                              {gcalInfo?.calendarId !== cal.id && (
-                                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12 }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={state.selected}
-                                    onChange={e => setGcalImportState(prev => ({
-                                      ...prev,
-                                      [cal.id]: { ...prev[cal.id], selected: e.target.checked }
-                                    }))}
-                                  />
-                                  Importer
-                                </label>
-                              )}
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12 }}>
+                                <input
+                                  type="checkbox"
+                                  checked={state.selected}
+                                  onChange={e => setGcalImportState(prev => ({
+                                    ...prev,
+                                    [cal.id]: { ...prev[cal.id], selected: e.target.checked }
+                                  }))}
+                                />
+                                Importer
+                              </label>
                             </div>
                           )
                         })}

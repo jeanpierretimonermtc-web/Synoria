@@ -224,13 +224,29 @@ async function ensureSynoriaCalendar(tokenOverride?: string): Promise<GCalConfig
   }
 }
 
-export function getStatus() {
+export async function getStatus() {
   const cfg = loadConfig()
+  const connected = !!(cfg?.tokens?.refresh_token)
+
+  let calendarId   = cfg?.calendar_id
+  let calendarName = cfg?.calendar_name
+
+  // "primary" est un alias non résolu — le résoudre vers l'ID réel (souvent
+  // l'email du compte) pour que la liste "Calendriers à importer" puisse
+  // correctement reconnaître et exclure le calendrier utilisé pour l'export.
+  if (connected && (!calendarId || calendarId === 'primary')) {
+    try {
+      const ensured = await ensureSynoriaCalendar()
+      calendarId = ensured.calendar_id
+      calendarName = ensured.calendar_name
+    } catch { /* hors ligne ou jeton expiré — on garde la valeur brute */ }
+  }
+
   return {
-    connected: !!(cfg?.tokens?.refresh_token),
+    connected,
     email: cfg?.email,
-    calendarId: cfg?.calendar_id,
-    calendarName: cfg?.calendar_name,
+    calendarId,
+    calendarName,
     importCalendars: cfg?.import_calendars ?? [],
   }
 }
@@ -705,11 +721,14 @@ export async function listSelectedImportEvents(timeMin: string, timeMax: string)
   const ensured = await ensureSynoriaCalendar()
   const token   = await getAccessToken()
 
-  // IMPORTANT : on n'inclut PAS le calendrier principal Synoria ici.
-  // Ses événements sont gérés par la sync bidirectionnelle dans gcal:sync (export path).
-  // L'inclure ici crée systématiquement des doublons.
-  const importCalendars = (cfg.import_calendars ?? [])
-    .filter(cal => cal.id !== ensured.calendar_id)
+  // On autorise le calendrier d'export Synoria à être aussi importé : beaucoup
+  // d'utilisateurs n'ont qu'un seul calendrier Google (celui-là même), avec
+  // leurs propres événements déjà présents dedans. Les événements créés par
+  // Synoria sont filtrés individuellement plus bas via isSynoriaOwnedEvent
+  // (marqueur extendedProperties) — ce filtre suffit à éviter les doublons,
+  // et le handler gcal:sync applique le même filtre une seconde fois par
+  // sécurité (voir ipc/handlers.ts).
+  const importCalendars = cfg.import_calendars ?? []
 
   if (importCalendars.length === 0) return []
 

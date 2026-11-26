@@ -142,6 +142,26 @@ export default function PatientsPage() {
   const f = (key: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm(prev => ({ ...prev, [key]: e.target.value }))
 
+  const emailsToCopy = Array.from(new Set(
+    filtered.filter(p => p.email?.trim() && p.consent_given).map(p => p.email!.trim())
+  ))
+
+  const handleCopyEmails = async () => {
+    if (emailsToCopy.length === 0) {
+      showToast('Aucun email à copier (vérifiez les adresses renseignées et le consentement RGPD)', 'error')
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(emailsToCopy.join('; '))
+      showToast(
+        `${emailsToCopy.length} email${emailsToCopy.length > 1 ? 's' : ''} copié${emailsToCopy.length > 1 ? 's' : ''} — à coller en Cci (pas en À/Cc) pour ne pas exposer les adresses entre patients`,
+        'success',
+      )
+    } catch {
+      showToast('Impossible de copier dans le presse-papiers', 'error')
+    }
+  }
+
   const FILTER_LABELS: Record<FilterTab, string> = {
     active:   'Actifs',
     all:      'Tous',
@@ -163,13 +183,20 @@ export default function PatientsPage() {
       />
 
       {/* Barre de recherche */}
-      <div style={{ marginBottom: '1rem' }}>
-        <div className="search-wrap">
+      <div style={{ marginBottom: '1rem', display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div className="search-wrap" style={{ flex: 1 }}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
           </svg>
           <input type="text" placeholder="Rechercher un patient…" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
+        <button
+          className="btn btn-secondary"
+          onClick={handleCopyEmails}
+          title="Copie les emails des patients actuellement affichés (avec consentement RGPD) — à coller en Cci"
+        >
+          ✉️ Copier les emails{emailsToCopy.length > 0 ? ` (${emailsToCopy.length})` : ''}
+        </button>
       </div>
 
       {/* Index alphabétique */}
