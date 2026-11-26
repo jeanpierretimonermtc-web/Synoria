@@ -1,4 +1,4 @@
-import { ipcMain, dialog, shell, app } from 'electron'
+import { ipcMain, dialog, shell, app, clipboard } from 'electron'
 import { spawn }                         from 'child_process'
 import { mkdirSync, writeFileSync, unlinkSync, readFileSync, existsSync } from 'fs'
 import { join, extname, normalize, isAbsolute, basename } from 'path'
@@ -655,6 +655,10 @@ export function registerAllHandlers(): void {
     } catch { return null }
   })
   ipcMain.handle('app:getVersion',      ()            => app.getVersion())
+  // Le Presse-papiers natif Electron contourne le système de permissions
+  // Chromium (setPermissionRequestHandler refuse tout par défaut) —
+  // navigator.clipboard.writeText() échouerait silencieusement sinon.
+  ipcMain.handle('clipboard:writeText', (_e, text: string) => { clipboard.writeText(text) })
   ipcMain.handle('app:relaunch',        ()            => { app.relaunch(); app.quit() })
   ipcMain.handle('app:launchInstaller', async (_e, exePath: string) => {
     if (typeof exePath !== 'string' || !isAbsolute(exePath)) return

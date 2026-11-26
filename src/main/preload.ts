@@ -95,6 +95,7 @@ const api: IpcApi = {
   openPath:       (path)  => ipcRenderer.invoke('shell:openPath', path),
   openExternal:   (url)   => ipcRenderer.invoke('shell:openExternal', url),
   getAppVersion:  ()      => ipcRenderer.invoke('app:getVersion'),
+  clipboardWriteText: (text) => ipcRenderer.invoke('clipboard:writeText', text),
   relaunchApp:    ()      => ipcRenderer.invoke('app:relaunch'),
   launchInstaller:(path)  => ipcRenderer.invoke('app:launchInstaller', path),
   // Auth

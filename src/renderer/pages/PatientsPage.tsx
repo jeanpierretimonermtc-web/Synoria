@@ -152,7 +152,7 @@ export default function PatientsPage() {
       return
     }
     try {
-      await navigator.clipboard.writeText(emailsToCopy.join('; '))
+      await window.mtcApi.clipboardWriteText(emailsToCopy.join('; '))
       showToast(
         `${emailsToCopy.length} email${emailsToCopy.length > 1 ? 's' : ''} copié${emailsToCopy.length > 1 ? 's' : ''} — à coller en Cci (pas en À/Cc) pour ne pas exposer les adresses entre patients`,
         'success',

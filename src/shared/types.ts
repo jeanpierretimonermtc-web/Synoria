@@ -670,6 +670,7 @@ export interface IpcApi {
   openPath:     (path: string) => Promise<void>
   openExternal: (url: string)  => Promise<void>
   getAppVersion: () => Promise<string>
+  clipboardWriteText: (text: string) => Promise<void>
   relaunchApp:   () => Promise<void>
   launchInstaller: (exePath: string) => Promise<void>
   // ── Authentification & chiffrement BDD ──
