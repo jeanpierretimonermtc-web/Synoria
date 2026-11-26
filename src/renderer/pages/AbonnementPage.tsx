@@ -336,9 +336,10 @@ export default function AbonnementPage() {
 
       if (acc.isLoggedIn) {
         window.mtcApi.licenseGetDevices().then(setDevices).catch(() => {})
-        // check silencieux pour afficher la version disponible
-        window.mtcApi.releaseCheck(ver).then(r => { if (r) setUpdateInfo(r) }).catch(() => {})
       }
+      // check silencieux pour afficher la version disponible — fonctionne
+      // aussi sans compte connecté (clé anon)
+      window.mtcApi.releaseCheck(ver).then(r => { if (r) setUpdateInfo(r) }).catch(() => {})
     } catch (e: any) {
       showToast(`Erreur de chargement : ${e?.message ?? e}`, 'error')
     } finally {

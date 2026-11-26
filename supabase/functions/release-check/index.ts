@@ -9,7 +9,9 @@
  *             title, release_notes, download_url }
  *
  * Contraintes absolues :
- *   • Utilisateur authentifié Supabase Auth obligatoire.
+ *   • Appel autorisé avec la clé anon (compte connecté non requis — la
+ *     vérification de version ne contient aucune donnée sensible et doit
+ *     fonctionner même pour un utilisateur non connecté).
  *   • Aucune donnée patient ne transite ici.
  *   • Aucune mise à jour forcée sans consentement explicite.
  *   • Lecture seule — aucune écriture en base.
@@ -20,7 +22,6 @@
 
 import { corsHeaders, handleCors } from '../_shared/cors.ts'
 import { supabaseAdmin }           from '../_shared/supabase-admin.ts'
-import { createClient }            from 'npm:@supabase/supabase-js@2'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -70,22 +71,12 @@ Deno.serve(async (req: Request) => {
   }
 
   // ── Authentification ───────────────────────────────────────────────────
+  // Le token (clé anon ou jeton utilisateur) est déjà validé au niveau
+  // plateforme par Supabase (verify_jwt) avant que cette fonction s'exécute —
+  // aucune vérification de session utilisateur supplémentaire n'est requise.
 
   const authHeader = req.headers.get('Authorization') ?? ''
   if (!authHeader.startsWith('Bearer ')) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401, headers: corsHeaders })
-  }
-
-  const userClient = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    { auth: { persistSession: false } },
-  )
-
-  const { data: { user }, error: authError } = await userClient.auth.getUser(
-    authHeader.slice(7),
-  )
-  if (authError || !user) {
     return Response.json({ error: 'Unauthorized' }, { status: 401, headers: corsHeaders })
   }
 

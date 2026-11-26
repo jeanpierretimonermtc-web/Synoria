@@ -61,6 +61,7 @@ export default function SettingsPage() {
 
   // Sécurité / MAJ
   const [appVersion, setAppVersion] = useState('')
+  const [updateAvailable, setUpdateAvailable] = useState(false)
   const [updatePath, setUpdatePath] = useState('')
   const [updating, setUpdating]     = useState(false)
   const [oldPwd,     setOldPwd]     = useState('')
@@ -205,7 +206,10 @@ export default function SettingsPage() {
 
   useEffect(() => {
     load()
-    window.mtcApi.getAppVersion().then(setAppVersion).catch(() => {})
+    window.mtcApi.getAppVersion().then(ver => {
+      setAppVersion(ver)
+      window.mtcApi.releaseCheck(ver).then(r => setUpdateAvailable(!!r?.update_available)).catch(() => {})
+    }).catch(() => {})
     window.mtcApi.pluginGet().then(p => setActivePlugin(p || null)).catch(() => { showToast("Impossible de charger le formulaire actif", "error") })
     window.mtcApi.ownerCheck().then(setIsOwner).catch(() => {})
     loadGcalStatus()
@@ -547,10 +551,21 @@ export default function SettingsPage() {
             onClick={() => setActiveTab(tab.id)}
           >
             <span className="settings-sidebar-icon">{tab.icon}</span>
-            <div>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div className="settings-sidebar-label">{tab.label}</div>
               <div className="settings-sidebar-desc">{tab.desc}</div>
             </div>
+            {tab.id === 'securite' && updateAvailable && (
+              <span
+                title="Mise à jour disponible"
+                style={{
+                  minWidth: 18, height: 18, padding: '0 5px', borderRadius: 9,
+                  background: 'var(--red)', color: '#fff',
+                  fontSize: 11, fontWeight: 800, lineHeight: '18px',
+                  textAlign: 'center', flexShrink: 0,
+                }}
+              >1</span>
+            )}
           </button>
         ))}
 

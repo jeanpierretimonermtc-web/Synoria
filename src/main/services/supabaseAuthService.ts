@@ -387,8 +387,9 @@ function normalizeDevice(d: RawDevice): DeviceInfo {
 // ── Vérification de mise à jour ──────────────────────────────────────────────
 
 export async function checkRelease(currentVersion: string): Promise<ReleaseCheckResult | null> {
-  const token = getAccessToken()
-  if (!token) return null  // Non connecté → pas de vérification
+  // Connecté → jeton utilisateur ; sinon la clé anon suffit (vérification de
+  // version, aucune donnée sensible — ne doit pas exiger un compte connecté).
+  const token = getAccessToken() ?? SUPABASE_ANON
 
   const platform = getPlatformName()
 
