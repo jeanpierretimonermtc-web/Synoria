@@ -29,10 +29,10 @@ export function evaluateCondition(condition: PluginCondition, data: Record<strin
       if (typeof currentValue === 'string' && typeof condition.value === 'string') return !currentValue.includes(condition.value)
       return false
     case 'falsy':
-      return !currentValue
+      return Array.isArray(currentValue) ? currentValue.length === 0 : !currentValue
     case 'truthy':
     default:
-      return !!currentValue
+      return Array.isArray(currentValue) ? currentValue.length > 0 : !!currentValue
   }
 }
 

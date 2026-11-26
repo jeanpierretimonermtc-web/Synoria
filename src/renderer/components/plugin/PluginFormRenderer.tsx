@@ -257,22 +257,21 @@ function FieldWrapper({ field, data, onChange }: {
     return <DynamicField field={field} value={undefined} onChange={() => {}} />
   }
 
-  // Checkbox inline (le label fait partie du composant)
+  // Checkbox inline — même style « chip » que les options d'un checkboxgroup
   if (field.type === 'checkbox') {
+    const checked = !!data[field.id]
     return (
-      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, marginTop: 4 }}>
-        <input
-          type="checkbox"
-          checked={!!data[field.id]}
-          onChange={e => onChange(field.id, e.target.checked)}
-          style={{ width: 16, height: 16, accentColor: 'var(--accent)', flexShrink: 0 }}
-        />
-        <span style={{ fontWeight: 500 }}>
-          {field.label}
-          {field.required && <span style={{ color: 'var(--red)' }}> *</span>}
-        </span>
-        {field.hint && <span style={{ fontSize: 11, color: 'var(--text-hint)', fontStyle: 'italic' }}>— {field.hint}</span>}
-      </label>
+      <button
+        type="button"
+        className={`plugin-checkbox-option${checked ? ' active' : ''}`}
+        onClick={() => onChange(field.id, !checked)}
+        aria-pressed={checked}
+        style={{ marginTop: 4 }}
+      >
+        {field.label}
+        {field.required && <span style={{ color: 'var(--red)' }}> *</span>}
+        {field.hint && <span style={{ fontSize: 11, opacity: .75, fontStyle: 'italic' }}> — {field.hint}</span>}
+      </button>
     )
   }
 

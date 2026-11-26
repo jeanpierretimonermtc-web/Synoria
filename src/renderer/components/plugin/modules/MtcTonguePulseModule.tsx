@@ -185,10 +185,10 @@ function PositionCard({
         style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', cursor: 'pointer', userSelect: 'none' }}
       >
         <div style={{
-          minWidth: 34, height: 34, borderRadius: 7,
+          minWidth: 44, height: 30, padding: '0 8px', borderRadius: 15,
           background: 'var(--accent)', color: '#fff',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 12, fontWeight: 800, flexShrink: 0,
+          fontSize: 12.5, fontWeight: 700, letterSpacing: '.02em', flexShrink: 0,
         }}>{pos.level}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', lineHeight: 1.3 }}>{pos.organ}</div>
